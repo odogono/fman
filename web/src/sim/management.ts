@@ -182,6 +182,7 @@ export const repay = (game: Game, amount: number): Game => {
 export type SaleOffer = Readonly<{
   amount: number;
   buyer: string;
+  buyerId: number;
   game: Game;
   playerId: number;
 }>;
@@ -202,8 +203,15 @@ export const makeSaleOffer = (game: Game, playerId: number): SaleOffer => {
   const amount = toNumber(
     floor(divide(multiply(factor, fromNumber(player.value)), fromNumber(10)))
   );
-  const buyer = game.clubs[rng.int(1, 64) - 1]!.name;
-  return { amount, buyer, game: { ...game, seed: rng.seed }, playerId };
+  const buyerId = rng.int(1, 64);
+  const buyer = game.clubs[buyerId - 1]!.name;
+  return {
+    amount,
+    buyer,
+    buyerId,
+    game: { ...game, seed: rng.seed },
+    playerId
+  };
 };
 
 export const respondToSale = (

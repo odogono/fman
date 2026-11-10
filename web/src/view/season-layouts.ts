@@ -1,3 +1,4 @@
+import { clubInk, clubText } from '../sim/names';
 import type { Session } from '../sim/session';
 import { paintLeagueTable } from './league-table';
 import type { Paint } from './management-layouts';
@@ -22,8 +23,8 @@ export const paintSeason = (session: Session, put: Paint) => {
             : movement.kind === 'relegated'
               ? ' are relegated' + '+'.repeat(40)
               : ' are League Champions' + '*'.repeat(33);
-        put(row, 0, movement.club.name.padEnd(10), { ink: movement.club.ink });
-        put(row, 10, text, {
+        put(row, 0, clubText(movement.club), { ink: clubInk(movement.club) });
+        put(row, clubText(movement.club).length, text, {
           ink:
             movement.kind === 'promoted'
               ? 1
@@ -31,7 +32,7 @@ export const paintSeason = (session: Session, put: Paint) => {
                 ? 3
                 : 2
         });
-        row += 2;
+        row += Math.ceil((clubText(movement.club).length + text.length) / 32);
       }
       put(row, 0, '****New Season****', { ink: 1, inverse: true });
       put(row + 1, 8, `Division ${session.game!.division}`);

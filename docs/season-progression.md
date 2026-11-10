@@ -33,4 +33,4 @@ The adapter checks the checkpoint's runtime BASIC hash before patching and recor
 
 ## Remaining scope
 
-[Dismissal and reloading](dismissal-restart.md) are now implemented. Name editing and saving remain unavailable. A club exceeding the debt cap is dismissed before receiving a season bonus. Existing browser line-editing, prompt-sound, interpreter pacing and ROM-pixel rendering limits remain.
+[Dismissal and reloading](dismissal-restart.md) are now implemented. [Name editing](name-editing.md) is now implemented. Saving remains unavailable. A club exceeding the debt cap is dismissed before receiving a season bonus. Existing browser line-editing, prompt-sound, interpreter pacing and ROM-pixel rendering limits remain.

@@ -1,4 +1,6 @@
+import type { Club } from '../sim/catalogue';
 import { teamStrength } from '../sim/league';
+import { clubInk, clubText } from '../sim/names';
 import type { Session } from '../sim/session';
 import { paintCupVictory } from './cup-victory';
 import { paintLeagueTable } from './league-table';
@@ -7,8 +9,8 @@ import { paintSquad, type Paint } from './management-layouts';
 export const paintMatch = (session: Session, put: Paint) => {
   const game = session.game!;
   const fixture = session.fixture!;
-  const club = game.clubs[game.club - 1]!.name;
-  const opponent = game.clubs[fixture.opponent - 1]!.name;
+  const club = game.clubs[game.club - 1]!;
+  const opponent = game.clubs[fixture.opponent - 1]!;
   const home = fixture.home ? club : opponent;
   const away = fixture.home ? opponent : club;
   const opponentPosition =
@@ -18,14 +20,16 @@ export const paintMatch = (session: Session, put: Paint) => {
   let numeric = false;
   const score = (
     goals: readonly number[],
-    homeName = home,
-    awayName = away,
+    homeName: Club = home,
+    awayName: Club = away,
     row = 1
   ) => {
-    put(row, 0, homeName);
-    put(row, 12, String(goals[0]));
-    put(row, 16, awayName);
-    put(row, 28, String(goals[1]));
+    const homeInk = clubInk(homeName),
+      awayInk = clubInk(awayName, homeInk);
+    put(row, 0, clubText(homeName), { ink: homeInk });
+    put(row, 12, String(goals[0]), { ink: homeInk });
+    put(row, 16, clubText(awayName), { ink: awayInk });
+    put(row, 28, String(goals[1]), { ink: awayInk });
   };
   switch (session.screen) {
     case 'fixture':
@@ -37,7 +41,11 @@ export const paintMatch = (session: Session, put: Paint) => {
           : `League Match - Division ${game.division}`,
         { ink: fixture.kind === 'cup' ? 2 : 1 }
       );
-      put(2, 6, `${home} v ${away}`);
+      put(2, 6, clubText(home), { ink: clubInk(home) });
+      put(2, 6 + clubText(home).length, ' v ', { ink: clubInk(home) });
+      put(2, 9 + clubText(home).length, clubText(away), {
+        ink: clubInk(away, clubInk(home))
+      });
       put(
         4,
         0,
@@ -62,8 +70,8 @@ export const paintMatch = (session: Session, put: Paint) => {
       break;
     case 'team': {
       const strength = teamStrength(game);
-      put(0, 10, club);
-      put(0, 22, opponent);
+      put(0, 10, clubText(club), { ink: clubInk(club) });
+      put(0, 22, clubText(opponent), { ink: clubInk(opponent, clubInk(club)) });
       ['Energy', 'Morale', 'Defence', 'Midfield', 'Attack'].forEach(
         (name, index) => {
           put(index + 1, 0, name);
@@ -142,8 +150,8 @@ export const paintMatch = (session: Session, put: Paint) => {
       session.completion!.results.forEach((result, index) =>
         score(
           result.score,
-          game.clubs[result.home - 1]!.name,
-          game.clubs[result.away - 1]!.name,
+          game.clubs[result.home - 1]!,
+          game.clubs[result.away - 1]!,
           index + 2
         )
       );

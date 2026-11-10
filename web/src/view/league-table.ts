@@ -1,4 +1,5 @@
 import type { Game } from '../sim/management';
+import { clubInk, clubText } from '../sim/names';
 import type { Paint } from './management-layouts';
 
 export const paintLeagueTable = (
@@ -18,10 +19,12 @@ export const paintLeagueTable = (
   });
   rows.forEach((index, row) => {
     const record = game.league[index]!;
-    put(row + 1, 0, game.clubs[(game.division - 1) * 16 + index]!.name);
-    put(row + 1, 18, String(record.for));
-    put(row + 1, 22, String(record.against));
-    put(row + 1, 28, String(record.points));
+    const club = game.clubs[(game.division - 1) * 16 + index]!;
+    const ink = clubInk(club);
+    put(row + 1, 0, clubText(club), { ink });
+    put(row + 1, 18, String(record.for), { ink });
+    put(row + 1, 22, String(record.against), { ink });
+    put(row + 1, 28, String(record.points), { ink });
   });
   put(
     18,

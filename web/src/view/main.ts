@@ -18,7 +18,7 @@ app.innerHTML = `
     </form>
   </section>
   <pre id="transcript" class="sr-only" aria-live="polite" aria-atomic="true"></pre>
-  <p class="build-note">Play league and cup matches, buy players and manage your club.<br />Name editing and saves are coming next.</p>
+  <p class="build-note">Play league and cup matches, edit names and manage your club.<br />Saving is coming next.</p>
   <button id="reload" type="button" hidden>Load game again</button>
   <p id="notice" class="notice" role="status"></p>
 `;
@@ -55,9 +55,14 @@ const render = (clearInput = true) => {
   canvas.hidden = !playing;
   screen.hidden = playing;
   screen.classList.toggle('cleared', session.screen === 'cleared');
+  screen.classList.toggle('full-screen', display.lines.length === 24);
   reload.hidden = session.screen !== 'cleared';
   if (session.screen === 'cleared') {
     notice.textContent = 'Game cleared. Load it again to start a new game.';
+  }
+  if (session.screen === 'names' && session.nameEditor!.phase === 'fault') {
+    notice.textContent =
+      'Name editing stopped. Reload the page to start a new game.';
   }
   if (playing && current) {
     const game = session.game!;
@@ -68,10 +73,10 @@ const render = (clearInput = true) => {
       session.playback!.score,
       game.clubs[
         (session.fixture!.home ? game.club : session.fixture!.opponent) - 1
-      ]!.name,
+      ]!,
       game.clubs[
         (session.fixture!.home ? session.fixture!.opponent : game.club) - 1
-      ]!.name
+      ]!
     );
     if (audioKey !== session.playback!.key) {
       beeper.play(current.frame.tones);

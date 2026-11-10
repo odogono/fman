@@ -1,5 +1,6 @@
 import { levels } from '../sim/catalogue';
 import type { Game, Player } from '../sim/management';
+import { clubInk, clubText } from '../sim/names';
 
 export type Cell = {
   bright: boolean;
@@ -18,8 +19,9 @@ export type Paint = (
 ) => void;
 
 export const paintStatus = (game: Game, put: Paint) => {
-  put(0, 0, game.clubs[game.club - 1]!.name);
-  put(0, 16, `Colours = ${game.colour === 0 ? 'Black' : 'White'}`);
+  const ink = clubInk(game.clubs[game.club - 1]!);
+  put(0, 0, clubText(game.clubs[game.club - 1]!), { ink });
+  put(0, 16, `Colours = ${game.colour === 0 ? 'Black' : 'White'}`, { ink });
   put(2, 0, `Manager : ${game.manager}`);
   put(4, 0, `Managerial Rating(Max 100)= ${game.rating}`, {
     ink: 2,

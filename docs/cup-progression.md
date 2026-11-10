@@ -29,4 +29,4 @@ The optional adapter uses SkoolKit 10.2, validates the original BASIC hash befor
 
 ## Remaining scope
 
-[Season changes](season-progression.md) are now implemented. [Dismissal and reloading](dismissal-restart.md) are now implemented. Name editing and saves remain unavailable. Result/billing calculation still uses the documented atomic bills boundary; existing browser input, timing and rendering limits remain.
+[Season changes](season-progression.md) are now implemented. [Dismissal and reloading](dismissal-restart.md) are now implemented. [Name editing](name-editing.md) is now implemented. Saving remains unavailable. Result/billing calculation still uses the documented atomic bills boundary; existing browser input, timing and rendering limits remain.

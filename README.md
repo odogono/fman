@@ -6,8 +6,8 @@ is the original game's behaviour and presentation; enhancements follow later.
 Currently supports setup, management, home/away league fixtures and all eight
 cup rounds (including replays), with selection, highlights, tables, bills and
 transfers, season bonuses, promotion/relegation and new-season resets.
-Debt-cap dismissal and explicit reloading are supported. Name editing and
-saving remain in progress. Exact interpreter pacing and ROM-pixel rendering are not yet established.
+Debt-cap dismissal, explicit reloading and club/player name editing are supported.
+Saving remains in progress. Exact interpreter pacing and ROM-pixel rendering are not yet established.
 
 ```sh
 bun install
@@ -24,5 +24,6 @@ See the [original-game analysis](docs/original-game-analysis.md),
 [league continuation](docs/league-progression.md), plus
 [complete cup progression](docs/cup-progression.md) and
 [season progression](docs/season-progression.md) and
-[dismissal/reloading](docs/dismissal-restart.md).
+[dismissal/reloading](docs/dismissal-restart.md) and
+[name editing](docs/name-editing.md).
 Original game files belong under gitignored `roms/` and must never be committed.

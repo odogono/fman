@@ -2,7 +2,7 @@
 
 The first playable match extends [fresh-game management](fresh-game-management.md): type `99` at the management menu, review the fixture and team strengths, adjust the picked team, then watch highlights and continue through the final score, other results, league table and weekly bills.
 
-This increment ends after the first league cycle. Subsequent fixtures, the cup, buying players, season progression, name editing and saving remain unavailable. After the bills page, this build returns to management and explicitly refuses another fixture. The original would instead proceed to the transfer market; that continuation has not been substituted with invented game rules.
+This increment ends after the first league cycle. Subsequent fixtures, the cup, season progression, name editing and saving remain unavailable. The subsequent [transfer-market increment](transfer-market.md) now continues from bills to buying players before returning to management. Another fixture is explicitly unavailable.
 
 ## Pre-match selection
 

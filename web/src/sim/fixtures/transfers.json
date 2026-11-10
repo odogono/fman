@@ -1,0 +1,225 @@
+{
+  "initial": {
+    "m": 106992.0,
+    "l": 40000,
+    "d1": 3,
+    "ml": 1,
+    "p(24)": [
+      2, 1, 2, 1, 0, 0, 2, 0, 0, 0, 2, 0, 2, 0, 2, 2, 1, 2, 2, 2, 0, 0, 0, 2
+    ],
+    "r(24)": [
+      2, 2, 3, 4, 4, 3, 2, 2, 5, 3, 3, 4, 4, 3, 3, 4, 3, 5, 4, 4, 5, 1, 4, 2
+    ],
+    "y(24)": [
+      3, 4, 5, 6, 13, 6, 2, 8, 2, 15, 15, 5, 19, 4, 11, 19, 10, 18, 16, 13, 14,
+      13, 3, 10
+    ],
+    "v(24)": [
+      20000, 20000, 30000, 40000, 40000, 30000, 20000, 20000, 50000, 30000,
+      30000, 40000, 40000, 30000, 30000, 40000, 30000, 50000, 40000, 40000,
+      50000, 10000, 40000, 20000
+    ]
+  },
+  "records": [
+    {
+      "seed": 0,
+      "bid": 0,
+      "playerId": 5,
+      "offerSeed": 12409,
+      "afterSeed": 13231,
+      "cash": 106992.0,
+      "status": 0,
+      "value": 48000
+    },
+    {
+      "seed": 0,
+      "bid": 10000,
+      "playerId": 5,
+      "offerSeed": 12409,
+      "afterSeed": 13231,
+      "cash": 106992.0,
+      "status": 0,
+      "value": 48000
+    },
+    {
+      "seed": 0,
+      "bid": 50000,
+      "playerId": 5,
+      "offerSeed": 12409,
+      "afterSeed": 13231,
+      "cash": 106992.0,
+      "status": 0,
+      "value": 48000
+    },
+    {
+      "seed": 0,
+      "bid": 999999,
+      "playerId": 5,
+      "offerSeed": 12409,
+      "afterSeed": 12409,
+      "cash": 106992.0,
+      "status": 0,
+      "value": 40000
+    },
+    {
+      "seed": 1,
+      "bid": 0,
+      "playerId": 5,
+      "offerSeed": 11249,
+      "afterSeed": 57305,
+      "cash": 106992.0,
+      "status": 0,
+      "value": 48000
+    },
+    {
+      "seed": 1,
+      "bid": 10000,
+      "playerId": 5,
+      "offerSeed": 11249,
+      "afterSeed": 57305,
+      "cash": 106992.0,
+      "status": 0,
+      "value": 48000
+    },
+    {
+      "seed": 1,
+      "bid": 50000,
+      "playerId": 5,
+      "offerSeed": 11249,
+      "afterSeed": 57305,
+      "cash": 56992.0,
+      "status": 1,
+      "value": 40000
+    },
+    {
+      "seed": 1,
+      "bid": 999999,
+      "playerId": 5,
+      "offerSeed": 11249,
+      "afterSeed": 11249,
+      "cash": 106992.0,
+      "status": 0,
+      "value": 40000
+    },
+    {
+      "seed": 42,
+      "bid": 0,
+      "playerId": 14,
+      "offerSeed": 37698,
+      "afterSeed": 9333,
+      "cash": 106992.0,
+      "status": 0,
+      "value": 36000
+    },
+    {
+      "seed": 42,
+      "bid": 10000,
+      "playerId": 14,
+      "offerSeed": 37698,
+      "afterSeed": 9333,
+      "cash": 106992.0,
+      "status": 0,
+      "value": 36000
+    },
+    {
+      "seed": 42,
+      "bid": 50000,
+      "playerId": 14,
+      "offerSeed": 37698,
+      "afterSeed": 9333,
+      "cash": 106992.0,
+      "status": 0,
+      "value": 36000
+    },
+    {
+      "seed": 42,
+      "bid": 999999,
+      "playerId": 14,
+      "offerSeed": 37698,
+      "afterSeed": 37698,
+      "cash": 106992.0,
+      "status": 0,
+      "value": 30000
+    },
+    {
+      "seed": 219,
+      "bid": 0,
+      "playerId": 22,
+      "offerSeed": 57833,
+      "afterSeed": 12107,
+      "cash": 106992.0,
+      "status": 0,
+      "value": 12000
+    },
+    {
+      "seed": 219,
+      "bid": 10000,
+      "playerId": 22,
+      "offerSeed": 57833,
+      "afterSeed": 12107,
+      "cash": 106992.0,
+      "status": 0,
+      "value": 12000
+    },
+    {
+      "seed": 219,
+      "bid": 50000,
+      "playerId": 22,
+      "offerSeed": 57833,
+      "afterSeed": 12107,
+      "cash": 56992.0,
+      "status": 1,
+      "value": 10000
+    },
+    {
+      "seed": 219,
+      "bid": 999999,
+      "playerId": 22,
+      "offerSeed": 57833,
+      "afterSeed": 57833,
+      "cash": 106992.0,
+      "status": 0,
+      "value": 10000
+    },
+    {
+      "seed": 65535,
+      "bid": 0,
+      "playerId": 22,
+      "offerSeed": 59911,
+      "afterSeed": 36883,
+      "cash": 106992.0,
+      "status": 0,
+      "value": 12000
+    },
+    {
+      "seed": 65535,
+      "bid": 10000,
+      "playerId": 22,
+      "offerSeed": 59911,
+      "afterSeed": 36883,
+      "cash": 96992.0,
+      "status": 1,
+      "value": 10000
+    },
+    {
+      "seed": 65535,
+      "bid": 50000,
+      "playerId": 22,
+      "offerSeed": 59911,
+      "afterSeed": 36883,
+      "cash": 56992.0,
+      "status": 1,
+      "value": 10000
+    },
+    {
+      "seed": 65535,
+      "bid": 999999,
+      "playerId": 22,
+      "offerSeed": 59911,
+      "afterSeed": 59911,
+      "cash": 106992.0,
+      "status": 0,
+      "value": 10000
+    }
+  ]
+}

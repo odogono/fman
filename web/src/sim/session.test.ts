@@ -119,9 +119,49 @@ test('plays the first league match through selection, highlights, table and bill
   expect(session.screen).toBe('bills');
   expect(session.game!.cash).toBeGreaterThan(0);
   session.submit('');
+  expect(session.screen).toBe('transfer');
+  session.submit('99');
   expect(session.screen).toBe('menu');
   expect(session.submit('99')).toEqual({
     feature: 'Next fixture',
     type: 'unavailable'
   });
+});
+
+test('transfer bids retry the same player; joining and declining return through the original reseed boundary', () => {
+  const session = setup();
+  session.submit('99');
+  session.submit('');
+  session.submit('99');
+  session.advance(1_000_000);
+  for (let i = 0; i < 4; i++) {
+    session.submit('');
+  }
+  expect(session.screen).toBe('transfer');
+  const id = session.transfer!.playerId;
+  const cash = session.game!.cash;
+  const seed = session.game!.seed;
+  expect(session.submit('h')).toEqual({ type: 'copy' });
+  session.submit('no');
+  expect(session.game!.seed).toBe(seed);
+  session.submit(String(cash + 1));
+  expect(session.message).toBe("You haven't enough money!");
+  expect(session.game!.seed).toBe(seed);
+  session.submit('');
+  expect(session.screen).toBe('transfer');
+  session.submit('');
+  expect(session.message).toBe('YOUR BID IS REFUSED');
+  session.submit('');
+  expect(session.transfer!.playerId).toBe(id);
+  const owned = session.game!.players.filter(p => p.status > 0).length;
+  session.submit(String(cash));
+  expect(session.game!.players.filter(p => p.status > 0)).toHaveLength(
+    owned + 1
+  );
+  expect(session.game!.players[id - 1]!.status).toBe(1);
+  expect(session.game!.cash).toBe(0);
+  expect(session.screen).toBe('transfer-result');
+  session.submit('');
+  expect(session.screen).toBe('menu');
+  expect(session.game!.seed).toBe(session.frames % 65_536);
 });

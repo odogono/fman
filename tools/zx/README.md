@@ -29,6 +29,7 @@ Each writes `build/zx/<name>.json`; format it with Prettier and compare it to it
 | `capture-dismissal.ts`                | `10-bills.z80`                            | `dismissal.json`          |
 | `capture-compatibility.ts`            | (none; optional sample count)             | `spectrum-rom.json`       |
 | `capture-timing.ts`                   | `timing-start.z80`, via input script      | `spectrum-timing.json`    |
+| `capture-pacing.ts`                   | `timing-start.z80`, separate input script | `spectrum-pacing.json`    |
 | `capture-timing.ts --frame-reseeding` | `timing-start.z80`, separate input script | `frame-reseeding.json`    |
 
 The [timing reference](../../docs/spectrum-timing.md) has its own preparation
@@ -41,3 +42,8 @@ timed starting states.
 The [frame/reseed capture](../../docs/frame-clock-and-reseeding.md) reuses that
 adapter without video/audio output and executes the full ROM SAVE. Its separate
 script preserves #24's corpus and records actual RANDOMIZE entry/exit state.
+
+The [pacing capture](../../docs/highlight-pacing.md) adds BASIC dispatch,
+character-print and DRAW boundaries to the same reference runs, plus manager
+and changed-level validation errors. `pacing-costs.ts` derives the production
+execution budgets from these numeric observations with PAUSE/BEEPER waits removed.

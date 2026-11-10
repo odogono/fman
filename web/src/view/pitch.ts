@@ -31,22 +31,35 @@ const colours = [
   [255, 255, 255]
 ];
 type Line = readonly [number, number];
-const pitch = (right: boolean) => {
+const pitch = (right: boolean, progress = Infinity) => {
+  // The last BASIC DRAW contains the eight arc chords.
+  const limit = progress <= 29 ? progress : 29 + (progress - 29) * 8;
+  let command = 0;
   const bits = new Uint8Array(256 * 176);
-  const plot = (x: number, y: number) => {
+  const pixel = (x: number, y: number) => {
     if (x >= 0 && x < 256 && y >= 0 && y < 176) {
       bits[(175 - y) * 256 + x] = 1;
     }
   };
+  const plot = (x: number, y: number) => {
+    if (++command <= limit) {
+      pixel(x, y);
+    }
+  };
   const line = (x: number, y: number, endX: number, endY: number) => {
+    const fraction = Math.min(1, Math.max(0, limit - command++));
+    if (fraction === 0) {
+      return;
+    }
     const dx = Math.abs(endX - x),
       dy = -Math.abs(endY - y);
     const sx = x < endX ? 1 : -1,
       sy = y < endY ? 1 : -1;
     let error = dx + dy;
+    let remaining = Math.ceil(Math.max(dx, -dy) * fraction);
     while (true) {
-      plot(x, y);
-      if (x === endX && y === endY) {
+      pixel(x, y);
+      if ((x === endX && y === endY) || remaining-- <= 0) {
         break;
       }
       const twice = error * 2;
@@ -154,7 +167,13 @@ export const rasterizeAttack = (
   attack: Attack,
   index: number
 ): Uint8ClampedArray<ArrayBuffer> => {
-  const bits = pitches[attack.direction].slice();
+  const progress = attack.frames
+    .slice(0, index + 1)
+    .findLast(frame => frame.pitch !== undefined)?.pitch;
+  const bits =
+    progress === undefined || progress >= 30
+      ? pitches[attack.direction].slice()
+      : pitch(attack.direction === 'right', progress);
   const inks = new Uint8Array(22 * 32).fill(6);
   const draw = ({ glyph, ink, x, y }: SpriteDraw) => {
     inks[y * 32 + x] = ink;
@@ -215,19 +234,27 @@ export const paintAttack = (
   if (!outcome) {
     return;
   }
+  const shown =
+    attack.frames
+      .slice(0, index + 1)
+      .findLast(frame => frame.outcomeChars !== undefined)?.outcomeChars ??
+    Infinity;
   if (outcome.kind === 'miss') {
     context.fillStyle = '#d7d7d7';
-    context.fillRect(80, 8, 64, 8);
+    context.fillRect(80, 8, Math.min(8, shown) * 8, 8);
     context.fillStyle = '#000';
-    context.fillText('NO GOAL!', 80, 8);
+    context.fillText('NO GOAL!'.slice(0, shown), 80, 8);
     return;
   }
   context.fillStyle = '#f00';
-  context.fillRect(0, 0, 256, 32);
   context.fillStyle = '#ff0';
-  for (const [i, character] of [...banner].entries()) {
+  for (let i = 0; i < Math.min(banner.length, shown); i++) {
+    const character = banner[i]!;
     const x = (i % 32) * 8,
       y = Math.floor(i / 32) * 8;
+    context.fillStyle = '#f00';
+    context.fillRect(x, y, 8, 8);
+    context.fillStyle = '#ff0';
     if (character === '█') {
       context.fillRect(x, y, 8, 8);
     } else if (character === '▄') {
@@ -236,8 +263,16 @@ export const paintAttack = (
       context.fillText(character, x, y);
     }
   }
+  const scoreShown =
+    attack.frames
+      .slice(0, index + 1)
+      .findLast(frame => frame.scoreChars !== undefined)?.scoreChars ??
+    Infinity;
+  if (scoreShown === 0) {
+    return;
+  }
   context.fillStyle = '#d7d7d7';
-  context.fillRect(0, 32, 256, 8);
+  context.fillRect(0, 32, Math.min(32, scoreShown) * 8, 8);
   const palette = [
     '#000',
     '#0000d7',
@@ -249,9 +284,21 @@ export const paintAttack = (
     '#d7d7d7'
   ];
   context.fillStyle = palette[clubInk(home)]!;
-  context.fillText(clubText(home), 0, 32);
-  context.fillText(String(score[0]), 96, 32);
+  context.fillText(clubText(home).slice(0, scoreShown), 0, 32);
+  context.fillText(
+    String(score[0]).slice(0, Math.max(0, scoreShown - 12)),
+    96,
+    32
+  );
   context.fillStyle = palette[clubInk(away, clubInk(home))]!;
-  context.fillText(clubText(away), 128, 32);
-  context.fillText(String(score[1]), 224, 32);
+  context.fillText(
+    clubText(away).slice(0, Math.max(0, scoreShown - 16)),
+    128,
+    32
+  );
+  context.fillText(
+    String(score[1]).slice(0, Math.max(0, scoreShown - 28)),
+    224,
+    32
+  );
 };

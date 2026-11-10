@@ -21,10 +21,15 @@ const checkpoint = (name: string, kind: string, line: number, index = 0) => {
   }
   return { ...event, romFrames: event.romFrames, seed: event.seed };
 };
-const advanceTo = (session: Session, frames: number) =>
+const advanceTo = (session: Session, frames: number) => {
   session.advance((frames - session.view.frames + framePeriod) % framePeriod);
+  // This test supplies observed serviced-interrupt counts. Playback now loses
+  // interrupts during BEEPER; finish the supplied boundary after playback.
+  session.advance((frames - session.view.frames + framePeriod) % framePeriod);
+};
 const setup = (name: string) => {
-  const session = createSession();
+  const session = createSession(2 ** 24 - 5);
+  session.advance(5);
   session.skipPause();
   for (const text of ['alex', '1', '1']) {
     session.submit(text);

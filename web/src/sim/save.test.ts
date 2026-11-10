@@ -11,7 +11,8 @@ import { viewOn } from './view-on';
 const fresh = () =>
   createNewGame({ club: 1, colour: 0, level: 1, manager: 'alex', seed: 219 });
 const setup = () => {
-  const s = createSession();
+  const s = createSession(2 ** 24 - 5);
+  s.advance(5);
   s.skipPause();
   for (const text of ['alex', '1', '1', '0']) {
     s.submit(text);

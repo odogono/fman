@@ -179,7 +179,8 @@ export const paintMatch = (view: MatchView, put: Paint) => {
         paintCupVictory(
           put,
           view.celebration,
-          Math.floor(view.frames / 16) % 2 === 1
+          Math.floor((view.ulaFrames ?? view.frames) / 16) % 2 === 1,
+          view.celebrationProgress
         );
         if (view.screen === 'cup-result') {
           prompt = 'Hit ENTER to continue';

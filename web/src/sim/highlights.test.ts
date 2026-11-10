@@ -67,9 +67,20 @@ test('a collision holds the kicking sprite during its two beeps before restoring
     homeInk: 0,
     seed: reference.initial.seed
   });
-  const collision = attack.frames.findIndex(frame => frame.tones.length === 2);
+  const collision = attack.frames.findIndex(
+    frame => frame.checkpoint === 'collision'
+  );
   expect(collision).toBeGreaterThanOrEqual(0);
-  const kicking = attack.frames[collision]!.draws.at(-1)!;
+  const kicking = attack.frames
+    .slice(0, collision + 1)
+    .flatMap(frame => frame.draws)
+    .at(-1)!;
   expect([13, 14]).toContain(kicking.glyph);
-  expect(attack.frames[collision + 1]!.draws[0]?.glyph).toBe(kicking.glyph);
+  const following = attack.frames.slice(collision + 1);
+  const restored = following.findIndex(frame => frame.draws.length > 0);
+  expect(following.slice(0, restored).flatMap(frame => frame.tones)).toEqual([
+    { duration: 0.15, pitch: -30 },
+    { duration: 0.08, pitch: -40 }
+  ]);
+  expect(following[restored]!.draws[0]?.glyph).toBe(kicking.glyph);
 });

@@ -67,6 +67,10 @@ These comparisons and the running app reported no page errors.
 Hashes cover stable pre-outcome frames, not every intermediate BASIC printing
 instruction or 50 Hz video frame. They exclude the goal banner/score overlay
 and NO GOAL text, whose redrawn font has not been established as ROM-pixel exact.
-Animation durations, BASIC instruction costs and beeper accuracy remain at the
-previously documented provisional fidelity. Competition rules, RNG, sprite
-simulation and save format are unchanged.
+[Measured pacing](highlight-pacing.md) now schedules progressive pitch drawing,
+individual sprite PRINTs and outcome text with execution-path budgets. Stable
+pixel checks use semantic checkpoints instead of duration constants; all 766
+states remain equal. Competition rules, RNG and sprite simulation are preserved.
+The changed playback contract uses version-3 journals; see
+[save compatibility](highlight-pacing.md#saves-and-reproduction). Instruction-exact
+execution and exact audible beeper playback remain unverified.

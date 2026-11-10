@@ -33,7 +33,8 @@ const compare = (
 };
 for (const [index, episode] of observations.edits.entries()) {
   test(`native ${episode.kind} scrolling episode ${index}`, () => {
-    const s = createSession();
+    const s = createSession(2 ** 24 - 5);
+    s.advance(5);
     s.skipPause();
     for (const text of ['alex', '1', '1', '0', 'change']) {
       s.submit(text);

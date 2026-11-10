@@ -33,17 +33,6 @@ test('XOR drawing and erasing a sprite restores the pitch beneath it', () => {
   expect(Buffer.from(erased).equals(Buffer.from(before))).toBe(true);
 });
 
-const category = (duration: number) =>
-  duration === 1
-    ? 'initial'
-    : duration === 30
-      ? 'dribble'
-      : duration === 8
-        ? 'release'
-        : duration === 11.5
-          ? 'collision'
-          : 'ball';
-
 for (const direction of ['left', 'right'] as const) {
   test(`original ${direction} pitch pixels`, () => {
     const attack: Attack = {
@@ -73,13 +62,17 @@ for (const game of observations.cases) {
         homeInk: native.homeInk,
         seed: native.seed
       });
-      const draws = attack.frames.filter(frame => frame.kind === 'draw');
+      const draws = attack.frames.flatMap((frame, index) =>
+        frame.checkpoint ? [{ frame, index }] : []
+      );
 
       expect(native.frames.map(frame => frame.kind)).toEqual(
-        draws.map(frame => category(frame.duration))
+        draws.map(({ frame }) => frame.checkpoint!)
       );
       for (const [frame, observed] of native.frames.entries()) {
-        expect(hash(rasterizeAttack(attack, frame))).toBe(observed.rgba);
+        expect(hash(rasterizeAttack(attack, draws[frame]!.index))).toBe(
+          observed.rgba
+        );
       }
     });
   }

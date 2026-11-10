@@ -1,60 +1,52 @@
-import type { simulateHighlights } from './highlights';
+import type { HighlightFrame, simulateHighlights } from './highlights';
+import type { PauseKeyboard } from './pause-keyboard';
+import { createTimeline } from './timeline';
 
 export type HighlightResult = ReturnType<typeof simulateHighlights>;
-export const createPlayback = (result: HighlightResult) => {
-  let attackIndex = 0;
-  let index = 0;
-  let remaining = result.attacks[0]?.frames[0]?.duration ?? 0;
+export const createPlayback = (
+  result: HighlightResult,
+  keyboard?: PauseKeyboard,
+  phase = 0,
+  observe?: (frame: HighlightFrame, t: number) => void
+) => {
   const score = [0, 0];
-  const current = () => {
-    const attack = result.attacks[attackIndex];
-    const frame = attack?.frames[index];
-    return frame && attack ? { attack, attackIndex, frame, index } : undefined;
-  };
-  const advance = (frames: number) => {
-    if (!Number.isFinite(frames) || frames < 0) {
-      throw new RangeError('Invalid playback duration');
-    }
-    while (current() && frames >= remaining) {
-      frames -= remaining;
-      index++;
-      if (index >= result.attacks[attackIndex]!.frames.length) {
-        attackIndex++;
-        index = 0;
-      }
-      const next = current();
-      if (!next) {
-        break;
-      }
-      remaining = next.frame.duration;
-      if (next.frame.kind === 'goal') {
-        const side = next.attack.direction === 'right' ? 0 : 1;
+  const events = result.attacks.flatMap((attack, attackIndex) =>
+    attack.frames.map((frame, index) => ({
+      ...frame,
+      attack,
+      attackIndex,
+      frame,
+      index
+    }))
+  );
+  const timeline = createTimeline(
+    events,
+    keyboard,
+    (event, t) => {
+      observe?.(event, t);
+      if (event.kind === 'goal') {
+        const side = event.attack.direction === 'right' ? 0 : 1;
         score[side] = score[side]! + 1;
       }
-    }
-    if (current()) {
-      remaining -= frames;
-    }
-  };
+    },
+    phase
+  );
   return {
-    advance,
+    advance: timeline.advance,
+    advanceT: timeline.advanceT,
     get current() {
-      return current();
+      return timeline.current;
     },
     get done() {
-      return !current();
+      return timeline.done;
     },
     get key() {
-      return `${attackIndex}:${index}`;
+      return String(timeline.index);
     },
     get score(): readonly number[] {
       return score;
     },
-    skipPause: () => {
-      if (current()?.frame.kind === 'pause') {
-        advance(remaining);
-      }
-    }
+    skipPause: timeline.skipPause
   };
 };
 export type Playback = ReturnType<typeof createPlayback>;

@@ -1,5 +1,6 @@
-import { framePeriod } from './frame-clock';
+import { framePeriod, spectrumFrameT } from './frame-clock';
 import type { Game } from './management';
+import type { PauseKeyboardState } from './pause-keyboard';
 import { saveLimit, validGame } from './save';
 import { createSession, type Effect, type Session } from './session';
 
@@ -9,9 +10,22 @@ import { createSession, type Effect, type Session } from './session';
  * frames additively, so one merged advance reaches the same state.
  */
 export type JournalInput =
-  ['advance', number] | ['submit', string] | ['skip'] | ['saved'] | ['reload'];
+  | ['advance', number]
+  | ['submit', string]
+  | ['key', string]
+  | ['skip']
+  | ['saved']
+  | ['reload'];
 
-type Base = { frames: number; game: Game; kind: 'menu' } | { kind: 'title' };
+type Base =
+  | {
+      frames: number;
+      game: Game;
+      keyboard?: PauseKeyboardState;
+      kind: 'menu';
+      ulaFrames?: number;
+    }
+  | { kind: 'title' };
 
 const maxInputs = 5000;
 const invalid = () => new RangeError('Invalid Football Manager web save');
@@ -26,14 +40,19 @@ const record = (v: unknown): v is Record<string, unknown> =>
 export const createJournal = (base: Base = { kind: 'title' }) => {
   const session = createSession();
   if (base.kind === 'menu') {
-    session.resumeMenu(base.frames, base.game);
+    session.resumeMenu(base.frames, base.game, base.ulaFrames, base.keyboard);
   }
   let start = base;
   let inputs: JournalInput[] = [];
   const checkpoint = () => {
     const view = session.view;
     if (view.screen === 'menu') {
-      start = { frames: view.frames, game: view.game, kind: 'menu' };
+      start = {
+        ...session.timingState,
+        frames: view.frames,
+        game: view.game,
+        kind: 'menu'
+      };
       inputs = [];
     }
   };
@@ -48,7 +67,10 @@ export const createJournal = (base: Base = { kind: 'title' }) => {
       }
       session.advance(frames);
       const last = inputs.at(-1);
-      if (last?.[0] === 'advance') {
+      if (
+        last?.[0] === 'advance' &&
+        Number.isSafeInteger((last[1] + frames) * spectrumFrameT)
+      ) {
         last[1] += frames;
       } else {
         inputs.push(['advance', frames]);
@@ -69,6 +91,13 @@ export const createJournal = (base: Base = { kind: 'title' }) => {
       return done;
     },
     session: session as Session,
+    setKey: (key: string) => {
+      if (session.timingState.keyboard.key === key) {
+        return;
+      }
+      session.setKey(key);
+      log(['key', key]);
+    },
     skipPause: () => {
       session.skipPause();
       log(['skip']);
@@ -78,7 +107,7 @@ export const createJournal = (base: Base = { kind: 'title' }) => {
         base: start,
         format: 'fman-web',
         inputs,
-        version: 2
+        version: 3
       }),
     submit: (text: string): Effect | undefined => {
       const effect = session.submit(text);
@@ -95,8 +124,14 @@ const validInput = (v: unknown): v is JournalInput => {
   }
   switch (v[0]) {
     case 'advance':
-      return v.length === 2 && Number.isSafeInteger(v[1]) && v[1] > 0;
+      return (
+        v.length === 2 &&
+        Number.isSafeInteger(v[1]) &&
+        Number.isSafeInteger(v[1] * spectrumFrameT) &&
+        v[1] > 0
+      );
     case 'submit':
+    case 'key':
       return v.length === 2 && typeof v[1] === 'string' && v[1].length <= 256;
     case 'skip':
     case 'saved':
@@ -108,8 +143,9 @@ const validInput = (v: unknown): v is JournalInput => {
 };
 
 /**
- * Restores a web save: version 2 resumes the exact session; version 1
- * resumes at the reseed boundary before management, as before.
+ * Restores a web save: version 3 resumes the exact session; version 1
+ * resumes at the reseed boundary before management. Version 2 accepts only
+ * an idle menu checkpoint, since its animation durations cannot replay exactly.
  */
 export const openSave = (data: string): Journal => {
   if (data.length > saveLimit) {
@@ -137,12 +173,22 @@ export const openSave = (data: string): Journal => {
   if (
     !record(value) ||
     value.format !== 'fman-web' ||
-    value.version !== 2 ||
+    (value.version !== 3 && value.version !== 2) ||
     Object.keys(value).length !== 4 ||
     !record(value.base) ||
     !Array.isArray(value.inputs) ||
     value.inputs.length > maxInputs ||
     !value.inputs.every(validInput)
+  ) {
+    throw invalid();
+  }
+  // A v2 menu checkpoint has the same Game/FRAMES boundary. An active v2
+  // journal used different animation durations and cannot be replayed exactly.
+  if (
+    value.version === 2 &&
+    (value.inputs.length > 0 ||
+      value.base.kind !== 'menu' ||
+      Object.keys(value.base).length !== 3)
   ) {
     throw invalid();
   }
@@ -152,13 +198,45 @@ export const openSave = (data: string): Journal => {
     start = { kind: 'title' };
   } else if (
     base.kind === 'menu' &&
-    Object.keys(base).length === 3 &&
+    (Object.keys(base).length === 3 || Object.keys(base).length === 5) &&
+    Object.keys(base).every(key =>
+      ['frames', 'game', 'kind', 'ulaFrames', 'keyboard'].includes(key)
+    ) &&
     Number.isInteger(base.frames) &&
     (base.frames as number) >= 0 &&
     (base.frames as number) < framePeriod &&
     validGame(base.game)
   ) {
-    start = { frames: base.frames as number, game: base.game, kind: 'menu' };
+    if (base.ulaFrames !== undefined || base.keyboard !== undefined) {
+      if (
+        !Number.isInteger(base.ulaFrames) ||
+        (base.ulaFrames as number) < 0 ||
+        (base.ulaFrames as number) >= framePeriod ||
+        !record(base.keyboard) ||
+        Object.keys(base.keyboard).length !== 4 ||
+        typeof base.keyboard.key !== 'string' ||
+        base.keyboard.key.length > 256 ||
+        typeof base.keyboard.scanned !== 'string' ||
+        base.keyboard.scanned.length > 256 ||
+        typeof base.keyboard.pending !== 'boolean' ||
+        !Number.isInteger(base.keyboard.repeat) ||
+        (base.keyboard.repeat as number) < 0 ||
+        (base.keyboard.repeat as number) > 35
+      ) {
+        throw invalid();
+      }
+    }
+    start = {
+      frames: base.frames as number,
+      game: base.game,
+      kind: 'menu',
+      ...(base.ulaFrames !== undefined
+        ? {
+            keyboard: base.keyboard as PauseKeyboardState,
+            ulaFrames: base.ulaFrames as number
+          }
+        : {})
+    };
   } else {
     throw invalid();
   }
@@ -174,6 +252,9 @@ export const openSave = (data: string): Journal => {
           break;
         case 'skip':
           journal.skipPause();
+          break;
+        case 'key':
+          journal.setKey(input[1]);
           break;
         case 'saved':
           journal.saved();

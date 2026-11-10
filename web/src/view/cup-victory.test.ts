@@ -2,7 +2,6 @@ import { expect, test } from 'bun:test';
 
 import { prepareCupMatch } from '../sim/cup';
 import { createNewGame } from '../sim/management';
-import { cupVictoryTones } from './cup-victory';
 import { makeScreen } from './screen';
 
 test('the final names its round and the trophy keeps nine star rows and flashing title colours', () => {
@@ -48,9 +47,31 @@ test('the final names its round and the trophy keeps nine star rows and flashing
   expect(flash.cells[32 + 12]!.inverse).toBe(normal.cells[32 + 12]!.inverse);
 });
 
-test('the victory sound uses nine original rising .2-second beeps', () => {
-  expect(cupVictoryTones.map(t => t.pitch)).toEqual([
-    1, 2, 3, 4, 5, 6, 7, 8, 9
-  ]);
-  expect(cupVictoryTones.every(t => t.duration === 0.2)).toBe(true);
+test('cup printing reveals partial trophy, title and star rows and flashes on ULA time', () => {
+  const game = createNewGame({
+    club: 1,
+    colour: 0,
+    level: 1,
+    manager: 'alex',
+    seed: 0
+  });
+  const view = {
+    celebration: 1,
+    celebrationProgress: { stars: 5, text: 12, trophy: 14 },
+    frames: 0,
+    game,
+    paused: true,
+    screen: 'cup-celebration' as const,
+    ulaFrames: 16
+  };
+  const screen = makeScreen(view);
+  expect(screen.cells[32 + 13]!.inverse).toBe(true);
+  expect(screen.cells[32 + 14]!.paper).toBe(7);
+  expect(screen.lines[11]!.trimEnd()).toBe('!!!!!!!!!You');
+  expect(screen.lines[12]!.trim()).toBe('');
+  expect(screen.lines[13]!.trimEnd()).toBe('*****');
+  expect(screen.lines[14]!.trim()).toBe('');
+  expect(screen.cells[11 * 32]!.inverse).toBe(false);
+  const next = makeScreen({ ...view, frames: 16, ulaFrames: 32 });
+  expect(next.cells[11 * 32]!.inverse).toBe(true);
 });

@@ -5,7 +5,8 @@ import { viewOn } from '../sim/view-on';
 import { makeScreen } from './screen';
 
 test('cup fixture, replay and score keep home/away order while the strength summary keeps the managed club first', () => {
-  const session = createSession();
+  const session = createSession(2 ** 24 - 5);
+  session.advance(5);
   session.skipPause();
   for (const text of ['alex', '1', '1', '0', '99', '', '99']) {
     session.submit(text);

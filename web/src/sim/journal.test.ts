@@ -37,8 +37,8 @@ test('a snapshot before setup completes replays to the same screen', () => {
   journal.advance(60);
   const restored = openSave(journal.snapshot());
   expect(state(restored)).toBe(state(journal));
-  restored.advance(120);
-  journal.advance(120);
+  restored.advance(124);
+  journal.advance(124);
   expect(state(restored)).toBe(state(journal));
   expect(restored.session.view.screen).toBe('manager');
 });
@@ -115,9 +115,53 @@ test('invalid snapshots are rejected', () => {
       base: { kind: 'title' },
       format: 'fman-web',
       inputs: [],
-      version: 3
+      version: 4
     })
   ]) {
     expect(() => openSave(data)).toThrow(RangeError);
+  }
+});
+
+test('version-2 migration accepts only the original idle menu checkpoint', () => {
+  const data = JSON.parse(setup().snapshot());
+  const legacy = {
+    ...data,
+    base: { frames: data.base.frames, game: data.base.game, kind: 'menu' },
+    version: 2
+  };
+  const restored = openSave(JSON.stringify(legacy));
+  expect(restored.session.view.game).toEqual(data.base.game);
+  expect(restored.session.view.frames).toBe(data.base.frames);
+  expect(JSON.parse(restored.snapshot()).version).toBe(3);
+  for (const invalid of [
+    { ...legacy, inputs: [['advance', 1]] },
+    { ...legacy, base: { kind: 'title' } },
+    { ...data, version: 2 }
+  ]) {
+    expect(() => openSave(JSON.stringify(invalid))).toThrow(RangeError);
+  }
+});
+
+test('menu checkpoints reject extra fields and incomplete or invalid keyboard state', () => {
+  const data = JSON.parse(setup().snapshot());
+  const base = data.base;
+  for (const invalid of [
+    {
+      frames: base.frames,
+      game: base.game,
+      kind: 'menu',
+      other: 2,
+      unexpected: 1
+    },
+    { ...base, unexpected: 1 },
+    { ...base, keyboard: undefined },
+    { ...base, ulaFrames: undefined },
+    { ...base, ulaFrames: 2 ** 24 },
+    { ...base, keyboard: { ...base.keyboard, repeat: 36 } },
+    { ...base, keyboard: { ...base.keyboard, pending: 'yes' } }
+  ]) {
+    expect(() => openSave(JSON.stringify({ ...data, base: invalid }))).toThrow(
+      RangeError
+    );
   }
 });

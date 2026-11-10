@@ -219,8 +219,8 @@ Input delivery and video sampling have no arbitrary universal one-instruction
 tolerance. Their individual requested/sample timestamps are retained, along
 with observed maximum lateness for each run. They bound this adapter's
 quantization, not physical hardware accuracy or permitted web pacing drift.
-The future web comparison must declare its own scheduling/sampling mapping
-and tolerance. A hardware comparison must establish machine/ULA phase and
+The [highlight/timed-screen comparison](highlight-pacing.md) declares its
+scheduling/sampling mapping and tolerances; future comparisons must do likewise. A hardware comparison must establish machine/ULA phase and
 electrical measurements first; no numeric hardware tolerance is claimed here.
 
 Host keyboard dispatch, OS/browser frame scheduling, monitor scanout, audio
@@ -228,8 +228,10 @@ buffering, speaker acoustics, browser file dialogs and browser printing are
 outside this clock. Web save/print adapters remain the accepted boundary in
 [ADR-0004](adr/0004-define-phase-one-fidelity-boundary.md). Tape loading and
 general command-console parity are not inferred from the isolated probe.
-These observations provide reference evidence for #25–#27; full web pacing,
-audio parity and uninterrupted multi-season comparisons remain #34's work.
+These observations provide reference evidence for #25–#27.
+[Measured pacing](highlight-pacing.md) now compares the covered web paths,
+including BEEPER interrupt losses. Complete-session pacing, audio parity and
+uninterrupted multi-season comparisons remain #34's work.
 
 The separate [frame/reseed capture](frame-clock-and-reseeding.md) now observes
 setup, status return, match return and full SAVE/continuation boundaries using

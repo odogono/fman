@@ -1,6 +1,7 @@
 import { expect, test } from 'bun:test';
 
 import { createSession } from '../sim/session';
+import { viewOn } from '../sim/view-on';
 import { makeScreen } from './screen';
 
 test('the market displays its player, current asking value and bid/copy prompts', () => {
@@ -13,8 +14,9 @@ test('the market displays its player, current asking value and bid/copy prompts'
   for (let i = 0; i < 4; i++) {
     session.submit('');
   }
-  const player = session.game!.players[session.transfer!.playerId - 1]!;
-  const display = makeScreen(session);
+  const player =
+    session.view.game!.players[viewOn(session, 'transfer').playerId - 1]!;
+  const display = makeScreen(session.view);
   expect(display.lines[0]).toBe('****Transfer Market****         ');
   expect(display.lines.join('\n')).toContain(player.name);
   expect(display.lines.join('\n')).toContain(`£${player.value}`);
@@ -23,6 +25,8 @@ test('the market displays its player, current asking value and bid/copy prompts'
   expect(display.numeric).toBe(true);
   session.submit('0');
   session.submit('');
-  const changed = session.game!.players[player.id - 1]!;
-  expect(makeScreen(session).lines.join('\n')).toContain(`£${changed.value}`);
+  const changed = session.view.game!.players[player.id - 1]!;
+  expect(makeScreen(session.view).lines.join('\n')).toContain(
+    `£${changed.value}`
+  );
 });

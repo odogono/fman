@@ -1,6 +1,7 @@
 import { clubs, levels } from '../sim/catalogue';
+import type { Game } from '../sim/management';
 import { clubInk, clubText } from '../sim/names';
-import type { Session } from '../sim/session';
+import type { View } from '../sim/session';
 import { paintBills, paintDismissal } from './bills';
 import {
   paintPlayer,
@@ -13,10 +14,9 @@ import { paintMatch } from './match-layouts';
 import { paintNames } from './name-layouts';
 import { paintSeason } from './season-layouts';
 
-export const makeScreen = (session: Session) => {
-  const fault =
-    session.screen === 'names' && session.nameEditor!.phase === 'fault';
-  const rows = session.screen === 'cleared' || fault ? 24 : 22;
+export const makeScreen = (view: View) => {
+  const fault = view.screen === 'names' && view.nameEditor.phase === 'fault';
+  const rows = view.screen === 'cleared' || fault ? 24 : 22;
   const cells: Cell[] = Array.from({ length: rows * 32 }, () => ({
     bright: false,
     ink: 0,
@@ -63,35 +63,30 @@ export const makeScreen = (session: Session) => {
         paper: index + 1 > 3 ? 0 : 7
       });
     });
-  const money = (row: number) =>
-    put(
-      row,
-      0,
-      `You've £${session.game!.cash}  You owe £${session.game!.debt}`
-    );
+  const money = (row: number, { cash, debt }: Pick<Game, 'cash' | 'debt'>) =>
+    put(row, 0, `You've £${cash}  You owe £${debt}`);
   let prompt = '';
   let label = 'Command';
   let numeric = false;
-  const game = session.game;
-  switch (session.screen) {
+  switch (view.screen) {
     case 'save-question':
       prompt = 'Do you want to play some more?';
       label = 'Continue playing, y or n';
       break;
     case 'names':
-      ({ label, numeric, prompt } = paintNames(session, put));
+      ({ label, numeric, prompt } = paintNames(view.nameEditor, put));
       break;
     case 'cleared':
       put(23, 0, '© 1982 Sinclair Research Ltd');
       break;
     case 'bills':
-      paintBills(session, put);
+      paintBills(view, put);
       prompt = 'Hit ENTER to continue';
       label = 'Continue';
       copy();
       break;
     case 'dismissal':
-      ({ label, numeric, prompt } = paintDismissal(session, put));
+      ({ label, numeric, prompt } = paintDismissal(view, put));
       break;
     case 'title':
       put(0, 0, 'FOOTBALL MANAGER');
@@ -108,7 +103,7 @@ export const makeScreen = (session: Session) => {
         inverse: true
       });
       put(1, 0, 'NUMBER          NAME', { ink: 1 });
-      const offset = (session.page - 1) * 16;
+      const offset = (view.page - 1) * 16;
       clubs.slice(offset, offset + 16).forEach((club, index) => {
         put(index + 2, 0, String(offset + index + 1));
         put(index + 2, 16, club.name, { ink: clubInk(club) });
@@ -125,9 +120,10 @@ export const makeScreen = (session: Session) => {
       break;
     }
     case 'level':
-      if (session.changingLevel) {
+      if (view.changing) {
+        const { level } = view.game;
         put(0, 0, 'Your present skill level is -');
-        put(1, 0, `Level ${game!.level}         ${levels[game!.level - 1]}`);
+        put(1, 0, `Level ${level}         ${levels[level - 1]}`);
         put(4, 0, 'The choices are -');
         choices(6);
         put(14, 0, 'Enter your chosen level number');
@@ -170,27 +166,27 @@ export const makeScreen = (session: Session) => {
       copy();
       break;
     case 'status':
-      paintStatus(game!, put);
+      paintStatus(view.game, put);
       prompt = 'Hit ENTER to continue';
       label = 'Continue to menu';
       copy();
       break;
     case 'squad': {
-      paintSquad(game!, put);
+      paintSquad(view.game, put);
       label = 'Player number to sell, or 99 to return';
       numeric = true;
       copy();
       break;
     }
     case 'sale': {
-      const offer = session.offer!;
-      const buyer = game!.clubs[offer.buyerId - 1]!;
+      const { game, offer } = view;
+      const buyer = game.clubs[offer.buyerId - 1]!;
       const ink = clubInk(buyer);
       put(0, 0, clubText(buyer), { ink });
       put(0, clubText(buyer).length, ' have offered £', { ink: 1 });
       put(0, clubText(buyer).length + 15, String(offer.amount));
-      put(2, 0, `for ${game!.players[offer.playerId - 1]!.name}`);
-      put(4, 0, `He is worth £${game!.players[offer.playerId - 1]!.value}`);
+      put(2, 0, `for ${game.players[offer.playerId - 1]!.name}`);
+      put(4, 0, `He is worth £${game.players[offer.playerId - 1]!.value}`);
       prompt = 'Do you accept? ';
       label = 'Accept sale, y or n';
       copy();
@@ -198,9 +194,9 @@ export const makeScreen = (session: Session) => {
     }
     case 'transfer':
       put(0, 0, '****Transfer Market****', { ink: 4, inverse: true });
-      money(3);
+      money(3, view.game);
       put(5, 0, '  NAME   NO. SKILL ENERGY VALUE', { bright: true, paper: 6 });
-      paintPlayer(game!.players[session.transfer!.playerId - 1]!, 6, put);
+      paintPlayer(view.game.players[view.playerId - 1]!, 6, put);
       put(8, 0, 'Type your bid (£)', { ink: 1, inverse: true });
       put(10, 0, 'OR type 99 to continue', { bright: true, paper: 6 });
       label = 'Bid in pounds, or 99 to decline';
@@ -208,11 +204,11 @@ export const makeScreen = (session: Session) => {
       copy();
       break;
     case 'transfer-result':
-      if (session.transfer!.fullSquad) {
+      if (view.fullSquad) {
         put(0, 0, '****Transfer Market****', { ink: 4, inverse: true });
-        put(3, 0, session.message, { ink: 3 });
+        put(3, 0, view.text, { ink: 3 });
       } else {
-        put(0, 0, session.message);
+        put(0, 0, view.text);
       }
       prompt = 'Hit ENTER to continue';
       label = 'Continue to management';
@@ -220,32 +216,38 @@ export const makeScreen = (session: Session) => {
       break;
     case 'borrow':
     case 'repay':
-      money(0);
+      money(0, view.game);
       put(
         3,
         0,
-        session.screen === 'borrow'
+        view.screen === 'borrow'
           ? 'Type loan amount required (£)'
           : 'Type amount you want to pay off your loan (£)',
         { ink: 1, inverse: true }
       );
       label =
-        session.screen === 'borrow'
+        view.screen === 'borrow'
           ? 'Loan amount in pounds'
           : 'Loan repayment in pounds';
       numeric = true;
       copy();
       break;
     case 'message':
-      if (session.message) {
-        put(0, 0, session.message);
-      } else {
-        money(0);
+      switch (view.message.kind) {
+        case 'text':
+          put(0, 0, view.message.text);
+          break;
+        case 'skill-level': {
+          const { level } = view.message;
+          put(0, 0, 'Your new skill level is -');
+          put(1, 0, `Level ${level}         ${levels[level - 1]}`);
+          break;
+        }
+        case 'balance':
+          money(0, view.message);
+          break;
       }
-      if (session.message === 'Your new skill level is -') {
-        put(1, 0, `Level ${game!.level}         ${levels[game!.level - 1]}`);
-      }
-      if (!session.paused) {
+      if (!view.paused) {
         prompt = 'Hit ENTER to continue';
         label = 'Continue';
         copy();
@@ -254,10 +256,10 @@ export const makeScreen = (session: Session) => {
     case 'end-season':
     case 'season-table':
     case 'season-summary':
-      ({ label, numeric, prompt } = paintSeason(session, put));
+      ({ label, numeric, prompt } = paintSeason(view, put));
       break;
     default:
-      ({ label, numeric, prompt } = paintMatch(session, put));
+      ({ label, numeric, prompt } = paintMatch(view, put));
   }
   return {
     cells,
@@ -269,7 +271,7 @@ export const makeScreen = (session: Session) => {
         .join('')
     ),
     numeric,
-    paused: session.paused || session.screen === 'cleared' || fault,
+    paused: view.paused || view.screen === 'cleared' || fault,
     prompt
   };
 };

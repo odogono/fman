@@ -1,19 +1,25 @@
 import { clubInk, clubText } from '../sim/names';
-import type { Session } from '../sim/session';
+import type { View } from '../sim/session';
 import { paintLeagueTable } from './league-table';
 import type { Paint } from './management-layouts';
 import { createPrintScreen } from './print-screen';
 
-export const paintSeason = (session: Session, put: Paint) => {
-  switch (session.screen) {
+export const paintSeason = (
+  view: Extract<
+    View,
+    { screen: 'end-season' | 'season-table' | 'season-summary' }
+  >,
+  put: Paint
+) => {
+  switch (view.screen) {
     case 'end-season':
       put(0, 0, '****End of Season****', { ink: 2, inverse: true });
       break;
     case 'season-table':
-      paintLeagueTable(session.game!, put);
+      paintLeagueTable(view.game, put);
       break;
     case 'season-summary': {
-      const season = session.season!;
+      const season = view.season;
       const print = createPrintScreen();
       const bonusStyle = { ink: 4, inverse: true };
       print.text('League Success Bonus Money =', bonusStyle);
@@ -45,7 +51,7 @@ export const paintSeason = (session: Session, put: Paint) => {
       print.text('****New Season****', { ink: 1, inverse: true });
       print.newline();
       print.tab(8);
-      print.text(`Division ${session.game!.division}`);
+      print.text(`Division ${view.game.division}`);
       print.paint(put);
       break;
     }

@@ -7,7 +7,6 @@ import {
   payWeeklyBills,
   type Player
 } from '../sim/management';
-import { createSession } from '../sim/session';
 import { makeScreen } from './screen';
 
 for (const observation of observations) {
@@ -31,22 +30,23 @@ for (const observation of observations) {
       })),
       previousNet: 50_000
     });
-    const session = {
-      ...createSession(),
+    const view = {
       bills: paid.bills,
+      frames: 0,
       game: paid.game,
+      paused: false,
       screen: isDismissed(paid.game)
         ? ('dismissal' as const)
         : ('bills' as const)
     };
-    expect(makeScreen(session).lines.map(line => line.trimEnd())).toEqual(
+    expect(makeScreen(view).lines.map(line => line.trimEnd())).toEqual(
       observation.dismissalScreen.slice(0, 22)
     );
   });
 }
 
 test('the cleared ROM idle screen has 24 rows, copyright and no game input', () => {
-  const display = makeScreen({ ...createSession(), screen: 'cleared' });
+  const display = makeScreen({ frames: 0, paused: false, screen: 'cleared' });
   const native = observations.find(r => r.programCleared)!;
   expect(display.lines.map(line => line.trimEnd())).toEqual(
     native.afterAcknowledgeScreen

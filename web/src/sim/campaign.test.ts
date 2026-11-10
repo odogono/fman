@@ -5,6 +5,7 @@ import { simulateHighlights } from './highlights';
 import { nextFixture, teamStrength, togglePickedPlayer } from './league';
 import type { Game } from './management';
 import { createSession } from './session';
+import { viewOn } from './view-on';
 
 const pickAvailable = (game: Game) => {
   let picked = game;
@@ -27,11 +28,11 @@ export const winningCampaign = () => {
   }
   for (let fixtureNumber = 0; fixtureNumber < 23; fixtureNumber++) {
     if (fixtureNumber > 0) {
-      expect(session.screen).toBe('transfer');
+      expect(session.view.screen).toBe('transfer');
       let seed = 0;
-      if (nextFixture(session.game!) === 'cup') {
+      if (nextFixture(session.view.game!) === 'cup') {
         for (; seed < 2000; seed++) {
-          const fixture = prepareCupMatch({ ...session.game!, seed });
+          const fixture = prepareCupMatch({ ...session.view.game!, seed });
           const game = pickAvailable(refreshPlayers(fixture.game));
           const highlights = simulateHighlights({
             awayInk: fixture.home ? 7 : 0,
@@ -51,15 +52,17 @@ export const winningCampaign = () => {
         }
         expect(seed).toBeLessThan(2000);
       }
-      session.advance((seed - (session.frames % 65_536) + 65_536) % 65_536);
+      session.advance(
+        (seed - (session.view.frames % 65_536) + 65_536) % 65_536
+      );
       session.submit('99');
     }
     session.submit('99');
-    expect(session.screen).toBe('fixture');
+    expect(session.view.screen).toBe('fixture');
     session.submit('');
     session.submit('c');
-    for (const p of session.game!.players) {
-      if (session.game!.players.filter(p => p.status === 2).length >= 11) {
+    for (const p of session.view.game!.players) {
+      if (session.view.game!.players.filter(p => p.status === 2).length >= 11) {
         break;
       }
       if (p.status === 1) {
@@ -68,20 +71,21 @@ export const winningCampaign = () => {
     }
     session.submit('99');
     session.submit('99');
-    expect(session.screen).toBe('highlights');
+    expect(session.view.screen).toBe('highlights');
+    const cup = viewOn(session, 'highlights').fixture.kind === 'cup';
     session.advance(1_000_000);
     session.submit('');
-    if (session.game!.cupRound === 8 && session.fixture!.kind === 'cup') {
+    if (session.view.game!.cupRound === 8 && cup) {
       return session;
     }
-    if (session.screen === 'cup-result') {
+    if (session.view.screen === 'cup-result') {
       session.submit('');
     } else {
-      expect(session.screen).toBe('other-matches');
+      expect(session.view.screen).toBe('other-matches');
       session.submit('');
       session.submit('');
     }
-    expect(session.screen).toBe('bills');
+    expect(session.view.screen).toBe('bills');
     session.submit('');
   }
   throw new Error('Final not reached');
@@ -89,33 +93,35 @@ export const winningCampaign = () => {
 
 test('a complete winning campaign reaches the final after league match fifteen and celebrates without a skip', () => {
   const session = winningCampaign();
-  expect(session.game!.leagueMatches).toBe(15);
-  expect(session.game!.cupFinished).toBe(true);
-  expect(session.screen).toBe('cup-celebration');
-  const seed = session.game!.seed;
+  expect(session.view.game!.leagueMatches).toBe(15);
+  expect(session.view.game!.cupFinished).toBe(true);
+  expect(session.view.screen).toBe('cup-celebration');
+  const seed = session.view.game!.seed;
   session.skipPause();
-  expect(session.screen).toBe('cup-celebration');
+  expect(session.view.screen).toBe('cup-celebration');
   session.advance(89);
-  expect(session.screen).toBe('cup-celebration');
+  expect(session.view.screen).toBe('cup-celebration');
   session.advance(1);
-  expect(session.screen).toBe('cup-result');
-  expect(session.cupWon).toBe(true);
-  expect(session.game!.seed).toBe(seed);
+  expect(session.view.screen).toBe('cup-result');
+  expect(viewOn(session, 'cup-result').celebration).toBe(9);
+  expect(session.view.game!.seed).toBe(seed);
   session.submit('');
-  expect(session.screen).toBe('bills');
-  const old = session.game!;
+  expect(session.view.screen).toBe('bills');
+  const old = session.view.game!;
   session.submit('');
-  expect(session.screen).toBe('end-season');
+  expect(session.view.screen).toBe('end-season');
   session.submit('');
   session.submit('');
-  expect(session.screen).toBe('season-summary');
-  expect(session.game!.cash).toBe(old.cash + session.season!.bonus);
-  expect(session.game!.previousNet).toBe(old.previousNet);
-  expect(session.game!.seasons).toBe(1);
-  expect(session.game!.players.map(p => p.status)).toEqual(
+  expect(session.view.screen).toBe('season-summary');
+  expect(session.view.game!.cash).toBe(
+    old.cash + viewOn(session, 'season-summary').season.bonus
+  );
+  expect(session.view.game!.previousNet).toBe(old.previousNet);
+  expect(session.view.game!.seasons).toBe(1);
+  expect(session.view.game!.players.map(p => p.status)).toEqual(
     old.players.map(p => p.status)
   );
   session.submit('');
-  expect(session.screen).toBe('menu');
-  expect(session.game!.seed).toBe(session.frames % 65_536);
+  expect(session.view.screen).toBe('menu');
+  expect(session.view.game!.seed).toBe(session.view.frames % 65_536);
 });

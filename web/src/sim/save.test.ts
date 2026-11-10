@@ -6,6 +6,7 @@ import { renameClub, renamePlayer } from './names';
 import { decodeSave, encodeSave } from './save';
 import { completeSeason } from './season';
 import { createSession } from './session';
+import { viewOn } from './view-on';
 
 const fresh = () =>
   createNewGame({ club: 1, colour: 0, level: 1, manager: 'alex', seed: 219 });
@@ -53,7 +54,7 @@ test('versioned save round-trips edited names, season state and highlight carry'
 
 test('invalid saves are rejected before a live session changes', () => {
   const s = setup();
-  const before = s.game;
+  const before = s.view.game;
   const baseline = JSON.parse(encodeSave(fresh(), 350));
   for (const text of [
     'broken',
@@ -70,36 +71,38 @@ test('invalid saves are rejected before a live session changes', () => {
     ' '.repeat(100_001)
   ]) {
     expect(() => s.load(text)).toThrow();
-    expect(s.game).toBe(before);
-    expect(s.screen).toBe('menu');
+    expect(s.view.game).toBe(before);
+    expect(s.view.screen).toBe('menu');
   }
 });
 
 test('saving waits for download acknowledgement; continuation and load share line 100', () => {
   const s = setup();
-  const before = s.game;
+  const before = s.view.game;
   const effect = s.submit('KEEP');
   expect(effect?.type).toBe('save');
   if (effect?.type !== 'save') {
     throw new Error('Expected save');
   }
   expect(decodeSave(effect.data).game).toEqual(before!);
-  expect(s.screen).toBe('menu');
-  expect(s.game).toBe(before);
+  expect(s.view.screen).toBe('menu');
+  expect(s.view.game).toBe(before);
   expect(s.saved()).toBe(true);
   s.advance(37);
   s.submit('YES');
-  expect(s.screen).toBe('menu');
-  expect(s.game!.seed).toBe(s.frames & 65_535);
+  expect(s.view.screen).toBe('menu');
+  expect(s.view.game!.seed).toBe(s.view.frames & 65_535);
   const loaded = createSession();
-  loaded.load(encodeSave(before!, s.frames));
-  expect(loaded.game).toEqual(s.game);
+  loaded.load(encodeSave(before!, s.view.frames));
+  expect(loaded.view.game).toEqual(s.view.game);
   for (const text of ['99', '', '99']) {
     s.submit(text);
     loaded.submit(text);
   }
-  expect(loaded.highlights).toEqual(s.highlights);
-  expect(loaded.game).toEqual(s.game);
+  s.advance(1_000_000);
+  loaded.advance(1_000_000);
+  expect(viewOn(loaded, 'result').score).toEqual(viewOn(s, 'result').score);
+  expect(loaded.view.game).toEqual(s.view.game);
 });
 
 for (const answer of ['n', '', 'Yes', 'h', 'H']) {
@@ -108,28 +111,32 @@ for (const answer of ['n', '', 'Yes', 'h', 'H']) {
     s.submit('keep');
     s.saved();
     s.submit(answer);
-    expect(s.screen).toBe('cleared');
-    expect(s.game).toBeUndefined();
+    expect(s.view.screen).toBe('cleared');
+    expect(s.view.game).toBeUndefined();
   });
 }
 
 test('a save can be loaded after clearing and replaces transient match state', () => {
   const s = setup();
-  const data = encodeSave(s.game!, 999);
+  const data = encodeSave(s.view.game!, 999);
   s.submit('99');
   s.submit('');
   s.submit('99');
   s.load(data);
-  expect(s.screen).toBe('menu');
-  expect(s.playback).toBeUndefined();
-  expect(s.fixture).toBeUndefined();
+  expect(s.view.screen).toBe('menu');
+  expect(Object.keys(s.view).sort()).toEqual([
+    'frames',
+    'game',
+    'paused',
+    'screen'
+  ]);
   s.submit('keep');
   s.saved();
   s.submit('n');
   s.load(data);
-  expect(s.game!.seed).toBe(999);
-  expect(s.frames).toBe(999);
-  expect(s.paused).toBe(false);
+  expect(s.view.game!.seed).toBe(999);
+  expect(s.view.frames).toBe(999);
+  expect(s.view.paused).toBe(false);
 });
 
 test('a midseason cup campaign and league table produce the same next fixture after decoding', () => {
@@ -160,8 +167,8 @@ for (const answer of ['y', 'Y', 'yes', 'YES']) {
     s.saved();
     s.advance(65_540);
     s.submit(answer);
-    expect(s.screen).toBe('menu');
-    expect(s.game!.seed).toBe(s.frames & 65_535);
+    expect(s.view.screen).toBe('menu');
+    expect(s.view.game!.seed).toBe(s.view.frames & 65_535);
   });
 }
 

@@ -5,7 +5,6 @@ import { prepareLeagueMatch } from '../sim/league';
 import { createNewGame, makeSaleOffer } from '../sim/management';
 import { createNameEditor } from '../sim/name-editor';
 import { decodeName, renameClub } from '../sim/names';
-import { createSession } from '../sim/session';
 import { makeScreen } from './screen';
 
 const fresh = () =>
@@ -21,9 +20,10 @@ for (const observed of observations.cases) {
     editor.submit('1');
     editor.submit(decodeName(observed.input));
     const display = makeScreen({
-      ...createSession(),
+      frames: 0,
       game: editor.game,
       nameEditor: editor,
+      paused: false,
       screen: 'names'
     });
     expect(display.lines.slice(0, 22).map(line => line.trimEnd())).toEqual(
@@ -41,9 +41,10 @@ test('renamed fixture clubs preserve native padding and inherited or explicit in
     const game = renameClub(fresh(), 49, decodeName(observed.input));
     const fixture = prepareLeagueMatch(game);
     const display = makeScreen({
-      ...createSession(),
       fixture,
+      frames: 0,
       game: fixture.game,
+      paused: false,
       screen: 'fixture'
     });
     expect(display.lines[2]!.trimEnd()).toBe(observed.line);
@@ -63,9 +64,10 @@ test('a renamed buyer retains its identity even when two clubs have the same nam
   game = renameClub(game, original.buyerId === 1 ? 2 : 1, 'Same');
   const offer = makeSaleOffer(game, 1);
   const display = makeScreen({
-    ...createSession(),
+    frames: 0,
     game: offer.game,
     offer,
+    paused: false,
     screen: 'sale'
   });
   expect(display.lines[0]).toContain('Same       have offered');

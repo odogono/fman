@@ -1,28 +1,50 @@
 import type { Club } from '../sim/catalogue';
-import { teamStrength } from '../sim/league';
+import { teamStrength, type MatchFixture } from '../sim/league';
+import type { Game } from '../sim/management';
 import { clubInk, clubText } from '../sim/names';
-import type { Session } from '../sim/session';
+import type { View } from '../sim/session';
 import { paintCupVictory } from './cup-victory';
 import { paintLeagueTable } from './league-table';
 import { paintSquad, type Paint } from './management-layouts';
 import { createPrintScreen } from './print-screen';
 
-export const paintMatch = (session: Session, put: Paint) => {
-  const game = session.game!;
-  const fixture = session.fixture!;
+export type MatchView = Extract<
+  View,
+  {
+    screen:
+      | 'fixture'
+      | 'team'
+      | 'selection'
+      | 'highlights'
+      | 'result'
+      | 'replay'
+      | 'cup-celebration'
+      | 'cup-result'
+      | 'other-matches'
+      | 'table';
+  }
+>;
+
+const sides = (game: Game, fixture: MatchFixture) => {
   const club = game.clubs[game.club - 1]!;
   const opponent = game.clubs[fixture.opponent - 1]!;
-  const home = fixture.home ? club : opponent;
-  const away = fixture.home ? opponent : club;
-  const opponentPosition =
-    game.league[fixture.opponent - (game.division - 1) * 16 - 1]?.position ?? 0;
+  return {
+    away: fixture.home ? opponent : club,
+    club,
+    home: fixture.home ? club : opponent,
+    opponent
+  };
+};
+
+export const paintMatch = (view: MatchView, put: Paint) => {
+  const game = view.game;
   let prompt = '';
   let label = 'Continue';
   let numeric = false;
   const score = (
     goals: readonly number[],
-    homeName: Club = home,
-    awayName: Club = away,
+    homeName: Club,
+    awayName: Club,
     row = 1
   ) => {
     const homeInk = clubInk(homeName),
@@ -32,8 +54,13 @@ export const paintMatch = (session: Session, put: Paint) => {
     put(row, 16, clubText(awayName), { ink: awayInk });
     put(row, 28, String(goals[1]), { ink: awayInk });
   };
-  switch (session.screen) {
+  switch (view.screen) {
     case 'fixture': {
+      const { fixture } = view;
+      const { away, home } = sides(game, fixture);
+      const opponentPosition =
+        game.league[fixture.opponent - (game.division - 1) * 16 - 1]
+          ?.position ?? 0;
       const print = createPrintScreen();
       print.text(
         fixture.kind === 'cup'
@@ -79,6 +106,8 @@ export const paintMatch = (session: Session, put: Paint) => {
       break;
     }
     case 'team': {
+      const { fixture } = view;
+      const { club, opponent } = sides(game, fixture);
       const print = createPrintScreen();
       print.tab(10);
       print.text(clubText(club), { ink: clubInk(club) });
@@ -109,8 +138,8 @@ export const paintMatch = (session: Session, put: Paint) => {
     }
     case 'selection':
       paintSquad(game, put, true);
-      if (session.selectionError) {
-        put(19, 0, session.selectionError, { ink: 2, inverse: true });
+      if (view.error) {
+        put(19, 0, view.error, { ink: 2, inverse: true });
       }
       label =
         game.players.filter(p => p.status === 2).length > 11
@@ -119,34 +148,40 @@ export const paintMatch = (session: Session, put: Paint) => {
       numeric = true;
       break;
     case 'highlights': {
-      const playback = session.playback!;
+      const { playback } = view;
+      const { away, home } = sides(game, view.fixture);
       put(0, 0, 'MATCH HIGHLIGHTS');
-      score(playback.score);
+      score(playback.score, home, away);
       const current = playback.current;
       if (current && current.index >= current.attack.frames.length - 2) {
         put(3, 0, current.attack.goal ? 'GOAL!' : 'NO GOAL!');
       }
       break;
     }
-    case 'result':
+    case 'result': {
+      const { away, home } = sides(game, view.fixture);
       put(0, 0, '**** FINAL SCORE ****', { ink: 2, inverse: true });
-      score(session.highlights!.score);
-      put(2, 0, `Gate receipts £${fixture.gate}`, { ink: 1, inverse: true });
+      score(view.score, home, away);
+      put(2, 0, `Gate receipts £${view.fixture.gate}`, {
+        ink: 1,
+        inverse: true
+      });
       prompt = 'Hit ENTER to continue';
       break;
+    }
     case 'replay':
       put(0, 0, 'Replay-', { ink: 3 });
       prompt = 'Hit ENTER to continue';
       break;
     case 'cup-celebration':
     case 'cup-result':
-      if (session.cupWon) {
+      if (view.celebration !== undefined) {
         paintCupVictory(
           put,
-          session.cupCelebrationStep,
-          Math.floor(session.frames / 16) % 2 === 1
+          view.celebration,
+          Math.floor(view.frames / 16) % 2 === 1
         );
-        if (session.screen === 'cup-result') {
+        if (view.screen === 'cup-result') {
           prompt = 'Hit ENTER to continue';
         }
         break;
@@ -164,7 +199,7 @@ export const paintMatch = (session: Session, put: Paint) => {
     case 'other-matches':
       put(0, 0, 'OTHER MATCHES-', { inverse: true });
       put(1, 8, `Division ${game.division}`);
-      session.completion!.results.forEach((result, index) =>
+      view.completion.results.forEach((result, index) =>
         score(
           result.score,
           game.clubs[result.home - 1]!,
@@ -175,11 +210,11 @@ export const paintMatch = (session: Session, put: Paint) => {
       prompt = 'Hit ENTER to continue';
       break;
     case 'table':
-      paintLeagueTable(game, put, session.completion!.order);
+      paintLeagueTable(game, put, view.completion.order);
       prompt = 'Hit ENTER to continue';
       break;
   }
-  if (session.screen !== 'highlights') {
+  if (view.screen !== 'highlights') {
     put(21, 24, '(h=copy)', {
       bright: false,
       ink: 0,

@@ -1,5 +1,5 @@
 import { saveLimit } from '../sim/save';
-import { createSession } from '../sim/session';
+import { createSession, type View } from '../sim/session';
 import { createBeeper } from './beeper';
 import { cupVictoryTones } from './cup-victory';
 import { createFrameSampler } from './frame-sampler';
@@ -38,8 +38,18 @@ const context = canvas.getContext('2d')!;
 const beeper = createBeeper();
 let audioKey = '';
 
+/** Changes whenever the tick must redraw without a change of screen. */
+const displayKey = (view: View) =>
+  view.screen === 'highlights'
+    ? view.playback.key
+    : (view.screen === 'cup-celebration' || view.screen === 'cup-result') &&
+        view.celebration !== undefined
+      ? `${view.celebration}:${Math.floor(view.frames / 16) % 2}`
+      : '';
+
 const render = (clearInput = true) => {
-  const display = makeScreen(session);
+  const view = session.view;
+  const display = makeScreen(view);
   const fragment = document.createDocumentFragment();
   for (const cell of display.cells) {
     const span = document.createElement('span');
@@ -49,41 +59,38 @@ const render = (clearInput = true) => {
     span.style.backgroundColor = `var(--${palette}-${cell.inverse ? cell.ink : cell.paper})`;
     fragment.append(span);
   }
-  const current = session.playback?.current;
-  if (session.screen === 'cup-celebration' && audioKey !== 'cup-victory') {
+  const current =
+    view.screen === 'highlights' ? view.playback.current : undefined;
+  if (view.screen === 'cup-celebration' && audioKey !== 'cup-victory') {
     beeper.play(cupVictoryTones);
     audioKey = 'cup-victory';
   }
-  const playing = session.screen === 'highlights' && Boolean(current);
+  const playing = Boolean(current);
   canvas.hidden = !playing;
   screen.hidden = playing;
-  screen.classList.toggle('cleared', session.screen === 'cleared');
+  screen.classList.toggle('cleared', view.screen === 'cleared');
   screen.classList.toggle('full-screen', display.lines.length === 24);
-  reload.hidden = session.screen !== 'cleared';
-  if (session.screen === 'cleared') {
+  reload.hidden = view.screen !== 'cleared';
+  if (view.screen === 'cleared') {
     notice.textContent = 'Game cleared. Load it again to start a new game.';
   }
-  if (session.screen === 'names' && session.nameEditor!.phase === 'fault') {
+  if (view.screen === 'names' && view.nameEditor.phase === 'fault') {
     notice.textContent =
       'Name editing stopped. Reload the page to start a new game.';
   }
-  if (playing && current) {
-    const game = session.game!;
+  if (view.screen === 'highlights' && current) {
+    const { fixture, game, playback } = view;
     paintAttack(
       context,
       current.attack,
       current.index,
-      session.playback!.score,
-      game.clubs[
-        (session.fixture!.home ? game.club : session.fixture!.opponent) - 1
-      ]!,
-      game.clubs[
-        (session.fixture!.home ? session.fixture!.opponent : game.club) - 1
-      ]!
+      playback.score,
+      game.clubs[(fixture.home ? game.club : fixture.opponent) - 1]!,
+      game.clubs[(fixture.home ? fixture.opponent : game.club) - 1]!
     );
-    if (audioKey !== session.playback!.key) {
+    if (audioKey !== playback.key) {
       beeper.play(current.frame.tones);
-      audioKey = session.playback!.key;
+      audioKey = playback.key;
     }
   }
   screen.replaceChildren(fragment);
@@ -181,7 +188,7 @@ document.addEventListener('keydown', event => {
     return;
   }
   if (
-    session.paused &&
+    session.view.paused &&
     !event.repeat &&
     !event.metaKey &&
     !event.ctrlKey &&
@@ -196,16 +203,14 @@ document.addEventListener('keydown', event => {
 const sampleFrames = createFrameSampler(performance.now());
 const tick = (now: number) => {
   const elapsed = sampleFrames(now);
-  const before = session.screen;
-  const frame = session.playback?.key;
-  const cup = session.cupDisplayKey;
+  const before = session.view;
   session.advance(elapsed);
+  const after = session.view;
   if (
-    before !== session.screen ||
-    frame !== session.playback?.key ||
-    cup !== session.cupDisplayKey
+    before.screen !== after.screen ||
+    displayKey(before) !== displayKey(after)
   ) {
-    render(before !== session.screen);
+    render(before.screen !== after.screen);
   }
   requestAnimationFrame(tick);
 };

@@ -1,10 +1,9 @@
+import type { NameEditor } from '../sim/name-editor';
 import { clubInk, clubText } from '../sim/names';
-import type { Session } from '../sim/session';
 import type { Paint } from './management-layouts';
 import { createPrintScreen } from './print-screen';
 
-export const paintNames = (session: Session, put: Paint) => {
-  const editor = session.nameEditor!;
+export const paintNames = (editor: NameEditor, put: Paint) => {
   const club = editor.kind === 'club';
   let label = 'Continue',
     prompt = '',

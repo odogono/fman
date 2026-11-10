@@ -2,7 +2,6 @@ import { expect, test } from 'bun:test';
 
 import { createNewGame } from '../sim/management';
 import { completeSeason } from '../sim/season';
-import { createSession } from '../sim/session';
 import { makeScreen } from './screen';
 
 test('the season flow keeps the final table visible before showing bonuses and movements', () => {
@@ -23,13 +22,18 @@ test('the season flow keeps the final table visible before showing bonuses and m
     leagueMatches: 15,
     leaguePosition: 1
   };
-  const session = { ...createSession(), game, screen: 'end-season' as const };
-  expect(makeScreen(session).lines[0]).toContain('End of Season');
-  const table = makeScreen({ ...session, screen: 'season-table' });
+  const view = {
+    frames: 0,
+    game,
+    paused: false,
+    screen: 'end-season' as const
+  };
+  expect(makeScreen(view).lines[0]).toContain('End of Season');
+  const table = makeScreen({ ...view, screen: 'season-table' });
   expect(table.lines[1]).toContain('Arsenal');
   const season = completeSeason(game);
   const summary = makeScreen({
-    ...session,
+    ...view,
     game: season.game,
     screen: 'season-summary',
     season

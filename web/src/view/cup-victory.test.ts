@@ -2,7 +2,6 @@ import { expect, test } from 'bun:test';
 
 import { prepareCupMatch } from '../sim/cup';
 import { createNewGame } from '../sim/management';
-import { createSession } from '../sim/session';
 import { cupVictoryTones } from './cup-victory';
 import { makeScreen } from './screen';
 
@@ -20,17 +19,17 @@ test('the final names its round and the trophy keeps nine star rows and flashing
     leagueMatches: 15,
     scheduleCounter: 2
   });
-  const session = {
-    ...createSession(),
+  const view = {
     fixture,
+    frames: 0,
     game: fixture.game,
+    paused: false,
     screen: 'fixture' as const
   };
-  expect(makeScreen(session).lines[0]).toContain('Round Final');
+  expect(makeScreen(view).lines[0]).toContain('Round Final');
   const winner = {
-    ...session,
-    cupCelebrationStep: 9,
-    cupWon: true,
+    ...view,
+    celebration: 9,
     screen: 'cup-result' as const
   };
   const normal = makeScreen(winner);

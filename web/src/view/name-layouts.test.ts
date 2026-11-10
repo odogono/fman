@@ -45,7 +45,7 @@ for (const [index, episode] of observations.edits.entries()) {
       for (let i = 0; i < step.repeat; i++) {
         s.submit(step.input);
       }
-      compare(makeScreen(s), step);
+      compare(makeScreen(s.view), step);
     }
   });
 }
@@ -59,7 +59,7 @@ for (const observed of observations.matches) {
       game = renameClub(game, 49, 'ABCDEFGHIJ');
     }
     const fixture = prepareLeagueMatch(game);
-    const s = { ...createSession(), fixture, game: fixture.game };
+    const s = { fixture, frames: 0, game: fixture.game, paused: false };
     compare(makeScreen({ ...s, screen: 'fixture' }), observed.fixture);
     compare(makeScreen({ ...s, screen: 'team' }), observed.team);
   });
@@ -82,8 +82,9 @@ for (const observed of observations.seasons) {
     });
     compare(
       makeScreen({
-        ...createSession(),
+        frames: 0,
         game: season.game,
+        paused: false,
         screen: 'season-summary',
         season
       }),

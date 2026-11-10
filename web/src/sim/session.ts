@@ -1,5 +1,5 @@
 import { createFrameClock } from './frame-clock';
-import { seasonOver, type MatchCompletion } from './league';
+import { seasonOver, type MatchCompletion, type MatchFixture } from './league';
 import {
   borrow,
   createNewGame,
@@ -12,6 +12,7 @@ import {
 } from './management';
 import { createMatchday, type Matchday } from './matchday';
 import { createNameEditor, type NameEditor } from './name-editor';
+import type { Playback } from './playback';
 import { createRng } from './rng';
 import { decodeSave, encodeSave } from './save';
 import { completeSeason, type SeasonCompletion } from './season';
@@ -21,39 +22,77 @@ import {
   type TransferOffer
 } from './transfers';
 
-export type Screen =
-  | 'save-question'
-  | 'names'
-  | 'dismissal'
-  | 'cleared'
-  | 'end-season'
-  | 'season-table'
-  | 'season-summary'
-  | 'cup-celebration'
-  | 'replay'
-  | 'cup-result'
-  | 'transfer'
-  | 'transfer-result'
-  | 'fixture'
-  | 'team'
-  | 'selection'
-  | 'highlights'
-  | 'result'
-  | 'other-matches'
-  | 'table'
-  | 'bills'
-  | 'title'
-  | 'manager'
-  | 'clubs'
-  | 'level'
-  | 'colours'
-  | 'menu'
-  | 'status'
-  | 'squad'
-  | 'sale'
-  | 'message'
-  | 'borrow'
-  | 'repay';
+/** What a message screen shows; the original prints each kind differently. */
+export type Message =
+  | { kind: 'text'; text: string }
+  /** The new level, after "Your new skill level is -". */
+  | { kind: 'skill-level'; level: number }
+  /** The club's cash and debt, after a loan or repayment. */
+  | { cash: number; debt: number; kind: 'balance' };
+
+type Bills = MatchCompletion['bills'];
+
+/** One variant per screen in `S`, each with data `D`. */
+type Each<S extends string, D> = S extends unknown ? D & { screen: S } : never;
+
+/** Each screen with the data it shows. Screens before a game exists have no `game`. */
+export type ScreenView =
+  | Each<'title' | 'cleared' | 'manager' | 'colours', { game?: undefined }>
+  | { game?: undefined; page: number; screen: 'clubs' }
+  | { changing: false; game?: undefined; screen: 'level' }
+  | { changing: true; game: Game; screen: 'level' }
+  | { game?: Game; message: Message; screen: 'message' }
+  | Each<
+      | 'save-question'
+      | 'menu'
+      | 'status'
+      | 'squad'
+      | 'borrow'
+      | 'repay'
+      | 'replay'
+      | 'end-season'
+      | 'season-table',
+      { game: Game }
+    >
+  | { game: Game; nameEditor: NameEditor; screen: 'names' }
+  | Each<'bills' | 'dismissal', { bills: Bills; game: Game }>
+  | Each<'fixture' | 'team', { fixture: MatchFixture; game: Game }>
+  | { error: string; fixture: MatchFixture; game: Game; screen: 'selection' }
+  | {
+      fixture: MatchFixture;
+      game: Game;
+      playback: Playback;
+      screen: 'highlights';
+    }
+  | {
+      fixture: MatchFixture;
+      game: Game;
+      score: readonly number[];
+      screen: 'result';
+    }
+  | Each<
+      'cup-celebration' | 'cup-result',
+      {
+        /** The trophy's star rows shown so far, 1 to 9, when the cup was won. */
+        celebration: number | undefined;
+        game: Game;
+      }
+    >
+  | Each<'other-matches' | 'table', { completion: MatchCompletion; game: Game }>
+  | { game: Game; screen: 'season-summary'; season: SeasonCompletion }
+  | { game: Game; offer: SaleOffer; screen: 'sale' }
+  | { game: Game; playerId: number; screen: 'transfer' }
+  | { fullSquad: boolean; game: Game; screen: 'transfer-result'; text: string };
+
+/** The session as the player sees it: the screen, its data, and the clock. */
+export type View = ScreenView & {
+  frames: number;
+  /** A timed pause or highlights are running; input waits. */
+  paused: boolean;
+};
+
+export type Screen = ScreenView['screen'];
+
 export type Effect =
   | { type: 'copy' }
   | { data: string; type: 'save' }
@@ -66,139 +105,136 @@ const numericInput = (text: string) =>
     ? Number(`0${text}`)
     : undefined;
 
+/** Everything a fresh program holds; NEW replaces it wholesale. */
+const freshProgram = (frames = 0, seed = 0) => ({
+  changingLevel: false,
+  clock: createFrameClock(frames),
+  club: 0,
+  game: undefined as Game | undefined,
+  level: 1,
+  manager: '',
+  matchday: undefined as Matchday | undefined,
+  message: { kind: 'text', text: '' } as Message,
+  nameEditor: undefined as NameEditor | undefined,
+  offer: undefined as SaleOffer | undefined,
+  page: 1,
+  remaining: 0,
+  resume: 'manager' as Screen,
+  screen: 'title' as Screen,
+  season: undefined as SeasonCompletion | undefined,
+  selectionError: '',
+  setupSeed: seed,
+  transfer: undefined as TransferOffer | undefined,
+  transferText: ''
+});
+
 export const createSession = (initialFrames = 0, initialSeed = 0) => {
-  let clock = createFrameClock(initialFrames);
-  let setupSeed = initialSeed;
-  let screen: Screen = 'title';
-  let game: Game | undefined;
-  let manager = '';
-  let club = 0;
-  let level = 1;
-  let page = 1;
-  let message = '';
-  let remaining = 300;
-  let resume: Screen = 'manager';
-  let changingLevel = false;
-  let offer: SaleOffer | undefined;
-  let matchday: Matchday | undefined;
-  let season: SeasonCompletion | undefined;
-  let nameEditor: NameEditor | undefined;
-  let selectionError = '';
-  let transfer: TransferOffer | undefined;
+  let program = { ...freshProgram(initialFrames, initialSeed), remaining: 300 };
   const showBills = () => {
-    screen = isDismissed(game!) ? 'dismissal' : 'bills';
+    program.screen = isDismissed(program.game!) ? 'dismissal' : 'bills';
   };
   const clearProgram = () => {
-    clock = createFrameClock();
-    setupSeed = 0;
-    screen = 'cleared';
-    game = undefined;
-    manager = '';
-    club = 0;
-    level = 1;
-    page = 1;
-    message = '';
-    remaining = 0;
-    resume = 'manager';
-    changingLevel = false;
-    offer = undefined;
-    matchday = undefined;
-    season = undefined;
-    nameEditor = undefined;
-    selectionError = '';
-    transfer = undefined;
+    program = { ...freshProgram(), screen: 'cleared' };
   };
   const returnToManagement = () => {
-    const rng = createRng(game!.seed);
-    rng.randomize(0, clock.frames);
-    game = { ...game!, seed: rng.seed };
-    screen = 'menu';
+    const rng = createRng(program.game!.seed);
+    rng.randomize(0, program.clock.frames);
+    program.game = { ...program.game!, seed: rng.seed };
+    program.screen = 'menu';
   };
   const play = (step: (matchday: Matchday) => void) => {
-    step(matchday!);
-    game = matchday!.game;
-    if (screen === 'highlights' && matchday!.stage === 'result') {
-      screen = 'result';
+    step(program.matchday!);
+    program.game = program.matchday!.game;
+    if (
+      program.screen === 'highlights' &&
+      program.matchday!.stage === 'result'
+    ) {
+      program.screen = 'result';
     }
   };
 
-  const showMessage = (text: string, next: Screen, frames = 0) => {
-    message = text;
-    screen = 'message';
-    resume = next;
-    remaining = frames;
+  const showMessage = (message: Message | string, next: Screen, frames = 0) => {
+    program.message =
+      typeof message === 'string' ? { kind: 'text', text: message } : message;
+    program.screen = 'message';
+    program.resume = next;
+    program.remaining = frames;
   };
   const skipPause = () => {
-    if (screen === 'cup-celebration') {
+    if (program.screen === 'cup-celebration') {
       return;
     }
-    if (screen === 'highlights') {
+    if (program.screen === 'highlights') {
       play(m => m.skipPause());
       return;
     }
-    if (remaining > 0) {
-      remaining = 0;
-      screen = resume;
+    if (program.remaining > 0) {
+      program.remaining = 0;
+      program.screen = program.resume;
     }
   };
   const advance = (frames: number) => {
-    clock.advance(frames);
-    if (screen === 'highlights') {
+    program.clock.advance(frames);
+    if (program.screen === 'highlights') {
       play(m => m.advance(frames));
       return;
     }
-    if (remaining > 0) {
-      remaining = Math.max(0, remaining - frames);
-      if (remaining === 0) {
-        screen = resume;
+    if (program.remaining > 0) {
+      program.remaining = Math.max(0, program.remaining - frames);
+      if (program.remaining === 0) {
+        program.screen = program.resume;
       }
     }
   };
   const submit = (text: string): Effect | undefined => {
-    if (remaining > 0 || screen === 'highlights' || screen === 'cleared') {
+    if (
+      program.remaining > 0 ||
+      program.screen === 'highlights' ||
+      program.screen === 'cleared'
+    ) {
       return;
     }
     if (
-      screen !== 'manager' &&
-      screen !== 'names' &&
-      screen !== 'save-question' &&
+      program.screen !== 'manager' &&
+      program.screen !== 'names' &&
+      program.screen !== 'save-question' &&
       (text === 'h' || text === 'H')
     ) {
       return { type: 'copy' };
     }
     const number = numericInput(text);
-    switch (screen) {
+    switch (program.screen) {
       case 'manager':
         if (text.length > 20) {
           showMessage('Name is too long (max 20 chars.)', 'manager', 200);
         } else {
-          manager = text;
-          screen = 'clubs';
+          program.manager = text;
+          program.screen = 'clubs';
         }
         break;
       case 'clubs':
         if (number === 99) {
-          page = (page % 4) + 1;
+          program.page = (program.page % 4) + 1;
         } else if (
           number !== undefined &&
-          number >= (page - 1) * 16 + 1 &&
-          number <= page * 16
+          number >= (program.page - 1) * 16 + 1 &&
+          number <= program.page * 16
         ) {
-          club = number;
-          changingLevel = false;
-          screen = 'level';
+          program.club = number;
+          program.changingLevel = false;
+          program.screen = 'level';
         }
         break;
       case 'level':
         if (number !== undefined && number >= 1 && number <= 7) {
-          level = number;
-          if (changingLevel) {
-            game = { ...game!, level };
-            showMessage('Your new skill level is -', 'menu');
+          program.level = number;
+          if (program.changingLevel) {
+            program.game = { ...program.game!, level: program.level };
+            showMessage({ kind: 'skill-level', level: program.level }, 'menu');
           } else {
-            screen = 'colours';
+            program.screen = 'colours';
           }
-        } else if (number !== undefined && changingLevel) {
+        } else if (number !== undefined && program.changingLevel) {
           showMessage('1 TO 7 please!', 'level', 300);
         }
         break;
@@ -210,49 +246,52 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
           showMessage('0 or 7 please!', 'colours', 200);
           break;
         }
-        game = createNewGame({
-          club,
+        program.game = createNewGame({
+          club: program.club,
           colour: number,
-          level,
-          manager,
-          seed: setupSeed
+          level: program.level,
+          manager: program.manager,
+          seed: program.setupSeed
         });
         {
-          const rng = createRng(game.seed);
-          rng.randomize(0, clock.frames);
-          game = { ...game, seed: rng.seed };
+          const rng = createRng(program.game.seed);
+          rng.randomize(0, program.clock.frames);
+          program.game = { ...program.game, seed: rng.seed };
         }
-        screen = 'menu';
+        program.screen = 'menu';
         break;
       case 'menu':
         if (isCommand(text, 's')) {
-          screen = 'status';
+          program.screen = 'status';
         } else if (isCommand(text, 'a')) {
-          screen = 'squad';
+          program.screen = 'squad';
         } else if (isCommand(text, 'l')) {
-          screen = 'borrow';
+          program.screen = 'borrow';
         } else if (isCommand(text, 'p')) {
-          screen = 'repay';
+          program.screen = 'repay';
         } else if (isCommand(text, 'level')) {
-          changingLevel = true;
-          level = game!.level;
-          screen = 'level';
+          program.changingLevel = true;
+          program.level = program.game!.level;
+          program.screen = 'level';
         } else if (text === '99') {
-          const next = createMatchday(game!);
+          const next = createMatchday(program.game!);
           if (!next) {
             return {
               feature: 'Season progression',
               type: 'unavailable'
             };
           }
-          matchday = next;
-          game = next.game;
-          screen = 'fixture';
+          program.matchday = next;
+          program.game = next.game;
+          program.screen = 'fixture';
         } else if (isCommand(text, 'change')) {
-          nameEditor = createNameEditor(game!);
-          screen = 'names';
+          program.nameEditor = createNameEditor(program.game!);
+          program.screen = 'names';
         } else if (isCommand(text, 'keep')) {
-          return { data: encodeSave(game!, clock.frames), type: 'save' };
+          return {
+            data: encodeSave(program.game!, program.clock.frames),
+            type: 'save'
+          };
         }
         break;
       case 'save-question':
@@ -263,25 +302,25 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
         }
         break;
       case 'names': {
-        const effect = nameEditor!.submit(text);
-        game = nameEditor!.game;
-        if (nameEditor!.done) {
-          nameEditor = undefined;
-          screen = 'menu';
+        const effect = program.nameEditor!.submit(text);
+        program.game = program.nameEditor!.game;
+        if (program.nameEditor!.done) {
+          program.nameEditor = undefined;
+          program.screen = 'menu';
         }
         return effect;
       }
       case 'fixture':
         play(m => m.refresh());
-        screen = 'team';
+        program.screen = 'team';
         break;
       case 'team':
         if (text === '99') {
           play(m => m.kickOff());
-          screen = 'highlights';
+          program.screen = 'highlights';
         } else {
-          selectionError = '';
-          screen = 'selection';
+          program.selectionError = '';
+          program.screen = 'selection';
         }
         break;
       case 'selection':
@@ -290,40 +329,41 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
         }
         if (
           number === 99 &&
-          game!.players.filter(p => p.status === 2).length <= 11
+          program.game!.players.filter(player => player.status === 2).length <=
+            11
         ) {
-          screen = 'team';
+          program.screen = 'team';
           break;
         }
-        selectionError = '';
+        program.selectionError = '';
         try {
           play(m => m.pick(number));
         } catch (error) {
           if (!(error instanceof RangeError)) {
             throw error;
           }
-          selectionError = error.message;
+          program.selectionError = error.message;
         }
         break;
       case 'result': {
         play(m => m.settle());
-        const settled = matchday!.settlement;
+        const settled = program.matchday!.settlement;
         if (!settled) {
-          screen = 'replay';
+          program.screen = 'replay';
         } else if (settled.kind === 'league') {
-          screen = 'other-matches';
+          program.screen = 'other-matches';
         } else if (settled.cupWon) {
-          screen = 'cup-celebration';
-          remaining = 90;
-          resume = 'cup-result';
+          program.screen = 'cup-celebration';
+          program.remaining = 90;
+          program.resume = 'cup-result';
         } else {
-          screen = 'cup-result';
+          program.screen = 'cup-result';
         }
         break;
       }
       case 'replay':
         play(m => m.replay());
-        screen = 'fixture';
+        program.screen = 'fixture';
         break;
       case 'cup-result':
         showBills();
@@ -331,24 +371,26 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
       case 'cup-celebration':
         break;
       case 'other-matches':
-        screen = 'table';
+        program.screen = 'table';
         break;
       case 'table':
         showBills();
         break;
       case 'bills':
-        if (seasonOver(game!)) {
-          screen = 'end-season';
+        if (seasonOver(program.game!)) {
+          program.screen = 'end-season';
           break;
         }
-        transfer = openTransferMarket(game!);
-        if (!transfer) {
+        program.transfer = openTransferMarket(program.game!);
+        if (!program.transfer) {
           returnToManagement();
           break;
         }
-        game = transfer.game;
-        screen = transfer.fullSquad ? 'transfer-result' : 'transfer';
-        message = transfer.fullSquad
+        program.game = program.transfer.game;
+        program.screen = program.transfer.fullSquad
+          ? 'transfer-result'
+          : 'transfer';
+        program.transferText = program.transfer.fullSquad
           ? 'You cannot buy a player because you have 16 in your squad - thatis the maximum allowed under    F.A. rules.'
           : '';
         break;
@@ -356,12 +398,12 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
         clearProgram();
         break;
       case 'end-season':
-        screen = 'season-table';
+        program.screen = 'season-table';
         break;
       case 'season-table':
-        season = completeSeason(game!);
-        game = season.game;
-        screen = 'season-summary';
+        program.season = completeSeason(program.game!);
+        program.game = program.season.game;
+        program.screen = 'season-summary';
         break;
       case 'season-summary':
         returnToManagement();
@@ -370,13 +412,17 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
         if (number === undefined) {
           break;
         }
-        const result = bidForPlayer(game!, transfer!.playerId, number);
-        game = result.game;
+        const result = bidForPlayer(
+          program.game!,
+          program.transfer!.playerId,
+          number
+        );
+        program.game = result.game;
         if (result.outcome === 'declined') {
           returnToManagement();
         } else if (result.outcome === 'joined') {
-          message = `${game.players[transfer!.playerId - 1]!.name} has joined your team`;
-          screen = 'transfer-result';
+          program.transferText = `${program.game.players[program.transfer!.playerId - 1]!.name} has joined your team`;
+          program.screen = 'transfer-result';
         } else {
           showMessage(
             result.outcome === 'refused'
@@ -391,16 +437,19 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
         returnToManagement();
         break;
       case 'status':
-        screen = 'menu';
+        program.screen = 'menu';
         break;
       case 'squad':
         if (number === 99) {
-          screen = 'menu';
-        } else if (number !== undefined && game!.players[number - 1]?.status) {
+          program.screen = 'menu';
+        } else if (
+          number !== undefined &&
+          program.game!.players[number - 1]?.status
+        ) {
           try {
-            offer = makeSaleOffer(game!, number);
-            game = offer.game;
-            screen = 'sale';
+            program.offer = makeSaleOffer(program.game!, number);
+            program.game = program.offer.game;
+            program.screen = 'sale';
           } catch (error) {
             if (!(error instanceof RangeError)) {
               throw error;
@@ -411,12 +460,12 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
         break;
       case 'sale': {
         const accepted = isCommand(text, 'yes') || isCommand(text, 'y');
-        const name = game!.players[offer!.playerId - 1]!.name;
-        game = respondToSale(game!, offer!, accepted);
+        const name = program.game!.players[program.offer!.playerId - 1]!.name;
+        program.game = respondToSale(program.game!, program.offer!, accepted);
         if (accepted) {
           showMessage(`${name} has been sold`, 'menu');
         } else {
-          screen = 'menu';
+          program.screen = 'menu';
         }
         break;
       }
@@ -425,11 +474,20 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
         if (number === undefined) {
           break;
         }
-        const retry = screen;
+        const retry = program.screen;
         try {
-          game =
-            screen === 'borrow' ? borrow(game!, number) : repay(game!, number);
-          showMessage('', 'menu');
+          program.game =
+            program.screen === 'borrow'
+              ? borrow(program.game!, number)
+              : repay(program.game!, number);
+          showMessage(
+            {
+              cash: program.game.cash,
+              debt: program.game.debt,
+              kind: 'balance'
+            },
+            'menu'
+          );
         } catch (error) {
           if (!(error instanceof RangeError)) {
             throw error;
@@ -439,117 +497,157 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
         break;
       }
       case 'message':
-        screen = resume;
+        program.screen = program.resume;
         break;
       case 'title':
         break;
     }
   };
-  const settlement = () => matchday?.settlement;
-  const cupWon = () => {
+  const settlement = () => program.matchday?.settlement;
+  const screenView = (): ScreenView => {
+    const { game, matchday, screen } = program;
+    if (!game) {
+      switch (screen) {
+        case 'clubs':
+          return { page: program.page, screen };
+        case 'level':
+          return { changing: false, screen };
+        case 'message':
+          return { message: program.message, screen };
+        case 'title':
+        case 'cleared':
+        case 'manager':
+        case 'colours':
+          return { screen };
+      }
+      throw new Error(`Screen ${screen} needs a game`);
+    }
     const settled = settlement();
-    return settled?.kind === 'cup' && settled.cupWon;
+    switch (screen) {
+      case 'title':
+      case 'cleared':
+      case 'manager':
+      case 'colours':
+      case 'clubs':
+        throw new Error(`Screen ${screen} comes before a game`);
+      case 'level':
+        return { changing: true, game, screen };
+      case 'message':
+        return { game, message: program.message, screen };
+      case 'save-question':
+      case 'menu':
+      case 'status':
+      case 'squad':
+      case 'borrow':
+      case 'repay':
+      case 'replay':
+      case 'end-season':
+      case 'season-table':
+        return { game, screen };
+      case 'names':
+        return { game, nameEditor: program.nameEditor!, screen };
+      case 'bills':
+      case 'dismissal':
+        return {
+          bills:
+            settled!.kind === 'cup'
+              ? settled!.bills
+              : settled!.completion.bills,
+          game,
+          screen
+        };
+      case 'fixture':
+      case 'team':
+        return { fixture: matchday!.fixture, game, screen };
+      case 'selection':
+        return {
+          error: program.selectionError,
+          fixture: matchday!.fixture,
+          game,
+          screen
+        };
+      case 'highlights':
+        return {
+          fixture: matchday!.fixture,
+          game,
+          playback: matchday!.playback!,
+          screen
+        };
+      case 'result':
+        return {
+          fixture: matchday!.fixture,
+          game,
+          score: matchday!.highlights!.score,
+          screen
+        };
+      case 'cup-celebration':
+      case 'cup-result':
+        return {
+          celebration:
+            settled?.kind === 'cup' && settled.cupWon
+              ? screen === 'cup-celebration'
+                ? Math.min(9, Math.floor((90 - program.remaining) / 10) + 1)
+                : 9
+              : undefined,
+          game,
+          screen
+        };
+      case 'other-matches':
+      case 'table':
+        if (settled?.kind !== 'league') {
+          throw new Error(`Screen ${screen} needs a league result`);
+        }
+        return { completion: settled.completion, game, screen };
+      case 'season-summary':
+        return { game, screen, season: program.season! };
+      case 'sale':
+        return { game, offer: program.offer!, screen };
+      case 'transfer':
+        return { game, playerId: program.transfer!.playerId, screen };
+      case 'transfer-result':
+        return {
+          fullSquad: program.transfer!.fullSquad,
+          game,
+          screen,
+          text: program.transferText
+        };
+    }
   };
+  const paused = () => program.remaining > 0 || program.screen === 'highlights';
   return {
     advance,
-    get bills(): MatchCompletion['bills'] | undefined {
-      const settled = settlement();
-      return settled?.kind === 'cup'
-        ? settled.bills
-        : settled?.completion.bills;
-    },
-    get changingLevel() {
-      return changingLevel;
-    },
-    get completion() {
-      const settled = settlement();
-      return settled?.kind === 'league' ? settled.completion : undefined;
-    },
-    get cupCelebrationStep() {
-      return cupWon()
-        ? screen === 'cup-celebration'
-          ? Math.min(9, Math.floor((90 - remaining) / 10) + 1)
-          : 9
-        : 0;
-    },
-    get cupDisplayKey() {
-      return cupWon() &&
-        (screen === 'cup-celebration' || screen === 'cup-result')
-        ? `${this.cupCelebrationStep}:${Math.floor(clock.frames / 16) % 2}`
-        : '';
-    },
-    get cupWon() {
-      return cupWon();
-    },
-    get fixture() {
-      return matchday?.fixture;
-    },
-    get frames() {
-      return clock.frames;
-    },
-    get game() {
-      return game;
-    },
-    get highlights() {
-      return matchday?.highlights;
-    },
     load: (data: string) => {
       const saved = decodeSave(data);
       clearProgram();
-      clock = createFrameClock(saved.frames);
-      game = saved.game;
+      program.clock = createFrameClock(saved.frames);
+      program.game = saved.game;
       returnToManagement();
     },
-    get matchday() {
-      return matchday;
-    },
-    get message() {
-      return message;
-    },
-    get nameEditor() {
-      return nameEditor;
-    },
-    get offer() {
-      return offer;
-    },
-    get page() {
-      return page;
-    },
-    get paused() {
-      return remaining > 0 || screen === 'highlights';
-    },
-    get playback() {
-      return matchday?.playback;
-    },
     reload: () => {
-      if (screen !== 'cleared') {
+      if (program.screen !== 'cleared') {
         return false;
       }
-      screen = 'title';
-      remaining = 300;
-      resume = 'manager';
+      program.screen = 'title';
+      program.remaining = 300;
+      program.resume = 'manager';
       return true;
     },
     saved: () => {
-      if (screen !== 'menu' || !game) {
+      if (program.screen !== 'menu' || !program.game) {
         return false;
       }
-      screen = 'save-question';
+      program.screen = 'save-question';
       return true;
-    },
-    get screen() {
-      return screen;
-    },
-    get season() {
-      return season;
-    },
-    get selectionError() {
-      return selectionError;
     },
     skipPause,
     submit,
-    get transfer() {
-      return transfer;
+    /** The current screen and its data, as a plain value. */
+    get view(): View {
+      return {
+        ...screenView(),
+        frames: program.clock.frames,
+        paused: paused()
+      };
     }
   };
 };

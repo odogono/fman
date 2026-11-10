@@ -1,5 +1,5 @@
 # Original game files are never committed.
-/roms/
+/roms
 /build/
 node_modules/
 /web/dist/

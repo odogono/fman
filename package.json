@@ -18,7 +18,11 @@
     "lint:fix": "eslint --fix .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "bun tools/preflight.ts && bun run typecheck && bun run lint && bun run format:check && bun run test"
+    "check": "bun tools/preflight.ts && bun run typecheck && bun run lint && bun run format:check && bun run test",
+    "zx:link": "bun tools/zx/link-roms.ts",
+    "zx:extract": "bun tools/zx/extract.ts 'roms/zx/Football Manager - Players (1982)(Addictive Games).z80'",
+    "zx:snapshot": "uv run --with skoolkit==10.2 tap2sna.py 'roms/zx/Football Manager.tzx' roms/zx/analysis/local-original.z80",
+    "zx:observe": "bun tools/zx/observe.ts roms/zx/analysis/local-original.z80 roms/zx/analysis fresh"
   },
   "devDependencies": {
     "@ianvs/prettier-plugin-sort-imports": "^4.7.1",

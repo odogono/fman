@@ -16,14 +16,5 @@ bun run check
 bun run build
 ```
 
-See the [original-game analysis](docs/original-game-analysis.md),
-[compatibility foundation](docs/spectrum-compatibility.md) and
-[first-match verification](docs/first-league-match.md), plus
-[transfer verification](docs/transfer-market.md),
-[first-cup verification](docs/first-cup-round.md) and
-[league continuation](docs/league-progression.md), plus
-[complete cup progression](docs/cup-progression.md) and
-[season progression](docs/season-progression.md) and
-[dismissal/reloading](docs/dismissal-restart.md) and
-[name editing](docs/name-editing.md) and [web saving/loading](docs/save-load.md).
+See [docs/](docs/README.md) for how each feature matches the original.
 Original game files belong under gitignored `roms/` and must never be committed.

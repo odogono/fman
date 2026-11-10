@@ -1,6 +1,7 @@
 import { clubs, levels } from '../sim/catalogue';
 import type { Session } from '../sim/session';
 import {
+  paintPlayer,
   paintSquad,
   paintStatus,
   type Cell,
@@ -161,6 +162,28 @@ export const makeScreen = (session: Session) => {
       copy();
       break;
     }
+    case 'transfer':
+      put(0, 0, '****Transfer Market****', { ink: 4, inverse: true });
+      money(3);
+      put(5, 0, '  NAME   NO. SKILL ENERGY VALUE', { bright: true, paper: 6 });
+      paintPlayer(game!.players[session.transfer!.playerId - 1]!, 6, put);
+      put(8, 0, 'Type your bid (£)', { ink: 1, inverse: true });
+      put(10, 0, 'OR type 99 to continue', { bright: true, paper: 6 });
+      label = 'Bid in pounds, or 99 to decline';
+      numeric = true;
+      copy();
+      break;
+    case 'transfer-result':
+      if (session.transfer!.fullSquad) {
+        put(0, 0, '****Transfer Market****', { ink: 4, inverse: true });
+        put(3, 0, session.message, { ink: 3 });
+      } else {
+        put(0, 0, session.message);
+      }
+      prompt = 'Hit ENTER to continue';
+      label = 'Continue to management';
+      copy();
+      break;
     case 'borrow':
     case 'repay':
       money(0);

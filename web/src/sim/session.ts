@@ -23,8 +23,15 @@ import {
   type Playback
 } from './playback';
 import { createRng } from './rng';
+import {
+  bidForPlayer,
+  openTransferMarket,
+  type TransferOffer
+} from './transfers';
 
 export type Screen =
+  | 'transfer'
+  | 'transfer-result'
   | 'fixture'
   | 'team'
   | 'selection'
@@ -73,6 +80,13 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
   let playback: Playback | undefined;
   let completion: MatchCompletion | undefined;
   let selectionError = '';
+  let transfer: TransferOffer | undefined;
+  const returnToManagement = () => {
+    const rng = createRng(game!.seed);
+    rng.randomize(0, clock.frames);
+    game = { ...game!, seed: rng.seed };
+    screen = 'menu';
+  };
   const finishHighlights = () => {
     if (playback?.done) {
       game = { ...game!, seed: highlights!.seed };
@@ -256,7 +270,40 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
         screen = 'bills';
         break;
       case 'bills':
-        screen = 'menu';
+        transfer = openTransferMarket(game!);
+        if (!transfer) {
+          returnToManagement();
+          break;
+        }
+        game = transfer.game;
+        screen = transfer.fullSquad ? 'transfer-result' : 'transfer';
+        message = transfer.fullSquad
+          ? 'You cannot buy a player because you have 16 in your squad - thatis the maximum allowed under    F.A. rules.'
+          : '';
+        break;
+      case 'transfer': {
+        if (number === undefined) {
+          break;
+        }
+        const result = bidForPlayer(game!, transfer!.playerId, number);
+        game = result.game;
+        if (result.outcome === 'declined') {
+          returnToManagement();
+        } else if (result.outcome === 'joined') {
+          message = `${game.players[transfer!.playerId - 1]!.name} has joined your team`;
+          screen = 'transfer-result';
+        } else {
+          showMessage(
+            result.outcome === 'refused'
+              ? 'YOUR BID IS REFUSED'
+              : "You haven't enough money!",
+            'transfer'
+          );
+        }
+        break;
+      }
+      case 'transfer-result':
+        returnToManagement();
         break;
       case 'status':
         screen = 'menu';
@@ -355,7 +402,10 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
       return selectionError;
     },
     skipPause,
-    submit
+    submit,
+    get transfer() {
+      return transfer;
+    }
   };
 };
 

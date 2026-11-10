@@ -1,5 +1,5 @@
 import { levels } from '../sim/catalogue';
-import type { Game } from '../sim/management';
+import type { Game, Player } from '../sim/management';
 
 export type Cell = {
   bright: boolean;
@@ -41,26 +41,30 @@ export const paintStatus = (game: Game, put: Paint) => {
   );
 };
 
+export const paintPlayer = (player: Player, row: number, put: Paint) => {
+  const category = Math.floor((player.id - 1) / 8);
+  const ink = category;
+  put(row, 0, ['D█', 'M█', 'A█'][category]!, { ink, inverse: true });
+  put(row, 2, player.name.padEnd(8), { ink });
+  put(row, 11, String(player.id), { ink });
+  put(row, 15, String(player.skill), { ink });
+  put(row, 20, String(player.energy), { ink });
+  put(row, 24, `£${player.value}`, { ink });
+  if (player.status > 1) {
+    put(row, 31, player.status === 2 ? 'p' : 'i', {
+      ink: player.status === 2 ? 3 : 4,
+      inverse: true
+    });
+  }
+};
+
 export const paintSquad = (game: Game, put: Paint, selection = false) => {
   put(0, 0, 'p = picked to play, i = injured');
   put(1, 0, '  NAME   NO. SKILL ENERGY VALUE', { bright: true, paper: 6 });
   const players = game.players.filter(player => player.status > 0);
   players.forEach((player, index) => {
     const row = index + 2;
-    const category = Math.floor((player.id - 1) / 8);
-    const ink = category;
-    put(row, 0, ['D█', 'M█', 'A█'][category]!, { ink, inverse: true });
-    put(row, 2, player.name.padEnd(8), { ink });
-    put(row, 11, String(player.id), { ink });
-    put(row, 15, String(player.skill), { ink });
-    put(row, 20, String(player.energy), { ink });
-    put(row, 24, `£${player.value}`, { ink });
-    if (player.status > 1) {
-      put(row, 31, player.status === 2 ? 'p' : 'i', {
-        ink: player.status === 2 ? 3 : 4,
-        inverse: true
-      });
-    }
+    paintPlayer(player, row, put);
   });
   put(
     players.length + 2,

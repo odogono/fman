@@ -64,6 +64,11 @@ adds execution-path budgets, progressive drawing, PAUSE keyboard state and
 BEEPER interrupt losses within declared corpus tolerances. Complete session
 timing remains outside these bounded comparisons.
 
+[Glyph raster verification](glyph-raster-fidelity.md) establishes the printable
+and block repertoire, ordinary cell colours/inverse/brightness and captured
+highlight overlay cells. Full-screen, editor and control-stream parity remain
+separate requirements.
+
 Management, league/cup/season progression, dismissal/NEW, name editing, web
 saving/loading, captured name scrolling/wrapping and pitch/pre-outcome sprite
 pixels have implementation and emulator-backed evidence. See the [feature

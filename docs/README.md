@@ -9,6 +9,7 @@ Start with [original-game-analysis.md](original-game-analysis.md): it maps the o
 - [fresh-game-management.md](fresh-game-management.md): setup, club management, view timing
 - [highlight-pacing.md](highlight-pacing.md): measured execution-path timing, progressive drawing, PAUSE and save compatibility
 - [pitch-rendering.md](pitch-rendering.md): pitch and pre-outcome sprite pixel verification
+- [glyph-raster-fidelity.md](glyph-raster-fidelity.md): original printable/block glyph pixels, raster text and asset provenance
 - [first-league-match.md](first-league-match.md): fixtures, highlights, match scoring, results, bills
 - [transfer-market.md](transfer-market.md): buying players
 - [first-cup-round.md](first-cup-round.md): first cup tie and replays

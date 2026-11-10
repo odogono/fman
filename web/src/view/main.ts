@@ -2,7 +2,6 @@ import { createJournal, openSave, type Journal } from '../sim/journal';
 import { saveLimit } from '../sim/save';
 import type { View } from '../sim/session';
 import { createBeeper } from './beeper';
-import { cupVictoryTones } from './cup-victory';
 import { createFrameSampler } from './frame-sampler';
 import { paintAttack } from './pitch';
 import { makeScreen } from './screen';
@@ -84,8 +83,8 @@ const displayKey = (view: View) =>
     ? view.playback.key
     : (view.screen === 'cup-celebration' || view.screen === 'cup-result') &&
         view.celebration !== undefined
-      ? `${view.celebration}:${Math.floor(view.frames / 16) % 2}`
-      : '';
+      ? `${view.timingKey}:${view.celebration}:${Math.floor((view.ulaFrames ?? view.frames) / 16) % 2}`
+      : `${view.timingKey ?? ''}`;
 
 const render = (clearInput = true) => {
   const view = journal.session.view;
@@ -101,11 +100,11 @@ const render = (clearInput = true) => {
   }
   const current =
     view.screen === 'highlights' ? view.playback.current : undefined;
-  if (view.screen === 'cup-celebration' && audioKey !== 'cup-victory') {
-    beeper.play(cupVictoryTones);
-    audioKey = 'cup-victory';
+  if (view.tones && audioKey !== `${view.screen}:${view.timingKey}`) {
+    beeper.play(view.tones);
+    audioKey = `${view.screen}:${view.timingKey}`;
   }
-  const playing = Boolean(current);
+  const playing = Boolean(current && !current.frame.intro);
   canvas.hidden = !playing;
   screen.hidden = playing;
   screen.classList.toggle('cleared', view.screen === 'cleared');
@@ -437,18 +436,21 @@ document.addEventListener('keydown', event => {
     return;
   }
   advanceTo(performance.now());
-  if (
-    journal.session.view.paused &&
-    !event.repeat &&
-    !event.metaKey &&
-    !event.ctrlKey &&
-    !event.altKey
-  ) {
-    event.preventDefault();
-    journal.skipPause();
+  if (!event.repeat && !event.metaKey && !event.ctrlKey && !event.altKey) {
+    journal.setKey(event.code);
+    if (journal.session.view.paused) {
+      event.preventDefault();
+      render();
+    }
     persist();
-    render();
   }
+});
+document.addEventListener('keyup', () => {
+  if (!menu.open) {
+    advanceTo(performance.now());
+  }
+  journal.setKey('');
+  persist();
 });
 
 const advanceTo = (now: number) => {

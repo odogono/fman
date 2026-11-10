@@ -4,7 +4,8 @@ import { createSession } from './session';
 import { viewOn } from './view-on';
 
 const setup = () => {
-  const session = createSession();
+  const session = createSession(2 ** 24 - 5);
+  session.advance(5);
   session.skipPause();
   session.submit('alex');
   session.submit('1');
@@ -15,13 +16,13 @@ const setup = () => {
 
 test('title timing, manager limit and club paging follow the original setup', () => {
   const session = createSession();
-  session.advance(299);
+  session.advance(303);
   expect(session.view.screen).toBe('title');
   session.advance(1);
   expect(session.view.screen).toBe('manager');
   session.submit('x'.repeat(21));
   expect(session.view.screen).toBe('message');
-  session.advance(200);
+  session.advance(205);
   session.submit('alex');
   expect(session.view.screen).toBe('clubs');
   session.submit('17');
@@ -35,6 +36,7 @@ test('title timing, manager limit and club paging follow the original setup', ()
   session.submit('7');
   session.submit('1');
   expect(session.view.screen).toBe('message');
+  session.advance(5);
   session.skipPause();
   session.submit('7');
   expect(session.view.screen).toBe('menu');
@@ -318,7 +320,7 @@ test('a club beyond the debt cap is dismissed and NEW clears the session before 
   expect(session.reload()).toBe(true);
   expect(session.view.frames).toBe(50);
   expect(session.view.screen).toBe('title');
-  session.advance(300);
+  session.advance(304);
   expect(session.view.screen).toBe('manager');
   for (const input of ['new boss', '1', '1', '0']) {
     session.submit(input);
@@ -329,7 +331,7 @@ test('a club beyond the debt cap is dismissed and NEW clears the session before 
   expect(session.view.game!.manager).toBe('new boss');
   expect(session.view.game!.leagueMatches).toBe(0);
   expect(session.view.game!.seasons).toBe(0);
-  expect(session.view.game!.seed).toBe(350);
+  expect(session.view.game!.seed).toBe(354);
   expect(session.reload()).toBe(false);
 });
 

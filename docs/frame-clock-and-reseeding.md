@@ -4,8 +4,9 @@
 [48K timing reference](spectrum-timing.md): 3,500,000 nominal T-states/second,
 69,888 T-states/frame, or **19.968 ms/frame**. The browser previously used
 20 ms. `frame-clock.ts` declares these constants alongside the explicit
-24-bit ROM FRAMES counter. The sim accepts whole serviced-interrupt counts;
-it never reads a browser timestamp or wall clock. Counter advancement wraps
+24-bit ROM FRAMES counter. The frame counter accepts whole serviced-interrupt counts; the session accepts
+whole ULA frames and withholds ticks during modeled BEEPER spans. Neither
+reads a browser timestamp or wall clock. Counter advancement wraps
 modulo 2²⁴. `RANDOMIZE 0` reads the low 16 bits, including zero at 65,536;
 restoring a raw seed through `createRng(seed)` does not reseed.
 
@@ -51,7 +52,7 @@ bun test tools/zx/frame-reseeding.test.ts web/src/sim/frame-reseeding.test.ts
 `frame-sampler.ts` counts completed nominal frames from a monotonic timestamp
 origin. Fractional elapsed time survives callbacks; counting from the origin
 avoids repeated fractional-addition drift. Inputs sample `performance.now()`
-at **dispatch**, before submitting a command or skipping a pause. Opening the
+at **dispatch**, before submitting a command or recording a key transition. Opening the
 game menu and persisting on page hide also sample first. Older RAF timestamps
 cannot move this clock backwards. Input delivery uses dispatch time, not the
 hardware key timestamp; delayed browser event delivery remains a host limit.
@@ -68,32 +69,31 @@ The sampler counts nominal ULA cadence; the original ROM counter counts
 **serviced interrupts**. BEEPER and SAVE disable interrupts, so elapsed ULA
 frames and ROM FRAMES can differ. The SAVE capture makes that distinction
 observable. The browser file download replaces tape SAVE; its elapsed time
-is not the original cassette duration. The browser does not yet model the
-original's instruction-dependent interrupt losses during game execution.
-Measured pacing/sound integration (#26/#27) and the full timed comparison
-(#34) must preserve that distinction; changing 20 ms to 19.968 ms alone does
-not establish complete session parity. No fixture-derived execution-cost
-table has been added to production.
+is not the original cassette duration. [Measured highlight and timed-screen pacing](highlight-pacing.md) now models
+BEEPER interrupt losses and keyboard scans using dispatch-edge execution
+budgets. This covers the captured highlight/title/error/cup paths within stated
+tolerances. Other execution paths, sound delivery (#27) and the full timed
+comparison (#34) remain outside that evidence; changing cadence alone does not
+establish complete session parity.
 
 ## Save compatibility
 
-No stored field or replay operation changes, so save versions stay unchanged:
+The [pacing change](highlight-pacing.md#saves-and-reproduction) bumps the journal
+from version 2 to version 3 because replay timing and keyboard state changed.
 
 - Version 1 stores Game and whole ROM FRAMES. Import restores that counter
-  and then executes the line-100 reseed boundary, as the accepted web-load
+  and executes the line-100 reseed boundary, as the accepted web-load
   adaptation. Actual tape LOAD uses the target machine's current counter.
-- Version 2 restores the stored raw seed and replays explicit whole-frame
-  advances. It does not reseed merely because the browser reopens the session.
+- Version 3 restores the raw seed, ROM/ULA counters and PAUSE keyboard state,
+  then replays explicit whole-frame advances and key transitions without reseeding.
+- Version 2 imports only an idle original menu checkpoint with no subsequent
+  inputs. Active journals are rejected because their old durations cannot replay
+  exactly under the new scheduler.
 
-Fractional browser phase and time outside a closed page have never been part
-of either save format. A new/imported/restored session starts a fresh browser
-phase at its stored whole-frame boundary. Old version-2 journals still replay
-their recorded frame counts exactly; newly observed elapsed time uses the
-corrected cadence. A future persisted T-state phase or changed replay meaning
-will require an explicit version/migration decision.
-
-Tests cover fractional time, exact representable boundaries, uneven callbacks,
-stale RAF after input, long background gaps, menu freezing, 24-bit wraps,
-the low-16-bit boundary, chunked/single advances and both save versions.
+Fractional browser phase and time outside a closed page remain outside the
+save format. A restored session starts a fresh browser phase at its stored
+whole-frame boundary. Tests cover fractional time, uneven callbacks, stale RAF,
+background gaps, menu freezing, counter wraps, RANDOMIZE, chunked advances and
+save compatibility.
 Browser checks also exercised setup, status return, input catch-up after a
 240 ms blocked callback (12 frames), and game-menu freeze/resume.

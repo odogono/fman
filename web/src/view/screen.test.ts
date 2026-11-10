@@ -4,7 +4,8 @@ import { createSession } from '../sim/session';
 import { makeScreen } from './screen';
 
 const session = () => {
-  const game = createSession();
+  const game = createSession(2 ** 24 - 5);
+  game.advance(5);
   game.skipPause();
   for (const input of ['alex', '1', '1', '0']) {
     game.submit(input);
@@ -36,7 +37,8 @@ test('status and squad render actual game state and preserve the player columns'
 });
 
 test('difficulty names retain the original PAPER 9 contrast, including white Genius', () => {
-  const game = createSession();
+  const game = createSession(2 ** 24 - 5);
+  game.advance(5);
   game.skipPause();
   game.submit('alex');
   game.submit('1');

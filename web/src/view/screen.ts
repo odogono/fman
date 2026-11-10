@@ -89,8 +89,15 @@ export const makeScreen = (view: View) => {
       ({ label, numeric, prompt } = paintDismissal(view, put));
       break;
     case 'title':
-      put(0, 0, 'FOOTBALL MANAGER');
-      put(1, 0, '© Copyright K. J. Toms 1982');
+      put(0, 0, 'FOOTBALL MANAGER'.slice(0, view.printed ?? Infinity));
+      put(
+        1,
+        0,
+        '© Copyright K. J. Toms 1982'.slice(
+          0,
+          Math.max(0, (view.printed ?? Infinity) - 15)
+        )
+      );
       break;
     case 'manager':
       prompt = 'Type your name ';
@@ -235,7 +242,7 @@ export const makeScreen = (view: View) => {
     case 'message':
       switch (view.message.kind) {
         case 'text':
-          put(0, 0, view.message.text);
+          put(0, 0, view.message.text.slice(0, view.printed ?? Infinity));
           break;
         case 'skill-level': {
           const { level } = view.message;

@@ -15,6 +15,7 @@ import {
   type MatchFixture
 } from './league';
 import type { Game } from './management';
+import type { PauseKeyboard } from './pause-keyboard';
 import {
   createPlayback,
   type HighlightResult,
@@ -39,7 +40,7 @@ export const matchInks = (game: Game, home: boolean) => ({
  * schedule cup round k always follows league match 2k-1, so play never
  * reaches that state: the final directly follows league match fifteen.
  */
-export const createMatchday = (initial: Game) => {
+export const createMatchday = (initial: Game, keyboard?: PauseKeyboard) => {
   const next = nextFixture(initial);
   if (next === 'season') {
     return;
@@ -72,8 +73,9 @@ export const createMatchday = (initial: Game) => {
     /** Advances highlight playback; the result follows its last frame. */
     advance: (frames: number) => {
       expect('highlights');
-      playback!.advance(frames);
+      const missed = playback!.advance(frames);
       finishPlayback();
+      return missed;
     },
     get fixture() {
       return fixture;
@@ -100,7 +102,7 @@ export const createMatchday = (initial: Game) => {
         seed: game.seed,
         strength: teamStrength(game)
       });
-      playback = createPlayback(highlights);
+      playback = createPlayback(highlights, keyboard);
       stage = 'highlights';
     },
     /** Adds or removes a player from the picked team. */

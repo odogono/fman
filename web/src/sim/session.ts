@@ -1,4 +1,4 @@
-import { createFrameClock } from './frame-clock';
+import { createFrameClock, framePeriod, spectrumFrameT } from './frame-clock';
 import { seasonOver, type MatchCompletion, type MatchFixture } from './league';
 import {
   borrow,
@@ -12,10 +12,17 @@ import {
 } from './management';
 import { createMatchday, type Matchday } from './matchday';
 import { createNameEditor, type NameEditor } from './name-editor';
+import { createPauseKeyboard, type PauseKeyboardState } from './pause-keyboard';
 import type { Playback } from './playback';
 import { createRng } from './rng';
 import { decodeSave, encodeSave } from './save';
 import { completeSeason, type SeasonCompletion } from './season';
+import {
+  cupPlayback,
+  errorPlayback,
+  titlePlayback,
+  type TimedScreen
+} from './timed-screens';
 import {
   bidForPlayer,
   openTransferMarket,
@@ -73,8 +80,9 @@ export type ScreenView =
   | Each<
       'cup-celebration' | 'cup-result',
       {
-        /** The trophy's star rows shown so far, 1 to 9, when the cup was won. */
+        /** The trophy's star rows shown so far, 0 to 9, when the cup was won. */
         celebration: number | undefined;
+        celebrationProgress?: { stars: number; text: number; trophy: number };
         game: Game;
       }
     >
@@ -89,6 +97,10 @@ export type View = ScreenView & {
   frames: number;
   /** A timed pause or highlights are running; input waits. */
   paused: boolean;
+  printed?: number;
+  timingKey?: number;
+  tones?: readonly { duration: number; pitch: number }[];
+  ulaFrames?: number;
 };
 
 export type Screen = ScreenView['screen'];
@@ -111,6 +123,7 @@ const freshProgram = (frames = 0, seed = 0) => ({
   clock: createFrameClock(frames),
   club: 0,
   game: undefined as Game | undefined,
+  keyboard: createPauseKeyboard(),
   level: 1,
   manager: '',
   matchday: undefined as Matchday | undefined,
@@ -118,18 +131,20 @@ const freshProgram = (frames = 0, seed = 0) => ({
   nameEditor: undefined as NameEditor | undefined,
   offer: undefined as SaleOffer | undefined,
   page: 1,
-  remaining: 0,
   resume: 'manager' as Screen,
   screen: 'title' as Screen,
   season: undefined as SeasonCompletion | undefined,
   selectionError: '',
   setupSeed: seed,
+  timed: undefined as TimedScreen | undefined,
   transfer: undefined as TransferOffer | undefined,
-  transferText: ''
+  transferText: '',
+  ulaFrames: frames
 });
 
 export const createSession = (initialFrames = 0, initialSeed = 0) => {
-  let program = { ...freshProgram(initialFrames, initialSeed), remaining: 300 };
+  let program = freshProgram(initialFrames, initialSeed);
+  program.timed = titlePlayback(program.keyboard);
   const showBills = () => {
     program.screen = isDismissed(program.game!) ? 'dismissal' : 'bills';
   };
@@ -158,7 +173,19 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
       typeof message === 'string' ? { kind: 'text', text: message } : message;
     program.screen = 'message';
     program.resume = next;
-    program.remaining = frames;
+    program.timed =
+      frames > 0
+        ? errorPlayback(
+            program.keyboard,
+            typeof message === 'string' ? message : '',
+            frames
+          )
+        : undefined;
+  };
+  const finishTimed = () => {
+    if (program.timed?.done) {
+      program.screen = program.resume;
+    }
   };
   const skipPause = () => {
     if (program.screen === 'cup-celebration') {
@@ -168,27 +195,47 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
       play(m => m.skipPause());
       return;
     }
-    if (program.remaining > 0) {
-      program.remaining = 0;
-      program.screen = program.resume;
+    if (program.timed && !program.timed.done) {
+      const paused = program.timed.current?.kind === 'pause';
+      program.timed.skipPause();
+      if (paused) {
+        program.screen = program.resume;
+        program.timed = undefined;
+      }
+      return;
     }
   };
   const advance = (frames: number) => {
-    program.clock.advance(frames);
+    // Validate before changing either the playback or the ULA counter.
+    if (
+      !Number.isSafeInteger(frames * spectrumFrameT) ||
+      frames < 0 ||
+      !Number.isInteger(frames)
+    ) {
+      throw new RangeError('Invalid frame advance');
+    }
+    program.ulaFrames =
+      (program.ulaFrames + (frames % framePeriod)) % framePeriod;
+    let missed = 0;
     if (program.screen === 'highlights') {
-      play(m => m.advance(frames));
+      play(m => {
+        missed = m.advance(frames);
+      });
+      program.clock.advance(frames - missed);
       return;
     }
-    if (program.remaining > 0) {
-      program.remaining = Math.max(0, program.remaining - frames);
-      if (program.remaining === 0) {
-        program.screen = program.resume;
-      }
+    if (program.timed && !program.timed.done) {
+      missed = program.timed.advance(frames);
+      program.clock.advance(frames - missed);
+      finishTimed();
+      return;
     }
+    program.clock.advance(frames);
+    program.keyboard.advance(frames);
   };
   const submit = (text: string): Effect | undefined => {
     if (
-      program.remaining > 0 ||
+      (program.timed && !program.timed.done) ||
       program.screen === 'highlights' ||
       program.screen === 'cleared'
     ) {
@@ -274,7 +321,7 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
           program.level = program.game!.level;
           program.screen = 'level';
         } else if (text === '99') {
-          const next = createMatchday(program.game!);
+          const next = createMatchday(program.game!, program.keyboard);
           if (!next) {
             return {
               feature: 'Season progression',
@@ -354,7 +401,7 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
           program.screen = 'other-matches';
         } else if (settled.cupWon) {
           program.screen = 'cup-celebration';
-          program.remaining = 90;
+          program.timed = cupPlayback(program.keyboard);
           program.resume = 'cup-result';
         } else {
           program.screen = 'cup-result';
@@ -586,9 +633,12 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
           celebration:
             settled?.kind === 'cup' && settled.cupWon
               ? screen === 'cup-celebration'
-                ? Math.min(9, Math.floor((90 - program.remaining) / 10) + 1)
+                ? Math.ceil((program.timed?.progress.stars ?? 0) / 32)
                 : 9
               : undefined,
+          ...(screen === 'cup-celebration'
+            ? { celebrationProgress: program.timed!.progress }
+            : {}),
           game,
           screen
         };
@@ -613,13 +663,16 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
         };
     }
   };
-  const paused = () => program.remaining > 0 || program.screen === 'highlights';
+  const paused = () =>
+    (program.timed !== undefined && !program.timed.done) ||
+    program.screen === 'highlights';
   return {
     advance,
     load: (data: string) => {
       const saved = decodeSave(data);
       clearProgram();
       program.clock = createFrameClock(saved.frames);
+      program.ulaFrames = saved.frames;
       program.game = saved.game;
       returnToManagement();
     },
@@ -628,15 +681,22 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
         return false;
       }
       program.screen = 'title';
-      program.remaining = 300;
+      program.timed = titlePlayback(program.keyboard);
       program.resume = 'manager';
       return true;
     },
     /** Puts an already reseeded game at the management menu. */
-    resumeMenu: (frames: number, resumed: Game) => {
+    resumeMenu: (
+      frames: number,
+      resumed: Game,
+      ulaFrames = frames,
+      keyboard?: PauseKeyboardState
+    ) => {
       const next = createFrameClock(frames);
       clearProgram();
       program.clock = next;
+      program.ulaFrames = ulaFrames;
+      program.keyboard = createPauseKeyboard(keyboard);
       program.game = resumed;
       program.screen = 'menu';
     },
@@ -647,12 +707,28 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
       program.screen = 'save-question';
       return true;
     },
+    setKey: (key: string) => program.keyboard.set(key),
     skipPause,
     submit,
+    get timingState() {
+      return { keyboard: program.keyboard.state, ulaFrames: program.ulaFrames };
+    },
     /** The current screen and its data, as a plain value. */
     get view(): View {
       return {
         ...screenView(),
+        ...(program.timed &&
+        ['title', 'message', 'cup-celebration'].includes(program.screen)
+          ? {
+              printed: program.timed.progress.text,
+              timingKey: program.timed.index,
+              tones: program.timed.current?.tones ?? []
+            }
+          : {}),
+        ...(program.screen === 'cup-celebration' ||
+        program.screen === 'cup-result'
+          ? { ulaFrames: program.ulaFrames }
+          : {}),
         frames: program.clock.frames,
         paused: paused()
       };

@@ -5,7 +5,8 @@ import { viewOn } from '../sim/view-on';
 import { makeScreen } from './screen';
 
 test('the market displays its player, current asking value and bid/copy prompts', () => {
-  const session = createSession();
+  const session = createSession(2 ** 24 - 5);
+  session.advance(5);
   session.skipPause();
   for (const input of ['alex', '1', '1', '0', '99', '', '99']) {
     session.submit(input);

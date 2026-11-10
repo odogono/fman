@@ -8,7 +8,7 @@ The seventh round is labelled `Semi-Final`, the eighth `Final`. Every semifinal 
 
 The final is scheduled after league match fifteen. Reaching fifteen league matches therefore does not stop an active cup campaign before its final. Once the final is decided, [season progression](season-progression.md) now follows bills, covering bonuses, promotion/relegation and reset. The reset match count skips that cycle's transfer market. Elimination earlier in the cup still allows the remaining league fixtures before that boundary.
 
-Victory shows the source's ten-row trophy, two-row title and nine star rows. The nine rising `.2`-second beeps take ninety explicit 50Hz frames and cannot be skipped by a key. Afterwards the winning screen waits for continuation. Title/star flash uses the explicit frame clock; redraws retain partially typed input. The browser still uses the documented redrawn font and nominal oscillator pitches; exact pixel and interpreter-cycle equality remains unverified.
+Victory shows the source's ten-row trophy, two-row title and nine star rows. The [measured pacing model](highlight-pacing.md) interleaves progressive printing with the nine rising `.2`-second beeps, taking 134 browser frames at phase zero; a key cannot skip it. Afterwards the winning screen waits for continuation. Title/star flash uses ULA time, including time when BEEPER disables ROM interrupts; redraws retain partially typed input. The browser still uses the documented redrawn font and nominal oscillator pitches; exact pixel and interpreter-cycle equality remains unverified.
 
 ## Original-runtime evidence
 

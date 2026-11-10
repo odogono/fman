@@ -21,7 +21,8 @@ const pickAvailable = (game: Game) => {
 };
 
 export const winningCampaign = () => {
-  const session = createSession();
+  const session = createSession(2 ** 24 - 5);
+  session.advance(5);
   session.skipPause();
   for (const input of ['alex', '1', '1', '0']) {
     session.submit(input);
@@ -99,7 +100,7 @@ test('a complete winning campaign reaches the final after league match fifteen a
   const seed = session.view.game!.seed;
   session.skipPause();
   expect(session.view.screen).toBe('cup-celebration');
-  session.advance(89);
+  session.advance(133);
   expect(session.view.screen).toBe('cup-celebration');
   session.advance(1);
   expect(session.view.screen).toBe('cup-result');

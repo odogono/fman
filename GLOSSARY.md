@@ -50,3 +50,9 @@ The income credited to the managed club for a match, including a cup replay.
 **Home gate**:
 The current gate-receipt value used for the managed club's home fixtures.
 _Avoid_: Attendance when referring to this monetary value
+
+**Web save**:
+A file kept by the manager to restore a game in the web recreation.
+
+**Tape save**:
+A game recorded by the original Spectrum version for later loading from cassette.

@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { expect, test } from 'bun:test';
 
+import glyphs from '../sim/fixtures/glyphs.json';
 import observations from '../sim/fixtures/pitch.json';
 import {
   emptyAttackCarry,
@@ -8,10 +9,76 @@ import {
   type Attack,
   type SpriteDraw
 } from '../sim/highlights';
-import { rasterizeAttack } from './pitch';
+import { rasterizeAttack, rasterizeHighlight } from './pitch';
 
 const hash = (rgba: Uint8ClampedArray) =>
   createHash('sha256').update(rgba).digest('hex');
+
+const cellPixels = (rgba: Uint8ClampedArray, x: number, y: number) => {
+  const cell = new Uint8ClampedArray(8 * 8 * 4);
+  for (let row = 0; row < 8; row++) {
+    const start = ((y * 8 + row) * 256 + x * 8) * 4;
+    cell.set(rgba.subarray(start, start + 32), row * 32);
+  }
+  return cell;
+};
+
+for (const overlay of glyphs.overlays) {
+  test(`original ${overlay.kind} overlay PRINT: home ink ${overlay.homeInk}, away ink ${overlay.awayInk}`, () => {
+    const goal = overlay.kind === 'goal';
+    for (const [outcomeChars, scoreChars] of [
+      [0, 0],
+      [1, 0],
+      [7, 0],
+      [31, 0],
+      [33, 0],
+      [64, 0],
+      [127, 0],
+      [128, 0],
+      [128, 1],
+      [128, 12],
+      [128, 13],
+      [128, 16],
+      [128, 28],
+      [128, 29]
+    ]) {
+      const attack: Attack = {
+        carry: emptyAttackCarry(),
+        direction: 'left',
+        frames: [
+          {
+            draws: [],
+            duration: 1,
+            kind: goal ? 'goal' : 'miss',
+            outcomeChars: outcomeChars!,
+            scoreChars: scoreChars!,
+            tones: []
+          }
+        ],
+        goal,
+        seed: 0,
+        trace: []
+      };
+      const before = rasterizeAttack(attack, 0);
+      const rgba = rasterizeHighlight(
+        attack,
+        0,
+        [1, 0],
+        { ink: overlay.homeInk, name: 'LIVERPOOL' },
+        { ink: overlay.awayInk, name: 'IPSWICH' }
+      );
+      for (const [index, cell] of overlay.cells.entries()) {
+        const printed =
+          goal && cell.y === 4
+            ? index - 128 < scoreChars!
+            : index < outcomeChars!;
+        expect(hash(cellPixels(rgba, cell.x, cell.y))).toBe(
+          printed ? cell.rgba : hash(cellPixels(before, cell.x, cell.y))
+        );
+      }
+    }
+  });
+}
 
 test('XOR drawing and erasing a sprite restores the pitch beneath it', () => {
   const sprite: SpriteDraw = { glyph: 0, ink: 0, x: 5, y: 5 };

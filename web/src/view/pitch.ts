@@ -1,6 +1,7 @@
 import type { Club } from '../sim/catalogue';
 import type { Attack, SpriteDraw } from '../sim/highlights';
 import { clubInk, clubText } from '../sim/names';
+import { rasterText } from './glyphs';
 
 // BASIC DATA 261: fifteen 8×8 UDGs, transcribed for the recreated view.
 const sprites = [
@@ -213,26 +214,19 @@ export const rasterizeAttack = (
 
 const banner =
   '****█    ██  ███  ██ ████ █*********█ ██▄█ ██ █ ██ █ ████ █*********█ █▄ █ ██ █ ▄▄ █ ████▄█*********█    ██  ██ ██ █    █ █*****';
-export const paintAttack = (
-  context: CanvasRenderingContext2D,
+export const rasterizeHighlight = (
   attack: Attack,
   index: number,
   score: readonly number[],
   home: Club,
   away: Club
 ) => {
-  context.putImageData(
-    new ImageData(rasterizeAttack(attack, index), 256, 176),
-    0,
-    0
-  );
-  context.font = '8px Spectrum';
-  context.textBaseline = 'top';
+  const rgba = rasterizeAttack(attack, index);
   const outcome = attack.frames
     .slice(0, index + 1)
     .find(frame => frame.kind === 'goal' || frame.kind === 'miss');
   if (!outcome) {
-    return;
+    return rgba;
   }
   const shown =
     attack.frames
@@ -240,28 +234,15 @@ export const paintAttack = (
       .findLast(frame => frame.outcomeChars !== undefined)?.outcomeChars ??
     Infinity;
   if (outcome.kind === 'miss') {
-    context.fillStyle = '#d7d7d7';
-    context.fillRect(80, 8, Math.min(8, shown) * 8, 8);
-    context.fillStyle = '#000';
-    context.fillText('NO GOAL!'.slice(0, shown), 80, 8);
-    return;
+    rasterText(rgba, 256, 80, 8, 'NO GOAL!'.slice(0, shown), { bright: true });
+    return rgba;
   }
-  context.fillStyle = '#f00';
-  context.fillStyle = '#ff0';
   for (let i = 0; i < Math.min(banner.length, shown); i++) {
-    const character = banner[i]!;
-    const x = (i % 32) * 8,
-      y = Math.floor(i / 32) * 8;
-    context.fillStyle = '#f00';
-    context.fillRect(x, y, 8, 8);
-    context.fillStyle = '#ff0';
-    if (character === '█') {
-      context.fillRect(x, y, 8, 8);
-    } else if (character === '▄') {
-      context.fillRect(x, y + 4, 8, 4);
-    } else if (character !== ' ') {
-      context.fillText(character, x, y);
-    }
+    rasterText(rgba, 256, (i % 32) * 8, Math.floor(i / 32) * 8, banner[i]!, {
+      bright: true,
+      ink: 6,
+      paper: 2
+    });
   }
   const scoreShown =
     attack.frames
@@ -269,36 +250,39 @@ export const paintAttack = (
       .findLast(frame => frame.scoreChars !== undefined)?.scoreChars ??
     Infinity;
   if (scoreShown === 0) {
-    return;
+    return rgba;
   }
-  context.fillStyle = '#d7d7d7';
-  context.fillRect(0, 32, Math.min(32, scoreShown) * 8, 8);
-  const palette = [
-    '#000',
-    '#0000d7',
-    '#d70000',
-    '#d700d7',
-    '#00d700',
-    '#00d7d7',
-    '#d7d700',
-    '#d7d7d7'
-  ];
-  context.fillStyle = palette[clubInk(home)]!;
-  context.fillText(clubText(home).slice(0, scoreShown), 0, 32);
-  context.fillText(
-    String(score[0]).slice(0, Math.max(0, scoreShown - 12)),
-    96,
-    32
-  );
-  context.fillStyle = palette[clubInk(away, clubInk(home))]!;
-  context.fillText(
-    clubText(away).slice(0, Math.max(0, scoreShown - 16)),
+  const homeStyle = { bright: true, ink: clubInk(home) };
+  const awayStyle = { bright: true, ink: clubInk(away, clubInk(home)) };
+  // TAB and comma spaces, and both numbers, inherit the preceding name's INK.
+  const homeText = `${clubText(home).padEnd(12)}${score[0]}`.padEnd(16);
+  const awayText = `${clubText(away).padEnd(12)}${score[1]}`;
+  rasterText(rgba, 256, 0, 32, homeText.slice(0, scoreShown), homeStyle);
+  rasterText(
+    rgba,
+    256,
     128,
-    32
+    32,
+    awayText.slice(0, Math.max(0, scoreShown - homeText.length)),
+    awayStyle
   );
-  context.fillText(
-    String(score[1]).slice(0, Math.max(0, scoreShown - 28)),
-    224,
-    32
-  );
+  return rgba;
 };
+
+export const paintAttack = (
+  context: CanvasRenderingContext2D,
+  attack: Attack,
+  index: number,
+  score: readonly number[],
+  home: Club,
+  away: Club
+) =>
+  context.putImageData(
+    new ImageData(
+      rasterizeHighlight(attack, index, score, home, away),
+      256,
+      176
+    ),
+    0,
+    0
+  );

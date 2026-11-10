@@ -3,6 +3,7 @@ import { saveLimit } from '../sim/save';
 import type { View } from '../sim/session';
 import { createBeeper } from './beeper';
 import { createFrameSampler } from './frame-sampler';
+import { rasterText, rasterizeCells } from './glyphs';
 import { paintAttack } from './pitch';
 import { makeScreen } from './screen';
 import {
@@ -22,8 +23,9 @@ if (!app) {
 app.innerHTML = `
   <h1 class="sr-only">Football Manager</h1>
   <section class="machine" aria-label="ZX Spectrum Football Manager">
-    <div id="screen" aria-hidden="true"></div><canvas id="pitch" width="256" height="176" aria-hidden="true" hidden></canvas>
+    <canvas id="screen" width="256" height="176" aria-hidden="true"></canvas><canvas id="pitch" width="256" height="176" aria-hidden="true" hidden></canvas>
     <form id="entry" autocomplete="off">
+      <canvas id="entry-display" width="256" height="16" aria-hidden="true"></canvas>
       <label for="command" id="prompt"></label><input id="command" name="command" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="256" />
     </form>
   </section>
@@ -34,7 +36,11 @@ app.innerHTML = `
   <dialog id="game-menu" class="game-menu" aria-labelledby="game-menu-title"></dialog>
   <input id="load-save" type="file" accept=".json,.fman.json" hidden />
 `;
-const screen = document.querySelector<HTMLElement>('#screen')!;
+const screen = document.querySelector<HTMLCanvasElement>('#screen')!;
+const screenContext = screen.getContext('2d')!;
+const entryDisplay =
+  document.querySelector<HTMLCanvasElement>('#entry-display')!;
+const entryContext = entryDisplay.getContext('2d')!;
 const form = document.querySelector<HTMLFormElement>('#entry')!;
 const input = document.querySelector<HTMLInputElement>('#command')!;
 const prompt = document.querySelector<HTMLElement>('#prompt')!;
@@ -86,18 +92,32 @@ const displayKey = (view: View) =>
       ? `${view.timingKey}:${view.celebration}:${Math.floor((view.ulaFrames ?? view.frames) / 16) % 2}`
       : `${view.timingKey ?? ''}`;
 
+const paintEntry = () => {
+  const rgba = new Uint8ClampedArray(256 * 16 * 4);
+  rasterText(rgba, 256, 0, 0, ' '.repeat(32));
+  rasterText(rgba, 256, 0, 8, ' '.repeat(32));
+  [...prompt.textContent!, ...input.value].forEach((character, index) =>
+    rasterText(
+      rgba,
+      256,
+      (index % 32) * 8,
+      Math.floor(index / 32) * 8,
+      character
+    )
+  );
+  entryContext.putImageData(new ImageData(rgba, 256, 16), 0, 0);
+};
+input.addEventListener('input', paintEntry);
+
 const render = (clearInput = true) => {
   const view = journal.session.view;
   const display = makeScreen(view);
-  const fragment = document.createDocumentFragment();
-  for (const cell of display.cells) {
-    const span = document.createElement('span');
-    span.textContent = cell.text;
-    const palette = cell.bright ? 'bright' : 'normal';
-    span.style.color = `var(--${palette}-${cell.inverse ? cell.paper : cell.ink})`;
-    span.style.backgroundColor = `var(--${palette}-${cell.inverse ? cell.ink : cell.paper})`;
-    fragment.append(span);
-  }
+  screen.height = display.lines.length * 8;
+  screenContext.putImageData(
+    new ImageData(rasterizeCells(display.cells), 256, screen.height),
+    0,
+    0
+  );
   const current =
     view.screen === 'highlights' ? view.playback.current : undefined;
   if (view.tones && audioKey !== `${view.screen}:${view.timingKey}`) {
@@ -131,7 +151,6 @@ const render = (clearInput = true) => {
       audioKey = playback.key;
     }
   }
-  screen.replaceChildren(fragment);
   const text = display.lines.join('\n') + '\n' + display.prompt;
   if (transcript.textContent !== text) {
     transcript.textContent = text;
@@ -143,6 +162,7 @@ const render = (clearInput = true) => {
   if (clearInput) {
     input.value = '';
   }
+  paintEntry();
   if (!display.paused && !menu.open) {
     input.focus({ preventScroll: true });
   }

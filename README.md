@@ -7,7 +7,7 @@ Currently supports setup, management, home/away league fixtures and all eight
 cup rounds (including replays), with selection, highlights, tables, bills and
 transfers, season bonuses, promotion/relegation and new-season resets.
 Debt-cap dismissal, explicit reloading and club/player name editing are supported.
-Versioned web save files can be downloaded with `keep` and loaded explicitly. Exact interpreter pacing and ROM-pixel rendering are not yet established.
+Versioned web save files can be downloaded with `keep` and loaded explicitly. Glyph pixels and captured pitch/sprite states match the original; complete-screen pixel and exact interpreter-pacing parity remain unverified.
 
 ```sh
 bun install

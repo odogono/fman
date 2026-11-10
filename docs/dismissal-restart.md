@@ -29,4 +29,4 @@ Session tests also reach dismissal through actual borrowing, signing and match c
 
 ## Remaining scope
 
-[Name editing](name-editing.md) is now implemented. [Web saving/loading](save-load.md) is now implemented. Existing font, browser line-editor, prompt-sound and interpreter-pacing limits remain. The web clear is immediate and does not reproduce the ROM's RAM-clearing execution cost; no JavaScript or application asset is erased from the browser.
+[Name editing](name-editing.md) is now implemented. [Web saving/loading](save-load.md) is now implemented. The [glyph raster verification](glyph-raster-fidelity.md) establishes printable/block cell pixels; whole-screen, browser line-editor, prompt-sound and interpreter-pacing limits remain. The web clear is immediate and does not reproduce the ROM's RAM-clearing execution cost; no JavaScript or application asset is erased from the browser.

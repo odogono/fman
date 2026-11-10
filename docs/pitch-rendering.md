@@ -66,7 +66,7 @@ These comparisons and the running app reported no page errors.
 
 Hashes cover stable pre-outcome frames, not every intermediate BASIC printing
 instruction or 50 Hz video frame. They exclude the goal banner/score overlay
-and NO GOAL text, whose redrawn font has not been established as ROM-pixel exact.
+and NO GOAL text. The separate [glyph raster verification](glyph-raster-fidelity.md) now establishes the printable/block masks and compares those production overlays, including partial printing, against ROM PRINT cell observations. It also preserves the inherited bright attributes and score inks. Complete original match-frame pixel equality remains unverified.
 [Measured pacing](highlight-pacing.md) now schedules progressive pitch drawing,
 individual sprite PRINTs and outcome text with execution-path budgets. Stable
 pixel checks use semantic checkpoints instead of duration constants; all 766

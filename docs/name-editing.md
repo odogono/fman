@@ -56,4 +56,4 @@ names in the strength display and large edited season summaries remain to be
 verified. The captured single-attempt name screens include their original
 scroll offset. Existing font, prompt sound and pacing limits remain.
 
-Saving is still unavailable.
+[Web saving/loading](save-load.md) is now implemented.

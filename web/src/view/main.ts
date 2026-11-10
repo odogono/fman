@@ -1,3 +1,4 @@
+import { saveLimit } from '../sim/save';
 import { createSession } from '../sim/session';
 import { createBeeper } from './beeper';
 import { cupVictoryTones } from './cup-victory';
@@ -18,7 +19,8 @@ app.innerHTML = `
     </form>
   </section>
   <pre id="transcript" class="sr-only" aria-live="polite" aria-atomic="true"></pre>
-  <p class="build-note">Play league and cup matches, edit names and manage your club.<br />Saving is coming next.</p>
+  <p class="build-note">Play league and cup matches, edit names and manage your club.<br />Use keep to download a web save.</p>
+  <label class="save-load">Load web save <input id="load-save" type="file" accept=".json,.fman.json" /></label>
   <button id="reload" type="button" hidden>Load game again</button>
   <p id="notice" class="notice" role="status"></p>
 `;
@@ -30,6 +32,7 @@ const transcript = document.querySelector<HTMLElement>('#transcript')!;
 const notice = document.querySelector<HTMLElement>('#notice')!;
 const reload = document.querySelector<HTMLButtonElement>('#reload')!;
 const session = createSession();
+const loadInput = document.querySelector<HTMLInputElement>('#load-save')!;
 const canvas = document.querySelector<HTMLCanvasElement>('#pitch')!;
 const context = canvas.getContext('2d')!;
 const beeper = createBeeper();
@@ -100,6 +103,29 @@ const render = (clearInput = true) => {
   }
 };
 
+loadInput.addEventListener('change', async () => {
+  const file = loadInput.files?.[0];
+  if (!file) {
+    return;
+  }
+  loadInput.disabled = true;
+  try {
+    if (file.size > saveLimit) {
+      throw new RangeError('Save file is too large');
+    }
+    session.load(await file.text());
+    audioKey = '';
+    notice.textContent = 'Web save loaded.';
+    render();
+  } catch {
+    notice.textContent =
+      'Could not load this web save. The current game is unchanged.';
+  } finally {
+    loadInput.value = '';
+    loadInput.disabled = false;
+  }
+});
+
 reload.addEventListener('click', () => {
   if (session.reload()) {
     notice.textContent = '';
@@ -119,12 +145,41 @@ form.addEventListener('submit', event => {
     input.focus({ preventScroll: true });
     return;
   }
+  if (effect?.type === 'save') {
+    let url: string | undefined;
+    try {
+      url = URL.createObjectURL(
+        new Blob([effect.data], { type: 'application/json' })
+      );
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'football.fman.json';
+      document.body.append(link);
+      try {
+        link.click();
+      } finally {
+        link.remove();
+      }
+      session.saved();
+      notice.textContent = 'Web save download requested.';
+    } catch {
+      notice.textContent = 'Could not download the web save. Try keep again.';
+    } finally {
+      if (url) {
+        const downloadUrl = url;
+        setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+      }
+    }
+  }
   if (effect?.type === 'unavailable') {
     notice.textContent = `${effect.feature} is not available in this build.`;
   }
   render();
 });
 document.addEventListener('keydown', event => {
+  if (event.target === loadInput) {
+    return;
+  }
   if (
     session.paused &&
     !event.repeat &&

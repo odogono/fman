@@ -118,6 +118,7 @@ main {
   box-shadow: inset 0 -1px var(--normal-0);
 }
 .build-note,
+.save-load,
 .notice {
   max-width: 64ch;
   margin: 16px 0 0;
@@ -161,7 +162,8 @@ main {
   }
   .build-note,
   .notice,
-  #reload {
+  #reload,
+  .save-load {
     display: none;
   }
 }

@@ -46,3 +46,15 @@ test('difficulty names retain the original PAPER 9 contrast, including white Gen
   expect(display.cells[0 * 32 + 16]?.paper).toBe(7);
   expect(display.cells[6 * 32 + 31]?.paper).toBe(0);
 });
+
+test('saving asks the original continuation question and declining shows NEW', () => {
+  const game = session();
+  game.submit('keep');
+  game.saved();
+  const screen = makeScreen(game);
+  expect(screen.prompt).toBe('Do you want to play some more?');
+  expect(screen.label).toBe('Continue playing, y or n');
+  expect(screen.paused).toBe(false);
+  game.submit('h');
+  expect(makeScreen(game).lines[23]).toContain('© 1982 Sinclair Research Ltd');
+});

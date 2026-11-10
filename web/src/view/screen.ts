@@ -74,6 +74,10 @@ export const makeScreen = (session: Session) => {
   let numeric = false;
   const game = session.game;
   switch (session.screen) {
+    case 'save-question':
+      prompt = 'Do you want to play some more?';
+      label = 'Continue playing, y or n';
+      break;
     case 'names':
       ({ label, numeric, prompt } = paintNames(session, put));
       break;

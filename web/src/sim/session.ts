@@ -1,20 +1,5 @@
-import {
-  prepareCupMatch,
-  prepareReplay,
-  refreshPlayers,
-  settleCupLeg
-} from './cup';
 import { createFrameClock } from './frame-clock';
-import { simulateHighlights } from './highlights';
-import {
-  completeLeagueMatch,
-  nextFixture,
-  prepareLeagueMatch,
-  teamStrength,
-  togglePickedPlayer,
-  type MatchCompletion,
-  type MatchFixture
-} from './league';
+import { seasonOver, type MatchCompletion } from './league';
 import {
   borrow,
   createNewGame,
@@ -25,12 +10,8 @@ import {
   type Game,
   type SaleOffer
 } from './management';
+import { createMatchday, type Matchday } from './matchday';
 import { createNameEditor, type NameEditor } from './name-editor';
-import {
-  createPlayback,
-  type HighlightResult,
-  type Playback
-} from './playback';
 import { createRng } from './rng';
 import { decodeSave, encodeSave } from './save';
 import { completeSeason, type SeasonCompletion } from './season';
@@ -99,14 +80,9 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
   let resume: Screen = 'manager';
   let changingLevel = false;
   let offer: SaleOffer | undefined;
-  let fixture: MatchFixture | undefined;
-  let highlights: HighlightResult | undefined;
-  let playback: Playback | undefined;
-  let completion: MatchCompletion | undefined;
+  let matchday: Matchday | undefined;
   let season: SeasonCompletion | undefined;
   let nameEditor: NameEditor | undefined;
-  let cupWon = false;
-  let bills: MatchCompletion['bills'] | undefined;
   let selectionError = '';
   let transfer: TransferOffer | undefined;
   const showBills = () => {
@@ -126,14 +102,9 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
     resume = 'manager';
     changingLevel = false;
     offer = undefined;
-    fixture = undefined;
-    highlights = undefined;
-    playback = undefined;
-    completion = undefined;
+    matchday = undefined;
     season = undefined;
     nameEditor = undefined;
-    cupWon = false;
-    bills = undefined;
     selectionError = '';
     transfer = undefined;
   };
@@ -143,13 +114,10 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
     game = { ...game!, seed: rng.seed };
     screen = 'menu';
   };
-  const finishHighlights = () => {
-    if (playback?.done) {
-      game = {
-        ...game!,
-        attackCarry: highlights!.carry,
-        seed: highlights!.seed
-      };
+  const play = (step: (matchday: Matchday) => void) => {
+    step(matchday!);
+    game = matchday!.game;
+    if (screen === 'highlights' && matchday!.stage === 'result') {
       screen = 'result';
     }
   };
@@ -165,8 +133,7 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
       return;
     }
     if (screen === 'highlights') {
-      playback!.skipPause();
-      finishHighlights();
+      play(m => m.skipPause());
       return;
     }
     if (remaining > 0) {
@@ -177,8 +144,7 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
   const advance = (frames: number) => {
     clock.advance(frames);
     if (screen === 'highlights') {
-      playback!.advance(frames);
-      finishHighlights();
+      play(m => m.advance(frames));
       return;
     }
     if (remaining > 0) {
@@ -272,21 +238,15 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
           level = game!.level;
           screen = 'level';
         } else if (text === '99') {
-          const next = nextFixture(game!);
-          if (next === 'season') {
+          const next = createMatchday(game!);
+          if (!next) {
             return {
               feature: 'Season progression',
               type: 'unavailable'
             };
           }
-          fixture =
-            next === 'league'
-              ? prepareLeagueMatch(game!)
-              : prepareCupMatch(game!);
-          game = fixture.game;
-          cupWon = false;
-          completion = undefined;
-          bills = undefined;
+          matchday = next;
+          game = next.game;
           screen = 'fixture';
         } else if (isCommand(text, 'change')) {
           nameEditor = createNameEditor(game!);
@@ -312,21 +272,12 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
         return effect;
       }
       case 'fixture':
-        game = refreshPlayers(game!);
+        play(m => m.refresh());
         screen = 'team';
         break;
       case 'team':
         if (text === '99') {
-          highlights = simulateHighlights({
-            awayInk: fixture!.home ? 7 - game!.colour : game!.colour,
-            carry: game!.attackCarry,
-            home: fixture!.home,
-            homeInk: fixture!.home ? game!.colour : 7 - game!.colour,
-            opponent: fixture!.opponentStrength,
-            seed: game!.seed,
-            strength: teamStrength(game!)
-          });
-          playback = createPlayback(highlights);
+          play(m => m.kickOff());
           screen = 'highlights';
         } else {
           selectionError = '';
@@ -346,7 +297,7 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
         }
         selectionError = '';
         try {
-          game = togglePickedPlayer(game!, number);
+          play(m => m.pick(number));
         } catch (error) {
           if (!(error instanceof RangeError)) {
             throw error;
@@ -354,30 +305,24 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
           selectionError = error.message;
         }
         break;
-      case 'result':
-        if (fixture!.kind === 'cup') {
-          const result = settleCupLeg(game!, fixture!, highlights!.score);
-          game = result.game;
-          bills = result.bills;
-          cupWon = result.cupWon;
-          screen = result.replay
-            ? 'replay'
-            : cupWon
-              ? 'cup-celebration'
-              : 'cup-result';
-          if (cupWon) {
-            remaining = 90;
-            resume = 'cup-result';
-          }
-          break;
+      case 'result': {
+        play(m => m.settle());
+        const settled = matchday!.settlement;
+        if (!settled) {
+          screen = 'replay';
+        } else if (settled.kind === 'league') {
+          screen = 'other-matches';
+        } else if (settled.cupWon) {
+          screen = 'cup-celebration';
+          remaining = 90;
+          resume = 'cup-result';
+        } else {
+          screen = 'cup-result';
         }
-        completion = completeLeagueMatch(game!, fixture!, highlights!.score);
-        game = completion.game;
-        bills = completion.bills;
-        screen = 'other-matches';
         break;
+      }
       case 'replay':
-        fixture = prepareReplay(game!, fixture!);
+        play(m => m.replay());
         screen = 'fixture';
         break;
       case 'cup-result':
@@ -392,7 +337,7 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
         showBills();
         break;
       case 'bills':
-        if (game!.leagueMatches === 15 && game!.cupFinished) {
+        if (seasonOver(game!)) {
           screen = 'end-season';
           break;
         }
@@ -500,34 +445,44 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
         break;
     }
   };
+  const settlement = () => matchday?.settlement;
+  const cupWon = () => {
+    const settled = settlement();
+    return settled?.kind === 'cup' && settled.cupWon;
+  };
   return {
     advance,
-    get bills() {
-      return bills;
+    get bills(): MatchCompletion['bills'] | undefined {
+      const settled = settlement();
+      return settled?.kind === 'cup'
+        ? settled.bills
+        : settled?.completion.bills;
     },
     get changingLevel() {
       return changingLevel;
     },
     get completion() {
-      return completion;
+      const settled = settlement();
+      return settled?.kind === 'league' ? settled.completion : undefined;
     },
     get cupCelebrationStep() {
-      return cupWon
+      return cupWon()
         ? screen === 'cup-celebration'
           ? Math.min(9, Math.floor((90 - remaining) / 10) + 1)
           : 9
         : 0;
     },
     get cupDisplayKey() {
-      return cupWon && (screen === 'cup-celebration' || screen === 'cup-result')
+      return cupWon() &&
+        (screen === 'cup-celebration' || screen === 'cup-result')
         ? `${this.cupCelebrationStep}:${Math.floor(clock.frames / 16) % 2}`
         : '';
     },
     get cupWon() {
-      return cupWon;
+      return cupWon();
     },
     get fixture() {
-      return fixture;
+      return matchday?.fixture;
     },
     get frames() {
       return clock.frames;
@@ -536,7 +491,7 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
       return game;
     },
     get highlights() {
-      return highlights;
+      return matchday?.highlights;
     },
     load: (data: string) => {
       const saved = decodeSave(data);
@@ -544,6 +499,9 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
       clock = createFrameClock(saved.frames);
       game = saved.game;
       returnToManagement();
+    },
+    get matchday() {
+      return matchday;
     },
     get message() {
       return message;
@@ -561,7 +519,7 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
       return remaining > 0 || screen === 'highlights';
     },
     get playback() {
-      return playback;
+      return matchday?.playback;
     },
     reload: () => {
       if (screen !== 'cleared') {

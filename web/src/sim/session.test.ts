@@ -202,8 +202,101 @@ test('the first cup replays at the opposite ground, bills once, then returns thr
   session.submit('');
   session.submit('99');
   expect(session.screen).toBe('menu');
+  for (let match = 2; match <= 3; match++) {
+    session.submit('99');
+    expect(session.screen).toBe('fixture');
+    expect(session.fixture!.kind).toBe('league');
+    expect(session.fixture!.home).toBe(match === 3);
+    expect(session.game!.leagueMatches).toBe(match);
+    session.submit('');
+    session.submit('99');
+    session.advance(1_000_000);
+    for (let i = 0; i < 4; i++) {
+      session.submit('');
+    }
+    session.submit('99');
+    expect(session.screen).toBe('menu');
+  }
+  const game = session.game;
   expect(session.submit('99')).toEqual({
-    feature: 'Next fixture',
+    feature: 'Later cup rounds',
     type: 'unavailable'
   });
+  expect(session.game).toBe(game);
+});
+
+test('after cup elimination, all remaining league matches lead to a season boundary before transfers', () => {
+  const session = setup();
+  for (const input of ['99', '', '99']) {
+    session.submit(input);
+  }
+  session.advance(1_000_000);
+  for (let i = 0; i < 4; i++) {
+    session.submit('');
+  }
+  session.advance((65_537 - (session.frames % 65_536)) % 65_536);
+  session.submit('99');
+  expect(session.game!.seed).toBe(1);
+  for (const input of ['99', '', '99']) {
+    session.submit(input);
+  }
+  session.advance(1_000_000);
+  session.submit('');
+  expect(session.game!.cupFinished).toBe(true);
+  session.submit('');
+  session.submit('');
+  session.submit('99');
+  for (let match = 2; match <= 15; match++) {
+    for (const input of ['99', '', '99']) {
+      session.submit(input);
+    }
+    session.advance(1_000_000);
+    for (let i = 0; i < 3; i++) {
+      session.submit('');
+    }
+    expect(session.screen).toBe('bills');
+    if (match === 15) {
+      break;
+    }
+    session.submit('');
+    session.submit('99');
+  }
+  const game = session.game;
+  expect(session.submit('')).toEqual({
+    feature: 'Season progression',
+    type: 'unavailable'
+  });
+  expect(session.screen).toBe('bills');
+  expect(session.game).toBe(game);
+});
+
+test('a club beyond the debt cap stops before the unimplemented dismissal flow', () => {
+  const session = setup();
+  session.submit('l');
+  session.submit('250000');
+  session.submit('');
+  for (const input of ['99', '', '99']) {
+    session.submit(input);
+  }
+  session.advance(1_000_000);
+  for (let i = 0; i < 4; i++) {
+    session.submit('');
+  }
+  session.submit(String(session.game!.cash));
+  session.advance((65_537 - (session.frames % 65_536)) % 65_536);
+  session.submit('');
+  expect(session.game!.seed).toBe(1);
+  for (const input of ['99', '', '99']) {
+    session.submit(input);
+  }
+  session.advance(1_000_000);
+  session.submit('');
+  session.submit('');
+  expect(session.screen).toBe('bills');
+  expect(session.game!.debt).toBeGreaterThan(250_000);
+  expect(session.submit('')).toEqual({
+    feature: 'Dismissal',
+    type: 'unavailable'
+  });
+  expect(session.screen).toBe('bills');
 });

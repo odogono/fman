@@ -31,6 +31,7 @@ export type Game = Readonly<{
   division: number;
   homeGate: number;
   league: readonly LeagueRecord[];
+  leagueHome: boolean;
   leagueMatches: number;
   leaguePosition: number;
   level: number;
@@ -106,6 +107,7 @@ export const createNewGame = (options: {
       points: 0,
       position: 0
     })),
+    leagueHome: false,
     leagueMatches: 0,
     leaguePosition: 0,
     level: options.level,

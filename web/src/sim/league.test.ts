@@ -2,8 +2,8 @@ import { expect, test } from 'bun:test';
 
 import cases from './fixtures/first-matches.json';
 import {
-  completeFirstMatch,
-  prepareFirstMatch,
+  completeLeagueMatch,
+  prepareLeagueMatch,
   teamStrength,
   togglePickedPlayer
 } from './league';
@@ -15,12 +15,12 @@ const fresh = (seed = 0) => ({
 });
 for (const reference of cases) {
   test(`original first fixture and completed cycle from seed ${reference.seed}`, () => {
-    const fixture = prepareFirstMatch(fresh(reference.seed));
+    const fixture = prepareLeagueMatch(fresh(reference.seed));
     expect(fixture.opponent).toBe(reference.opponent);
     expect(fixture.opponentStrength).toEqual(reference.opponentStrength);
     expect(fixture.game.seed).toBe(reference.fixtureSeed!);
     expect(teamStrength(fixture.game)).toEqual(reference.strength);
-    const completed = completeFirstMatch(
+    const completed = completeLeagueMatch(
       { ...fixture.game, seed: reference.finalSeed },
       fixture,
       reference.score

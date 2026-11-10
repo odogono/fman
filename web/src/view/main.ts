@@ -453,6 +453,7 @@ const tick = (now: number) => {
   const session = journal.session;
   const elapsed = sampleFrames(now);
   const before = session.view;
+  const beforeKey = displayKey(before);
   journal.advance(elapsed);
   const after = session.view;
   if (before.screen !== after.screen) {
@@ -460,10 +461,7 @@ const tick = (now: number) => {
   } else if (elapsed > 0 && now - lastPersist >= 1000) {
     persist();
   }
-  if (
-    before.screen !== after.screen ||
-    displayKey(before) !== displayKey(after)
-  ) {
+  if (before.screen !== after.screen || beforeKey !== displayKey(after)) {
     render(before.screen !== after.screen);
   }
   requestAnimationFrame(tick);

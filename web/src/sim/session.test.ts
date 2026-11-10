@@ -259,12 +259,20 @@ test('after cup elimination, all remaining league matches lead to a season bound
     session.submit('99');
   }
   const game = session.game;
-  expect(session.submit('')).toEqual({
-    feature: 'Season progression',
-    type: 'unavailable'
-  });
-  expect(session.screen).toBe('bills');
+  session.submit('');
+  expect(session.screen).toBe('end-season');
   expect(session.game).toBe(game);
+  session.submit('');
+  expect(session.screen).toBe('season-table');
+  session.submit('');
+  expect(session.screen).toBe('season-summary');
+  expect(session.game!.seasons).toBe(1);
+  expect(session.game!.leagueMatches).toBe(0);
+  session.submit('');
+  expect(session.screen).toBe('menu');
+  session.submit('99');
+  expect(session.fixture!.home).toBe(true);
+  expect(session.game!.leagueMatches).toBe(1);
 });
 
 test('a club beyond the debt cap stops before the unimplemented dismissal flow', () => {

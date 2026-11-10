@@ -8,6 +8,7 @@ import {
   type Style
 } from './management-layouts';
 import { paintMatch } from './match-layouts';
+import { paintSeason } from './season-layouts';
 
 export const makeScreen = (session: Session) => {
   const cells: Cell[] = Array.from({ length: 22 * 32 }, () => ({
@@ -216,6 +217,11 @@ export const makeScreen = (session: Session) => {
         label = 'Continue';
         copy();
       }
+      break;
+    case 'end-season':
+    case 'season-table':
+    case 'season-summary':
+      ({ label, numeric, prompt } = paintSeason(session, put));
       break;
     default:
       ({ label, numeric, prompt } = paintMatch(session, put));

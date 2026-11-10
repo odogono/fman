@@ -30,6 +30,7 @@ import {
   type Playback
 } from './playback';
 import { createRng } from './rng';
+import { completeSeason, type SeasonCompletion } from './season';
 import {
   bidForPlayer,
   openTransferMarket,
@@ -37,6 +38,9 @@ import {
 } from './transfers';
 
 export type Screen =
+  | 'end-season'
+  | 'season-table'
+  | 'season-summary'
   | 'cup-celebration'
   | 'replay'
   | 'cup-result'
@@ -89,6 +93,7 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
   let highlights: HighlightResult | undefined;
   let playback: Playback | undefined;
   let completion: MatchCompletion | undefined;
+  let season: SeasonCompletion | undefined;
   let cupWon = false;
   let bills: MatchCompletion['bills'] | undefined;
   let selectionError = '';
@@ -331,7 +336,8 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
           return { feature: 'Dismissal', type: 'unavailable' };
         }
         if (game!.leagueMatches === 15 && game!.cupFinished) {
-          return { feature: 'Season progression', type: 'unavailable' };
+          screen = 'end-season';
+          break;
         }
         transfer = openTransferMarket(game!);
         if (!transfer) {
@@ -343,6 +349,17 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
         message = transfer.fullSquad
           ? 'You cannot buy a player because you have 16 in your squad - thatis the maximum allowed under    F.A. rules.'
           : '';
+        break;
+      case 'end-season':
+        screen = 'season-table';
+        break;
+      case 'season-table':
+        season = completeSeason(game!);
+        game = season.game;
+        screen = 'season-summary';
+        break;
+      case 'season-summary':
+        returnToManagement();
         break;
       case 'transfer': {
         if (number === undefined) {
@@ -478,6 +495,9 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
     },
     get screen() {
       return screen;
+    },
+    get season() {
+      return season;
     },
     get selectionError() {
       return selectionError;

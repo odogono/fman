@@ -103,8 +103,19 @@ test('a complete winning campaign reaches the final after league match fifteen a
   expect(session.game!.seed).toBe(seed);
   session.submit('');
   expect(session.screen).toBe('bills');
-  expect(session.submit('')).toEqual({
-    feature: 'Season progression',
-    type: 'unavailable'
-  });
+  const old = session.game!;
+  session.submit('');
+  expect(session.screen).toBe('end-season');
+  session.submit('');
+  session.submit('');
+  expect(session.screen).toBe('season-summary');
+  expect(session.game!.cash).toBe(old.cash + session.season!.bonus);
+  expect(session.game!.previousNet).toBe(old.previousNet);
+  expect(session.game!.seasons).toBe(1);
+  expect(session.game!.players.map(p => p.status)).toEqual(
+    old.players.map(p => p.status)
+  );
+  session.submit('');
+  expect(session.screen).toBe('menu');
+  expect(session.game!.seed).toBe(session.frames % 65_536);
 });

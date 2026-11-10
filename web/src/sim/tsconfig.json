@@ -1,0 +1,11 @@
+{
+  // The simulation is headless (CODING_STANDARDS.md): no DOM and no Bun globals, so
+  // using either here, or importing from view/, fails the typecheck.
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2023"],
+    "types": []
+  },
+  "include": ["./**/*.ts"],
+  "exclude": ["./**/*.test.ts"]
+}

@@ -1,0 +1,37 @@
+#!/bin/sh
+# Fixes what lint and Prettier can fix in the staged files, then lints
+# staged TypeScript. `bun install` turns
+# this on through core.hooksPath.
+cd "$(git rev-parse --show-toplevel)" || exit 1
+staged=$(git diff --cached --name-only --diff-filter=ACMR)
+
+# Autofix only files staged whole, so a partly staged file keeps its
+# unstaged hunks out of the commit.
+unstaged=$(git diff --name-only)
+whole=$(printf '%s\n' "$staged" | grep -vxF -e "$unstaged" -e '')
+if [ -n "$whole" ]; then
+  fixable=$(printf '%s\n' "$whole" | grep -E '\.(ts|tsx)$')
+  # shellcheck disable=SC2086
+  [ -n "$fixable" ] && bunx eslint --cache --fix $fixable >/dev/null 2>&1
+  # shellcheck disable=SC2086
+  bunx prettier --write --ignore-unknown $whole >/dev/null 2>&1
+  # shellcheck disable=SC2086
+  git add $whole
+fi
+
+ts=$(printf '%s\n' "$staged" | grep -E '\.(ts|tsx)$')
+if [ -n "$ts" ]; then
+  # shellcheck disable=SC2086
+  bunx eslint --cache $ts || {
+    echo 'pre-commit: fix the lint errors above (`bun run lint:fix` autofixes most).' >&2
+    exit 1
+  }
+fi
+
+if [ -n "$staged" ]; then
+  # shellcheck disable=SC2086
+  bunx prettier --check --ignore-unknown $staged >/dev/null 2>&1 || {
+    echo 'pre-commit: staged files are not formatted (`bun run format`).' >&2
+    exit 1
+  }
+fi

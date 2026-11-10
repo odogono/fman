@@ -1,6 +1,6 @@
 # Continued league play
 
-After the first cup tie and its transfer market, management now continues into league matches two and three. If the club remains in the cup, the next second-round cup tie is an explicit unsupported boundary. After cup elimination, league play continues through match fifteen, stopping at the bills prompt before the unimplemented season change.
+After the first cup tie and its transfer market, management now continues into league matches two and three. The subsequent [cup-progression increment](cup-progression.md) now implements rounds two through eight, including the final after league match fifteen. After cup elimination, league play continues through match fifteen, stopping at the bills prompt before the unimplemented season change.
 
 ## Original rules retained
 
@@ -29,6 +29,6 @@ The optional SkoolKit 10.2 adapter validates the fresh BASIC hash and profile an
 
 ## Remaining scope
 
-Later cup rounds, season bonuses/promotion/relegation/reset, dismissal, name editing and saving remain unimplemented. Active cup runs stop before round two; eliminated clubs stop at the final league bills before the season-change routine and its following transfer market. Crossing the debt cap also stops at bills with a dismissal-unavailable notice, rather than continuing transfers past that boundary. Each unavailable action preserves state. These are explicit build limits, not replacement rules for the original game.
+Season bonuses/promotion/relegation/reset, dismissal, name editing and saving remain unimplemented. The [complete cup progression](cup-progression.md) now keeps the final playable after league match fifteen; after the cup campaign ends, final bills stop before the season-change routine and its following transfer market. Crossing the debt cap also stops at bills with a dismissal-unavailable notice, rather than continuing transfers past that boundary. Each unavailable action preserves state. These are explicit build limits, not replacement rules for the original game.
 
 Existing [presentation and timing limits](first-league-match.md#presentation-limits) still apply. Completion remains atomic at the bills boundary while screens present the source's sequence.

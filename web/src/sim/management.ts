@@ -40,6 +40,7 @@ export type Game = Readonly<{
   players: readonly Player[];
   previousNet: number;
   rating: number;
+  ratingTotal: number;
   scheduleCounter: number;
   seasons: number;
   seed: number;
@@ -116,6 +117,7 @@ export const createNewGame = (options: {
     players,
     previousNet: 0,
     rating: 0,
+    ratingTotal: 0,
     scheduleCounter: 1,
     seasons: 0,
     seed: rng.seed

@@ -18,7 +18,7 @@ app.innerHTML = `
     </form>
   </section>
   <pre id="transcript" class="sr-only" aria-live="polite" aria-atomic="true"></pre>
-  <p class="build-note">Play league and cup matches, buy players and manage your club.<br />Season changes, dismissal, name editing and saves are coming next.</p>
+  <p class="build-note">Play league and cup matches, buy players and manage your club.<br />Dismissal, name editing and saves are coming next.</p>
   <p id="notice" class="notice" role="status"></p>
 `;
 const screen = document.querySelector<HTMLElement>('#screen')!;

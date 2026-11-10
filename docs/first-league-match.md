@@ -2,7 +2,7 @@
 
 The first playable match extends [fresh-game management](fresh-game-management.md): type `99` at the management menu, review the fixture and team strengths, adjust the picked team, then watch highlights and continue through the final score, other results, league table and weekly bills.
 
-This increment originally ended after the first league cycle. The [first-cup increment](first-cup-round.md) now adds the following cup tie and replays. The [league-continuation increment](league-progression.md) now adds further league fixtures. The [complete cup progression](cup-progression.md) adds all eight rounds. Season progression, dismissal, name editing and saving remain unavailable. The subsequent [transfer-market increment](transfer-market.md) now continues from bills to buying players before returning to management. The season boundary follows the last league match and completion of the cup campaign.
+This increment originally ended after the first league cycle. The [first-cup increment](first-cup-round.md) now adds the following cup tie and replays. The [league-continuation increment](league-progression.md) now adds further league fixtures. The [complete cup progression](cup-progression.md) adds all eight rounds. [Season progression](season-progression.md) is now implemented. Dismissal, name editing and saving remain unavailable. The subsequent [transfer-market increment](transfer-market.md) now continues from bills to buying players before returning to management. The season boundary follows the last league match and completion of the cup campaign.
 
 ## Pre-match selection
 
@@ -55,7 +55,7 @@ bun test web/src/sim/highlights.test.ts web/src/sim/league.test.ts
 
 The optional capture tool runs SkoolKit 10.2, checks the BASIC hash and fresh-state profile, patches SEED explicitly at the management prompt, and records BASIC statement boundaries. It exports observations rather than original binaries or source. Originals/checkpoints remain under gitignored `roms/`; generated scratch output stays under `build/`.
 
-An additional 1,000-seed robustness run completed without simulation errors, using both kit colours. That run checks termination, not original-ROM parity beyond the five reference profiles. Browser testing completes selection, natural highlight playback, results, table and bills, and verifies that a second fixture is explicitly unavailable.
+An additional 1,000-seed robustness run completed without simulation errors, using both kit colours. That run checks termination, not original-ROM parity beyond the five reference profiles. The original increment's browser test completed selection, natural highlight playback, results, table and bills; at that point another fixture was unavailable. Subsequent increments now continue the campaign.
 
 ## Presentation limits
 

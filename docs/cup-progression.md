@@ -6,7 +6,7 @@ The seventh round is labelled `Semi-Final`, the eighth `Final`. Every semifinal 
 
 ## Final and season boundary
 
-The final is scheduled after league match fifteen. Reaching fifteen league matches therefore does not stop an active cup campaign before its final. Once the final is decided, the season-change boundary remains at bills, before bonuses, promotion/relegation, reset and the following transfer market. Elimination earlier in the cup still allows the remaining league fixtures before that boundary.
+The final is scheduled after league match fifteen. Reaching fifteen league matches therefore does not stop an active cup campaign before its final. Once the final is decided, [season progression](season-progression.md) now follows bills, covering bonuses, promotion/relegation and reset. The reset match count skips that cycle's transfer market. Elimination earlier in the cup still allows the remaining league fixtures before that boundary.
 
 Victory shows the source's ten-row trophy, two-row title and nine star rows. The nine rising `.2`-second beeps take ninety explicit 50Hz frames and cannot be skipped by a key. Afterwards the winning screen waits for continuation. Title/star flash uses the explicit frame clock; redraws retain partially typed input. The browser still uses the documented redrawn font and nominal oscillator pitches; exact pixel and interpreter-cycle equality remains unverified.
 
@@ -29,4 +29,4 @@ The optional adapter uses SkoolKit 10.2, validates the original BASIC hash befor
 
 ## Remaining scope
 
-Season changes, dismissal, name editing and saves remain unavailable. Season and dismissal boundaries preserve state and report the unsupported continuation. Result/billing calculation still uses the documented atomic bills boundary; existing browser input, timing and rendering limits remain.
+[Season changes](season-progression.md) are now implemented. Dismissal, name editing and saves remain unavailable; the dismissal boundary preserves state and reports the unsupported continuation. Result/billing calculation still uses the documented atomic bills boundary; existing browser input, timing and rendering limits remain.

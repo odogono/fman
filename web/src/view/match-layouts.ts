@@ -1,6 +1,7 @@
 import { teamStrength } from '../sim/league';
 import type { Session } from '../sim/session';
 import { paintCupVictory } from './cup-victory';
+import { paintLeagueTable } from './league-table';
 import { paintSquad, type Paint } from './management-layouts';
 
 export const paintMatch = (session: Session, put: Paint) => {
@@ -149,23 +150,7 @@ export const paintMatch = (session: Session, put: Paint) => {
       prompt = 'Hit ENTER to continue';
       break;
     case 'table':
-      put(0, 0, 'TEAM              F   A    PTS', {
-        bright: true,
-        ink: 7,
-        paper: 1
-      });
-      session.completion!.order.forEach((index, row) => {
-        const record = game.league[index]!;
-        put(row + 1, 0, game.clubs[(game.division - 1) * 16 + index]!.name);
-        put(row + 1, 18, String(record.for));
-        put(row + 1, 22, String(record.against));
-        put(row + 1, 28, String(record.points));
-      });
-      put(
-        18,
-        0,
-        `Lge.Pos. ${game.leaguePosition}   League match no.=${game.leagueMatches}`
-      );
+      paintLeagueTable(game, put, session.completion!.order);
       prompt = 'Hit ENTER to continue';
       break;
     case 'bills': {

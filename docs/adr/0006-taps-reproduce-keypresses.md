@@ -1,0 +1,3 @@
+# Taps reproduce keypresses, not only answers
+
+In both presentation modes, a tap that submits an answer also presses and releases Enter, and a tap during one of the original's timed pauses is a keypress for as long as the finger is down. Submitting only the answer text would be simpler, but every key a keyboard player presses sets the ROM's pending flag, which can end a later pause early. That changes the frame count the game reseeds from (ADR-0003). Without the keypresses, the same choices made by tap and by keyboard could produce different games, which breaks ADR-0005's promise. Text typed on a soft keyboard presses only Enter when the answer is submitted, because only the last key before a pause affects the flag, and soft keyboards often report no usable key codes.

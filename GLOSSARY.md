@@ -71,6 +71,20 @@ A named place in the browser holding one saved game.
 The web overlay, outside the reproduced Spectrum screen, from which the player resumes, saves, loads, starts a new game or changes options. Play is frozen while it is open.
 _Avoid_: Pause when referring to the game menu; a pause is the original's timed wait
 
+**Prompt**:
+A point where the original waits for the manager to type a line and press Enter.
+
+**Answer**:
+The text submitted to a prompt. An answer the original rejects with one of its own error messages is still an answer.
+_Avoid_: Command, action
+
+**Offered answer**:
+An answer a presentation mode puts within reach of a tap: the choices the original screen invites, or free number entry where it asks for an amount. Every offered answer is one the original accepts.
+
+**Keypress**:
+A key held down while the original waits or runs a timed pause, which can cut a pause short. It is not an answer.
+_Avoid_: Answer or tap when referring to skipping a pause
+
 **Presentation mode**:
 How the game is shown and controlled; every mode drives the same game with the same rules and outcomes.
 

@@ -53,6 +53,10 @@ under ADR-0001.
 
 ## Already established
 
+The [contention-aware reference capture](spectrum-timing.md) supplies the pinned
+clock model, timed keyboard inputs and original frame/sound/state observations
+for #25–#27. It does not establish web timing parity or beam-exact ULA video.
+
 Management, league/cup/season progression, dismissal/NEW, name editing, web
 saving/loading, captured name scrolling/wrapping and pitch/pre-outcome sprite
 pixels have implementation and emulator-backed evidence. See the [feature

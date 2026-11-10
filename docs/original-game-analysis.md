@@ -201,6 +201,11 @@ Highlights use a 256×176 graphics area, fifteen DATA-defined UDGs, a green/yell
 
 The observer uses SkoolKit 10.2's native `CSimulator`, its bundled 48K ROM (SHA-256 `d55daa439b673b0e3f5897f99ac37ecb45f974d1862b4dadb85dec34af99cb42`), maskable interrupts and an emulated 3.5MHz clock. This core does not model memory/I/O contention; it verifies execution and state, not cycle-accurate pacing. It resumes the original registers/RAM without changing game data and sends keyboard-matrix events with a four-frame delay. See [SkoolKit's command documentation](https://skoolkit.ca/docs/skoolkit/commands.html) for the underlying simulation and snapshot utilities; the adapter uses its Python interfaces.
 
+The separate [contention-aware timing reference](spectrum-timing.md) now uses
+`CCMIOSimulator`, a freshly prepared starting state and persistent timed matrix
+transitions. Its clock validation, traces and video/sound sampling limits apply
+to that capture, not retroactively to the historical observer above.
+
 Each step saves screen text, variables and a Z80 checkpoint. The observer asserts that its input hash is the studied snapshot, extraction agrees with the independent decoder, queued keys have been consumed and BASIC has reached the expected input line. Screen text is recovered from ROM glyphs and is approximate: UDGs and the line-editor cursor need the actual screen image.
 
 | Checkpoint         | Input and simulated wait | Observed outcome                                            |

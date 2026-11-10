@@ -25,7 +25,7 @@ The tuple type assumes valid byte values imported through a trusted decoder or c
 
 `createFrameClock(frames)` restores a 24-bit counter; `.advance(elapsed)` increments it modulo 2²⁴ using an explicit nonnegative safe-integer frame count. `.frames` exposes the current counter. No simulation code reads wall-clock time. Counter wrapping is checked against the ROM [interrupt routine](https://skoolkit.ca/disassemblies/rom/asm/56.html).
 
-This is a deterministic counter, **not** a cycle-accurate BASIC scheduler. Later work must determine the frame cost of game operations, keyboard waits, sound and pauses before timed input can reproduce complete original sessions. Advancing once per host rendering callback would not establish original pacing.
+This is a deterministic counter, **not** a cycle-accurate BASIC scheduler. The [contention-aware timing reference](spectrum-timing.md) now records original execution costs, timed keyboard transitions, pauses, frames and sound. Applying those observations to a scheduler and reproducing complete timed sessions remain later work. Advancing once per host rendering callback would not establish original pacing.
 
 ## Reference evidence and reproduction
 

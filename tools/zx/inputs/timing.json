@@ -1,0 +1,752 @@
+{
+  "schema": 1,
+  "source": {
+    "tape": "roms/zx/Football Manager.tzx",
+    "tapeSha256": "7fb5e9d4b8115bd4835ce9f1479ed498f05b52f2c435f40f089403ccadc72763",
+    "preparation": "uv run --with skoolkit==10.2 tap2sna.py --sim-load-config cmio=1 --sim-load-config fast-load=0 --sim-load-config finish-tape=1 --start 6952 \"roms/zx/Football Manager.tzx\" roms/zx/analysis/timing-start.z80"
+  },
+  "defaults": {
+    "snapshot": "roms/zx/analysis/timing-start.z80",
+    "snapshotSha256": "d180ffd8d3eb867c66c24e6d6bfa94efee16ac9dd6cf996cb1d662c47b64f25c",
+    "outfe": 7,
+    "flashPhase": 0,
+    "maxFrames": 30000,
+    "variables": [
+      "tco",
+      "ho",
+      "aw",
+      "s(2)",
+      "f(3,2)",
+      "g(3,2)",
+      "d(4)",
+      "dri",
+      "h",
+      "v",
+      "m",
+      "l",
+      "c",
+      "ml",
+      "ma",
+      "m$",
+      "fa",
+      "i",
+      "l1",
+      "a(5)",
+      "u(5)",
+      "x(2)"
+    ],
+    "checkpoints": [
+      8, 9, 100, 300, 340, 343, 346, 347, 349, 400, 440, 443, 446, 447, 449,
+      5110, 290, 293, 304, 359, 368, 404, 459, 468, 5213, 5214, 5216, 5218, 352,
+      452
+    ],
+    "entry": "tape-autostart; keyboard only"
+  },
+  "runs": [
+    {
+      "name": "black-natural",
+      "steps": [
+        {
+          "name": "name",
+          "when": {
+            "event": "line",
+            "line": 9
+          },
+          "afterFrames": 50,
+          "text": "alex"
+        },
+        {
+          "name": "club",
+          "when": {
+            "event": "line",
+            "line": 8937
+          },
+          "afterFrames": 50,
+          "text": "1"
+        },
+        {
+          "name": "level",
+          "when": {
+            "event": "line",
+            "line": 8962
+          },
+          "afterFrames": 50,
+          "text": "1"
+        },
+        {
+          "name": "kit",
+          "when": {
+            "event": "line",
+            "line": 8966
+          },
+          "afterFrames": 50,
+          "text": "0"
+        },
+        {
+          "name": "start-match",
+          "when": {
+            "event": "line",
+            "line": 2180
+          },
+          "afterFrames": 50,
+          "text": "99"
+        },
+        {
+          "name": "fixture",
+          "when": {
+            "event": "line",
+            "line": 1030
+          },
+          "afterFrames": 75,
+          "text": ""
+        },
+        {
+          "name": "picked-team",
+          "when": {
+            "event": "line",
+            "line": 6135
+          },
+          "afterFrames": 100,
+          "text": "99"
+        },
+        {
+          "name": "end",
+          "when": {
+            "event": "line",
+            "line": 5110
+          },
+          "afterFrames": 50,
+          "stop": true
+        }
+      ]
+    },
+    {
+      "name": "white-natural",
+      "steps": [
+        {
+          "name": "name",
+          "when": {
+            "event": "line",
+            "line": 9
+          },
+          "afterFrames": 50,
+          "text": "alex"
+        },
+        {
+          "name": "club",
+          "when": {
+            "event": "line",
+            "line": 8937
+          },
+          "afterFrames": 50,
+          "text": "1"
+        },
+        {
+          "name": "level",
+          "when": {
+            "event": "line",
+            "line": 8962
+          },
+          "afterFrames": 50,
+          "text": "1"
+        },
+        {
+          "name": "kit",
+          "when": {
+            "event": "line",
+            "line": 8966
+          },
+          "afterFrames": 50,
+          "text": "7"
+        },
+        {
+          "name": "start-match",
+          "when": {
+            "event": "line",
+            "line": 2180
+          },
+          "afterFrames": 50,
+          "text": "99"
+        },
+        {
+          "name": "fixture",
+          "when": {
+            "event": "line",
+            "line": 1030
+          },
+          "afterFrames": 75,
+          "text": ""
+        },
+        {
+          "name": "picked-team",
+          "when": {
+            "event": "line",
+            "line": 6135
+          },
+          "afterFrames": 100,
+          "text": "99"
+        },
+        {
+          "name": "end",
+          "when": {
+            "event": "line",
+            "line": 5110
+          },
+          "afterFrames": 50,
+          "stop": true
+        }
+      ]
+    },
+    {
+      "name": "black-level7",
+      "steps": [
+        {
+          "name": "name",
+          "when": {
+            "event": "line",
+            "line": 9
+          },
+          "afterFrames": 50,
+          "text": "alex"
+        },
+        {
+          "name": "club",
+          "when": {
+            "event": "line",
+            "line": 8937
+          },
+          "afterFrames": 50,
+          "text": "1"
+        },
+        {
+          "name": "level",
+          "when": {
+            "event": "line",
+            "line": 8962
+          },
+          "afterFrames": 50,
+          "text": "7"
+        },
+        {
+          "name": "kit",
+          "when": {
+            "event": "line",
+            "line": 8966
+          },
+          "afterFrames": 50,
+          "text": "0"
+        },
+        {
+          "name": "start-match",
+          "when": {
+            "event": "line",
+            "line": 2180
+          },
+          "afterFrames": 50,
+          "text": "99"
+        },
+        {
+          "name": "fixture",
+          "when": {
+            "event": "line",
+            "line": 1030
+          },
+          "afterFrames": 75,
+          "text": ""
+        },
+        {
+          "name": "picked-team",
+          "when": {
+            "event": "line",
+            "line": 6135
+          },
+          "afterFrames": 100,
+          "text": "99"
+        },
+        {
+          "name": "end",
+          "when": {
+            "event": "line",
+            "line": 5110
+          },
+          "afterFrames": 50,
+          "stop": true
+        }
+      ]
+    },
+    {
+      "name": "white-level7",
+      "steps": [
+        {
+          "name": "name",
+          "when": {
+            "event": "line",
+            "line": 9
+          },
+          "afterFrames": 50,
+          "text": "alex"
+        },
+        {
+          "name": "club",
+          "when": {
+            "event": "line",
+            "line": 8937
+          },
+          "afterFrames": 50,
+          "text": "1"
+        },
+        {
+          "name": "level",
+          "when": {
+            "event": "line",
+            "line": 8962
+          },
+          "afterFrames": 50,
+          "text": "7"
+        },
+        {
+          "name": "kit",
+          "when": {
+            "event": "line",
+            "line": 8966
+          },
+          "afterFrames": 50,
+          "text": "7"
+        },
+        {
+          "name": "start-match",
+          "when": {
+            "event": "line",
+            "line": 2180
+          },
+          "afterFrames": 50,
+          "text": "99"
+        },
+        {
+          "name": "fixture",
+          "when": {
+            "event": "line",
+            "line": 1030
+          },
+          "afterFrames": 75,
+          "text": ""
+        },
+        {
+          "name": "picked-team",
+          "when": {
+            "event": "line",
+            "line": 6135
+          },
+          "afterFrames": 100,
+          "text": "99"
+        },
+        {
+          "name": "end",
+          "when": {
+            "event": "line",
+            "line": 5110
+          },
+          "afterFrames": 50,
+          "stop": true
+        }
+      ]
+    },
+    {
+      "name": "black-new-key",
+      "steps": [
+        {
+          "name": "name",
+          "when": {
+            "event": "line",
+            "line": 9
+          },
+          "afterFrames": 50,
+          "text": "alex"
+        },
+        {
+          "name": "club",
+          "when": {
+            "event": "line",
+            "line": 8937
+          },
+          "afterFrames": 50,
+          "text": "1"
+        },
+        {
+          "name": "level",
+          "when": {
+            "event": "line",
+            "line": 8962
+          },
+          "afterFrames": 50,
+          "text": "1"
+        },
+        {
+          "name": "kit",
+          "when": {
+            "event": "line",
+            "line": 8966
+          },
+          "afterFrames": 50,
+          "text": "0"
+        },
+        {
+          "name": "start-match",
+          "when": {
+            "event": "line",
+            "line": 2180
+          },
+          "afterFrames": 50,
+          "text": "99"
+        },
+        {
+          "name": "fixture",
+          "when": {
+            "event": "line",
+            "line": 1030
+          },
+          "afterFrames": 75,
+          "text": ""
+        },
+        {
+          "name": "picked-team",
+          "when": {
+            "event": "line",
+            "line": 6135
+          },
+          "afterFrames": 100,
+          "text": "99"
+        },
+        {
+          "name": "fresh-space",
+          "when": {
+            "event": "pause",
+            "line": 447
+          },
+          "afterFrames": 20,
+          "down": ["SPACE"],
+          "holdFrames": 10
+        },
+        {
+          "name": "end",
+          "when": {
+            "event": "line",
+            "line": 5110
+          },
+          "afterFrames": 50,
+          "stop": true
+        }
+      ]
+    },
+    {
+      "name": "black-held-key",
+      "steps": [
+        {
+          "name": "name",
+          "when": {
+            "event": "line",
+            "line": 9
+          },
+          "afterFrames": 50,
+          "text": "alex"
+        },
+        {
+          "name": "club",
+          "when": {
+            "event": "line",
+            "line": 8937
+          },
+          "afterFrames": 50,
+          "text": "1"
+        },
+        {
+          "name": "level",
+          "when": {
+            "event": "line",
+            "line": 8962
+          },
+          "afterFrames": 50,
+          "text": "1"
+        },
+        {
+          "name": "kit",
+          "when": {
+            "event": "line",
+            "line": 8966
+          },
+          "afterFrames": 50,
+          "text": "0"
+        },
+        {
+          "name": "start-match",
+          "when": {
+            "event": "line",
+            "line": 2180
+          },
+          "afterFrames": 50,
+          "text": "99"
+        },
+        {
+          "name": "fixture",
+          "when": {
+            "event": "line",
+            "line": 1030
+          },
+          "afterFrames": 75,
+          "text": ""
+        },
+        {
+          "name": "picked-team",
+          "when": {
+            "event": "line",
+            "line": 6135
+          },
+          "afterFrames": 100,
+          "text": "99"
+        },
+        {
+          "name": "held-space",
+          "when": {
+            "event": "line",
+            "line": 446
+          },
+          "down": ["SPACE"],
+          "holdFrames": 200
+        },
+        {
+          "name": "end",
+          "when": {
+            "event": "line",
+            "line": 5110
+          },
+          "afterFrames": 50,
+          "stop": true
+        }
+      ]
+    },
+    {
+      "name": "colour-error",
+      "steps": [
+        {
+          "name": "name",
+          "when": {
+            "event": "line",
+            "line": 9
+          },
+          "afterFrames": 50,
+          "text": "alex"
+        },
+        {
+          "name": "club",
+          "when": {
+            "event": "line",
+            "line": 8937
+          },
+          "afterFrames": 50,
+          "text": "1"
+        },
+        {
+          "name": "level",
+          "when": {
+            "event": "line",
+            "line": 8962
+          },
+          "afterFrames": 50,
+          "text": "1"
+        },
+        {
+          "name": "kit",
+          "when": {
+            "event": "line",
+            "line": 8966
+          },
+          "afterFrames": 50,
+          "text": "1"
+        },
+        {
+          "name": "correct-kit",
+          "when": {
+            "event": "pause-exit",
+            "line": 8966
+          },
+          "afterFrames": 50,
+          "text": "0"
+        },
+        {
+          "name": "end",
+          "when": {
+            "event": "line",
+            "line": 2180
+          },
+          "afterFrames": 50,
+          "stop": true
+        }
+      ]
+    },
+    {
+      "name": "title-new-key",
+      "steps": [
+        {
+          "name": "fresh-space",
+          "when": {
+            "event": "pause",
+            "line": 8
+          },
+          "afterFrames": 20,
+          "down": ["SPACE"],
+          "holdFrames": 10
+        },
+        {
+          "name": "end",
+          "when": {
+            "event": "line",
+            "line": 9
+          },
+          "afterFrames": 50,
+          "stop": true
+        }
+      ]
+    },
+    {
+      "name": "title-held-key",
+      "steps": [
+        {
+          "name": "held-space",
+          "when": {
+            "event": "line",
+            "line": 8
+          },
+          "down": ["SPACE"],
+          "holdFrames": 100
+        },
+        {
+          "name": "end",
+          "when": {
+            "event": "line",
+            "line": 9
+          },
+          "afterFrames": 50,
+          "stop": true
+        }
+      ]
+    },
+    {
+      "name": "cup-victory-probe",
+      "maxFrames": 3000,
+      "steps": [
+        {
+          "name": "name",
+          "when": {
+            "event": "line",
+            "line": 9
+          },
+          "afterFrames": 50,
+          "text": "alex"
+        },
+        {
+          "name": "club",
+          "when": {
+            "event": "line",
+            "line": 8937
+          },
+          "afterFrames": 50,
+          "text": "1"
+        },
+        {
+          "name": "level",
+          "when": {
+            "event": "line",
+            "line": 8962
+          },
+          "afterFrames": 50,
+          "text": "1"
+        },
+        {
+          "name": "kit",
+          "when": {
+            "event": "line",
+            "line": 8966
+          },
+          "afterFrames": 50,
+          "text": "0"
+        },
+        {
+          "name": "break-and-gosub",
+          "when": {
+            "event": "line",
+            "line": 2000
+          },
+          "afterFrames": 0,
+          "sequence": [
+            {
+              "down": ["CS", "SPACE"],
+              "frames": 20
+            },
+            {
+              "down": [],
+              "frames": 100
+            },
+            {
+              "down": ["h"],
+              "frames": 4
+            },
+            {
+              "down": [],
+              "frames": 6
+            },
+            {
+              "down": ["5"],
+              "frames": 4
+            },
+            {
+              "down": [],
+              "frames": 6
+            },
+            {
+              "down": ["2"],
+              "frames": 4
+            },
+            {
+              "down": [],
+              "frames": 6
+            },
+            {
+              "down": ["1"],
+              "frames": 4
+            },
+            {
+              "down": [],
+              "frames": 6
+            },
+            {
+              "down": ["3"],
+              "frames": 4
+            },
+            {
+              "down": [],
+              "frames": 6
+            },
+            {
+              "down": ["ENTER"],
+              "frames": 4
+            },
+            {
+              "down": [],
+              "frames": 6
+            }
+          ]
+        },
+        {
+          "name": "end",
+          "when": {
+            "event": "line",
+            "line": 5237
+          },
+          "afterFrames": 100,
+          "stop": true
+        }
+      ],
+      "entry": "isolated probe: BREAK at line 2000; GO SUB 5213 via ROM editor"
+    }
+  ]
+}

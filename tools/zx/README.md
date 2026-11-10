@@ -28,3 +28,11 @@ Each writes `build/zx/<name>.json`; format it with Prettier and compare it to it
 | `capture-seasons.ts`       | `10-bills.z80`                         | `seasons.json`            |
 | `capture-dismissal.ts`     | `10-bills.z80`                         | `dismissal.json`          |
 | `capture-compatibility.ts` | (none; optional sample count)          | `spectrum-rom.json`       |
+| `capture-timing.ts`        | `timing-start.z80`, via input script   | `spectrum-timing.json`    |
+
+The [timing reference](../../docs/spectrum-timing.md) has its own preparation
+command, with contention enabled and loading acceleration disabled. Run
+`bun run zx:timing:clock` to verify the selected clock without originals, or
+`bun run zx:timing` for the full capture. The older observers above establish
+state/pixels, not execution pacing; do not use their snapshots as equivalent
+timed starting states.

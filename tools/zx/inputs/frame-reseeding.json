@@ -1,0 +1,238 @@
+{
+  "schema": 1,
+  "source": {
+    "tape": "roms/zx/Football Manager.tzx",
+    "tapeSha256": "7fb5e9d4b8115bd4835ce9f1479ed498f05b52f2c435f40f089403ccadc72763",
+    "preparation": "uv run --with skoolkit==10.2 tap2sna.py --sim-load-config cmio=1 --sim-load-config fast-load=0 --sim-load-config finish-tape=1 --start 6952 \"roms/zx/Football Manager.tzx\" roms/zx/analysis/timing-start.z80"
+  },
+  "defaults": {
+    "snapshot": "roms/zx/analysis/timing-start.z80",
+    "snapshotSha256": "d180ffd8d3eb867c66c24e6d6bfa94efee16ac9dd6cf996cb1d662c47b64f25c",
+    "outfe": 7,
+    "flashPhase": 0,
+    "maxFrames": 30000,
+    "variables": ["m", "l", "l1", "m$", "tco", "p(24)", "r(24)", "y(24)"],
+    "checkpoints": [8, 9, 100, 101, 2000, 2180, 800, 805, 810, 199],
+    "entry": "tape-autostart; keyboard only"
+  },
+  "runs": [
+    {
+      "name": "setup-status-save-continue",
+      "steps": [
+        {
+          "name": "name",
+          "when": {
+            "event": "line",
+            "line": 9
+          },
+          "afterFrames": 50,
+          "text": "alex"
+        },
+        {
+          "name": "club",
+          "when": {
+            "event": "line",
+            "line": 8937
+          },
+          "afterFrames": 50,
+          "text": "1"
+        },
+        {
+          "name": "level",
+          "when": {
+            "event": "line",
+            "line": 8962
+          },
+          "afterFrames": 50,
+          "text": "1"
+        },
+        {
+          "name": "kit",
+          "when": {
+            "event": "line",
+            "line": 8966
+          },
+          "afterFrames": 50,
+          "text": "0"
+        },
+        {
+          "name": "status",
+          "when": {
+            "event": "line",
+            "line": 2180
+          },
+          "afterFrames": 50,
+          "text": "s"
+        },
+        {
+          "name": "status-return",
+          "when": {
+            "event": "line",
+            "line": 1030
+          },
+          "afterFrames": 50,
+          "text": ""
+        },
+        {
+          "name": "keep",
+          "when": {
+            "event": "line",
+            "line": 2180
+          },
+          "afterFrames": 50,
+          "text": "keep"
+        },
+        {
+          "name": "start-tape",
+          "when": {
+            "event": "line",
+            "line": 800
+          },
+          "afterFrames": 50,
+          "down": ["SPACE"],
+          "holdFrames": 10
+        },
+        {
+          "name": "continue",
+          "when": {
+            "event": "line",
+            "line": 805
+          },
+          "afterFrames": 50,
+          "text": "yes"
+        },
+        {
+          "name": "end",
+          "when": {
+            "event": "line",
+            "line": 2180
+          },
+          "afterFrames": 50,
+          "stop": true
+        }
+      ]
+    },
+    {
+      "name": "match-management-return",
+      "steps": [
+        {
+          "name": "name",
+          "when": {
+            "event": "line",
+            "line": 9
+          },
+          "afterFrames": 50,
+          "text": "alex"
+        },
+        {
+          "name": "club",
+          "when": {
+            "event": "line",
+            "line": 8937
+          },
+          "afterFrames": 50,
+          "text": "1"
+        },
+        {
+          "name": "level",
+          "when": {
+            "event": "line",
+            "line": 8962
+          },
+          "afterFrames": 50,
+          "text": "1"
+        },
+        {
+          "name": "kit",
+          "when": {
+            "event": "line",
+            "line": 8966
+          },
+          "afterFrames": 50,
+          "text": "0"
+        },
+        {
+          "name": "start-match",
+          "when": {
+            "event": "line",
+            "line": 2180
+          },
+          "afterFrames": 50,
+          "text": "99"
+        },
+        {
+          "name": "fixture",
+          "when": {
+            "event": "line",
+            "line": 1030
+          },
+          "afterFrames": 75,
+          "text": ""
+        },
+        {
+          "name": "picked-team",
+          "when": {
+            "event": "line",
+            "line": 6135
+          },
+          "afterFrames": 100,
+          "text": "99"
+        },
+        {
+          "name": "result",
+          "when": {
+            "event": "line",
+            "line": 4326
+          },
+          "afterFrames": 50,
+          "text": ""
+        },
+        {
+          "name": "other-matches",
+          "when": {
+            "event": "line",
+            "line": 7700
+          },
+          "afterFrames": 50,
+          "text": ""
+        },
+        {
+          "name": "table",
+          "when": {
+            "event": "line",
+            "line": 7845
+          },
+          "afterFrames": 50,
+          "text": ""
+        },
+        {
+          "name": "bills",
+          "when": {
+            "event": "line",
+            "line": 8070
+          },
+          "afterFrames": 50,
+          "text": ""
+        },
+        {
+          "name": "decline-transfer",
+          "when": {
+            "event": "line",
+            "line": 8745
+          },
+          "afterFrames": 50,
+          "text": "99"
+        },
+        {
+          "name": "end",
+          "when": {
+            "event": "line",
+            "line": 2180
+          },
+          "afterFrames": 50,
+          "stop": true
+        }
+      ]
+    }
+  ]
+}

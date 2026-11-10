@@ -8,7 +8,10 @@ at line 800. Line 805 asks `Do you want to play some more?`; only `y`, `Y`,
 reseeds from the Spectrum frame counter. A loaded tape also resumes at 100, using the target Spectrum’s current frame
 counter; a BASIC tape file does not store that system variable.
 These statements are verified by static reading of the recovered BASIC;
-tape signal timing and the complete ROM SAVE/LOAD path are not yet probed.
+the [frame/reseed capture](frame-clock-and-reseeding.md) additionally executes
+the complete ROM SAVE and post-save `yes` path under timed keyboard input,
+observing preservation of SEED during SAVE and reseeding at line 100.
+Tape signal interoperability and the ROM LOAD path are not yet probed.
 
 This increment adapts the storage medium to a downloaded `football.fman.json`
 file. The format identifies this web recreation and carries version 1, the
@@ -40,6 +43,12 @@ highlight frame, with the same RNG. The autosave is written after every
 input and screen change, at most once a second during animation, and when
 the page is hidden. Exports and save slots use this format (version 2).
 `keep` still writes the original version-1 contract.
+
+The [corrected frame sampler](frame-clock-and-reseeding.md#save-compatibility)
+keeps both versions compatible: stored advances remain whole frames, version 2
+restores a raw seed, and version 1 imports through the reseed boundary.
+Fractional browser phase is not stored; restoring starts a fresh phase and
+does not simulate time spent with the page closed.
 
 Escape or the Menu button opens the game menu, which freezes play. It offers
 Resume, Save and Load (five slots), New game (after a confirmation), Export

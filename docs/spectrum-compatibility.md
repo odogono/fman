@@ -25,7 +25,7 @@ The tuple type assumes valid byte values imported through a trusted decoder or c
 
 `createFrameClock(frames)` restores a 24-bit counter; `.advance(elapsed)` increments it modulo 2²⁴ using an explicit nonnegative safe-integer frame count. `.frames` exposes the current counter. No simulation code reads wall-clock time. Counter wrapping is checked against the ROM [interrupt routine](https://skoolkit.ca/disassemblies/rom/asm/56.html).
 
-This is a deterministic counter, **not** a cycle-accurate BASIC scheduler. The [contention-aware timing reference](spectrum-timing.md) now records original execution costs, timed keyboard transitions, pauses, frames and sound. Applying those observations to a scheduler and reproducing complete timed sessions remain later work. Advancing once per host rendering callback would not establish original pacing.
+The [frame cadence and reseeding tests](frame-clock-and-reseeding.md) now use the validated 19.968 ms cadence, sample browser input dispatch before reseeding, and compare original setup, status return, match return and post-SAVE boundaries. This is a deterministic counter, **not** a cycle-accurate BASIC scheduler. The [contention-aware timing reference](spectrum-timing.md) records original execution costs, timed keyboard transitions, pauses, frames and sound. Reproducing instruction-dependent interrupt losses and complete timed sessions remains later work. Advancing once per host rendering callback would not establish original pacing.
 
 ## Reference evidence and reproduction
 

@@ -3,6 +3,7 @@ import { dirname, resolve } from 'node:path';
 
 const [script = '--verify-clock', output = 'build/zx/timing.json'] =
   Bun.argv.slice(2);
+const reseeding = script === '--frame-reseeding';
 const child = Bun.spawn(
   [
     'uv',
@@ -11,8 +12,11 @@ const child = Bun.spawn(
     'skoolkit==10.2',
     'python',
     '-B',
-    resolve(import.meta.dir, 'capture_timing.py'),
-    script
+    resolve(
+      import.meta.dir,
+      reseeding ? 'capture-frame-reseeding.py' : 'capture_timing.py'
+    ),
+    reseeding ? 'tools/zx/inputs/frame-reseeding.json' : script
   ],
   { stderr: 'inherit', stdout: 'pipe' }
 );

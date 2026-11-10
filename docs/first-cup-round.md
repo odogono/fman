@@ -35,4 +35,4 @@ The optional SkoolKit 10.2 adapter verifies the fresh BASIC hash and state, play
 
 ## Remaining scope
 
-The [league continuation](league-progression.md) adds further league fixtures, and [complete cup progression](cup-progression.md) now adds rounds two through eight and the victory display. [Season changes](season-progression.md) are now implemented. Dismissal, name editing and saving remain unavailable. The final is playable after league match fifteen; once the cup campaign ends, season progression follows bills. Existing [presentation limits](first-league-match.md#presentation-limits) remain.
+The [league continuation](league-progression.md) adds further league fixtures, and [complete cup progression](cup-progression.md) now adds rounds two through eight and the victory display. [Season changes](season-progression.md) are now implemented. [Dismissal and reloading](dismissal-restart.md) are now implemented. Name editing and saving remain unavailable. The final is playable after league match fifteen; once the cup campaign ends, season progression follows bills. Existing [presentation limits](first-league-match.md#presentation-limits) remain.

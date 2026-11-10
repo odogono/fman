@@ -275,7 +275,7 @@ test('after cup elimination, all remaining league matches lead to a season bound
   expect(session.game!.leagueMatches).toBe(1);
 });
 
-test('a club beyond the debt cap stops before the unimplemented dismissal flow', () => {
+test('a club beyond the debt cap is dismissed and NEW clears the session before an explicit reload', () => {
   const session = setup();
   session.submit('l');
   session.submit('250000');
@@ -297,11 +297,46 @@ test('a club beyond the debt cap stops before the unimplemented dismissal flow',
   session.advance(1_000_000);
   session.submit('');
   session.submit('');
-  expect(session.screen).toBe('bills');
+  expect(session.screen).toBe('dismissal');
   expect(session.game!.debt).toBeGreaterThan(250_000);
-  expect(session.submit('')).toEqual({
-    feature: 'Dismissal',
-    type: 'unavailable'
-  });
-  expect(session.screen).toBe('bills');
+  expect(session.submit('h')).toEqual({ type: 'copy' });
+  expect(session.screen).toBe('dismissal');
+  session.submit('');
+  expect(session.screen).toBe('cleared');
+  expect(session.frames).toBe(0);
+  for (const value of [
+    session.game,
+    session.fixture,
+    session.highlights,
+    session.playback,
+    session.completion,
+    session.season,
+    session.bills,
+    session.offer,
+    session.transfer
+  ]) {
+    expect(value).toBeUndefined();
+  }
+  expect(session.cupWon).toBe(false);
+  session.submit('h');
+  session.submit('99');
+  session.skipPause();
+  expect(session.screen).toBe('cleared');
+  session.advance(50);
+  expect(session.reload()).toBe(true);
+  expect(session.frames).toBe(50);
+  expect(session.screen).toBe('title');
+  session.advance(300);
+  expect(session.screen).toBe('manager');
+  for (const input of ['new boss', '1', '1', '0']) {
+    session.submit(input);
+  }
+  expect(session.screen).toBe('menu');
+  expect(session.game!.cash).toBe(100_000);
+  expect(session.game!.debt).toBe(0);
+  expect(session.game!.manager).toBe('new boss');
+  expect(session.game!.leagueMatches).toBe(0);
+  expect(session.game!.seasons).toBe(0);
+  expect(session.game!.seed).toBe(350);
+  expect(session.reload()).toBe(false);
 });

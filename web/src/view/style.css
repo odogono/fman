@@ -77,6 +77,25 @@ main {
 .machine:has(#entry[hidden]) {
   padding-bottom: calc(2 * var(--cell));
 }
+.machine:has(#screen.cleared) {
+  padding-bottom: 0;
+}
+#reload {
+  margin-top: 12px;
+  padding: 8px 12px;
+  border: 1px solid #666;
+  background: #222;
+  color: #eee;
+  font: inherit;
+  cursor: pointer;
+}
+#reload[hidden] {
+  display: none;
+}
+#reload:focus-visible {
+  outline: 2px solid #ddd;
+  outline-offset: 2px;
+}
 #prompt {
   white-space: pre;
 }
@@ -141,7 +160,8 @@ main {
     min-height: 0;
   }
   .build-note,
-  .notice {
+  .notice,
+  #reload {
     display: none;
   }
 }

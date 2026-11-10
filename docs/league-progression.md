@@ -29,6 +29,6 @@ The optional SkoolKit 10.2 adapter validates the fresh BASIC hash and profile an
 
 ## Remaining scope
 
-[Season bonuses, promotion/relegation and reset](season-progression.md) are now implemented. Dismissal, name editing and saving remain unimplemented. The [complete cup progression](cup-progression.md) now keeps the final playable after league match fifteen; after the cup campaign ends, final bills continue into the season-change routine. Its zero match count skips the transfer market. Crossing the debt cap also stops at bills with a dismissal-unavailable notice, rather than continuing transfers past that boundary. Each unavailable action preserves state. These are explicit build limits, not replacement rules for the original game.
+[Season bonuses, promotion/relegation and reset](season-progression.md) are now implemented. [Dismissal and reloading](dismissal-restart.md) are now implemented. Name editing and saving remain unimplemented. The [complete cup progression](cup-progression.md) now keeps the final playable after league match fifteen; after the cup campaign ends, final bills continue into the season-change routine. Its zero match count skips the transfer market. Crossing the debt cap now follows the original dismissal and `NEW` sequence before transfers or season progression.
 
 Existing [presentation and timing limits](first-league-match.md#presentation-limits) still apply. Completion remains atomic at the bills boundary while screens present the source's sequence.

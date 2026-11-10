@@ -153,18 +153,6 @@ export const paintMatch = (session: Session, put: Paint) => {
       paintLeagueTable(game, put, session.completion!.order);
       prompt = 'Hit ENTER to continue';
       break;
-    case 'bills': {
-      const bill = session.bills!;
-      put(0, 0, '****WEEKLY BILLS****', { ink: 2, inverse: true });
-      put(2, 0, `Wage Bill = £${bill.wages}`);
-      put(3, 0, `Ground rent = £${bill.rent}`);
-      put(4, 0, `Loan Interest = £${bill.interest}`);
-      put(6, 0, `Weekly Balance = £${bill.balance}`, {
-        ink: bill.balance < 0 ? 2 : 0
-      });
-      prompt = 'Hit ENTER to continue';
-      break;
-    }
   }
   if (session.screen !== 'highlights') {
     put(21, 24, '(h=copy)', {

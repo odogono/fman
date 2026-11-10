@@ -136,6 +136,7 @@ export const payWeeklyBills = (game: Game) => {
     bills: {
       balance: cash - game.debt - game.previousNet,
       interest,
+      loanIncreased: cash < 0,
       rent,
       wages
     },
@@ -147,6 +148,9 @@ export const payWeeklyBills = (game: Game) => {
     }
   };
 };
+
+export const isDismissed = (game: Game) =>
+  game.debt > 250_000 * (5 - game.division);
 
 const validateAmount = (amount: number) => {
   if (!isIntegerIn(amount, 0, Number.MAX_SAFE_INTEGER)) {

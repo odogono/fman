@@ -18,7 +18,8 @@ app.innerHTML = `
     </form>
   </section>
   <pre id="transcript" class="sr-only" aria-live="polite" aria-atomic="true"></pre>
-  <p class="build-note">Play league and cup matches, buy players and manage your club.<br />Dismissal, name editing and saves are coming next.</p>
+  <p class="build-note">Play league and cup matches, buy players and manage your club.<br />Name editing and saves are coming next.</p>
+  <button id="reload" type="button" hidden>Load game again</button>
   <p id="notice" class="notice" role="status"></p>
 `;
 const screen = document.querySelector<HTMLElement>('#screen')!;
@@ -27,6 +28,7 @@ const input = document.querySelector<HTMLInputElement>('#command')!;
 const prompt = document.querySelector<HTMLElement>('#prompt')!;
 const transcript = document.querySelector<HTMLElement>('#transcript')!;
 const notice = document.querySelector<HTMLElement>('#notice')!;
+const reload = document.querySelector<HTMLButtonElement>('#reload')!;
 const session = createSession();
 const canvas = document.querySelector<HTMLCanvasElement>('#pitch')!;
 const context = canvas.getContext('2d')!;
@@ -52,6 +54,11 @@ const render = (clearInput = true) => {
   const playing = session.screen === 'highlights' && Boolean(current);
   canvas.hidden = !playing;
   screen.hidden = playing;
+  screen.classList.toggle('cleared', session.screen === 'cleared');
+  reload.hidden = session.screen !== 'cleared';
+  if (session.screen === 'cleared') {
+    notice.textContent = 'Game cleared. Load it again to start a new game.';
+  }
   if (playing && current) {
     const game = session.game!;
     paintAttack(
@@ -87,6 +94,14 @@ const render = (clearInput = true) => {
     input.focus({ preventScroll: true });
   }
 };
+
+reload.addEventListener('click', () => {
+  if (session.reload()) {
+    notice.textContent = '';
+    audioKey = '';
+    render();
+  }
+});
 
 form.addEventListener('submit', event => {
   event.preventDefault();

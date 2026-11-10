@@ -13,7 +13,7 @@ bun tools/zx/extract.ts 'roms/zx/Football Manager - Players (1982)(Addictive Gam
 bun tools/zx/observe.ts 'roms/zx/Football Manager - Players (1982)(Addictive Games).z80'
 ```
 
-The worktree initially had no originals. This investigation read the file from the main checkout's `roms/zx` directory using an absolute input path; neither command requires copying or modifying it. Both tools write under gitignored `roms/zx/analysis/` by default. Run `bun install` for repository checks; the optional observer also requires `uv` and obtains pinned `skoolkit==10.2` in an isolated environment. The observer is a Bun entry point driving SkoolKit's Python CPU/ROM emulator, not an application dependency.
+Worktrees start without the originals; `bun run zx:link` links the main checkout's `roms/` (see `tools/zx/README.md`). Both tools write under gitignored `roms/zx/analysis/` by default. Run `bun install` for repository checks; the optional observer also requires `uv` and obtains pinned `skoolkit==10.2` in an isolated environment. The observer is a Bun entry point driving SkoolKit's Python CPU/ROM emulator, not an application dependency.
 
 Extraction produces `ram.bin` (48K, address origin 16384), `listing.bas`, `basic.json` and `metadata.json`. The JSON preserves every BASIC line's address and raw bytes, plus each embedded number's address, five bytes and decoded value. The text listing expands tokens and names display controls; it is an analysis rendering, not directly loadable BASIC. Original files and full extracted listings remain untracked under `roms/`.
 

@@ -35,7 +35,7 @@ const position = (v: unknown) =>
   integer(v.x, -256, 256) &&
   integer(v.y, -256, 256);
 
-const validGame = (v: unknown): v is Game => {
+export const validGame = (v: unknown): v is Game => {
   if (!record(v)) {
     return false;
   }

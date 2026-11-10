@@ -56,3 +56,17 @@ A file kept by the manager to restore a game in the web recreation.
 
 **Tape save**:
 A game recorded by the original Spectrum version for later loading from cassette.
+
+**Autosave**:
+The single stored copy of the current play, kept continuously up to date so reopening the game resumes exactly where play left off.
+_Avoid_: Save when referring to the autosave
+
+**Saved game**:
+A web save the player deliberately keeps from the game menu, in a save slot or an exported file, independent of the autosave.
+
+**Save slot**:
+A named place in the browser holding one saved game.
+
+**Game menu**:
+The web overlay, outside the reproduced Spectrum screen, from which the player resumes, saves, loads, starts a new game or changes options. Play is frozen while it is open.
+_Avoid_: Pause when referring to the game menu; a pause is the original's timed wait

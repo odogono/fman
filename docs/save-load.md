@@ -24,10 +24,29 @@ and executes the reseed boundary before management. Restoring this counter is
 a web storage adaptation, rather than a claim about ROM tape loading. Time spent outside the game is not simulated.
 The browser cannot confirm that the user retained the downloaded file.
 
-A file input outside the reproduced screen explicitly loads a web save and
+The game menu's Import action loads a web save and
 replaces the current game only after validation. Cancellation or invalid,
 oversized, malformed or unsupported-version input leaves the game unchanged.
-No automatic saving or loading and no local-storage dependency are added.
+This was the first save contract. ADR 0004 replaces it: the full session is autosaved to browser storage, and a game menu offers saved games in five save slots plus export/import of format-2 files. Version-1 files stay importable and resume at the reseed boundary.
+
+## Exact resume and the game menu (ADR 0004)
+
+The web build keeps an autosave of the exact session: the checkpoint at the
+last management menu (Game and frame counter), plus the inputs since then.
+Consecutive frame advances are merged, which is exact because the clock,
+timed pauses and highlight playback consume elapsed frames additively.
+Restoring replays those inputs, so a reload lands on the same screen and
+highlight frame, with the same RNG. The autosave is written after every
+input and screen change, at most once a second during animation, and when
+the page is hidden. Exports and save slots use this format (version 2).
+`keep` still writes the original version-1 contract.
+
+Escape or the Menu button opens the game menu, which freezes play. It offers
+Resume, Save and Load (five slots), New game (after a confirmation), Export
+and Import of a save file, and Options (sound, display size). Options are
+stored per browser and kept apart from saved games. If an autosave can't be
+restored, the game starts at the title screen with a notice. If storage
+fails, Save is disabled and the menu suggests Export.
 
 ## Implementation and verification
 

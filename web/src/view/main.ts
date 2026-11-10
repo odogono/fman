@@ -1,10 +1,20 @@
+import { createJournal, openSave, type Journal } from '../sim/journal';
 import { saveLimit } from '../sim/save';
-import { createSession, type View } from '../sim/session';
+import type { View } from '../sim/session';
 import { createBeeper } from './beeper';
 import { cupVictoryTones } from './cup-victory';
 import { createFrameSampler } from './frame-sampler';
 import { paintAttack } from './pitch';
 import { makeScreen } from './screen';
+import {
+  readAutosave,
+  readOptions,
+  readSlot,
+  slotCount,
+  writeAutosave,
+  writeOptions,
+  writeSlot
+} from './storage';
 
 const app = document.querySelector<HTMLElement>('#app');
 if (!app) {
@@ -19,10 +29,11 @@ app.innerHTML = `
     </form>
   </section>
   <pre id="transcript" class="sr-only" aria-live="polite" aria-atomic="true"></pre>
-  <p class="build-note">Play league and cup matches, edit names and manage your club.<br />Use keep to download a web save.</p>
-  <label class="save-load">Load web save <input id="load-save" type="file" accept=".json,.fman.json" /></label>
-  <button id="reload" type="button" hidden>Load game again</button>
+  <button id="menu-button" class="menu-button" type="button" aria-haspopup="dialog">Menu</button>
+  <p class="build-note">Play league and cup matches, edit names and manage your club.<br />Play resumes where you left it. Press Esc or Menu to save, load or start again.</p>
   <p id="notice" class="notice" role="status"></p>
+  <dialog id="game-menu" class="game-menu" aria-labelledby="game-menu-title"></dialog>
+  <input id="load-save" type="file" accept=".json,.fman.json" hidden />
 `;
 const screen = document.querySelector<HTMLElement>('#screen')!;
 const form = document.querySelector<HTMLFormElement>('#entry')!;
@@ -30,13 +41,42 @@ const input = document.querySelector<HTMLInputElement>('#command')!;
 const prompt = document.querySelector<HTMLElement>('#prompt')!;
 const transcript = document.querySelector<HTMLElement>('#transcript')!;
 const notice = document.querySelector<HTMLElement>('#notice')!;
-const reload = document.querySelector<HTMLButtonElement>('#reload')!;
-const session = createSession();
+const menuButton = document.querySelector<HTMLButtonElement>('#menu-button')!;
+const menu = document.querySelector<HTMLDialogElement>('#game-menu')!;
 const loadInput = document.querySelector<HTMLInputElement>('#load-save')!;
 const canvas = document.querySelector<HTMLCanvasElement>('#pitch')!;
 const context = canvas.getContext('2d')!;
 const beeper = createBeeper();
 let audioKey = '';
+
+let journal: Journal;
+let storageWorks = true;
+{
+  const saved = readAutosave();
+  try {
+    journal = saved ? openSave(saved) : createJournal();
+  } catch {
+    journal = createJournal();
+    notice.textContent =
+      'Could not resume the previous session; a new game has started.';
+  }
+}
+let options = readOptions();
+let lastPersist = 0;
+let sampleFrames = createFrameSampler(performance.now());
+const persist = () => {
+  lastPersist = performance.now();
+  storageWorks = writeAutosave(journal.snapshot());
+};
+const applyOptions = () => {
+  beeper.muted = !options.sound;
+  if (options.scale === 'auto') {
+    document.documentElement.style.removeProperty('--pixel');
+  } else {
+    document.documentElement.style.setProperty('--pixel', `${options.scale}px`);
+  }
+};
+applyOptions();
 
 /** Changes whenever the tick must redraw without a change of screen. */
 const displayKey = (view: View) =>
@@ -48,7 +88,7 @@ const displayKey = (view: View) =>
       : '';
 
 const render = (clearInput = true) => {
-  const view = session.view;
+  const view = journal.session.view;
   const display = makeScreen(view);
   const fragment = document.createDocumentFragment();
   for (const cell of display.cells) {
@@ -70,13 +110,12 @@ const render = (clearInput = true) => {
   screen.hidden = playing;
   screen.classList.toggle('cleared', view.screen === 'cleared');
   screen.classList.toggle('full-screen', display.lines.length === 24);
-  reload.hidden = view.screen !== 'cleared';
   if (view.screen === 'cleared') {
-    notice.textContent = 'Game cleared. Load it again to start a new game.';
+    notice.textContent = 'Game cleared. Open the menu to start a new game.';
   }
   if (view.screen === 'names' && view.nameEditor.phase === 'fault') {
     notice.textContent =
-      'Name editing stopped. Reload the page to start a new game.';
+      'Name editing stopped. Open the menu to start a new game.';
   }
   if (view.screen === 'highlights' && current) {
     const { fixture, game, playback } = view;
@@ -105,46 +144,243 @@ const render = (clearInput = true) => {
   if (clearInput) {
     input.value = '';
   }
-  if (!display.paused) {
+  if (!display.paused && !menu.open) {
     input.focus({ preventScroll: true });
   }
 };
+
+type MenuView = 'main' | 'save' | 'load' | 'options' | 'new-game';
+let menuView: MenuView = 'main';
+let menuStatus = '';
+let pendingSlot = 0;
+
+const button = (label: string, action: () => void, disabled = false) => {
+  const element = document.createElement('button');
+  element.type = 'button';
+  element.textContent = label;
+  element.disabled = disabled;
+  element.addEventListener('click', action);
+  return element;
+};
+const describe = () => {
+  const { game, screen: current } = journal.session.view;
+  if (game) {
+    const club = game.clubs[game.club - 1]?.name.trim() ?? '';
+    return `${game.manager}, ${club}, season ${game.seasons + 1}`;
+  }
+  return current === 'cleared' ? 'Cleared program' : 'New game setup';
+};
+const replaceJournal = (next: Journal, message: string) => {
+  journal = next;
+  audioKey = '';
+  persist();
+  notice.textContent = message;
+  menu.close();
+};
+const showMenu = (view: MenuView, status = '') => {
+  menuView = view;
+  menuStatus = status;
+  const heading = document.createElement('h2');
+  heading.id = 'game-menu-title';
+  const list = document.createElement('div');
+  list.className = 'menu-actions';
+  switch (view) {
+    case 'main':
+      heading.textContent = 'Game menu';
+      list.append(
+        button('Resume', () => menu.close()),
+        button('Save', () => showMenu('save'), !storageWorks),
+        button('Load', () => showMenu('load')),
+        button('New game', () => showMenu('new-game')),
+        button('Export save file', exportSave),
+        button('Import save file', () => loadInput.click()),
+        button('Options', () => showMenu('options'))
+      );
+      if (!storageWorks) {
+        menuStatus ||=
+          'This browser is not storing progress. Export a save file to keep it.';
+      }
+      break;
+    case 'save':
+    case 'load':
+      heading.textContent = view === 'save' ? 'Save game' : 'Load game';
+      for (let slot = 1; slot <= slotCount; slot++) {
+        const entry = readSlot(slot);
+        const label = entry
+          ? `${slot}. ${entry.label} (${new Date(entry.savedAt).toLocaleString()})`
+          : `${slot}. Empty`;
+        list.append(
+          button(
+            pendingSlot === slot ? `Overwrite ${label}?` : label,
+            () => (view === 'save' ? saveTo(slot) : loadFrom(slot)),
+            view === 'load' && !entry
+          )
+        );
+      }
+      list.append(button('Back', () => showMenu('main')));
+      break;
+    case 'new-game':
+      heading.textContent = 'Start a new game?';
+      menuStatus = 'Progress not saved to a slot will be lost.';
+      list.append(
+        button('Start new game', () =>
+          replaceJournal(createJournal(), 'New game started.')
+        ),
+        button('Back', () => showMenu('main'))
+      );
+      break;
+    case 'options': {
+      heading.textContent = 'Options';
+      const sound = document.createElement('label');
+      const toggle = document.createElement('input');
+      toggle.type = 'checkbox';
+      toggle.checked = options.sound;
+      toggle.addEventListener('change', () => {
+        options = { ...options, sound: toggle.checked };
+        writeOptions(options);
+        applyOptions();
+      });
+      sound.append(toggle, ' Sound');
+      const scale = document.createElement('label');
+      const select = document.createElement('select');
+      for (const [value, text] of [
+        ['auto', 'Fit window'],
+        ['1', '1×'],
+        ['2', '2×'],
+        ['3', '3×']
+      ] as const) {
+        select.append(
+          new Option(text, value, false, String(options.scale) === value)
+        );
+      }
+      select.addEventListener('change', () => {
+        options = {
+          ...options,
+          scale:
+            select.value === 'auto'
+              ? 'auto'
+              : (Number(select.value) as 1 | 2 | 3)
+        };
+        writeOptions(options);
+        applyOptions();
+      });
+      scale.append('Display size ', select);
+      list.append(
+        sound,
+        scale,
+        button('Back', () => showMenu('main'))
+      );
+      break;
+    }
+  }
+  const statusLine = document.createElement('p');
+  statusLine.className = 'menu-status';
+  statusLine.setAttribute('role', 'status');
+  statusLine.textContent = menuStatus;
+  menu.replaceChildren(heading, list, statusLine);
+  list.querySelector<HTMLElement>('button, input, select')?.focus();
+};
+const saveTo = (slot: number) => {
+  if (readSlot(slot) && pendingSlot !== slot) {
+    pendingSlot = slot;
+    showMenu('save');
+    return;
+  }
+  pendingSlot = 0;
+  const saved = writeSlot(slot, {
+    data: journal.snapshot(),
+    label: describe(),
+    savedAt: new Date().toISOString()
+  });
+  showMenu(
+    'save',
+    saved ? `Saved to slot ${slot}.` : 'Could not save to this browser.'
+  );
+};
+const loadFrom = (slot: number) => {
+  const entry = readSlot(slot);
+  try {
+    replaceJournal(openSave(entry!.data), `Loaded slot ${slot}.`);
+  } catch {
+    showMenu(
+      'load',
+      'Could not load this saved game. The current game is unchanged.'
+    );
+  }
+};
+const exportSave = () => {
+  let url: string | undefined;
+  try {
+    url = URL.createObjectURL(
+      new Blob([journal.snapshot()], { type: 'application/json' })
+    );
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'football.fman.json';
+    document.body.append(link);
+    link.click();
+    link.remove();
+    menuStatus = 'Save file download requested.';
+  } catch {
+    menuStatus = 'Could not download the save file.';
+  } finally {
+    if (url) {
+      const downloadUrl = url;
+      setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+    }
+  }
+  showMenu('main', menuStatus);
+};
+const openMenu = () => {
+  if (menu.open) {
+    return;
+  }
+  pendingSlot = 0;
+  showMenu('main');
+  menu.showModal();
+};
+menu.addEventListener('cancel', event => {
+  if (menuView !== 'main') {
+    event.preventDefault();
+    pendingSlot = 0;
+    showMenu('main');
+  }
+});
+menu.addEventListener('close', () => {
+  // Play was frozen while the menu was open; time outside it is not simulated.
+  sampleFrames = createFrameSampler(performance.now());
+  render();
+});
+menuButton.addEventListener('click', openMenu);
 
 loadInput.addEventListener('change', async () => {
   const file = loadInput.files?.[0];
   if (!file) {
     return;
   }
-  loadInput.disabled = true;
   try {
     if (file.size > saveLimit) {
       throw new RangeError('Save file is too large');
     }
-    session.load(await file.text());
-    audioKey = '';
-    notice.textContent = 'Web save loaded.';
-    render();
+    replaceJournal(openSave(await file.text()), 'Save file loaded.');
   } catch {
-    notice.textContent =
-      'Could not load this web save. The current game is unchanged.';
+    showMenu(
+      'main',
+      'Could not load this save file. The current game is unchanged.'
+    );
   } finally {
     loadInput.value = '';
-    loadInput.disabled = false;
-  }
-});
-
-reload.addEventListener('click', () => {
-  if (session.reload()) {
-    notice.textContent = '';
-    audioKey = '';
-    render();
   }
 });
 
 form.addEventListener('submit', event => {
   event.preventDefault();
   beeper.unlock();
-  const effect = session.submit(input.value);
+  if (menu.open) {
+    return;
+  }
+  const effect = journal.submit(input.value);
+  persist();
   notice.textContent = '';
   if (effect?.type === 'copy') {
     render();
@@ -167,7 +403,8 @@ form.addEventListener('submit', event => {
       } finally {
         link.remove();
       }
-      session.saved();
+      journal.saved();
+      persist();
       notice.textContent = 'Web save download requested.';
     } catch {
       notice.textContent = 'Could not download the web save. Try keep again.';
@@ -184,28 +421,45 @@ form.addEventListener('submit', event => {
   render();
 });
 document.addEventListener('keydown', event => {
-  if (event.target === loadInput) {
+  if (event.key === 'Escape') {
+    if (!menu.open) {
+      event.preventDefault();
+      openMenu();
+    }
+    return;
+  }
+  if (menu.open) {
     return;
   }
   if (
-    session.view.paused &&
+    journal.session.view.paused &&
     !event.repeat &&
     !event.metaKey &&
     !event.ctrlKey &&
     !event.altKey
   ) {
     event.preventDefault();
-    session.skipPause();
+    journal.skipPause();
+    persist();
     render();
   }
 });
 
-const sampleFrames = createFrameSampler(performance.now());
 const tick = (now: number) => {
+  if (menu.open) {
+    requestAnimationFrame(tick);
+    return;
+  }
+  const session = journal.session;
   const elapsed = sampleFrames(now);
   const before = session.view;
-  session.advance(elapsed);
+  journal.advance(elapsed);
   const after = session.view;
+  if (before.screen !== after.screen) {
+    persist();
+  } else if (elapsed > 0 && now - lastPersist >= 1000) {
+    persist();
+  }
   if (
     before.screen !== after.screen ||
     displayKey(before) !== displayKey(after)
@@ -214,5 +468,11 @@ const tick = (now: number) => {
   }
   requestAnimationFrame(tick);
 };
+addEventListener('pagehide', persist);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') {
+    persist();
+  }
+});
 render();
 requestAnimationFrame(tick);

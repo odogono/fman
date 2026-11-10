@@ -230,3 +230,7 @@ outside this clock. Web save/print adapters remain the accepted boundary in
 general command-console parity are not inferred from the isolated probe.
 These observations provide reference evidence for #25–#27; full web pacing,
 audio parity and uninterrupted multi-season comparisons remain #34's work.
+
+The separate [frame/reseed capture](frame-clock-and-reseeding.md) now observes
+setup, status return, match return and full SAVE/continuation boundaries using
+this same clock. It does not modify this script or reference corpus.

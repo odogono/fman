@@ -5,6 +5,7 @@ Start with [original-game-analysis.md](original-game-analysis.md): it maps the o
 - [spectrum-compatibility.md](spectrum-compatibility.md): Spectrum arithmetic and randomness
 - [spectrum-timing.md](spectrum-timing.md): contention-aware clock, timed inputs, frame and sound traces
 - [spectrum-timing-sources.md](spectrum-timing-sources.md): timing sources, independent verification and limits
+- [frame-clock-and-reseeding.md](frame-clock-and-reseeding.md): exact frame cadence, timed reseed boundaries and browser scheduling policy
 - [fresh-game-management.md](fresh-game-management.md): setup, club management, view timing
 - [pitch-rendering.md](pitch-rendering.md): pitch and pre-outcome sprite pixel verification
 - [first-league-match.md](first-league-match.md): fixtures, highlights, match scoring, results, bills

@@ -57,6 +57,11 @@ The [contention-aware reference capture](spectrum-timing.md) supplies the pinned
 clock model, timed keyboard inputs and original frame/sound/state observations
 for #25–#27. It does not establish web timing parity or beam-exact ULA video.
 
+[Frame cadence and reseeding](frame-clock-and-reseeding.md) now have exact
+19.968 ms browser sampling, input-dispatch sampling and timed original
+boundary comparisons. Instruction-dependent ROM interrupt losses and complete
+session timing remain distinct from this counter/sampler contract.
+
 Management, league/cup/season progression, dismissal/NEW, name editing, web
 saving/loading, captured name scrolling/wrapping and pitch/pre-outcome sprite
 pixels have implementation and emulator-backed evidence. See the [feature

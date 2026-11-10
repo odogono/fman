@@ -172,6 +172,8 @@ const describe = () => {
 };
 const replaceJournal = (next: Journal, message: string) => {
   journal = next;
+  // Saves contain whole frames; a replacement starts a new browser phase.
+  sampleFrames = createFrameSampler(performance.now());
   audioKey = '';
   persist();
   notice.textContent = message;
@@ -335,6 +337,7 @@ const openMenu = () => {
   if (menu.open) {
     return;
   }
+  advanceTo(performance.now());
   pendingSlot = 0;
   showMenu('main');
   menu.showModal();
@@ -347,8 +350,8 @@ menu.addEventListener('cancel', event => {
   }
 });
 menu.addEventListener('close', () => {
-  // Play was frozen while the menu was open; time outside it is not simulated.
-  sampleFrames = createFrameSampler(performance.now());
+  // Exclude the host-menu interval, retaining the current fractional phase.
+  sampleFrames(performance.now(), false);
   render();
 });
 menuButton.addEventListener('click', openMenu);
@@ -379,7 +382,9 @@ form.addEventListener('submit', event => {
   if (menu.open) {
     return;
   }
-  const effect = journal.submit(input.value);
+  const text = input.value;
+  advanceTo(performance.now());
+  const effect = journal.submit(text);
   persist();
   notice.textContent = '';
   if (effect?.type === 'copy') {
@@ -431,6 +436,7 @@ document.addEventListener('keydown', event => {
   if (menu.open) {
     return;
   }
+  advanceTo(performance.now());
   if (
     journal.session.view.paused &&
     !event.repeat &&
@@ -445,11 +451,7 @@ document.addEventListener('keydown', event => {
   }
 });
 
-const tick = (now: number) => {
-  if (menu.open) {
-    requestAnimationFrame(tick);
-    return;
-  }
+const advanceTo = (now: number) => {
   const session = journal.session;
   const elapsed = sampleFrames(now);
   const before = session.view;
@@ -464,12 +466,23 @@ const tick = (now: number) => {
   if (before.screen !== after.screen || beforeKey !== displayKey(after)) {
     render(before.screen !== after.screen);
   }
+};
+const tick = (now: number) => {
+  if (!menu.open) {
+    advanceTo(now);
+  }
   requestAnimationFrame(tick);
 };
-addEventListener('pagehide', persist);
+const persistCurrent = () => {
+  if (!menu.open) {
+    advanceTo(performance.now());
+  }
+  persist();
+};
+addEventListener('pagehide', persistCurrent);
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') {
-    persist();
+    persistCurrent();
   }
 });
 render();

@@ -18,6 +18,7 @@ import {
 import {
   borrow,
   createNewGame,
+  isDismissed,
   makeSaleOffer,
   repay,
   respondToSale,
@@ -38,6 +39,8 @@ import {
 } from './transfers';
 
 export type Screen =
+  | 'dismissal'
+  | 'cleared'
   | 'end-season'
   | 'season-table'
   | 'season-summary'
@@ -77,7 +80,8 @@ const numericInput = (text: string) =>
     : undefined;
 
 export const createSession = (initialFrames = 0, initialSeed = 0) => {
-  const clock = createFrameClock(initialFrames);
+  let clock = createFrameClock(initialFrames);
+  let setupSeed = initialSeed;
   let screen: Screen = 'title';
   let game: Game | undefined;
   let manager = '';
@@ -98,6 +102,33 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
   let bills: MatchCompletion['bills'] | undefined;
   let selectionError = '';
   let transfer: TransferOffer | undefined;
+  const showBills = () => {
+    screen = isDismissed(game!) ? 'dismissal' : 'bills';
+  };
+  const clearProgram = () => {
+    clock = createFrameClock();
+    setupSeed = 0;
+    screen = 'cleared';
+    game = undefined;
+    manager = '';
+    club = 0;
+    level = 1;
+    page = 1;
+    message = '';
+    remaining = 0;
+    resume = 'manager';
+    changingLevel = false;
+    offer = undefined;
+    fixture = undefined;
+    highlights = undefined;
+    playback = undefined;
+    completion = undefined;
+    season = undefined;
+    cupWon = false;
+    bills = undefined;
+    selectionError = '';
+    transfer = undefined;
+  };
   const returnToManagement = () => {
     const rng = createRng(game!.seed);
     rng.randomize(0, clock.frames);
@@ -150,7 +181,7 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
     }
   };
   const submit = (text: string): Effect | undefined => {
-    if (remaining > 0 || screen === 'highlights') {
+    if (remaining > 0 || screen === 'highlights' || screen === 'cleared') {
       return;
     }
     if (screen !== 'manager' && (text === 'h' || text === 'H')) {
@@ -205,7 +236,7 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
           colour: number,
           level,
           manager,
-          seed: initialSeed
+          seed: setupSeed
         });
         {
           const rng = createRng(game.seed);
@@ -321,7 +352,7 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
         screen = 'fixture';
         break;
       case 'cup-result':
-        screen = 'bills';
+        showBills();
         break;
       case 'cup-celebration':
         break;
@@ -329,12 +360,9 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
         screen = 'table';
         break;
       case 'table':
-        screen = 'bills';
+        showBills();
         break;
       case 'bills':
-        if (game!.debt > 250_000 * (5 - game!.division)) {
-          return { feature: 'Dismissal', type: 'unavailable' };
-        }
         if (game!.leagueMatches === 15 && game!.cupFinished) {
           screen = 'end-season';
           break;
@@ -349,6 +377,9 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
         message = transfer.fullSquad
           ? 'You cannot buy a player because you have 16 in your squad - thatis the maximum allowed under    F.A. rules.'
           : '';
+        break;
+      case 'dismissal':
+        clearProgram();
         break;
       case 'end-season':
         screen = 'season-table';
@@ -492,6 +523,15 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
     },
     get playback() {
       return playback;
+    },
+    reload: () => {
+      if (screen !== 'cleared') {
+        return false;
+      }
+      screen = 'title';
+      remaining = 300;
+      resume = 'manager';
+      return true;
     },
     get screen() {
       return screen;

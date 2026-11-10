@@ -1,5 +1,6 @@
 import { clubs, levels } from '../sim/catalogue';
 import type { Session } from '../sim/session';
+import { paintBills, paintDismissal } from './bills';
 import {
   paintPlayer,
   paintSquad,
@@ -11,7 +12,8 @@ import { paintMatch } from './match-layouts';
 import { paintSeason } from './season-layouts';
 
 export const makeScreen = (session: Session) => {
-  const cells: Cell[] = Array.from({ length: 22 * 32 }, () => ({
+  const rows = session.screen === 'cleared' ? 24 : 22;
+  const cells: Cell[] = Array.from({ length: rows * 32 }, () => ({
     bright: false,
     ink: 0,
     inverse: false,
@@ -30,7 +32,7 @@ export const makeScreen = (session: Session) => {
         column = 0;
         continue;
       }
-      if (row >= 22) {
+      if (row >= rows) {
         break;
       }
       cells[row * 32 + column] = {
@@ -66,6 +68,18 @@ export const makeScreen = (session: Session) => {
   let numeric = false;
   const game = session.game;
   switch (session.screen) {
+    case 'cleared':
+      put(23, 0, '© 1982 Sinclair Research Ltd');
+      break;
+    case 'bills':
+      paintBills(session, put);
+      prompt = 'Hit ENTER to continue';
+      label = 'Continue';
+      copy();
+      break;
+    case 'dismissal':
+      ({ label, numeric, prompt } = paintDismissal(session, put));
+      break;
     case 'title':
       put(0, 0, 'FOOTBALL MANAGER');
       put(1, 0, '© Copyright K. J. Toms 1982');
@@ -229,14 +243,14 @@ export const makeScreen = (session: Session) => {
   return {
     cells,
     label,
-    lines: Array.from({ length: 22 }, (_, row) =>
+    lines: Array.from({ length: rows }, (_, row) =>
       cells
         .slice(row * 32, row * 32 + 32)
         .map(cell => cell.text)
         .join('')
     ),
     numeric,
-    paused: session.paused,
+    paused: session.paused || session.screen === 'cleared',
     prompt
   };
 };

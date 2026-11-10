@@ -1,0 +1,4859 @@
+{
+  "romSha256": "d55daa439b673b0e3f5897f99ac37ecb45f974d1862b4dadb85dec34af99cb42",
+  "curves": {
+    "left": [
+      [201, 96],
+      [199, 89],
+      [196, 82],
+      [192, 75],
+      [187, 70],
+      [182, 65],
+      [175, 61],
+      [168, 58],
+      [161, 56]
+    ],
+    "right": [
+      [55, 96],
+      [57, 89],
+      [60, 82],
+      [64, 75],
+      [69, 70],
+      [74, 65],
+      [81, 61],
+      [88, 58],
+      [95, 56]
+    ]
+  },
+  "pitches": {
+    "left": "5ffb50620c4c2a248d1ccbe20d6738a73f9a2e315cc5fa29a056074ae8da4deb",
+    "right": "594440986c2052c885c695222ff43ddf8d5187d309cfd3a40b155e34ce032547"
+  },
+  "cases": [
+    {
+      "colour": 0,
+      "seed": 0,
+      "attacks": [
+        {
+          "direction": "left",
+          "seed": 38934,
+          "homeInk": 0,
+          "awayInk": 7,
+          "attackers": [
+            [0, 0],
+            [0, 0],
+            [0, 0]
+          ],
+          "defenders": [
+            [0, 0],
+            [0, 0],
+            [0, 0]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "ce2226d7e96d0c45432b0fd6355c9596e6bcb030f78244a11d7a064cab348a91"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "5b0b977c8fb6929f3e16bc0111401bc2455d76705248a6e7675a77b5e26ea2e6"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "c69e9a0fea2e0a4b61838cceef7fcfb601707da5e331162ea8a0b37f7a276d84"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "0568060c366b496c8bd96dfa9104a64e8d9c9635e12a835dbcd01d0f11a7bd86"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "55856d8cb78faa37738b67355b428f1ec55cacc6ab64cd7fff7b871a0dbf6ba4"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "c471269a633aca2e4ad589214950e4aa1fe0f26e116e38bf66020c7887254c9f"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "43c3033274450d025b0d3355499047fa1c138f0a375dc7cdfba331cc6ea4ad09"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "9b8016b661a6fc2af8df55266ee38664d91fb85f6b6401b51c07cb5b90b93e77"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "eae27b6dde4b256189e84dcc342db58251b125251e106087e004f3750c044885"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "9b41f93b39056e18171a6486b54afbe4ee10c4e5b59ae37c6447074d71c62394"
+            },
+            {
+              "kind": "ball",
+              "ball": 6,
+              "rgba": "911050fac0e2ce2fc824a75156e705514fb634a4bac1c18944fc64e116a94f0c"
+            },
+            {
+              "kind": "ball",
+              "ball": 7,
+              "rgba": "8b3de539fc2cc4fb57a6e6cafa561033d8964459fa9cd4b4dd967d1e74e4bd3c"
+            },
+            {
+              "kind": "ball",
+              "ball": 8,
+              "rgba": "8843ce56fb1efe4322b11a98dfe5a7924816de22930c96ac16ed25d1bec28f1f"
+            },
+            {
+              "kind": "ball",
+              "ball": 9,
+              "rgba": "f6e392567b43247614cc4b43c2dcbfcf0a74c5a4d9c1709caa3272c9176e3da0"
+            },
+            {
+              "kind": "ball",
+              "ball": 10,
+              "rgba": "02998e8cfcd577a4124a247c6d1bf6fd3fbacec4b4c0ce79e863661d6b0e4d08"
+            }
+          ]
+        },
+        {
+          "direction": "left",
+          "seed": 45434,
+          "homeInk": 0,
+          "awayInk": 7,
+          "attackers": [
+            [27, 14],
+            [20, 18],
+            [21, 4]
+          ],
+          "defenders": [
+            [15, 15],
+            [13, 13],
+            [14, 10]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "51fc0f4ad5bcb490e0aa69ae79ff10ce7974ddb5c04c4f280e3822b00b663711"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "6a91503f5ee0126a774427b59d196155aa2afa3cd6d6c2a535695ce67435473c"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "5f6d8a8c8f777a6d18ead9fe0045694d3a2ef613031cfdd5c271a19a6a130b0b"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "06aea87b0471eac1a4e269cc02e2ff13669b36b402048a684021b74e4bb36053"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "241e355d1aeb4b150f2f59f5b6e087e7da316a127ed77aac92584dda47328cf5"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "d710ea70067bed11db6eed60e228472951e8411ba1ffba2f177a6734147bef21"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "2b13b0250abd4966a7c2766ff32cab9c8c9027cae4dc66f36bd5e13403af57be"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "84f0f417987168241553080bce4930e4958b9e05a701e45adbdbd4d93c1d7646"
+            },
+            {
+              "kind": "collision",
+              "ball": 5,
+              "rgba": "2be6c68effa6d25ba4db16890a5bdd9c5323d91d6a77ba135cbf7d02e33a2a00"
+            },
+            {
+              "kind": "ball",
+              "ball": 6,
+              "rgba": "a752bc53ed6dc30df90dbbfa565333da7e84daf39f59f93fd5845cc8f1a0448d"
+            },
+            {
+              "kind": "ball",
+              "ball": 7,
+              "rgba": "c0a36e1dc56fd2af26b6cf990cc0581db1979a69753968b5673cac951957f792"
+            },
+            {
+              "kind": "ball",
+              "ball": 8,
+              "rgba": "6fddedfd31d256ff4cfdf3b19ba9d2c9c8e7bf62a0d4a2ccb43bfda8a1fdcc47"
+            },
+            {
+              "kind": "ball",
+              "ball": 9,
+              "rgba": "76dfd12248be83f222ef5222049e77fdf45e0e0732c6a326cf80bc4468e93b8a"
+            },
+            {
+              "kind": "ball",
+              "ball": 10,
+              "rgba": "4de333925f8990ed3f103f0326074e5cdad19c1907bb39bf5d305ddcceed1e2d"
+            },
+            {
+              "kind": "ball",
+              "ball": 11,
+              "rgba": "50dc63ac8bfdc94dd2099ae6b4d4cd5421f7c3aa53b7a67d41a3b4cb24c9e818"
+            },
+            {
+              "kind": "ball",
+              "ball": 12,
+              "rgba": "c82f203d740c7dc8027d30036d793596cb41258f8519b5cf3b7ef293f9f38f0f"
+            },
+            {
+              "kind": "ball",
+              "ball": 13,
+              "rgba": "c66210eda35c04c1c46123e0c82abbf6ce229eab30f80240bf3ee228e4892743"
+            },
+            {
+              "kind": "ball",
+              "ball": 14,
+              "rgba": "86142501b994ef28940fdef97493d1d98361933a97dcad8d74d0268e259aa4f4"
+            },
+            {
+              "kind": "ball",
+              "ball": 15,
+              "rgba": "5911fee9f7d528181b5a836342ab66c5dadd0422dfc21682b096acb2d51569da"
+            }
+          ]
+        },
+        {
+          "direction": "right",
+          "seed": 57393,
+          "homeInk": 0,
+          "awayInk": 7,
+          "attackers": [
+            [28, 21],
+            [15, 14],
+            [20, 10]
+          ],
+          "defenders": [
+            [16, 8],
+            [19, 10],
+            [15, 15]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "f6fef39a5875ab62e3351daee14bb5bae3862e139e0653d830af50019484a421"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "90354a3b6f003a8cc4783fd6adc1c4e6da9f98ca3fab60379be79a6ff4cee819"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "ca918939c6ff45c951551cbca6b14b4bb813c6302009518d33df09080ee3c614"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "453268aa22c23c8d02eceee6301444287b80c58b726bac42162f86edf2d10609"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "8eec5feae9a926949cf5aabb5f37c61ee47a515bba524f7f168d95f62fe1a2af"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "da7b4fbe3b632294fda804f8b9eaf2b2ad258bbe97ab54e2f7b7ab4bd34e9d65"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "863638eea255c5ff106d03ec34edaba86df6ea38b83140891b70ea6d686b6c62"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "1cbcae96a5b6fabf737627d1a6606826cd2f38a4b318a8caf76ba0b211809ba3"
+            },
+            {
+              "kind": "ball",
+              "ball": 6,
+              "rgba": "4a7fc603ff744b5d381832bc820c5c6dac612223b42fdca19238db842bf1fb95"
+            },
+            {
+              "kind": "ball",
+              "ball": 7,
+              "rgba": "7997183ee7b2051552233c16a50ea5ee27d87c14de6e57c75b07c5e754f04643"
+            }
+          ]
+        },
+        {
+          "direction": "right",
+          "seed": 60889,
+          "homeInk": 0,
+          "awayInk": 7,
+          "attackers": [
+            [6, 16],
+            [20, 19],
+            [14, 8]
+          ],
+          "defenders": [
+            [15, 17],
+            [14, 13],
+            [13, 11]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "6bd939b7315c6ec4763cd08a9caa3f9d4f65fc490b48e35b0ce05867c27f2490"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "3afa5f8ac544fa5b9b0f53a02b6429f4ff52f6d62103d51447c6d994b9967e5f"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "2c99e55607d93beaf742da315abc9bb33d0801d4a4ae43df91b5586f2b762c3f"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "d7a9eaabec8885ac7fef9525ec421bd400524ce3141497d43b4fe1496587ff4c"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "646b5a9e64c48e219fcebbaed78533ea2c2a7bd95eaa92fbccc6c92bf6825ded"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "11283c874d535b1edcc225df925278ddf1604d9a10aec6af365bad81e913bd76"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "11838e40dc598de8afe26737323057fa2fecda1cb52b90e20da30a0ffde5dc67"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "cb33fb2523b816f06ced92cd3a9fb5f2d923f721c4495fc017594d28e4a97e61"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "9e9cc8114fa920ed6188b2170399aaec4cb6a68b4117b82e6ae86548132f0db4"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "f13c352f6699261fdf4a293263369c831be2732d95c222374814594fbc26abaa"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "449bef7fc18dfe3b7b52c2caebc2585d91225546cbff99e5b2305be3e2c723c0"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "1faef7af511bf9b7c903fedef3beb809ec8844941bb5da1e7f5f9c119ae25c7f"
+            }
+          ]
+        },
+        {
+          "direction": "left",
+          "seed": 50541,
+          "homeInk": 0,
+          "awayInk": 7,
+          "attackers": [
+            [10, 16],
+            [21, 15],
+            [16, 10]
+          ],
+          "defenders": [
+            [16, 9],
+            [15, 9],
+            [18, 11]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "c2cab9bfefde64361371f5a14a2568d2c00adc262b1d7aa91ebe6cb6e4de240a"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "bc8eb53c94c54da4bdca156dd96a4100e2d2ac50bfac5eea48562ef54f647ed1"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "1961d12bdf98a623ce6026b6b7dc8c6bc41049574001711ba55b7390b3efcc6f"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "b4e45dbd1b916b7fcbc81d41c358c2e363407054125096784bbc2a4ef53e8ec3"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "95fe03903c85876320e48510585018bf581ca95d3501a0adc992db817d8199da"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "9800ca3d49a6cb8aca43160f38f4a3b0f607d9801930bc91ad708824c7a11497"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "d489e5dcd676fd64c3b3b78d7212cf0d5595bef92928413c925bb5a7a6612b55"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "a5dfc94508d22d95af28a099f9943e0bf9ebfe383c9fbd9969bb900e55ca0299"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "f0b0781f294dd10ae196caefba46253b8fcc1a30fcd6b98fa02f1bcd819097f6"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "3b1b93134eada52016e9ee8362fd11095ad56e2d44a3c9717d69980a0d686190"
+            },
+            {
+              "kind": "ball",
+              "ball": 6,
+              "rgba": "08db6814b7fd4c7aac4d0748897105c53761ab143021626e6328f5022e670779"
+            },
+            {
+              "kind": "ball",
+              "ball": 7,
+              "rgba": "3aaf8f61294eff4167e9e2942ae0d028341667dcd9409e9f989052436478e0fe"
+            },
+            {
+              "kind": "ball",
+              "ball": 8,
+              "rgba": "972c8ac5559fa6291d9b91cd351d6d70ab252a5ae4c6aa7ccb633a4cd16c4808"
+            },
+            {
+              "kind": "ball",
+              "ball": 9,
+              "rgba": "c124a6f02c0484d0ce2a254e7b4668569b3556bbf25c2bf78d42a4dc5fe9383f"
+            }
+          ]
+        },
+        {
+          "direction": "left",
+          "seed": 51150,
+          "homeInk": 0,
+          "awayInk": 7,
+          "attackers": [
+            [28, 19],
+            [19, 10],
+            [24, 9]
+          ],
+          "defenders": [
+            [12, 13],
+            [17, 8],
+            [15, 9]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "e9961c1aaa51d1be8b860e76b876f2c57e2aed6cffeef8701c3a7a48eae8578d"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "4939350a03a8d401b4c4cfc6e3e47bd51d4303df19fb424604a8bbc0c3207c12"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "7d51fbd393a0f561e5ff32656944c82dff3953b7790759085a5e834b6d8ddfd0"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "7085fb5dd168e6d8ba5db3f990078c2a3009a769c879d96027110f96844f09a5"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "565837ef82ea4cb998e711255ca00c30ecb1f6ecdcacbddec6ca9c98809c47be"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "cdc028da38224b6f8b1b44726c57f2958977358cac31f53d3c87d19dc42366bb"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "3528d54d830783f7956769949397ad6b472ab87b01463a43448136557b6fa2a0"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "be5202755d56ada205e7ae24353f0da11c2148d70baa93dc62fe3b06b1b7faec"
+            },
+            {
+              "kind": "ball",
+              "ball": 6,
+              "rgba": "b351a125abba61a99415595f8b0d006529d68b162221ebc65fcff4dc4c9fe92d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "colour": 0,
+      "seed": 1,
+      "attacks": [
+        {
+          "direction": "right",
+          "seed": 24819,
+          "homeInk": 0,
+          "awayInk": 7,
+          "attackers": [
+            [0, 0],
+            [0, 0],
+            [0, 0]
+          ],
+          "defenders": [
+            [0, 0],
+            [0, 0],
+            [0, 0]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "299a92ac65db519df41e41d3bd91a9a6f79a35060f410fa896fd8f54019ab4ae"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "3294fdef4ac6d0edf41753f3953930cadb4b85dca4dd361a9c9d1c82a615c841"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "66834a0d6737b25c369b443935ee0351482c8bae509cf0def84d35eab8f1d6dd"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "5cceaafc4a2fd2ac0e71d868b0a9f514f19d7a7632833c6eb82819d8e519a017"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "6aeb6b57e1431863172a15b2e0ce61a8c7f6fbf3a740edd42807fedf2c8b1496"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "e5fe33d434d9ddf4721c8f3b0ab7343dd612b3a9cb49077ebac6c6b8ee4a13d4"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "2a9098d0a66be007a377fc68bba990b215889a4a7ba1ca4645ac623f2e8957c3"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "22abd843fb88b145dd151504216dc63f06b16b5e919b66cecd4bbfc0ccafa373"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "5a66c01e4101a8a33868d52c3ee1bf0ce36713787883d6388649b8902c704f30"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "f6fcd74a81eeb32aa99fdc35576c176852d12f1a76d5ed823f54e9ed22665c14"
+            },
+            {
+              "kind": "ball",
+              "ball": 6,
+              "rgba": "7a85ff33e6ea986febacd4e23b18877eb54c223b134e22b0333ccd2e05f81315"
+            },
+            {
+              "kind": "ball",
+              "ball": 7,
+              "rgba": "993278fb1e3ee8503d036e82eb0a59f6521dff6db0bf6b866fde38d86bae1b70"
+            }
+          ]
+        },
+        {
+          "direction": "right",
+          "seed": 52542,
+          "homeInk": 0,
+          "awayInk": 7,
+          "attackers": [
+            [7, 11],
+            [18, 12],
+            [17, 12]
+          ],
+          "defenders": [
+            [16, 9],
+            [20, 15],
+            [17, 13]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "9a17523d97b6a27143b30122adc918ee9fb871e845bb1b1ace7ed37adbcf09ea"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "3c29499f153c131f829e775401b744709f37eb78e36c1f482841b4e1fc774386"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "609823282be7916d02bbc140c01dcd02e38effa4a9d5be32bbbc214657861dc5"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "6bc54b9b7927b7d08e9f1a5135f468e4086f4dc4be6289f38440073a29f3b428"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "f2c44a9b39025b444894e886fcbeff97bcfeaf1ac8c7653add72b5f975bab352"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "49282b15b10daca63621e0d9b8feb5f5e657a2b63904b3cd26325768181fc9a4"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "58b8b4983b2851f1377d685116007795469fd697c51748939050e6b4612f0433"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "b5546d025bc9f842d42c576556438ef26c86a7f2d6378e0cd30cf493ae6c8019"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "69fe810cff01fb8c377364d9edade22cb80bf0e5da094aa03d0cc8314d055d91"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "5408cf827fb370222f98ea935b643a96f9b357312ba1a658ec19ce1bbb81666c"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "b3094e3aa6c461df86a721af765cebe71ac4741db421ba1a7fa81308c0f0341c"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "4ece509129fe7c9a4088fca703326f570115e80c2639c31c5f1b571e9cedc7d4"
+            },
+            {
+              "kind": "ball",
+              "ball": 6,
+              "rgba": "f24181356174f4ceaf59d62d6bff56d5c40b813a1a1f21cc3154e8e222dfc80b"
+            },
+            {
+              "kind": "ball",
+              "ball": 7,
+              "rgba": "914692e84adbe347de1079b23e5730a8b1cf9faffe569fe82fe9f4c7ca57dc42"
+            },
+            {
+              "kind": "ball",
+              "ball": 8,
+              "rgba": "fe24a9a920cb4f16bccc0b450089ef505550d816f20833b01665a55226c0f89e"
+            },
+            {
+              "kind": "ball",
+              "ball": 9,
+              "rgba": "11fb8f15e70903af6ea369046bbc1c0c49822ef1e7e8ba1096cdff12c2b2f5e5"
+            }
+          ]
+        },
+        {
+          "direction": "right",
+          "seed": 54840,
+          "homeInk": 0,
+          "awayInk": 7,
+          "attackers": [
+            [6, 6],
+            [15, 9],
+            [19, 14]
+          ],
+          "defenders": [
+            [17, 10],
+            [16, 10],
+            [19, 13]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "06eac4135e7a1ff7ec0d919d04b258651e336c046ced418ab72c523c7092cc52"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "dfb90fedbb800577df04d0870783f69065ac049a7d67a5aed05ca15e0ca70721"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "4fc1381a87f01d6f7f3b093fe0286d0dec662bde21594587524564c1b7e1d76d"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "e75350ef15a429f915b4b11e33d93426d58ceecf354f4502d6ed97d2ff7a9c99"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "3e9d542fdc44d4858501586f941df6ff7b65ac885b1c3fb2cf42712a031b6bad"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "c77a667e3dea0f37a7f808d780704358451ef87a5b5a51255a8a2fe76cfca8cd"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "a479de9c9fdf2d6625d6d4847667afa45f992cf413f7d0038a4cfc68a994b789"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "cd882bfeccd8f75a3a3225f3693e8d54cd22f0a006a6a2289215b938c6011cf9"
+            },
+            {
+              "kind": "ball",
+              "ball": 6,
+              "rgba": "d63b15a4f484d6f9f103ff98c3289805fdcdeb2dcd06d153f0d23dc08906f403"
+            },
+            {
+              "kind": "ball",
+              "ball": 7,
+              "rgba": "bf804e328f256528db9e85ff22d575f4771368fd7bb41d3e98d581653353498f"
+            },
+            {
+              "kind": "ball",
+              "ball": 8,
+              "rgba": "ab6acabcf87bfe0919152e50ea681e20251214171713861e5ca3b39f03ed7faa"
+            },
+            {
+              "kind": "ball",
+              "ball": 9,
+              "rgba": "4d4cc5277f538e213cd184d7365d33488884f745f3d7f31fa5329c5a81b58049"
+            }
+          ]
+        },
+        {
+          "direction": "right",
+          "seed": 56242,
+          "homeInk": 0,
+          "awayInk": 7,
+          "attackers": [
+            [1, 17],
+            [13, 15],
+            [9, 9]
+          ],
+          "defenders": [
+            [13, 7],
+            [17, 11],
+            [16, 12]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "6148d545cc64ec484ae655963af0dd0dbf2f354e3b04419d104c6f9c6476fa36"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "17a57e4d70332dd7f5aab25c8f6c5b3d779680375f281b5503247899415b3ebd"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "d662cf0b2bb3ca11bac741be4acecf05ce2553297af101adaa44b047785d8bb1"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "d743ef16134b491522d1dc48e0933fc77b5bc809c0b2095e7b96e6e7c7dd2050"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "514fe5306ad0ae43e4bab2a6104b3e1c1449a772e7ce081ae5ccb7417c30fac2"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "13a65d2a8e09d1c2228b3a924d6fc3d5d8af03adf6121ead33667a76c804dc38"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "7417e011680c961830c0f83f781704e2b5c3a63899d023f08cd1dc097186fe7b"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "27db98e51be9f55d1e8497aeec7eb16815734a268954ba8ffa2d4f6db09ef6d4"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "6a9d8c1a4b8a727aeab36a56b6b859132cc22e7c5bfdfb0ebdded080cfc9e49b"
+            },
+            {
+              "kind": "collision",
+              "ball": 2,
+              "rgba": "c689912a3a1697161b6cc2f0815eeab221d325d5e849bf2d3f40a26d8a4f9e78"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "d4783291d85fa0aa8856f1dffd03dafc23af8d344dc88adc115b806d85020bb7"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "baf10c7465e07afd5399cd2bd859a93c8380cf6438ed640db20e76aef5dac2f6"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "4ffdccddbd89be4ff5b96a572285e42a8a6cc135996c8a7f223c60cd1276d5e8"
+            },
+            {
+              "kind": "ball",
+              "ball": 6,
+              "rgba": "e284c3f37b0a53618047a7f8633f5adadbab6adf731d58375bd8a0d5e52c3884"
+            },
+            {
+              "kind": "ball",
+              "ball": 7,
+              "rgba": "feb33a96d7d006612868b6bf2c3b5508e8c3c13a75a23d84f326fe04b65783a0"
+            },
+            {
+              "kind": "ball",
+              "ball": 8,
+              "rgba": "a015aae9412eb064364e42d3ef8afc292f4a04957d31fb7ca8b80ac1559f1fae"
+            },
+            {
+              "kind": "ball",
+              "ball": 9,
+              "rgba": "da5368193d01842017a29a721ef94f6b35ac6cfe774140fbfe66509bde2be0df"
+            },
+            {
+              "kind": "ball",
+              "ball": 10,
+              "rgba": "82e6e84ce782c6a5d303730420dd11bdfdbee104e1ee40a7e6eccffc023e7ba2"
+            },
+            {
+              "kind": "ball",
+              "ball": 11,
+              "rgba": "0e00aac57c30770c3cdd64c8d7e3f4cab0a7ad596326e7de3d1f08f189e09502"
+            },
+            {
+              "kind": "ball",
+              "ball": 12,
+              "rgba": "3ce07f17c510c0eedbff150eab944e7eea8052bae53b243ad941b56d56a027e0"
+            }
+          ]
+        },
+        {
+          "direction": "right",
+          "seed": 53943,
+          "homeInk": 0,
+          "awayInk": 7,
+          "attackers": [
+            [9, 10],
+            [18, 12],
+            [18, 13]
+          ],
+          "defenders": [
+            [21, 14],
+            [17, 10],
+            [16, 10]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "b860e91a846432091c1b67280c28406d720c8577915f0a72f9201668f559ba23"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "7630b676ff5393564361d31ffee753b4f91227947c3eed6b50de287e51fa7851"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "622892c378281a34d8114241027c067d3e572c5f9e597f15a517d9ced0efbc37"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "f26c1411e3bcb92d2a179169032ec7499aee8de9532e4d6fbedcc39ff1f4efa1"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "39db524eea226225735fb7a19ebdd9d382dfc46ea6e6f008e3c7935e4971ce20"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "9704b81325c0bafa45a86d38631b775cf0d8a4353fd3cff05a93e66732be3195"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "dd6555cb84e7a519bc6e758ced2540e1fd7b5d90cbcff06cf26b762c9a5266dd"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "946d6c3eec84610a929b8002a837846d8e05e7c95842dd5685451f4e0a83c216"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "307f37719244249faf3c303c4ac6e0854ef85467261b65c51a14bb9ba91bd166"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "6f2b3916a9acde47b860c8694f030d015cd9dcbe09af390cc89172b680fec149"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "3c6a4cefe75dac881a8006a13fd642c580c6f588110a6db04d39edfb217b9f35"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "553c24f9a52240ec33fd9e1d88b0b44ed748f2aa3b11c9ec62d31c78ee411855"
+            },
+            {
+              "kind": "ball",
+              "ball": 6,
+              "rgba": "4dbb258b27a9f68045d9e05493385d2d6af2760af96f9e6ca31c1bf2deb1c1e8"
+            },
+            {
+              "kind": "ball",
+              "ball": 7,
+              "rgba": "dd55f681de673775e663c8a34f558c1a461b88d8dd5e910ef544abdc39c07ca0"
+            }
+          ]
+        },
+        {
+          "direction": "right",
+          "seed": 50728,
+          "homeInk": 0,
+          "awayInk": 7,
+          "attackers": [
+            [5, 17],
+            [14, 9],
+            [10, 9]
+          ],
+          "defenders": [
+            [20, 13],
+            [16, 9],
+            [18, 12]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "467edac3dc94657041cb008779495221ef6c692fa3a536d9ade5ec78486a513c"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "f4c0ed518de1703604aeeddafe393a8df25e6bdb5c72f0527b401a9990815546"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "1214797731007f9889a94011047c38643ef2742066da6c12dc7aa5671a0677b8"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "d1252f0b8c5cc34bff154d20b19768cfe5152e86cc4794a9954916b3b702fce9"
+            },
+            {
+              "kind": "collision",
+              "ball": 1,
+              "rgba": "b5b7b0474c4c5ad5dffb4967304743fb5455f2840a21c849e12c29376243ab98"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "119c929bf60fb48f03138a8fd7c24526bd90b0ba9d35cf7fd075a74ba968180b"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "5c2948b5ee1a49356fc509ff7aa931ebebd30452642ea29c70e6a31c7cc06382"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "39eb8d17b0d56379b9c85fc9c5fa5bb345b6351ecfc23c58678fb279c6dde37e"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "7dbafae2d6cea584f10d332a50eea392896414acc18b3e60e6eb85b4de2208b7"
+            }
+          ]
+        },
+        {
+          "direction": "left",
+          "seed": 57316,
+          "homeInk": 0,
+          "awayInk": 7,
+          "attackers": [
+            [6, 4],
+            [11, 6],
+            [15, 12]
+          ],
+          "defenders": [
+            [19, 15],
+            [18, 13],
+            [13, 10]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "10f1845adc2646b051f5579135687507c99ebd79530684ac820c3742be518e3e"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "e9ffefe5b508a7530ed528d0405e7fee6f9f21f1d80337f628ef24ac16769129"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "925eb639b8be767af7c68319fbe4375f8558f380b3569a27c590cc5fe2f9694e"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "4e9368d0a38a0f2e8f98d79c462e19826f160f23f36ddeafdc13d1255eb2c59a"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "6280d7fab91eebb93766105158c4d5278105a2704154f29292b209b5be8713bf"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "ebe2ae7f3bd10903c6f1ae209de613e436f735f17ddfc985e11fcfec325d84c7"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "f0495d1db371e5a2b4b04171804e02b1597d0bf86a98210478d3ff9b97a4e170"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "4c156db49c10fe45560eeada77bb2f7c330d3304067f2800defb2b655f8e9400"
+            },
+            {
+              "kind": "ball",
+              "ball": 6,
+              "rgba": "228422244d9ab91d4e4e8abd87481692cd15b797061732720c6bb4db041ac3d1"
+            },
+            {
+              "kind": "collision",
+              "ball": 6,
+              "rgba": "d5b197f35ae7ca134102a627929790f7ca254a1be3f8ed78c4edd3931203e11d"
+            },
+            {
+              "kind": "ball",
+              "ball": 7,
+              "rgba": "4b449fca37036b25dec111852012a483a928e3f59663692c598c345c1f4e5dc2"
+            },
+            {
+              "kind": "ball",
+              "ball": 8,
+              "rgba": "9df3eed05c5ea2fd8f8ed0037f2efa40f160fff52590e826890dd520f8dc4ce6"
+            },
+            {
+              "kind": "ball",
+              "ball": 9,
+              "rgba": "85e12d6530e98efcdf7865056a917c8321ee2145b7b2d5cbb1d48e29472c45c2"
+            },
+            {
+              "kind": "ball",
+              "ball": 10,
+              "rgba": "5f08d8bfbec524214e438f29615fb172b4e0abf0758a1481bef7c10a99bf6937"
+            },
+            {
+              "kind": "ball",
+              "ball": 11,
+              "rgba": "7b93f8c8d86340863ef081959156e604e4192b1b5e41fa4cc430cdd4ed72da5f"
+            },
+            {
+              "kind": "ball",
+              "ball": 12,
+              "rgba": "b1e36cae95fbb88506b14a35027af56fab6a551edc42c37a2240503d617d0b64"
+            },
+            {
+              "kind": "ball",
+              "ball": 13,
+              "rgba": "68d703fdd08e0508d2a874d9ae2762a5b8d09012edbb09422970ba1fd58d3052"
+            },
+            {
+              "kind": "ball",
+              "ball": 14,
+              "rgba": "b091765bad6d3d83abf8885da1d680bd7e24cbfcfcb976f5d7fe5e6029fd90ee"
+            },
+            {
+              "kind": "ball",
+              "ball": 15,
+              "rgba": "c306b48d381ffe208bfb8920e59dbcdfa7f8241df851db605571444a53376bf6"
+            },
+            {
+              "kind": "ball",
+              "ball": 16,
+              "rgba": "8858f542df259fdf2737ecd76e820abbb47511f8058b2dc5497514be2946e758"
+            },
+            {
+              "kind": "ball",
+              "ball": 17,
+              "rgba": "b2af55d2b622ae213ca13bd84e17cb10c6b9262fc7c78ef6697687645c941e72"
+            }
+          ]
+        },
+        {
+          "direction": "left",
+          "seed": 1135,
+          "homeInk": 0,
+          "awayInk": 7,
+          "attackers": [
+            [27, 14],
+            [19, 9],
+            [10, 16]
+          ],
+          "defenders": [
+            [12, 14],
+            [10, 17],
+            [19, 8]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "a4cfbbd7b6da55f054183b7e1690f1052d07f838bd43b64eaadaa82e6cdc85d0"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "e86f4a85bf6741e70fd8e9f8fbbb820a1635894c8db8f6d1c6967001bc5def4c"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "ca5f0ea126c504bd89e1e1994940fd29b2f59cb8eddb8bd30f3d7f32c49aa52f"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "9e70400ffb4df5a0324e910be58df26cb7bfa2b318eb1eb7241e4de4eb16d05f"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "ebc3bcf24930b1a8c0259081ec6b5058c04a8f0ea4692e8e679db3356a14f92d"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "0d3e3046d657d49d6516046106f6ed60b52568f830b663cff82d563f17803ad6"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "b4b577020c83cbfaf87d3237b19718c1ae5740f7dce7cab6170fe8f0e4acd795"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "e206b5b14bddbb8058099d0885ef87a38cdd6362189d4d033ca43b88d29b0c06"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "44a2e7f4bcbc507d0585554ad8bd3427e71a4d2e761636cdf8177994ed24fd4f"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "e4d60007192b4d53534a39c78efe780bff4e1d48aba12ee21a396f8ca8826627"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "6497fa5a098bd0949d54e7be8eb4bbacd464828da4eb380106647b27ebe83b82"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "e9ac72210d6899faa87b92473032fe294701be07a6b5b53e37f61c864aa687db"
+            },
+            {
+              "kind": "ball",
+              "ball": 6,
+              "rgba": "a0733903c79393a4ab386684b68da8405d735cac6d2d2434512551f99b15ba42"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "colour": 0,
+      "seed": 42,
+      "attacks": [
+        {
+          "direction": "left",
+          "seed": 56141,
+          "homeInk": 0,
+          "awayInk": 7,
+          "attackers": [
+            [0, 0],
+            [0, 0],
+            [0, 0]
+          ],
+          "defenders": [
+            [0, 0],
+            [0, 0],
+            [0, 0]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "5334356fbf5394530df2171c3e2f20f578b9eccf9385b3c86e39f84d5d57dd25"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "36d9e5e66d923d70ee5d8ec2a46cdb86c840d9e2bd4e9e0e2f479beffb4af47d"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "4ad1bd87007684e880832b17ba74018130ed93eb364a869cb2a54b8d35071034"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "565c6461019af76a34f6af5fab5da7d238022fcfb31309fa67f4ea1241818c33"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "8f50fb289d5113f98101ada3e8f590bad1b4167ec7a12777a2c47516da2510c3"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "ba42721b5b5a66ac1029e318f9ece8586eacf5fe1da894c797b0ca1f124448ad"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "3a94b7022cbb080581711aecb6bd71cb35c05bc79894d3e78fa338e0d8058c38"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "ffbaaa7daa9eeec194e5ee2120fc8b8d2c9decb02398ff22440d88963ba48a3e"
+            },
+            {
+              "kind": "collision",
+              "ball": 5,
+              "rgba": "4eb7d40d2167aabade9c1a0f8e5228605669903a670f19bb5afcba184bc64b5d"
+            },
+            {
+              "kind": "ball",
+              "ball": 6,
+              "rgba": "05bc86eefaf49cdfb2d369556d8fa6094bd13a32fab3c041656d56a216f3dab0"
+            },
+            {
+              "kind": "ball",
+              "ball": 7,
+              "rgba": "fe1f4ed39c8b450bece5270b2955168c1edf1ab305bf921114f55c7a0ad52faa"
+            },
+            {
+              "kind": "ball",
+              "ball": 8,
+              "rgba": "ea3caa95d5c1fa851e82c702c6b3370ef5ec01534c5b19abfb8dece02775697d"
+            },
+            {
+              "kind": "ball",
+              "ball": 9,
+              "rgba": "061b4ccfe4e7db97ff711b375849db5c78e589edde2119b3731624544eb91b5e"
+            },
+            {
+              "kind": "ball",
+              "ball": 10,
+              "rgba": "97b056d6a62180d13ebe4eda5fd4391b5f62fa898a672105457f8ac1ab30c01f"
+            },
+            {
+              "kind": "ball",
+              "ball": 11,
+              "rgba": "076867e457f1185c8e56a10c96635f3fe6ca37b61f6c6de218c2b3619b69782e"
+            },
+            {
+              "kind": "ball",
+              "ball": 12,
+              "rgba": "db1e1776b48cb8cab76882d6e021d37cfac5c01dbde501af8e049a2cf1bb0db8"
+            },
+            {
+              "kind": "ball",
+              "ball": 13,
+              "rgba": "dd559259714a36a88be84027e3bec38f95d11513f943151963bfdbe07cd730c2"
+            },
+            {
+              "kind": "ball",
+              "ball": 14,
+              "rgba": "d9ed3d2e27fc939b0871dcf4744d0d8fd4e0ec830832b9e6c7bca068fe1a8e81"
+            },
+            {
+              "kind": "ball",
+              "ball": 15,
+              "rgba": "67bf0280cda6664fcb6fd65a2f4d76cf3eaea1faf05c7d2f43ecd445c7bef082"
+            }
+          ]
+        },
+        {
+          "direction": "left",
+          "seed": 53131,
+          "homeInk": 0,
+          "awayInk": 7,
+          "attackers": [
+            [28, 8],
+            [20, 19],
+            [17, 14]
+          ],
+          "defenders": [
+            [19, 9],
+            [19, 7],
+            [13, 13]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "f4781feceed19d049bdf48e90e8fe41b84dabce398eeaa532a701842daa6c0a0"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "1dbf4f9d8af1d28c2de2b06b3f9727f9f222580d5b425b42a902e2d8a394deb1"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "a5c414cc4cd66e22ddf4f496ad9cfab7066af910b875f51e4de420284ac6dcf4"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "946afc7f363e3923048b51a3a10edd45f721e0c31e3a2244882a462f1515adc0"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "a48cfc079ce2b9e9e0d7c62ca5a831d49663e22a87f280db00745e8f5ba5bb6a"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "c36b8f9333ab023f236ef7bccfc4df9665cbdef35ec32c690ba8cf4056c75e09"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "133798aab14786289fcf8c1a0b7a190501a42329533bd7e2f77b5c5ff4d386ad"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "9119c49109948b83574614330012f7b773f726a27e80c7afad87ba0042e142b7"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "8ebb7da053e4b062e579ff1cc3a76ec2f2892c8347378d4602ad66ae359ad8ca"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "0d7113efc8baf632ea408c754e0798be5d1e516fbe0335d7540b1a258d0cc23e"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "37da0ff2c7e70c131030cab1e11e858392c2f9b67f0263efcc27935aa93387c4"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "65f185f7ab34ef5df32c0a3790ea68dc06f7be6fb822a66e78c27eb2f51f1343"
+            },
+            {
+              "kind": "ball",
+              "ball": 6,
+              "rgba": "0cc2215d8cdac6934d01650890f5bb82337283f705543d02378ee66c266bbb4d"
+            }
+          ]
+        },
+        {
+          "direction": "right",
+          "seed": 50311,
+          "homeInk": 0,
+          "awayInk": 7,
+          "attackers": [
+            [22, 18],
+            [12, 13],
+            [14, 11]
+          ],
+          "defenders": [
+            [15, 10],
+            [14, 10],
+            [16, 9]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "ba5b1b63d4bff684bf3fc0d1732a46b5a1062e8fc7739d2fb7c46da9d7b5716d"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "724a2b73d03429d09faf7f4622a773db8fde5d4a4d9f2323cf2bc317875741ce"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "df5669cf27932ee9cda61cf2f63b9e4651efd2214eda35363f014b437291f442"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "4e304130b05c943efe1d8b565af8085fdad522aa890d9f6a186259343c041ae6"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "a5ce9fc4ae4409e11d00b7408613f16e4bebd9207f663649d164fa17d88e08e0"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "9c53b8260ed3a6c7cef9ec4c91cd42463fde66b049ca59368db06ddbcc716441"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "72ca61c7a363d22bf9b14863e00520f813f85b570a3346156ad03ae24fb37e23"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "be51fea9ad37f9254b3870f0232827ce5758d3822d6ad72809071156275df304"
+            },
+            {
+              "kind": "collision",
+              "ball": 3,
+              "rgba": "84b2ebec273c31259b01166c2b4a0560d1940383ef6aeaccd20831e51cab43ec"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "598a437a880ca3e4a33d3ff62e25c9ee814f4d53c6396de6eae94f1a60fa34f5"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "5a96b8a182d20ce2dd2d35b0c86338e90b8df0c4c7f639e2be2ad7a4fa51bd14"
+            },
+            {
+              "kind": "ball",
+              "ball": 6,
+              "rgba": "85baea868c13ef063feaeabf51036eaaa70c6826fd0fd77b63e1263707b8f8ff"
+            },
+            {
+              "kind": "ball",
+              "ball": 7,
+              "rgba": "097a198fd2c2b8e474d077eb6b1192eb53e5915801881b0ea8b35cea49538ff3"
+            },
+            {
+              "kind": "ball",
+              "ball": 8,
+              "rgba": "fc5185d89928ed58b1df5df97f8aaeb1c966ac772702b136707aece26df829b4"
+            },
+            {
+              "kind": "ball",
+              "ball": 9,
+              "rgba": "74923a80a2670256ce58d89b4723d64cb9c1989b126e630625d0270315141dcb"
+            },
+            {
+              "kind": "ball",
+              "ball": 10,
+              "rgba": "f3b25e42cef76ec384267a12255338d64cc7fdcae863283fa46f3eb38182702c"
+            },
+            {
+              "kind": "ball",
+              "ball": 11,
+              "rgba": "2568e9ca301650a97033eb8e06825268d5024f3efda54827a6097fb692eb1eab"
+            },
+            {
+              "kind": "ball",
+              "ball": 12,
+              "rgba": "226b162cbc23dd639d91e173b032a03ea28caf19dfca51935530d68964c9edf2"
+            },
+            {
+              "kind": "ball",
+              "ball": 13,
+              "rgba": "498bc7f3c5aa05e7732666f3301f8c1d5213d505031f2ba390fdba1a14176425"
+            }
+          ]
+        },
+        {
+          "direction": "right",
+          "seed": 18506,
+          "homeInk": 0,
+          "awayInk": 7,
+          "attackers": [
+            [7, 14],
+            [15, 10],
+            [16, 17]
+          ],
+          "defenders": [
+            [15, 9],
+            [16, 10],
+            [14, 10]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "956c8fde3f8068233b8199ae6c3900686b1fcdf9ec0a6b7b260669969f13caea"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "8dd37b94d08224ef09350440371b1850b2f91b63468d4f121d885ddb217e37f0"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "e3f565a48cb01a80915f51b12e32e677af02a4ff39da16a546b206e13c25e6e4"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "2bc6304178a1ffc7e1bf263c400f86990c05a7e192aed3edd18bd271c6836382"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "884cb69bf511e68a3356d6f69b3d8711686f2afb97a0e9c471efb974a9a397b3"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "07c687ea4ec5191bd1636529c0c5b5928774a4541fef373650905f2e6b19dc50"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "72858c811a27a607ef52bb09f32c29060e05cdb10b847373df4656a173fb3425"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "69f720fad255d0441745ab182e773cd34aed8d0771d9f4f999a99e4c50e65fd9"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "3905f6c893e1c4f36b83c7425e4d12a1c596f6627f3963aea596f2256ab1aa5f"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "fc52c833526b7a183cf024fa12ac332dbe71f3273b42dbde78fa1fe52dc619b8"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "96c386e8f4609e39b485ce9c0ebd4cd3c37e21c35dd71a95cc14995ea09f6ab4"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "52dd8a21055d5973063110686f5e38d015747fc959c938eafcf936e0046e2c51"
+            },
+            {
+              "kind": "ball",
+              "ball": 6,
+              "rgba": "1ac85bae807d616a9426625ef7e0c65df1cb25282cd851a35ae444ae2bc7e773"
+            },
+            {
+              "kind": "ball",
+              "ball": 7,
+              "rgba": "d77ac8d3350538f01a898679e6f969df8c66e8e557e981bf242132214af3e8dc"
+            },
+            {
+              "kind": "ball",
+              "ball": 8,
+              "rgba": "fed42923e1e389b16429ce4792ab2d4199a01b50f484a818e2067c4219ed93e9"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "colour": 0,
+      "seed": 219,
+      "attacks": [
+        {
+          "direction": "right",
+          "seed": 43182,
+          "homeInk": 0,
+          "awayInk": 7,
+          "attackers": [
+            [0, 0],
+            [0, 0],
+            [0, 0]
+          ],
+          "defenders": [
+            [0, 0],
+            [0, 0],
+            [0, 0]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "f701d0ccfedfb82ae72c1af289623119a879bd413b1af10b532ece3dd0faab26"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "5b2ee65285c18d841c6cad7afa9e453070d4f38d7dc57ae33c22b6f810299d52"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "03d70bd11478bce1b1124dd774a852e22cdeff151778d0da17b9f7d80d7c87cd"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "053dde224056569c7eff15bf08bc599ac85e0b939e89225ac1c1721eb78e2e9f"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "eff486a03d479a20feba8f68175e23669ee99b5fb692e40356e33c2a403154ba"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "7b0a03662c9e6dc09a361dfb906f5f6b07d777b2f08e3cc27e825d3d9479d852"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "9ce9d6fb63fe810f2e09bba912c4f03d2957b475d4ca04e1fb6112003afc7ee7"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "f20d8c4a7a696ae84e43ada10547e43b45b83c801c08e5409a9e5c722dfd15a4"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "aed1b09c37f170384f8c9ef02bb766cc2c2bfb43ac00246f0441a2cf2b67ae1b"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "d203151e5ec46f8754cafe66b4be2254d1be59a9468c439cd5d357945b222fec"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "967ed3dd6f79b6121d7371fc2a5361c94df8b5e1a03bc2a94fe035622b6f8b6c"
+            },
+            {
+              "kind": "collision",
+              "ball": 4,
+              "rgba": "63d0e5b4f6baa3075228e7016f2d383b77c13b8da0708513d74a9b3db2127ee8"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "b3f2ae108b2e9ef30ae18c9b42dc0cf2f2997a714e53a091e6062a5d8d518b78"
+            },
+            {
+              "kind": "ball",
+              "ball": 6,
+              "rgba": "3542fcab42804bc49a12a1ee90c75e004d9397970d87dfc2c0b4fec604594561"
+            },
+            {
+              "kind": "ball",
+              "ball": 7,
+              "rgba": "056fb579ecd93e328948e5831be383abc72a5636fbf56795cede2f7270b358c9"
+            },
+            {
+              "kind": "ball",
+              "ball": 8,
+              "rgba": "1a696b7c8937ea70efb29151d0691d08b36efa7ce8c576889c47daf70951b76a"
+            },
+            {
+              "kind": "ball",
+              "ball": 9,
+              "rgba": "1ec2598f828631215a2ef1c3a38b656b87846baa11647827291551e2e69facaa"
+            },
+            {
+              "kind": "ball",
+              "ball": 10,
+              "rgba": "483ff5264068b187ed96e344ae07e323f079a61660850a639d8b99268153f5b3"
+            },
+            {
+              "kind": "ball",
+              "ball": 11,
+              "rgba": "7821b5d860c5508c95d46ac0d1aa63075d43a6eabda52731cb0276e1c3674791"
+            },
+            {
+              "kind": "ball",
+              "ball": 12,
+              "rgba": "c4cfdc6312e55799ab54ccc256de664ea1196347f710e7629de17821c0f1f221"
+            },
+            {
+              "kind": "ball",
+              "ball": 13,
+              "rgba": "c13277c143a363c2091f87e66f2b827ffd1f0b409fbdd08aaf0bc9c5f294b7ba"
+            },
+            {
+              "kind": "ball",
+              "ball": 14,
+              "rgba": "0bf2395e58f03fa2a63722745ebb99bf7e1c6d9a34596b6342f6481ae64167e0"
+            },
+            {
+              "kind": "ball",
+              "ball": 15,
+              "rgba": "488522e0591a936ac1655e3e2c0b3c2e79a99e6ed8e5053e991f9a9a0035fd14"
+            }
+          ]
+        },
+        {
+          "direction": "right",
+          "seed": 2201,
+          "homeInk": 0,
+          "awayInk": 7,
+          "attackers": [
+            [8, 11],
+            [20, 14],
+            [19, 14]
+          ],
+          "defenders": [
+            [19, 13],
+            [18, 14],
+            [16, 9]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "c9a80cb3d33f35c2c4dced3e9b3aee8d0b4faa60712cca9c35195dd00dc7ffd7"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "fa2e42ea4670aa02dcce3b74d960240a6e682a10d834c68dd6923bdd87adb59a"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "6717e0d50db90119214b8cbefdef17479a3b5bc1d4d28df0b3276a6e0ae2c9cf"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "0f3cf433ab99bacbb2909deef4edf2590ed4c51ecb315ce3bf9e13f75b6ca62f"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "9bcf9fbfa052b7d837d0aad0863f7a0c0454d161bb0b4dff6ab12fd7a95d6554"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "108a01569ebc75b555595a2122d84d590b6c1cf55e62e666c6630193235f3bed"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "1f938bb40dc2d068b24e2077a11eed8f2dadb9010763ea29169c809716fe2ebe"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "5c77e6a1f437db8651ac8130b63edc9b7106448779aee4163248a0455268219d"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "1b91942d241ae5e8cbb10981829e7ed098c69d12f00ed792abb26436019936b8"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "ab6955b779d376c09d7b76fe4a8e059f04e76c8bcb0990ad909b913ce9c9c786"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "470bfb0227458cfa5d57d68abe7737f8d448c76ac6981129141efa7ba3c347e3"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "4aa4940919565d3a986b34b49c6736b6be4e7fa2333a51d6d89564bcae3dfa47"
+            },
+            {
+              "kind": "ball",
+              "ball": 6,
+              "rgba": "393578f2f2e1696a8841b1fc600d9369508baea3491ce720111400325644e51f"
+            }
+          ]
+        },
+        {
+          "direction": "right",
+          "seed": 12638,
+          "homeInk": 0,
+          "awayInk": 7,
+          "attackers": [
+            [5, 13],
+            [19, 15],
+            [13, 9]
+          ],
+          "defenders": [
+            [18, 12],
+            [20, 13],
+            [20, 14]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "bd5ac9c3f587b48eb83cc75d3cb42c08fad77b96e0f8c2bffecb923fed5d8496"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "7f799abc17950726a6a8eaa3d9f92602edf525594148f23b3ff806246bedea7a"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "49c02587c991881b807c3805d6b6f964c07907d26279898d220af4d7f00f188f"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "cdf6b60dfe1be105a7892ad5c041cfb0567de20663e82e11bad25d8d9f0aaf0f"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "5e08cabd2f6ebd1aa684583183f19baaeb9590b5b2bf22ff8f606a4a3456541a"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "7bb607d327195ec12a8d4dfac2bf3f9d48bfee00e16fd432946706ffdd2879d1"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "be18e5e59666d382f02a981fe5555dab3dbd6bbdc1267aff50f5260e1982a18e"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "0cacaaab0dae7a751a0fe825363f80ff538550ba865ec64ec189f374b9a50702"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "0fc0002513b30ed5978ad7f6960836cfe9d67f4599252a3824671de1eb3087ac"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "9d116635861177caa0303a8c87ecf6b42b12bc672fdf67db42e8cf98aeda907d"
+            },
+            {
+              "kind": "ball",
+              "ball": 6,
+              "rgba": "81c0b82c7bfc59e052ac67edfaa6fe52ebfba4a6911f697154d544be5c531be4"
+            },
+            {
+              "kind": "ball",
+              "ball": 7,
+              "rgba": "349e285fd4c857c71cb1791ff6e7010965437c91e5be94be7a9905bfc0062fcd"
+            },
+            {
+              "kind": "ball",
+              "ball": 8,
+              "rgba": "f072429d0656a07d79efbccd95b442052771ea8c85a3d35b6ddf7b4ee143344f"
+            },
+            {
+              "kind": "ball",
+              "ball": 9,
+              "rgba": "1ba58c6df84e087559d371eca81ca362589e577a222480200449c097470956bd"
+            }
+          ]
+        },
+        {
+          "direction": "right",
+          "seed": 22084,
+          "homeInk": 0,
+          "awayInk": 7,
+          "attackers": [
+            [4, 12],
+            [17, 15],
+            [19, 14]
+          ],
+          "defenders": [
+            [17, 10],
+            [20, 13],
+            [16, 10]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "212d2501fcb7da2751caf0485825fcd648f1d0a1a1e173951389d7e116a37d5e"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "76005ea79dadf11835c12e5ac3e7eb66948847bc058afae986850fde9fce8d35"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "ff98ebc9fcb36b16c64bce7b3ff5faaaf15fde0dcb0a442d64041d35a70c5908"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "68fe8f348fb15cd3683d0f0e2f1c8fe3739a2f2b8be927743135a6c847a5531b"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "61a1e851182f71c2e61826fc2a47997f5bc20fa54df663fcda2fbe5268570abb"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "55922a5982281e31dd1c19c8eaaee6b9ede05d13bfb22b61ef027639be504ce9"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "bea37d254af7e11a9a3ca18db89e20428335a21e0eb9946ab2081e90b78fb3f4"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "8829d2b3c1bde2edbe53cf84eade36eccdd83dd5a2bf916d90e803379f4418fa"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "4b1fa1c29a629176dbe8bdd8d8f0ff9c23deb024e0a4b16134486a30eb5969c4"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "f6e40cfd68123bdc9b8c24a0e9debd49f4a7c4266e1299b3a2d62812b1bedb9c"
+            },
+            {
+              "kind": "collision",
+              "ball": 3,
+              "rgba": "f8f599fc861912b94466bb8b2abdabbf7a50891759f322c3ca7c96afb2ac2524"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "24b3c0c83a209e76de5f38ab9067a609771107f6b70aa871f96974d36a9c8e6b"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "90528e8c1f2a741b119842211bce29c0addbcce8562707a6f529ea240070849d"
+            },
+            {
+              "kind": "ball",
+              "ball": 6,
+              "rgba": "4f26bd839b1ad8cc3034cbf215fc3aaa45b6fdaa39283dfa16ce322edfc6a483"
+            },
+            {
+              "kind": "ball",
+              "ball": 7,
+              "rgba": "ba464460b7aafc8ba962df8ff1f59ad08b315d099c623e0b68304550ef784a4c"
+            },
+            {
+              "kind": "ball",
+              "ball": 8,
+              "rgba": "71f07131ad9ceca434730df5c0f2ac916f1efd445f983db8b11fdb63f518c935"
+            },
+            {
+              "kind": "ball",
+              "ball": 9,
+              "rgba": "fef2d827d3ad588bc3461a66277108cbf142e55b0985902f058667e432104c81"
+            },
+            {
+              "kind": "ball",
+              "ball": 10,
+              "rgba": "e9c732743e3d297993d379ed9f835d1f0ed03929c74b86c108cc6dc9ebf6ab29"
+            },
+            {
+              "kind": "ball",
+              "ball": 11,
+              "rgba": "bbc19942a517d1e9b597829b4d97ac9a815516381f6e56be859030bdfaddf7bd"
+            },
+            {
+              "kind": "ball",
+              "ball": 12,
+              "rgba": "241f0ae225ed656af159934cbc286d050de644ea48281e8a2c82f68014b083ff"
+            },
+            {
+              "kind": "ball",
+              "ball": 13,
+              "rgba": "a9da26e843f4f13331be04baa4c6998c1ea23f3f9c88b8edf2168e3f24f30733"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "colour": 0,
+      "seed": 65535,
+      "attacks": [
+        {
+          "direction": "left",
+          "seed": 52304,
+          "homeInk": 0,
+          "awayInk": 7,
+          "attackers": [
+            [0, 0],
+            [0, 0],
+            [0, 0]
+          ],
+          "defenders": [
+            [0, 0],
+            [0, 0],
+            [0, 0]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "6970af887f20dfe72362d6302987c1ab508113219b2e2a65753d4d89884e1e7c"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "0e8b1821d3f2efd6532529abf1803424c12a393c7edada087254d3b3287a8965"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "0b72650ce4acf79248a6b5fe33ec0a1727719bdc1a3a05ebe9edce96e1551acc"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "75ed55b192ab0f3abd1d3dddd0e98a8b5ca2513dce94345452ef85a069917182"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "315f224575877c86b15f10b9c0421ff711aa912438e2cb8dae5b1ba2c747e181"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "046f6d21d332e919df3175851910e459fb7f17107cac987cdc1e453437b19bb4"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "6e1c955246af9f612581a10b26e4e44b5ffe515c5abc8c326982177a81d2266e"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "a778cd3a4fbad2410c727f286fff3e11a903c2bfe73c2c76425f1d55e8de0733"
+            },
+            {
+              "kind": "ball",
+              "ball": 6,
+              "rgba": "9af9f35a22de7948448ed53e1fcfb0bc0a0c09e2b576a4f870ba10d9686448c9"
+            },
+            {
+              "kind": "ball",
+              "ball": 7,
+              "rgba": "7545f08dfbdda46f05ea8832c02bb61aedc1c380950e23b0afb55930d95b8338"
+            },
+            {
+              "kind": "ball",
+              "ball": 8,
+              "rgba": "4486e5cb5f14e92708e67983dcd230eec032c44d1548d77cc28a50a0b69370fe"
+            }
+          ]
+        },
+        {
+          "direction": "left",
+          "seed": 25608,
+          "homeInk": 0,
+          "awayInk": 7,
+          "attackers": [
+            [26, 19],
+            [18, 9],
+            [15, 11]
+          ],
+          "defenders": [
+            [13, 17],
+            [12, 15],
+            [16, 14]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "32c8acfcc0c13c288b2c714e90d344cdc32fbfea15cf6e1322052639b389cdff"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "6f53cb60ce0031d41e485a04015797d04605b38242324e576bcf8ead3ab4d712"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "49a24452bddbe2a5c55d5793e3e52fa74851efc4bb0cbbb26f1b685ef5102c85"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "5f514c14d9793c432238f72b58839da6ae0f88f37ddbf1e5645f35f6932d0d34"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "f621bef35509e652de6945ab47853c98b05641463e80e577a46b7d0528d555b3"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "cdf29437fbee75b0eb8a81739e2b8e30067424de7607062b048784ec07be50da"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "2d5ba1d5195d84da4f48d145f6c28791e61f6ed0a69098cef49fd9cfce5ab899"
+            },
+            {
+              "kind": "collision",
+              "ball": 4,
+              "rgba": "72ba001b0a535701b688d2aab5675da87c29928c1fad0f462bdbcab2c974106c"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "16c9c5fbc937099400fc2e85288dda40f616b539ff2aad36351e745a49c58077"
+            },
+            {
+              "kind": "ball",
+              "ball": 6,
+              "rgba": "2ba14826d11c36f30fe331c39d814bd2ab0e582b140cf50c5e15ead5b0681171"
+            },
+            {
+              "kind": "ball",
+              "ball": 7,
+              "rgba": "9d807c7d818df5a963245cded18d1c5e579d277b69f637d6d02706d8f7d0765d"
+            },
+            {
+              "kind": "ball",
+              "ball": 8,
+              "rgba": "5a9ebbcdd6dc765ba9501d30abf71587e8b3161e866b6350bfc5d83d3ead3241"
+            },
+            {
+              "kind": "ball",
+              "ball": 9,
+              "rgba": "1ab915e2cf7e324cd8b4062000cba4bc78ccd020262c1f4f1290e2b0e34c7c38"
+            },
+            {
+              "kind": "ball",
+              "ball": 10,
+              "rgba": "9ba397a35a5903c9650a62a9fcf89d9a3c353e40304664453dcf265989e5eda9"
+            },
+            {
+              "kind": "ball",
+              "ball": 11,
+              "rgba": "4bf88181eca76fee63c5762915aaa36dd6dce7fa5823f65fc69f250d4c9bc6bf"
+            },
+            {
+              "kind": "ball",
+              "ball": 12,
+              "rgba": "1f85d1176ff4b8c81567e3e2417a2a5b0e84414526de0e97ccd986b1bd7ee124"
+            },
+            {
+              "kind": "ball",
+              "ball": 13,
+              "rgba": "8ced4127506ce60f7e6219b23b1adcad8332bd27bbc821df3ac70dbb146acc31"
+            },
+            {
+              "kind": "ball",
+              "ball": 14,
+              "rgba": "1d6074186968240598781ba49199e394fbd0dcd4943ce06240437fcbb0a0a76f"
+            }
+          ]
+        },
+        {
+          "direction": "left",
+          "seed": 59548,
+          "homeInk": 0,
+          "awayInk": 7,
+          "attackers": [
+            [25, 9],
+            [21, 4],
+            [18, 13]
+          ],
+          "defenders": [
+            [19, 6],
+            [17, 9],
+            [11, 14]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "c98070214d8bc5f1cc614b2257a6eb3feaa5faf2e5378b5238895f67bb8e1932"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "91900fa6d9adda5936e7d16d523ae59f54a98d42ad346a692f8dce5b591c1004"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "a59810de749b4137f87b5dae18707694a431953ded3dc3d339bca9ab2bfd0902"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "bc02adafe2111679590ba0f1d46da71087b0681f517a524e7ed0b7d1fc5cc41c"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "3faeb8452f719e0de665d5b381a0575ded6e8a634dbccd0f91ba0e3cf83b1697"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "b0e2ce9ab9be06015083e4237414332836e2227fce9cd0ac6807e414614dc4ec"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "8c7146c9eee8480df630362c1bdf2d31209b9f36390112f80f25ec2886cf14a7"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "6d31b2e8bdad94a4cb0e0fc1c15e6e5a823104fe5c6aa3d0ec500dd13df1fc9d"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "7bf4d35a1db6b624663fb107d8cb60cd13ad10be755cb756880b095339dd0ca9"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "29bffc222fb3daffebfaeb5aaeb36444a5d1ed7a50abd94153e7bbd9ae152a8a"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "7af2eb1fd00403d0f070ea8ad85bba3628af8e34f445d83ffe1c1d3f923b844c"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "c2170bd00f4568d1e2d8387c1e55e6559d0ac1d86342f104f7b0fa516a9861a0"
+            }
+          ]
+        },
+        {
+          "direction": "left",
+          "seed": 40720,
+          "homeInk": 0,
+          "awayInk": 7,
+          "attackers": [
+            [21, 6],
+            [10, 15],
+            [15, 10]
+          ],
+          "defenders": [
+            [14, 10],
+            [9, 15],
+            [14, 11]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "a74390d35a8b3ecc119e35a51284d809da6a8bbb69625b4965d2765f752aaf5f"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "b37c82b48161f7ab1aefad45d6f09763fc539f770780fb1aaa90273f335ab906"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "f12095d3877acf160f811b2863c3bd2d7694bb356fccb4f3929d1916df186c43"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "f1b53552cf018851f77f730e9e8c353c32e0e891f292df2214a047726992736f"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "06e9d1982063177f7c074513c1d4aff526d94f969f84ed6b68ed3a76611e9ce9"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "2f8583d9fc34c26eee5c0f3cd42f9a14c77c766d288f75ddf6d6c9f1e36b37f5"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "b1a3cba3d1fec814949cd3e28878e7dcd4a4a9ecb3971f8e331a6092cf8165a2"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "6fa2892764130fe86a2a3c146fee8389347c5019b85cada0f4f6bba85ed74f60"
+            },
+            {
+              "kind": "ball",
+              "ball": 6,
+              "rgba": "55202068db286a2650fe4fc55234dc97aacbb1de4497f13b3041d3d325102139"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "colour": 7,
+      "seed": 0,
+      "attacks": [
+        {
+          "direction": "left",
+          "seed": 38934,
+          "homeInk": 7,
+          "awayInk": 0,
+          "attackers": [
+            [0, 0],
+            [0, 0],
+            [0, 0]
+          ],
+          "defenders": [
+            [0, 0],
+            [0, 0],
+            [0, 0]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "d21e6db29b93a82214904ff3c2a21092ed1e7081be518d16e45fd42a35be82cd"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "0ca97505d38e03d028b059938bc4a9128a90ce4646534ab41a30c8263ea08365"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "1d73eaeaab227497b84dbbf562fb54f638594fe2b750f958316fbbfb4ff78c23"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "a192125fc1ebcbeddd71a84ec31a7f8efe357d8a1782028d1bf67ad5ec77a21f"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "87c3f1afc50e68a48ce387c459b6446ddf4cc5d67db6ce9ecedd255c3200d9d3"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "5a562ebd6626e5ac5f56c56d06829e55ce327b6d9f1d2276801c85bb4bd61167"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "a13f18f9409b819522635ffba1b031ba0e44783d8978b28c9c65c3bda20f60f6"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "608b2ddbecfa6670638d05288c8ba32047b2b93644d84e1576a0c344cc5147ee"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "67cc945c6ed2a9494ab897cdd3866c677a1efc7a96c330f87c7d07b94d4bafbb"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "a3b7a27d2f2c2751848e25c054539c1cb8a681f21907e91e394c677554d0b21b"
+            },
+            {
+              "kind": "ball",
+              "ball": 6,
+              "rgba": "ff2e34595c69be10aced22931ffeb0c9870152996f5da302c4cd2358ee9374e4"
+            },
+            {
+              "kind": "ball",
+              "ball": 7,
+              "rgba": "f50952a750adc26008d6ef15e8075bc4f7cb26ddee3a7c708e101c21cc04a494"
+            },
+            {
+              "kind": "ball",
+              "ball": 8,
+              "rgba": "b2d75a14a9d3a7f5039f6bba0a3c843ea21231cf2f8d07f6829f79c00497b123"
+            },
+            {
+              "kind": "ball",
+              "ball": 9,
+              "rgba": "86ec6b1f15107f258078e3ecabbdbe575530d150feaf2c24fececbbb25f8bb62"
+            },
+            {
+              "kind": "ball",
+              "ball": 10,
+              "rgba": "908c6b6e79435a3d48a674759624f8c8acee64acadabd963cb477fa3b076fee7"
+            }
+          ]
+        },
+        {
+          "direction": "left",
+          "seed": 45434,
+          "homeInk": 7,
+          "awayInk": 0,
+          "attackers": [
+            [27, 14],
+            [20, 18],
+            [21, 4]
+          ],
+          "defenders": [
+            [15, 15],
+            [13, 13],
+            [14, 10]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "aae089c4fc4a2bba8b3c64add48226d7c7aa977be5ebc0adf9410d06be8b289d"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "718bacfef35aec2dc6d90b1f25fcdd2e77012992e7091ca9c96875d5a507634b"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "e6d82544973e3efebd4e1fc7c28e5051c608d809a985eb7c9c12a2c3306fa018"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "e1b9c104d0de4e40ce6d5ed569237b10c0f7422fa756313ee47a65eb73b63797"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "4c7cd536ee464fa728a1ca353109c73c10612acfc304bad7877b102834a6fdda"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "40d11737ce2d55e37c8c72df52083b5695d44c955502852f2e0193a3708a3ea6"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "87e6fa98346f6971bc5cdb33719ac9b4b99e541cd69d63ff234bc8c7a7827035"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "f6cd703d71580e108c93869cd180781c0a0a4ffc9a43c4cd96f09371a39e15d1"
+            },
+            {
+              "kind": "collision",
+              "ball": 5,
+              "rgba": "355651be5c849ea7d5be1004b5d01af97f54ffbcf1f31c9c6d997c1a116c8bc2"
+            },
+            {
+              "kind": "ball",
+              "ball": 6,
+              "rgba": "b5a5155ffbf31e174ac3408423a91f7fcd0a73d76d4c12a45888680316be7642"
+            },
+            {
+              "kind": "ball",
+              "ball": 7,
+              "rgba": "635dee2c6f4ee947c2e64f078a657e44a00d28b057a629534bc1671b7f45da9f"
+            },
+            {
+              "kind": "ball",
+              "ball": 8,
+              "rgba": "fac8dbf044d123f280f92f49d2f1f02f0fec746d5008f02a597e64570a567e86"
+            },
+            {
+              "kind": "ball",
+              "ball": 9,
+              "rgba": "acea7e6d42ad47412ed6a3aef0e0f2c4b95b641892a7af8852b6beb30030864e"
+            },
+            {
+              "kind": "ball",
+              "ball": 10,
+              "rgba": "4b6592719bedf9ab43747d4065d7e84cdc9315c1b653b4cdbaecc2079daf4a65"
+            },
+            {
+              "kind": "ball",
+              "ball": 11,
+              "rgba": "64b57f08361c9f1a1584c02f046e62e9651dafee95bcb318d3b9a28a3072be25"
+            },
+            {
+              "kind": "ball",
+              "ball": 12,
+              "rgba": "9c09aafa7fbf8c19834af7af54bdc7ec2c0ce2061bff691b31ff080f303bad62"
+            },
+            {
+              "kind": "ball",
+              "ball": 13,
+              "rgba": "c39a77a0c01e53b89dfdf596240c38d6b680874cea07c97c1fb935e250782c23"
+            },
+            {
+              "kind": "ball",
+              "ball": 14,
+              "rgba": "de726adce11af83800c83bdfb68602787a79ec0e8ee345255fc8b961cea3614f"
+            },
+            {
+              "kind": "ball",
+              "ball": 15,
+              "rgba": "3a2c00d5abae215299433c8854d5897b63ce1063c8b57d3befd1d46c3444b3b4"
+            }
+          ]
+        },
+        {
+          "direction": "right",
+          "seed": 57393,
+          "homeInk": 7,
+          "awayInk": 0,
+          "attackers": [
+            [28, 21],
+            [15, 14],
+            [20, 10]
+          ],
+          "defenders": [
+            [16, 8],
+            [19, 10],
+            [15, 15]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "41d8261385b8ccaeabddc1f5dffe4ba6bc51ebc75483bfcc68a6f8be7efcde96"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "b8c0a554fe73b5b285ecd3a25112b3b93581e55b4a47d3ef1ebf124ee141da72"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "21f77e3b9cd94e0ed4a98a74e71fffb57dc9b92bb35fc098158de9b9e6b37acc"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "0cc71ce9fb5fa8b10fb583874c6f807d487876f4b1a621f40db39cdd0f8441ba"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "9f50998a1408d5e89d1bbb254667a6c391e059e9b5eb9d0880e937237c300e44"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "e44a5aa5e937290bbe6ad48bec11095d23943db246829a9f1b4978a9fc952ae9"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "9fa054f83391d72d7b33e88a1ed3d22b1356129416e77b5cb8633de2f1b90db2"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "adb63ff9e0ef45b070392b194457cefae2afb0c0e28847dcf2c4125cf5ee840a"
+            },
+            {
+              "kind": "ball",
+              "ball": 6,
+              "rgba": "1d0fea08242656abf67802eba0a7acf41ab4d61284ddc57384017a2a2da9a622"
+            },
+            {
+              "kind": "ball",
+              "ball": 7,
+              "rgba": "8ef9b6af8b43c2aa38147f6658f0c199cae8b266e681e4aed229dc2746c03f79"
+            }
+          ]
+        },
+        {
+          "direction": "right",
+          "seed": 60889,
+          "homeInk": 7,
+          "awayInk": 0,
+          "attackers": [
+            [6, 16],
+            [20, 19],
+            [14, 8]
+          ],
+          "defenders": [
+            [15, 17],
+            [14, 13],
+            [13, 11]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "4bcc70a6cfeff4972344d4ffdb25cae686d470b4959877583f4b1b3d6647276d"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "0df0c15b1f5827f62d082017de377fab615685cde31bf36ef9d98634ad826c0b"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "2bda70b936399ae058464e67b740d59578e7e1279b076ce67fb880a379e5201e"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "9d0db90d6b99f4516a2dbfa430b762957dbf7656b3afcb237af29a0c3983696d"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "f098d522ab029d78a7fe6fe1302b7d98a749e15cd0dbf03c42e7858e20c63655"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "b3bfa840a8f968243df17aa58d88a41ccab096155ea193cbde2b8b2cecf8444d"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "112f39091109babcd7a5587e9b49633e27c1cc84bf774a16e0b1e12c347cf900"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "4096dc5f3efa8f8e40d87bbbc8a96938c5d504398321f08b617548f3629c075d"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "03f79bb0723835d9912fbf04554a305a8e3659ce4f1346c74d3e93d5e7410f38"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "faf925716ada00e96b1860a53e1d1c08820815296486be045959ebce32a594f3"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "ef4802140f25c3d33156925155d41dce179f2f480302c0d5c3fb79d9d0586a28"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "abd93ce050bfa0f64e2037292a5b7c23d4d4f7e0732898123f55daaf9f5911e9"
+            }
+          ]
+        },
+        {
+          "direction": "left",
+          "seed": 50541,
+          "homeInk": 7,
+          "awayInk": 0,
+          "attackers": [
+            [10, 16],
+            [21, 15],
+            [16, 10]
+          ],
+          "defenders": [
+            [16, 9],
+            [15, 9],
+            [18, 11]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "9251294c8946f10ff03410b2be8d8c10a8df0055f00b61c30b3ad4868f576f4f"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "ca9ef91f8ca4f705b5890311c9613b39d9fe2a83c366740a84809aefbc860966"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "125d25159b828da3aff49560e24d77fac54d3ba6558e73b75acc5093b2464e38"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "f7f2c2ddcec7cfe9ca0a0842b9304bc697f94b5e1ecf75144046f6e199e4969f"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "55ac00fc732b6010e473225a6ee54bcfaa0d7666b275d7f66eff32eb900f562e"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "4146efcdc9fa97ad18fe6be0177023142665237326a891286fbf53f200a9fbaa"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "8dc0b614b60d3afd5e3ad17059f63b4bef9b8d2f5c26038408706811d4762da7"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "ca2e671460e70cdff56117ba4f4a49bff80d80aa399cb6a64ae502afa1680f59"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "c5a981c266dfc99a45339e098709290aa8ae6357d0888d22481f8499affbb2d3"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "2c8e14341786f40af852d2e88b70212533542623b033724204d2450998626d66"
+            },
+            {
+              "kind": "ball",
+              "ball": 6,
+              "rgba": "d6b29911da72d558dcb8cdadc7b7c12cbd352b66575fa99cbd0a8a511e4e5a37"
+            },
+            {
+              "kind": "ball",
+              "ball": 7,
+              "rgba": "74179e422eeaf25145babd63e1dc835c8f6b33fae22102e6334497ab41291304"
+            },
+            {
+              "kind": "ball",
+              "ball": 8,
+              "rgba": "d0ae95d828b130b66828a6bb12329cd041f3d921a85dfe773df9edf9a935c772"
+            },
+            {
+              "kind": "ball",
+              "ball": 9,
+              "rgba": "e8ad5fa7ef6247c1bc8db123e8ddad7ab5936755a0ec85f5b565a7d93aa4ef39"
+            }
+          ]
+        },
+        {
+          "direction": "left",
+          "seed": 51150,
+          "homeInk": 7,
+          "awayInk": 0,
+          "attackers": [
+            [28, 19],
+            [19, 10],
+            [24, 9]
+          ],
+          "defenders": [
+            [12, 13],
+            [17, 8],
+            [15, 9]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "28a665a1113960f09795235371e4bd2e2faaf0d41af61838351f1fd046aafe98"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "6c14787d1c551adade8dc127e3e5cf8d726dc49bdc88b8b5edf8842e25937211"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "5673370cf1bb1a9390deb626b956063a213a435b254eed9a3a85c80ee5d4f36f"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "1e9aaf814d72c575ec46b0bdb267c60ffee4192362ab816402702e788d39b840"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "acf0fe8e106302aca61510b75b859b19471451548539f1661b86a96a11886e03"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "2aa8316b547f07845f81f3f91762d64f52f9f32b1ae0f30248a585ae7d54f4ce"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "7febf797707b580b2a98b0bae7624a084b67772a1128d668194f487fd3e0a4d4"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "051456a8805c411ee533c62dd9407a9e8116597ee6a50fcf5f50d90465d92e41"
+            },
+            {
+              "kind": "ball",
+              "ball": 6,
+              "rgba": "0492e3822fe261393d12584aa1c2dc86b0acc5d2b95b9a648420bc918ba645eb"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "colour": 7,
+      "seed": 1,
+      "attacks": [
+        {
+          "direction": "right",
+          "seed": 24819,
+          "homeInk": 7,
+          "awayInk": 0,
+          "attackers": [
+            [0, 0],
+            [0, 0],
+            [0, 0]
+          ],
+          "defenders": [
+            [0, 0],
+            [0, 0],
+            [0, 0]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "a3496437142a2f3489c8d6f8c204e27466470e94bd017126afb355c2973e8fb6"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "d38a56027bb8d00d9602d09dc3156c11780a5305f2802f0fdd32f87e40e43381"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "d90bfc66462620182d1f6b3e64bac52d436e0ef6eae0db40c92793543c1495f2"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "4a3435e798595526e9e761954903f9049aa2306925fc531935b7f2994fb0a886"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "b584f4d9e99f3e6215187188d4e065cc598cbd81b0b0a0fe171587c085d13eec"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "f90b4b17191e774c63b9cb8292f0238c21f414688e4f76dc50673c995b93ec1c"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "e353d826e49b679e7ee73bfa6506e1985eb6fed9adcf59a7951b34ab425e30d4"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "5f2dd21030959b6073dfab5f3b61b5f32b5dff8f4c84a13e90a57657b74ba6b2"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "5e64bd14b522a37aeb5441034cd6809477bc6bfb34591b0ba24bd85832bb6daa"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "804b654f3e3707bf11549df47fd7a2e924659189405edf908f450564025de2c5"
+            },
+            {
+              "kind": "ball",
+              "ball": 6,
+              "rgba": "b879d1196449fe8a50a1ea27add9e6e0f90b468eba6b7035fe287cc918379d3c"
+            },
+            {
+              "kind": "ball",
+              "ball": 7,
+              "rgba": "05b7a1559683f3668c75ffb8d524e416702ba5dcf343034976adfdab96bd661f"
+            }
+          ]
+        },
+        {
+          "direction": "right",
+          "seed": 52542,
+          "homeInk": 7,
+          "awayInk": 0,
+          "attackers": [
+            [7, 11],
+            [18, 12],
+            [17, 12]
+          ],
+          "defenders": [
+            [16, 9],
+            [20, 15],
+            [17, 13]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "ebe43cb98499eaa526a3d0865e14464d030beb1154f804cb61197ad9d23f283d"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "e1dedba6e3a13741014d72df416ebca72241041197636e135b945017022ff832"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "14f64ce3b16df920a414fab7f01a365c98257dd2984db88e61ac0b484379ba5f"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "e919757cc0ab40f8a5e257f08f1ee4259ff456104c51836f8cfb8a770fe61796"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "a5f843184fa7c1a592046c4bc605e568ff02efb374736df56a4fcf45557df37c"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "01b6caa8c1a1561f4a4ec4840776f2e22841f928ea99b5e82829eb273856afd6"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "bb6661b329448d11c34298165e57cfaaa5f26f751a77c95420a7f1c08971fef4"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "3701ba34fc50c5746f0499000fbf7f19dceb4a6c4df99890b33924ffb0102baa"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "4b4bc03fb8d90803c07ca8ba4eb321da82462600ffb8583a59a191a2520e4fbc"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "61ba880000cb551f93b8aefcdbaac73b7921c59844a43a682ac6e96e4500f370"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "d6b3df984b4d40acb8f29e9950f877b94ff29b49559b8c3726eaab4c9911a102"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "a7fb7e59b19ba0eb5db9a054e70772232112d5ee2c75fe9dd6926ea5627cdd5a"
+            },
+            {
+              "kind": "ball",
+              "ball": 6,
+              "rgba": "ce609b58ff881ea1c2f0a19b2b3f248f7831d2d394236398e1e95f3f65d82bec"
+            },
+            {
+              "kind": "ball",
+              "ball": 7,
+              "rgba": "5792bb5d75922849f121b2d5f4d09ec9a6ac49fa07af864011e7f96a42110f31"
+            },
+            {
+              "kind": "ball",
+              "ball": 8,
+              "rgba": "066fe48030948e3f118798de2c26035cb6e8927b2e92eea36999c9478982f2b2"
+            },
+            {
+              "kind": "ball",
+              "ball": 9,
+              "rgba": "2f653d87833a48d06113b9a781b2dcb6177e8cda950f13b8306a2f63208e6ed1"
+            }
+          ]
+        },
+        {
+          "direction": "right",
+          "seed": 54840,
+          "homeInk": 7,
+          "awayInk": 0,
+          "attackers": [
+            [6, 6],
+            [15, 9],
+            [19, 14]
+          ],
+          "defenders": [
+            [17, 10],
+            [16, 10],
+            [19, 13]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "220f0e16c386644629b8fafb35ffcc3bd134dc71513576e22b019482f80e3812"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "eddf7356c67074e6659f1a4bb8444ba63cee8dfcd6313b81b09ace30fc41af6c"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "da4c89fd880f5c1c7133352d3340fad964737631dd0b90df1cff0889165e4750"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "ab9923a8b6909c5f92f555a2a73b54e874fbc1aa0eedfdd2f213f309b9a3c422"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "4fa9941e56701d122e727897ba9acbb32af40b1527a2963145c7bb871ba6e2f9"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "ee21dda5a3ba72b026c4d93838e42c96b3f798c0af88250eeecd69f8542ae578"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "0d7a71582e8158bab368a6393d5a62877c9965ab4a535bd62fc0bb0024fbad79"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "82a673cd189ab54f0efaa5c85a1e8570f50f351b1b957abeabeea597fab9a784"
+            },
+            {
+              "kind": "ball",
+              "ball": 6,
+              "rgba": "fdba8308d4bf99b0f33793737cc2f57dde3411e164469e20c32eec8b8b5219dd"
+            },
+            {
+              "kind": "ball",
+              "ball": 7,
+              "rgba": "54f314fc86a379f10673b143a7ef12f9f6c183f46de26fb70727bb790add4c03"
+            },
+            {
+              "kind": "ball",
+              "ball": 8,
+              "rgba": "13bbd450aed2ecb0572cdd0c9b30bd8ba608a05cd0666bc18606adfc11ba58cb"
+            },
+            {
+              "kind": "ball",
+              "ball": 9,
+              "rgba": "cfc6cb23da0c817a47672337410423a1d9105f42f9a8d8146504c43ded766120"
+            }
+          ]
+        },
+        {
+          "direction": "right",
+          "seed": 56242,
+          "homeInk": 7,
+          "awayInk": 0,
+          "attackers": [
+            [1, 17],
+            [13, 15],
+            [9, 9]
+          ],
+          "defenders": [
+            [13, 7],
+            [17, 11],
+            [16, 12]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "d6b50540c4f4d56f3a30029277a499ec6c4781bcdccf6a34ed8420b8cd5bf2eb"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "f493d2468db9c6e7f0853895f09d6da415401dbd7a7c86bc95ea1f8da72395c1"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "5b22003815cfb349dd5b9f1f11e6592a1f0e0e084eb05b665642b47ec35b10a1"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "fa442cf24547ede75b95cb4df663f75aae0671b0516f4b1967190d607c9d3949"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "2e6a7ca088623e640e187c9f3202c8123589089c3777ea2e8186668a0475da0b"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "beab0eed984ecc61a8bacc78e5c27612d860bafa33413d32fa2dc709ce2f8239"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "e45d565716be7c7b016baca1bdb4dcafa88d67e89cdb3d68fba08d6063044ca6"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "ef0d52a499abcf1e6686fdd20a9bd37a669d2e313f9bdec5968c4b8be9fc319f"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "d904d1a61db2ddb08ec6a360924f306aa15086a490aa5d99c38d61240b2c3c1d"
+            },
+            {
+              "kind": "collision",
+              "ball": 2,
+              "rgba": "88f4ae6137b6b747c7dd604370b583a60ff16340673dc95693033a46d7e35db1"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "2a6ff74b2b2d5f0d99e6987e966de43ba62d8a0cb2c69ba6a0f6c737ef537723"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "09bfefd66703d7ae99773e039ac4940bdc5ae547223635ef047b149ee48b5e8a"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "a212449abc6a291c74d94dda7990e12af2b7219c477fefaf66dc8fbdf6768609"
+            },
+            {
+              "kind": "ball",
+              "ball": 6,
+              "rgba": "279946accf2a60791d8222306f90b29c5bdf8fe2b562fdfd15ac46b9bbdffb6a"
+            },
+            {
+              "kind": "ball",
+              "ball": 7,
+              "rgba": "e3e61f069622b71102464d1f066cddb29f9c1af5599383e9b02436d2c764a4a0"
+            },
+            {
+              "kind": "ball",
+              "ball": 8,
+              "rgba": "1e808048a47b41e8b232668cc7f8ac2ca67d26ef8bfd53488f39eb485a1de487"
+            },
+            {
+              "kind": "ball",
+              "ball": 9,
+              "rgba": "179bc3bb8bbf3ec0e2f709ef10c5bb7227d1a0979d29553b0bcdc46387c9b663"
+            },
+            {
+              "kind": "ball",
+              "ball": 10,
+              "rgba": "0a7963e46bb52b4f2574c4a5a621171f416033de96e8baf01e7b43136080cec5"
+            },
+            {
+              "kind": "ball",
+              "ball": 11,
+              "rgba": "d3741d713a8d52373726a8fdb67c504171137a492ebb6236ff4e7bd850f319b1"
+            },
+            {
+              "kind": "ball",
+              "ball": 12,
+              "rgba": "ca1f10175d554d448f9fcbb8c4ac43a4ab1892592ea9cf2e7c5088eaf4406e63"
+            }
+          ]
+        },
+        {
+          "direction": "right",
+          "seed": 53943,
+          "homeInk": 7,
+          "awayInk": 0,
+          "attackers": [
+            [9, 10],
+            [18, 12],
+            [18, 13]
+          ],
+          "defenders": [
+            [21, 14],
+            [17, 10],
+            [16, 10]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "6463228cda609eaf96b8a2c0f56e8d76ea316a4d378817e940bcbfdc8f034708"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "19ff928927111293682a4b3d6561dd0b8e1c358d94ef1ce640de790d2c40e437"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "7eda724a5f4eb4e9911b91d819a21e0070d0b781e51e8c25fcde478e52722195"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "84d6d9176cd79f225fe3be90ab5a571c0e813caa0a3d5ac4761771653e15d3a1"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "b452f5ca0057b45a1a0c1d51b558c3104cf7a342c8d458ba4feafb9291d33e24"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "64066cdc1c90541c127699c3ff3bd0ad9940bbbb64260e52e4b4a1ab64612be5"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "3d92ae2adfaa1f42175edee8ec661501d55233c49930538f93a87030f6f547e1"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "64bc08d8504b7188dc7b984cf1cea4ff8a9a7ff327b234bfc85565f92941d5ff"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "015f626f1ebf5979194afbb2d05193d9d6cc90255a2c6e0950595ae05ec6bf9d"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "09b9ca1b1e609511fd607b3ba7c875eeb635e8be4d7978c682cb04fa051c42e6"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "a351db82bcf8b4415702013053745d883542951a00b545ae159acec398e2a095"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "1dc13259e7220a7181381d1d2a322c312a55f1ba3394c7df64baff1e86c1a5b2"
+            },
+            {
+              "kind": "ball",
+              "ball": 6,
+              "rgba": "7dd256a90f6408828319c39365238347f3f935a79e153a335e6b7ca45b24fc61"
+            },
+            {
+              "kind": "ball",
+              "ball": 7,
+              "rgba": "94346312b9a582c8d324a925359f7a69fde6e0819ab477202f590784ae40c63a"
+            }
+          ]
+        },
+        {
+          "direction": "right",
+          "seed": 50728,
+          "homeInk": 7,
+          "awayInk": 0,
+          "attackers": [
+            [5, 17],
+            [14, 9],
+            [10, 9]
+          ],
+          "defenders": [
+            [20, 13],
+            [16, 9],
+            [18, 12]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "cafb547a588a078bb6455e8a19946b71c0903fee9a2d44acf22b28fb35e561db"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "617263849a08466f2bb5f6dbd6f444e927a67578e686a298a8a537150c765cff"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "c30c7dc0d5846fbd56bc27ea188ce1824804789f2500a1af0bc140e2e6a10613"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "8914b62fc19494940dedeeb4f37d02b8d12f7c375ad7f3830cc9ecac52f894ed"
+            },
+            {
+              "kind": "collision",
+              "ball": 1,
+              "rgba": "801b979b739004d1ea3554c767d5b5665a9f8d7ffcf13e80e7cb37760f9f8ea9"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "0511d0388542869ef7e335f7327be8814f69d28b6a726a226805df892719be13"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "43c32488fc4037d29c47b22dc25484f1d1fb3c5fc24d5b82ba8c09aedfce9bcc"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "87a13ae11b775e4ced6391ee657e135d36c8fd1f459d3b6a434de786aaafb3dc"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "bd4cc9e33c7b9b3babf19c1cd242914d42f29b3bcff648b4a913cd557056f372"
+            }
+          ]
+        },
+        {
+          "direction": "left",
+          "seed": 57316,
+          "homeInk": 7,
+          "awayInk": 0,
+          "attackers": [
+            [6, 4],
+            [11, 6],
+            [15, 12]
+          ],
+          "defenders": [
+            [19, 15],
+            [18, 13],
+            [13, 10]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "41e40f0703d1592ec4849ac6852af1e3a25d9dbe446acebcb8098a529bce0d34"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "03578fa4005822ac69017ed6b42ceb9985fe3c4f118a394d64f83b5c5306e9a3"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "84a10e767cb70addef4b297000dfcf08608336df4fd04abe25b446edb865865f"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "1262f549cff7def37e66e5e5a3e620b809178120a854746eee00eca06fd109f0"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "d7c77d3fa4ccfae55d5fc7eb3a51662ca1aa9a22a635003e0bf85caef84bbfcc"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "10acc85c46b978d15771d8b3b9f3755ff0b02dcb82915eb6121805b02e9d4220"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "b57366fb65855493b72e6285710b71a25ce23e008c9a22518d8864a4a5bc8994"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "0f125e0cf58e3e31fa09fa6484489e84a21e7920e577f7545e77b1a95b76b468"
+            },
+            {
+              "kind": "ball",
+              "ball": 6,
+              "rgba": "659896fda78b1d84f18d0d9b6348ced0578f4e343e3b1593dcd71dcc8b50e330"
+            },
+            {
+              "kind": "collision",
+              "ball": 6,
+              "rgba": "c6c39731ddbb18e57b19948e2675d6d0719dbea48d2d4e3f4a14ee7fcc9285f1"
+            },
+            {
+              "kind": "ball",
+              "ball": 7,
+              "rgba": "79fc76122c35a8a2a062ad38d7b0917a040fcd5234d4b988eb2b62dda3f700ba"
+            },
+            {
+              "kind": "ball",
+              "ball": 8,
+              "rgba": "2c8019e7b12ca41b0a73e1bf6480db5c7d1e4781fe2cb0b1e0b92d66ddcaebe5"
+            },
+            {
+              "kind": "ball",
+              "ball": 9,
+              "rgba": "f7f16fb79e2fbfaa9643cf4a074e978d408ae43abfe2a660c8f6a2e5b5d5d84e"
+            },
+            {
+              "kind": "ball",
+              "ball": 10,
+              "rgba": "56579af5050a685c436b655027eef44e3bb41d4c52d6a0d205faa7b65268a7c1"
+            },
+            {
+              "kind": "ball",
+              "ball": 11,
+              "rgba": "44d1d2aeaa28ae0636f27f094701ad2b65e2d5358b4074a98a3694b7fd8a7c08"
+            },
+            {
+              "kind": "ball",
+              "ball": 12,
+              "rgba": "5161de2900f5cc2c284a2999fb429ee065c5ce89cc3826fc860d43d2edd8a084"
+            },
+            {
+              "kind": "ball",
+              "ball": 13,
+              "rgba": "38edd357fc3629a05a681d066d0c95b27de4a6f51025b9f126c58cb25e8dacc7"
+            },
+            {
+              "kind": "ball",
+              "ball": 14,
+              "rgba": "689dd0f98522ec8cf5357745800c3263eca5ab382974f882c6784b35aa08cdc7"
+            },
+            {
+              "kind": "ball",
+              "ball": 15,
+              "rgba": "4e0eb49494a0656e3866f529a2e04049d099026e5340b8adf8370ecfb00301bd"
+            },
+            {
+              "kind": "ball",
+              "ball": 16,
+              "rgba": "67906fb20ab4d247e07585642e7c8bde7a558ddf460e840634245d4a6ac84238"
+            },
+            {
+              "kind": "ball",
+              "ball": 17,
+              "rgba": "1c40f3398f6c7128de91072a1837d2c53c97a7fc9aa12862fd3e2644c2d6201f"
+            }
+          ]
+        },
+        {
+          "direction": "left",
+          "seed": 1135,
+          "homeInk": 7,
+          "awayInk": 0,
+          "attackers": [
+            [27, 14],
+            [19, 9],
+            [10, 16]
+          ],
+          "defenders": [
+            [12, 14],
+            [10, 17],
+            [19, 8]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "b41af8b2edd20e19a81f5efe8ef4745a8c43efb0597082508c5f4f1328ad7383"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "c2172279f837b67fd5d2b11f3801195aeb821dc9cf0b52bbd53d8971b0f2352b"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "37655ba39a4eb31bc59422829ebc5c0b37cf6b87db409690d9ae7f355b6fc2e0"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "246eb4f5a301e926adc95c25ef2ae3d63e2752c8a6d8a25cc814ff9a303ad509"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "f26de5f067024a922e86cfe4a4a2b2bbee1b75edfeec4063cae15115a7064c44"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "e4042937fb3e5bf2b6d1b3c0458cc69fbf6e6652889fa7c50ea789dcf9cc878e"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "a6ee5da6184f3716053ab01b135061ae31acc9759d9360ac22b0bef195b2dac1"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "80e51ee90b96b93df476b3e23858fe9e760290590b902f08caf630d445827abd"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "c7602a2c3233e8eb5377582b7f0c36c123f0c9d9e03340fb88334c1a5fc58227"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "f15d301c7bbad161639dcc9dcacdbc9e3ee1247196d653a3eb7c00f4b33bd06a"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "24a6eaea63d0943644c06ef233efb4eeb33abd7c2a7c85373f7294b511103b09"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "4166f30d4bc59f7f2db091f04c71c844bfcc67452b0ece105f02cf1c4440ab51"
+            },
+            {
+              "kind": "ball",
+              "ball": 6,
+              "rgba": "3b11cc42f929b7f78bb516fc3de5c217c65d3af0be36796e228c9d551b80a8c9"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "colour": 7,
+      "seed": 42,
+      "attacks": [
+        {
+          "direction": "left",
+          "seed": 56141,
+          "homeInk": 7,
+          "awayInk": 0,
+          "attackers": [
+            [0, 0],
+            [0, 0],
+            [0, 0]
+          ],
+          "defenders": [
+            [0, 0],
+            [0, 0],
+            [0, 0]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "9ad2d3c23df90a2166052049b795044f2105ca08fa1f8810da1648871d096d6b"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "fca08f3ff55bf74866db65e1a191406f517adfe7796161fcf879245b9c8bb927"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "456850771201a532ee029dec8c270401bd0f9dbf7655b5219ce930124da947ee"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "6e7326258173a04ec599ab9a9f0e1c7e13e5944235beffb364dae608ff6e890c"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "4ef2c9d6026f080f9a0e6f38e8d57bb5893039d6203e5b4badd9c738c736040f"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "73cda3365b400186e6b8dd43a7718fddcf906a719f38f7e4f0129e749cce11b7"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "f49cc360ba7a8682fb81274bdfdc636ae54e3845c3c86d87d3d907b368010537"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "075264c5cb0a91b5c56c2c4fe12dd017fbd35432fae4eb6325363ad955ef6983"
+            },
+            {
+              "kind": "collision",
+              "ball": 5,
+              "rgba": "848b31fc383deecd887deabd8d90d296cc1bfd6948d9a48821231d07169f0286"
+            },
+            {
+              "kind": "ball",
+              "ball": 6,
+              "rgba": "20c0ae16073e4c9f104972cb740705d27df3eab6896ec7f760c8b64a126c3ea5"
+            },
+            {
+              "kind": "ball",
+              "ball": 7,
+              "rgba": "f8c6d28256391f9360deecc16510cb7318996fe0496105de7410d4bc29ff1d5a"
+            },
+            {
+              "kind": "ball",
+              "ball": 8,
+              "rgba": "6ffdaf025c2ed2f68bd70a1c520460bea9c533614a8a4a170df93880f6840a39"
+            },
+            {
+              "kind": "ball",
+              "ball": 9,
+              "rgba": "f6e68c37567aebaa4729f4976df02b17eadc081d9e19c9ad53084246336950b2"
+            },
+            {
+              "kind": "ball",
+              "ball": 10,
+              "rgba": "c128dcd6851fa7b183c0ed225b54fd12a9e67f0c2264dabb521df88935d345f2"
+            },
+            {
+              "kind": "ball",
+              "ball": 11,
+              "rgba": "60e145d15402325fe2e038d7bc26e7ef0c176a9e1899c3c8a05cdc303336eab7"
+            },
+            {
+              "kind": "ball",
+              "ball": 12,
+              "rgba": "82929c4c46a1fe1634c5a1650fb7a75e56714107c5552b108857a995ddd33644"
+            },
+            {
+              "kind": "ball",
+              "ball": 13,
+              "rgba": "73c15400b585d0a9354eda6de38fbf95f45b8d1c17ef1db0d54829cb15c73b87"
+            },
+            {
+              "kind": "ball",
+              "ball": 14,
+              "rgba": "0d3f8c25c48c3afb0a05c82a780ed76ee6e1c76141d8b66f73e22d6452271bba"
+            },
+            {
+              "kind": "ball",
+              "ball": 15,
+              "rgba": "da3c2d5faf6cf1bef108be66bc783154df82fc425e4a912ef11162da507c229b"
+            }
+          ]
+        },
+        {
+          "direction": "left",
+          "seed": 53131,
+          "homeInk": 7,
+          "awayInk": 0,
+          "attackers": [
+            [28, 8],
+            [20, 19],
+            [17, 14]
+          ],
+          "defenders": [
+            [19, 9],
+            [19, 7],
+            [13, 13]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "3d61724b1e7838103fa95412270ff080392b1ce82e1b55405d8a782f6877419a"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "f368207a7d4bd7fce5b550c6c2dcc9c6ce33217f4de48be910559d5bb5f968f2"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "e94d866b0b388bbcd88d96e9036f1b954bbb81f1c7de5435b77aa82940496a60"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "3891daebdfb107d1dff8b3939d9660d6efecd206bc9507641260df69fa125f6e"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "426f297e70fb7aad9dbb89eb65a54efcdc21c25eaa32b37b81622ed7d72ecbd1"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "c8ccd55d22bc3521ca18cf4d1e77d73551dd059534361880e15ab508da9a73f5"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "36c5974fd9dc95edcb536374a0edfb34b8c01a5acc54e54093bb869adfc6a1d1"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "1b622db3083e12c83a002f66c051931bd43a9f6dd5d2d53bda4009d43084b885"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "366bbd3393aa809f3d2aecd492ffcde467447e395b4fb42284be1a717dc33814"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "1ceaec25db2ecb80eb94edadbf13468300b814c8c05e87d6622645405f5a3114"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "6839b4fd7568e4f60065e1b787c29f069f0ac14aa3c19d71dc0e9f038005103c"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "b94f0b6d494ac936400c67912619d716eeeb4055970d28af4509ff8126223789"
+            },
+            {
+              "kind": "ball",
+              "ball": 6,
+              "rgba": "49910098ed8c86d0492fcba15c4a5ac9a70dfb809d247abfba39991883838cf5"
+            }
+          ]
+        },
+        {
+          "direction": "right",
+          "seed": 50311,
+          "homeInk": 7,
+          "awayInk": 0,
+          "attackers": [
+            [22, 18],
+            [12, 13],
+            [14, 11]
+          ],
+          "defenders": [
+            [15, 10],
+            [14, 10],
+            [16, 9]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "ebc1ee74cbfe0192bd35b7745312d63e95afe29449a6383f2eb6a9942c2cebc0"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "8c347f4900f1ecf37a763825c01e3abb5a973d1b7617788f8b54b4788baf508b"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "326007d3b37ed421b397271132bf34e9c667b2193a161b8427277d89afc4edc9"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "91ca210074ba63314b415e3db5c838f74c2fa7412ba31cdb27b2c38fa578a73b"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "4881b29f289d1ae8eebc05ad92943c5eabcaeded36b35ac3d880113c5a7d9b5b"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "c577a353b0d9cf77af4c733ad80f6df4251d8a9d25c5d4020dc5ea10f10b4e91"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "e287553a2fc9d4f5e2f80f552a75127b8abb1fa8aafa098e9fe90ff4c60aceb0"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "7f792a84c032cad398ecc9b66b63463f41a1943f2534270d880f0d5ece07d1be"
+            },
+            {
+              "kind": "collision",
+              "ball": 3,
+              "rgba": "dd938075accca2d045930b4fb5768ffab3247cab8dec190e70248765a403b4af"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "25013b48105467ebafadc66589f878b7bc3bf187d904f0875ad43d56a433dd13"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "df825d094ae780e49a7c57be9779085ec8462dab8af5718825150d99f7c7c53c"
+            },
+            {
+              "kind": "ball",
+              "ball": 6,
+              "rgba": "08beac70715abe9b0de5636477e62f0170696da1cea4163391c3b905f93e4809"
+            },
+            {
+              "kind": "ball",
+              "ball": 7,
+              "rgba": "cc788e9f1c4524050b4c567433bead765355e0ccb49816e7d57da80cc60d4fe4"
+            },
+            {
+              "kind": "ball",
+              "ball": 8,
+              "rgba": "095b68de504c476d08aaac49fbcae6d64eff238a2b69e8f8b81573065a0ff074"
+            },
+            {
+              "kind": "ball",
+              "ball": 9,
+              "rgba": "4a3b76fbe145698829b75a3e790d6140d25a6a272da3f4e43920d1915427d33d"
+            },
+            {
+              "kind": "ball",
+              "ball": 10,
+              "rgba": "de4687cde7f090545e705b2ca5501235257c9ce299685f54f4e79cde4f51c773"
+            },
+            {
+              "kind": "ball",
+              "ball": 11,
+              "rgba": "f055eb7cb8c2b4070e99511e72a45ff9c17e5ff22c717e3eea64def5a5bad758"
+            },
+            {
+              "kind": "ball",
+              "ball": 12,
+              "rgba": "ef381545ee362bb29c52d2f254253b114484d163168f564a41794ef4bf661711"
+            },
+            {
+              "kind": "ball",
+              "ball": 13,
+              "rgba": "6bf44969fb1c5fe2c7a50974dcad5f73386ed64bdcd8fa8a5f745393160f5a39"
+            }
+          ]
+        },
+        {
+          "direction": "right",
+          "seed": 18506,
+          "homeInk": 7,
+          "awayInk": 0,
+          "attackers": [
+            [7, 14],
+            [15, 10],
+            [16, 17]
+          ],
+          "defenders": [
+            [15, 9],
+            [16, 10],
+            [14, 10]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "4492fcc5ea65cd76186372874bb9f3d37ef44b6d1db15507dd1c9a348f8f014e"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "5f771f3113f984f0cc302b8a3f52dc0b8d09b58ad42ff29e47b0d5a7876c6508"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "1ec669046b1271e8b988e86a1199e148e117b38d46297d59916babc07689ee74"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "9ec8801c3bd4a7faa27b45539a4e2cbf047959fa8fb07aae5344b4bfb853f0e3"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "55cea2309c216b50412f314249f584b8f7c03dbf722611f89875a3974d109069"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "0d193ebcbd1946b219f3c769399431095687135fef06f0ac28d332a010064cb7"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "ea7de841e05a62e7b7ad7b52bc70c267acd043635a83c044b86cb1af2251c70c"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "a6e1344dd4db7538ba59545150c4a1ea6de387067aee915fd9d9bc4cc4eb3ae7"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "e68d64639a6a6f3dff7331069f3df7a37ced9e6aac196247e69b294dd6953005"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "41e5be10e252cb569dcd2df1adfed9d2b91017de2ee6f516a6ad348a3c43d3f5"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "9a37c3ec795caaf96965a52a0ae67b2a21aa1cc07a5318695b740434878a8709"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "ad619ca02845e9f5e37ec934a385d16b57364122e23211d2feba466e924d1d38"
+            },
+            {
+              "kind": "ball",
+              "ball": 6,
+              "rgba": "a553e9d9635b1a823e7a76355aca69cc0ea40ae67448c08bd2f5ca7b17a49554"
+            },
+            {
+              "kind": "ball",
+              "ball": 7,
+              "rgba": "1a1009fc41fe91ca6e93b5bedb363113d51db0018d8846dee47f0e5deecd00d6"
+            },
+            {
+              "kind": "ball",
+              "ball": 8,
+              "rgba": "67a67c6e576b0ea08410cd9c033392242785c70d432f23ba472c9e77784ebea0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "colour": 7,
+      "seed": 219,
+      "attacks": [
+        {
+          "direction": "right",
+          "seed": 43182,
+          "homeInk": 7,
+          "awayInk": 0,
+          "attackers": [
+            [0, 0],
+            [0, 0],
+            [0, 0]
+          ],
+          "defenders": [
+            [0, 0],
+            [0, 0],
+            [0, 0]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "1071688ad71f14873a5b4c16dc0e16c7536434b80fcb43b8ecba998c5388c72c"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "3be016da8dff05444b1d6bff5c67aac2435cdeadf7c25c3c67a23e6f31b851fe"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "1b1cfbd2a57e0cde91a7fedc8031353db8ab8810bbd08e4bda086f9fba8378df"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "aa3b92076b60d6543b057b1b1a46dc6811154da7924fcea8b91dbbf0d36dbdaa"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "6748a207f8b649d7a7b4059bccc8ecd6151b6acf5dd85ec4a87ebfa0f2951347"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "5f43e6d1314e29d90ab4ef009fa2944294a0566a778d17ff5aa21aaf7748cd16"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "ec212b79fb827f813fa59f6abad3458979d8961eba79d2d3c469dc73a5755dfc"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "a126feb133cfcedba1a202f8dcbb94c80c5b141764c5297441dc4ef0e440ff2a"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "145ee95170ead0e150788751c210fe30b39d4fc20941046ba44210613bb39eb9"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "4d850422d52fafc9302fd1ee46cc5fc07955cb1c33d1824ddccf37706e3f6c8d"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "f8c9eb3b1eb5ffa2377c3603437214faf39d2ab0bce9c47bcdab207c3c550dc0"
+            },
+            {
+              "kind": "collision",
+              "ball": 4,
+              "rgba": "39c145b21e12e183e91097bcccee77ec873fd747a11092c7fae1fe156f7dbfe6"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "6a7ef7aa9a60fe21a628d2f07b462609ef322f6aceec53efd7c447fff7ac420a"
+            },
+            {
+              "kind": "ball",
+              "ball": 6,
+              "rgba": "a1ec002dc1ea3b1cdf6aed8eb11f44e2ad296576bf507be00a333526e87cbfff"
+            },
+            {
+              "kind": "ball",
+              "ball": 7,
+              "rgba": "21d0e03b47ab9aef6d2cee7234df1552d826025135cd1e7cc3360102714951fc"
+            },
+            {
+              "kind": "ball",
+              "ball": 8,
+              "rgba": "9e8dc36b70aece713296beb3ad8e39137f7dc93eff58974ce6439c001854737b"
+            },
+            {
+              "kind": "ball",
+              "ball": 9,
+              "rgba": "e2d7c6beb15178fc29f74f49489d247371af1e22188bf41ce72737762965bcce"
+            },
+            {
+              "kind": "ball",
+              "ball": 10,
+              "rgba": "58498a95baa48eea60e9ebd7b14be6e8e24c3ac743b19ef59c7fa9fe8f626f5d"
+            },
+            {
+              "kind": "ball",
+              "ball": 11,
+              "rgba": "8233cd7d53936534e54da0cd47fb45e2927aa1750cf49d9ac016e2cc16be1dc7"
+            },
+            {
+              "kind": "ball",
+              "ball": 12,
+              "rgba": "b4f1cb769d303abb7749a38f3d209e3cde14654f963440408a3fb014f38c7ca2"
+            },
+            {
+              "kind": "ball",
+              "ball": 13,
+              "rgba": "ebc70755cfd7a83f1e814bd6a875c5d8668c0358d2cfdb8ed46ba49d74917542"
+            },
+            {
+              "kind": "ball",
+              "ball": 14,
+              "rgba": "3826731f4cb27a5b5bb1fe2ddee7555a5263883440609b6919739fcb006e8c4e"
+            },
+            {
+              "kind": "ball",
+              "ball": 15,
+              "rgba": "5de85a59c91c13714dddc291fb99405efd27e25c6ee3e29baaf8a3a2f928d22f"
+            }
+          ]
+        },
+        {
+          "direction": "right",
+          "seed": 2201,
+          "homeInk": 7,
+          "awayInk": 0,
+          "attackers": [
+            [8, 11],
+            [20, 14],
+            [19, 14]
+          ],
+          "defenders": [
+            [19, 13],
+            [18, 14],
+            [16, 9]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "65bb651ed4be676e27b9696724f1daa7423cc293c71005b761cff150aa2d2fd4"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "c967dbfcfddc3d60c263c6366e3968fe4d0ec59a110adf3999376b2935286f3b"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "895bd447abd302b804a9b1097db4d30257dad4b81cb4fe5fda8d23fa99e029c0"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "3b30561255697c9ed429b8b13b70f6e2bdaa5b87b27083c841555c59fe46aa52"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "95119f397d08c2ff853b48073fb89b1528df8a1afa017cd04fd434fc8f08c4ce"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "6ffb28c7f730d3b38edbe392c9b446858c1a83be3758acf847ceea64370c8d5c"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "767d95bd2b134254da69a372446fa32553f175515a1f8e05f1e01038a75f453c"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "8908709dcb3d4454f1de5452f01da33111a46d9bfdd099161f8c11dc1c2e01ae"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "75302b56fb92f20ce8a0073ff6fd02dcf18a5b2f9d26e4c6b53549cca9f7c493"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "4698c0c2f679da0388f03f053c242414a6397eecc998fbe0e891d0e95ab0ffd9"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "72c537f7aefdb020f15717957ff624bcdde207654ae4d2965028809f30086556"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "54f282ca7d11f3b63534c6f8a9f2714e0dbf1a37ae1d64d48c2ff863bff6cbc7"
+            },
+            {
+              "kind": "ball",
+              "ball": 6,
+              "rgba": "af142ab9093fc23adae49c3b7da0ea3074290556a21976ee577ffcf7042a3b65"
+            }
+          ]
+        },
+        {
+          "direction": "right",
+          "seed": 12638,
+          "homeInk": 7,
+          "awayInk": 0,
+          "attackers": [
+            [5, 13],
+            [19, 15],
+            [13, 9]
+          ],
+          "defenders": [
+            [18, 12],
+            [20, 13],
+            [20, 14]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "d3ce5bb9bd5efd25188228b35fe5d9cd38afa6073d1769ea5e027d78deb9f606"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "3fec820c472af5db267f47f9ac9d1158856bde06f03bf599177ca93b26a7cff1"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "c2fd527e765da1c254a38687709a2a18e63bd41435dc7beb0c14719f10e59aba"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "52c1a649d1106af25454aa24d6f9e4690a70ddc80f54625952af5c9781b2a2c1"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "23b011db01b933ce500f56dcf0111d3e99be2694c563af6f4ae8ca62f05a2b59"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "89b2dde47897546bc7305e0200db1c66552e92a931bd8398c9810e496d79100d"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "f6f20634e32b477c8f9ff88156fcc8e0d115dea19dba1166208cc1d87780f10b"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "3b4e919503e362281ef6904669bf8670529c3ad2fd3335c7fa0532d14773f560"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "cadac35d4eef032feb4ba37d95a838d182ba9b06ad2a112afe997b6762777f6e"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "2be450a2e5f98a7ba70f84134089e0338e2f0dca614657ee24fa10b1ce86d17e"
+            },
+            {
+              "kind": "ball",
+              "ball": 6,
+              "rgba": "891c08d18167125a008c2f420afa2612d5d8d66587051e4537d3ee5ca739bd0c"
+            },
+            {
+              "kind": "ball",
+              "ball": 7,
+              "rgba": "36761dd17010570db020e946d5016520ed30a4b68244ef813ace84d2dc62a067"
+            },
+            {
+              "kind": "ball",
+              "ball": 8,
+              "rgba": "85320c69eb0750235ebeacef870e40f53fab9adc8fc1913d614a94972edba817"
+            },
+            {
+              "kind": "ball",
+              "ball": 9,
+              "rgba": "40bd1b12d22ba7e851f257997928e0b8178cd0e30f09f41e783c3e2508ab1a4f"
+            }
+          ]
+        },
+        {
+          "direction": "right",
+          "seed": 22084,
+          "homeInk": 7,
+          "awayInk": 0,
+          "attackers": [
+            [4, 12],
+            [17, 15],
+            [19, 14]
+          ],
+          "defenders": [
+            [17, 10],
+            [20, 13],
+            [16, 10]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "3b08da7673977c3964c3935ffe157abb343fd75e863cb6cbb76200d34e7b4aae"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "dc86d153e3c6a4d21370343ec3df5d209d7211b6615d937125428c141bab07e6"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "33f98e1f51fab9d3f9c128a49d5e26cb3bdaad8ed9566ea34799f20ef5ad312d"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "cff309ee7b45b84860da14153cd0cc6e11338787fd5de79bee52527d3a455b16"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "3f4a99add1b706f2e711ceb7244dd12148a677a2abefb1ab49edd2bfcb5bf76a"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "5ba5c88ebfcafc067e0cce97b4fd8d286a238b22885c87d7854e0b9030bc89d3"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "9a55df16e5a849d7d985d1de17955fd5b9802f34ecd98825641c65ee0ab0f1b4"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "27a878209fd3aa36c09481893bdf13ab95ee1c56f40415c5abf007a754f73aea"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "2f432b3b72e0621abb79ae6261dca3dac14db64daa863ef15de41cff84db6f02"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "9cb494023a91ca611abb7ce67515fe94c00507186a73ba3c182d534ed77c87a3"
+            },
+            {
+              "kind": "collision",
+              "ball": 3,
+              "rgba": "2e87ff9ab9568d5cb3bc8fae9842cf54e2909a31c17447ba2df75d733d801d78"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "a9690e58b39ada74f3f7e3c19678720d3d5d1a22342a9aab5892d1a967e08844"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "a64cd69277c12edd0b8059bfe2fab9f7228be4f3c35d9bd7036ef422eafc4002"
+            },
+            {
+              "kind": "ball",
+              "ball": 6,
+              "rgba": "3988785d23e971c4198022fa404dd67ebd01f967cd9688c8072676a7fdad5629"
+            },
+            {
+              "kind": "ball",
+              "ball": 7,
+              "rgba": "d7b04179aaedaec4666671a1acf16a9ad2ed6ed7b67287e10e6f98cb492ff525"
+            },
+            {
+              "kind": "ball",
+              "ball": 8,
+              "rgba": "1927a5d880d15bbe48777d38ea5a28c818d9c44d26e06eb757deaee47a082a3b"
+            },
+            {
+              "kind": "ball",
+              "ball": 9,
+              "rgba": "703fe946fdc3ff2cab6df2d2aa547b7ffb7204e911c4dc034ec441c15b26759a"
+            },
+            {
+              "kind": "ball",
+              "ball": 10,
+              "rgba": "b6fffa37bd7cd64913d4a323339191d2564c8f428aae15cae858304f60b5c9f5"
+            },
+            {
+              "kind": "ball",
+              "ball": 11,
+              "rgba": "ce81f5fee330d6d88d819e104f215e025b0c413b1d79bb5f8e269b28544cf582"
+            },
+            {
+              "kind": "ball",
+              "ball": 12,
+              "rgba": "a3a128933dd4dec03b553abde8aeaaab3004fa63ebac496b4cb38a202ef24e8b"
+            },
+            {
+              "kind": "ball",
+              "ball": 13,
+              "rgba": "daf50778f47ef7038c449521ece9fef2b75a041bfb5446a4c44eba0db41c49c2"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "colour": 7,
+      "seed": 65535,
+      "attacks": [
+        {
+          "direction": "left",
+          "seed": 52304,
+          "homeInk": 7,
+          "awayInk": 0,
+          "attackers": [
+            [0, 0],
+            [0, 0],
+            [0, 0]
+          ],
+          "defenders": [
+            [0, 0],
+            [0, 0],
+            [0, 0]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "c65b9cfdcdaf588b9e8cd28e14908c054e2c68118d83265b448ac71c1b61a5ec"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "3f20ec550fe9e9c9b78874b7288b9925b801938238f8f0f53efe1861f2600b87"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "1c796a47295727d857aad7b728ce445602809281c46e65a1055fea580dd53747"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "09a4af9fe91d8d695ad56743ab9253480b88d756856327a7d26a640f5f5531e2"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "f8489a82701de1f95a66ac8d0395924bb81c03f10c38ea969f933d45a5b380f1"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "112560b4b7dca27d871a9ed2103b6b5efe3d989d29aaf995854c77a352c57230"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "522ebab18e4b25c5e8e2847a8e5d460e38f0bfb66d4e19f54333bb98edab8622"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "ae6d2ad5b0a8ee5a2a54e742fe225f02059a8ab59f673aad606a5670b255c73b"
+            },
+            {
+              "kind": "ball",
+              "ball": 6,
+              "rgba": "7ce71ae3251660b37737d99278532fdbb74baa099bf583d499c1bc2e502db51c"
+            },
+            {
+              "kind": "ball",
+              "ball": 7,
+              "rgba": "c989621fb26d4916b047981a748b3ac412bed5d7329f6f770a84cb89c254f312"
+            },
+            {
+              "kind": "ball",
+              "ball": 8,
+              "rgba": "f865c0e855e32abb8adb8551ae0262ad9a3f9b0d3f9bda097b6c15a337689136"
+            }
+          ]
+        },
+        {
+          "direction": "left",
+          "seed": 25608,
+          "homeInk": 7,
+          "awayInk": 0,
+          "attackers": [
+            [26, 19],
+            [18, 9],
+            [15, 11]
+          ],
+          "defenders": [
+            [13, 17],
+            [12, 15],
+            [16, 14]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "e672f9624f10499a1bc9afd8b7088b96afbb0d96bc6ab277dea32b50282c18ff"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "87a26d620307d7af15d5c279c91305d3553443148641881fa1f95c669c6cdd8b"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "241f9e70c791e7b239caf18ca3bfacd514925fb59920d00d04529989692ae030"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "1d1489a9b2d7a63d63e8c7928765a4bd15ade301a29c028cb85ff3eb44d80b98"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "82b9f986baf245af0a7ae5cc9cf31646f83da1e23bda38cf660ace5a2278b3cb"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "44e6ed630b2098d4d3fd2ce87b45b5399e02c6563dfa906d83a98b2caa1aaba5"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "b9353c554cf33bb36df669d131165c3474d467198a8c767ecfe42d3719e2ab87"
+            },
+            {
+              "kind": "collision",
+              "ball": 4,
+              "rgba": "94a7d098b08e2ae4a75ddfe9ee3261514ad26d34ef398a4499682f6acc56de13"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "f1aac53f4e63a5c92a4797f9ae2bb8aa8538a819b3155b1d81447c97a22c6d9b"
+            },
+            {
+              "kind": "ball",
+              "ball": 6,
+              "rgba": "2ea4ba744efd69c96e78bd6fc041fe9aa4c7c60ee7e4bcb9d04c92697b915d11"
+            },
+            {
+              "kind": "ball",
+              "ball": 7,
+              "rgba": "a39e4b5098cbcdf0cab9206b393ce439673817d5ca51a0ea68cb262e94302400"
+            },
+            {
+              "kind": "ball",
+              "ball": 8,
+              "rgba": "f92cc85be4d4fb8ea2ab5608543d479fce813dbc18e1955563ceab10a876c68e"
+            },
+            {
+              "kind": "ball",
+              "ball": 9,
+              "rgba": "9544fa0c8051bf63878f3b6c4dcb28b0bc52c4c40ec1fd190cc2f4b22e91db4c"
+            },
+            {
+              "kind": "ball",
+              "ball": 10,
+              "rgba": "707228fbecfb96efa5025574fce5d4acc2f15fe3ad548253c60e6364be12a318"
+            },
+            {
+              "kind": "ball",
+              "ball": 11,
+              "rgba": "d409ae2d374e4b0184a849c9e3f12c7ffeb423c6af402fa500332a0cabe14f2c"
+            },
+            {
+              "kind": "ball",
+              "ball": 12,
+              "rgba": "d21cdc285f5c0d663b5ed21fd680da11b0607110f6baeb48ac92bb2811fe270c"
+            },
+            {
+              "kind": "ball",
+              "ball": 13,
+              "rgba": "d7e0dc8b43a1db8cd66bfbb2c5c1c58fa44595e4630de15174add927288ef056"
+            },
+            {
+              "kind": "ball",
+              "ball": 14,
+              "rgba": "03088bfe74896c647a8eaf1822c3bbd475091a529015ea7ab2fc008c2259d67c"
+            }
+          ]
+        },
+        {
+          "direction": "left",
+          "seed": 59548,
+          "homeInk": 7,
+          "awayInk": 0,
+          "attackers": [
+            [25, 9],
+            [21, 4],
+            [18, 13]
+          ],
+          "defenders": [
+            [19, 6],
+            [17, 9],
+            [11, 14]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "108dd3bbc4e7d1f881442b2b2d105cab701be6dca61c46be13dfefe4e854db68"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "19ec9a23cc20504fbbb97c09ac1705bd03af0ba3cea1338ddb521efeb8b8e73e"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "cd26e500f132ab78be1c06d232327e79284eec2cb9911cbe7c35e0c6ed851c91"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "a9e023c26e2d3260e756690513bec4153f18245a6c2cfc38eee4c4c0712f5777"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "c26c4232273298e3c59004e3e9566b4232b500e1cefbfa88185df529a58e46f6"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "9480fcf435e4059e824f8e8af21c16b3f0bbf385e090ae0af4a082c3f2d5f160"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "29c3f745d6feb1bc061e7c751a3781c4cf571a190aba8105e631e57e942d2da2"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "2cafabd9192b8600c12e348cc18ce44cf7f1755c5b41018d99ff2e5ed35044a0"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "bb23e429edef1ed344554bbfb59e043c78facd6753b927bc5756ebcd1387a803"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "ba4deb665211d19b95caaa2e085571791444711b9dcc3d39ce15f3a3245619f2"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "fe4387df2b2cb080c21927c49f1848d5d52614febf74a221c87c1ea9fceca814"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "ac3db345f7adeee593a1735b9cefb9ae482c3ae42fd471dfcee22778751c50eb"
+            }
+          ]
+        },
+        {
+          "direction": "left",
+          "seed": 40720,
+          "homeInk": 7,
+          "awayInk": 0,
+          "attackers": [
+            [21, 6],
+            [10, 15],
+            [15, 10]
+          ],
+          "defenders": [
+            [14, 10],
+            [9, 15],
+            [14, 11]
+          ],
+          "frames": [
+            {
+              "kind": "initial",
+              "ball": 0,
+              "rgba": "7b48e44f23a508e10e26b60498aac7295ebe2eb120b58f643ed86667d54aecac"
+            },
+            {
+              "kind": "dribble",
+              "ball": 0,
+              "rgba": "b9505d36e4cb0857f6b2854c8bdb7bc80b5bb81e3ee8fb68fe93c74752e0786d"
+            },
+            {
+              "kind": "release",
+              "ball": 0,
+              "rgba": "ff33ac199a6f4f5e1932fde93f0c574226092095400b5abc8cbde9e9456d577f"
+            },
+            {
+              "kind": "ball",
+              "ball": 1,
+              "rgba": "b5c750e6627bb66218df90110f63509e1457c442811e9728c7904393f5dac277"
+            },
+            {
+              "kind": "ball",
+              "ball": 2,
+              "rgba": "2e044872dcae718e58a0c2f3ba4df7018c5884dc80f46ff0c7ed171c1da19e58"
+            },
+            {
+              "kind": "ball",
+              "ball": 3,
+              "rgba": "8890ab52efe48939dc1508b6c3d8ff4f945d5378a5fb98d7592cdaedfe0da3ed"
+            },
+            {
+              "kind": "ball",
+              "ball": 4,
+              "rgba": "f7fb22fd60e4479b157f988bc2ad35264023bdf5a426d766c6da99180f0b0459"
+            },
+            {
+              "kind": "ball",
+              "ball": 5,
+              "rgba": "99bf42c78ec2eaed2063d594c0474e6f174bc68497737236a75df414cdcf910d"
+            },
+            {
+              "kind": "ball",
+              "ball": 6,
+              "rgba": "6b0ad29083769cea83d42e9b81e6f449a11ab2efad7a11cbda14c661b25ca959"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

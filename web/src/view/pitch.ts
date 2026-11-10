@@ -129,25 +129,23 @@ const pitch = (right: boolean) => {
     path(158, 84, [[2, 0]]);
     path(158, 85, [[2, 0]]);
   }
-  const x = right ? 55 : 201,
-    y = 96,
-    dx = right ? 40 : -40,
-    dy = -40;
-  const angle = ((right ? 1 : -1) * 2 * Math.PI) / 5;
-  const cx = x + dx / 2 - dy / (2 * Math.tan(angle / 2));
-  const cy = y + dy / 2 + dx / (2 * Math.tan(angle / 2));
-  const radius = Math.hypot(x - cx, y - cy),
-    start = Math.atan2(y - cy, x - cx);
-  let px = x,
-    py = y;
-  for (let i = 1; i <= 48; i++) {
-    const a = start + (angle * i) / 48;
-    const nx = Math.round(cx + radius * Math.cos(a)),
-      ny = Math.round(cy + radius * Math.sin(a));
-    line(px, py, nx, ny);
-    px = nx;
-    py = ny;
-  }
+  // ROM-rounded chords for this game's fixed DRAW ±40,-40,±2*PI/5.
+  // Numeric vertices are captured independently of the pixel hashes used in tests.
+  const arc: readonly Line[] = [
+    [2, -7],
+    [3, -7],
+    [4, -7],
+    [5, -5],
+    [5, -5],
+    [7, -4],
+    [7, -3],
+    [7, -2]
+  ];
+  path(
+    right ? 55 : 201,
+    96,
+    arc.map(([dx, dy]) => [right ? dx : -dx, dy])
+  );
   return bits;
 };
 const pitches = { left: pitch(false), right: pitch(true) };

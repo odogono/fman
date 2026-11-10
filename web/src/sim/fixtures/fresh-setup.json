@@ -1,0 +1,155 @@
+{
+  "sourceTapeSha256": "7fb5e9d4b8115bd4835ce9f1479ed498f05b52f2c435f40f089403ccadc72763",
+  "initialSeed": 0,
+  "manager": "alex",
+  "chosenClub": 1,
+  "level": 1,
+  "colour": 0,
+  "seedBeforeRandomize": 12124,
+  "players": [
+    {
+      "status": 2,
+      "skill": 3,
+      "energy": 16,
+      "value": 15000
+    },
+    {
+      "status": 2,
+      "skill": 3,
+      "energy": 13,
+      "value": 15000
+    },
+    {
+      "status": 2,
+      "skill": 5,
+      "energy": 14,
+      "value": 25000
+    },
+    {
+      "status": 2,
+      "skill": 1,
+      "energy": 16,
+      "value": 5000
+    },
+    {
+      "status": 2,
+      "skill": 1,
+      "energy": 7,
+      "value": 5000
+    },
+    {
+      "status": 0,
+      "skill": 1,
+      "energy": 15,
+      "value": 5000
+    },
+    {
+      "status": 2,
+      "skill": 5,
+      "energy": 12,
+      "value": 25000
+    },
+    {
+      "status": 0,
+      "skill": 5,
+      "energy": 6,
+      "value": 25000
+    },
+    {
+      "status": 0,
+      "skill": 1,
+      "energy": 16,
+      "value": 5000
+    },
+    {
+      "status": 0,
+      "skill": 1,
+      "energy": 12,
+      "value": 5000
+    },
+    {
+      "status": 2,
+      "skill": 3,
+      "energy": 13,
+      "value": 15000
+    },
+    {
+      "status": 0,
+      "skill": 4,
+      "energy": 20,
+      "value": 20000
+    },
+    {
+      "status": 0,
+      "skill": 4,
+      "energy": 7,
+      "value": 20000
+    },
+    {
+      "status": 0,
+      "skill": 2,
+      "energy": 15,
+      "value": 10000
+    },
+    {
+      "status": 1,
+      "skill": 3,
+      "energy": 8,
+      "value": 15000
+    },
+    {
+      "status": 2,
+      "skill": 4,
+      "energy": 8,
+      "value": 20000
+    },
+    {
+      "status": 2,
+      "skill": 2,
+      "energy": 9,
+      "value": 10000
+    },
+    {
+      "status": 0,
+      "skill": 5,
+      "energy": 12,
+      "value": 25000
+    },
+    {
+      "status": 2,
+      "skill": 2,
+      "energy": 10,
+      "value": 10000
+    },
+    {
+      "status": 0,
+      "skill": 4,
+      "energy": 2,
+      "value": 20000
+    },
+    {
+      "status": 0,
+      "skill": 4,
+      "energy": 5,
+      "value": 20000
+    },
+    {
+      "status": 0,
+      "skill": 3,
+      "energy": 18,
+      "value": 15000
+    },
+    {
+      "status": 2,
+      "skill": 1,
+      "energy": 16,
+      "value": 5000
+    },
+    {
+      "status": 0,
+      "skill": 4,
+      "energy": 4,
+      "value": 20000
+    }
+  ]
+}

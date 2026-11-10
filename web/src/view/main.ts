@@ -1,6 +1,92 @@
-import { createRng } from '../sim/rng';
+import { createSession } from '../sim/session';
+import { createFrameSampler } from './frame-sampler';
+import { makeScreen } from './screen';
 
-const app = document.querySelector('#app');
-if (app) {
-  app.textContent = `fman: seed check ${createRng(1).int(1, 100)}`;
+const app = document.querySelector<HTMLElement>('#app');
+if (!app) {
+  throw new Error('Missing application root');
 }
+app.innerHTML = `
+  <h1 class="sr-only">Football Manager</h1>
+  <section class="machine" aria-label="ZX Spectrum Football Manager">
+    <div id="screen" aria-hidden="true"></div>
+    <form id="entry" autocomplete="off">
+      <label for="command" id="prompt"></label><input id="command" name="command" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="256" />
+    </form>
+  </section>
+  <pre id="transcript" class="sr-only" aria-live="polite" aria-atomic="true"></pre>
+  <p class="build-note">Setup, squad sales and loans are available.<br />Matches, name editing and saves are coming next.</p>
+  <p id="notice" class="notice" role="status"></p>
+`;
+const screen = document.querySelector<HTMLElement>('#screen')!;
+const form = document.querySelector<HTMLFormElement>('#entry')!;
+const input = document.querySelector<HTMLInputElement>('#command')!;
+const prompt = document.querySelector<HTMLElement>('#prompt')!;
+const transcript = document.querySelector<HTMLElement>('#transcript')!;
+const notice = document.querySelector<HTMLElement>('#notice')!;
+const session = createSession();
+
+const render = () => {
+  const display = makeScreen(session);
+  const fragment = document.createDocumentFragment();
+  for (const cell of display.cells) {
+    const span = document.createElement('span');
+    span.textContent = cell.text;
+    const palette = cell.bright ? 'bright' : 'normal';
+    span.style.color = `var(--${palette}-${cell.inverse ? cell.paper : cell.ink})`;
+    span.style.backgroundColor = `var(--${palette}-${cell.inverse ? cell.ink : cell.paper})`;
+    fragment.append(span);
+  }
+  screen.replaceChildren(fragment);
+  transcript.textContent = display.lines.join('\n') + '\n' + display.prompt;
+  form.hidden = display.paused;
+  prompt.textContent = display.prompt;
+  input.setAttribute('aria-label', display.label);
+  input.inputMode = display.numeric ? 'numeric' : 'text';
+  input.value = '';
+  if (!display.paused) {
+    input.focus({ preventScroll: true });
+  }
+};
+
+form.addEventListener('submit', event => {
+  event.preventDefault();
+  const effect = session.submit(input.value);
+  notice.textContent = '';
+  if (effect?.type === 'copy') {
+    input.value = '';
+    window.print();
+    input.focus({ preventScroll: true });
+    return;
+  }
+  if (effect?.type === 'unavailable') {
+    notice.textContent = `${effect.feature} is not available in this build.`;
+  }
+  render();
+});
+document.addEventListener('keydown', event => {
+  if (
+    session.paused &&
+    !event.repeat &&
+    !event.metaKey &&
+    !event.ctrlKey &&
+    !event.altKey
+  ) {
+    event.preventDefault();
+    session.skipPause();
+    render();
+  }
+});
+
+const sampleFrames = createFrameSampler(performance.now());
+const tick = (now: number) => {
+  const elapsed = sampleFrames(now);
+  const before = session.screen;
+  session.advance(elapsed);
+  if (before !== session.screen) {
+    render();
+  }
+  requestAnimationFrame(tick);
+};
+render();
+requestAnimationFrame(tick);

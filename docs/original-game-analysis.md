@@ -231,11 +231,16 @@ uv run --with skoolkit==10.2 sna2img.py roms/zx/analysis/07-highlights.z80 roms/
 
 Rendered final-score and squad images were inspected. They preserve the original colours, padding and prompts; the source's control-byte notation should not be mistaken for displayed text.
 
-## Coverage gaps and implementation handoff
+## Initial coverage and implementation handoff (historical)
 
-Static reading covers the complete recovered BASIC program and identifies all explicit machine-code interfaces. Dynamic coverage is fresh setup and one resumed league-cycle path, not every branch. Cup rounds/replays/final, promotion/relegation, sale acceptance/refusal, bid acceptance/refusal, loan errors, dismissal, name editing, printing and tape-save/reload have not been exercised. Highlight corner cases, the twelve-player selection quirk, tied sorting and exact numerical rounding need focused emulator probes before their ports are accepted.
+This section records the initial analysis milestone, before the later gameplay
+ports and capture suites. Subsequent verification is indexed in [README.md](README.md);
+the current open work is tracked in [remaining-work.md](remaining-work.md). The
+initial gaps below must not be read as a current list of missing gameplay features.
 
-Proceed in this order:
+Static reading covers the complete recovered BASIC program and identifies all explicit machine-code interfaces. At that milestone, dynamic coverage was fresh setup and one resumed league-cycle path, not every branch. Cup rounds/replays/final, promotion/relegation, sale acceptance/refusal, bid acceptance/refusal, loan errors, dismissal, name editing, printing and tape-save/reload had not then been exercised. Highlight corner cases, the twelve-player selection quirk, tied sorting and exact numerical rounding needed focused emulator probes before their ports could be accepted.
+
+The initial implementation order was:
 
 1. **Encode the verified fresh state.** Use the compared tape’s blank/zero arrays and scalar defaults, then follow its auto-start at line 8. Keep the tape provenance and byte-equality evidence alongside the fixture; do not use the progressed snapshot’s finances or club names as defaults.
 2. **Establish compatibility primitives.** Implement and test the Spectrum RNG in the permitted simulation RNG module, five-byte/intermediate arithmetic as required, string/array semantics and a deterministic emulated frame clock. Keep frame timing/input events in replay fixtures; document the numeric fidelity actually established.

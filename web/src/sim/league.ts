@@ -37,8 +37,12 @@ export const togglePickedPlayer = (game: Game, id: number): Game => {
   };
 };
 
+/** The season ends once fifteen league matches are played and the cup is over. */
+export const seasonOver = (game: Game) =>
+  game.leagueMatches >= 15 && game.cupFinished;
+
 export const nextFixture = (game: Game) => {
-  if (game.leagueMatches >= 15 && game.cupFinished) {
+  if (seasonOver(game)) {
     return 'season';
   }
   if ((game.scheduleCounter + 1) % 3 === 0 && !game.cupFinished) {

@@ -37,6 +37,9 @@ A fixture contributing goals and points to the current division's league table.
 **Cup round**:
 A stage of the F.A. Cup in which the managed club progresses or is eliminated, with drawn matches replayed.
 
+**Matchday**:
+One League match or Cup round, from picking the fixture through highlights and any cup replays to settling it.
+
 **Highlights**:
 The displayed attacking sequences that determine a match's goals.
 _Avoid_: Replay when referring to highlights; a cup replay is another match

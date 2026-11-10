@@ -7,8 +7,9 @@ import {
 import { createFrameClock } from './frame-clock';
 import { simulateHighlights } from './highlights';
 import {
-  completeFirstMatch,
-  prepareFirstMatch,
+  completeLeagueMatch,
+  nextFixture,
+  prepareLeagueMatch,
   teamStrength,
   togglePickedPlayer,
   type MatchCompletion,
@@ -217,12 +218,17 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
           level = game!.level;
           screen = 'level';
         } else if (text === '99') {
-          if (game!.cupRound > 0) {
-            return { feature: 'Next fixture', type: 'unavailable' };
+          const next = nextFixture(game!);
+          if (next === 'season' || next === 'later-cup') {
+            return {
+              feature:
+                next === 'season' ? 'Season progression' : 'Later cup rounds',
+              type: 'unavailable'
+            };
           }
           fixture =
-            game!.leagueMatches === 0
-              ? prepareFirstMatch(game!)
+            next === 'league'
+              ? prepareLeagueMatch(game!)
               : prepareFirstCup(game!);
           game = fixture.game;
           completion = undefined;
@@ -286,7 +292,7 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
           screen = result.replay ? 'replay' : 'cup-result';
           break;
         }
-        completion = completeFirstMatch(game!, fixture!, highlights!.score);
+        completion = completeLeagueMatch(game!, fixture!, highlights!.score);
         game = completion.game;
         bills = completion.bills;
         screen = 'other-matches';
@@ -305,6 +311,12 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
         screen = 'bills';
         break;
       case 'bills':
+        if (game!.debt > 250_000 * (5 - game!.division)) {
+          return { feature: 'Dismissal', type: 'unavailable' };
+        }
+        if (game!.leagueMatches === 15 && game!.cupFinished) {
+          return { feature: 'Season progression', type: 'unavailable' };
+        }
         transfer = openTransferMarket(game!);
         if (!transfer) {
           returnToManagement();

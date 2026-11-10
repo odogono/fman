@@ -2,7 +2,7 @@
 
 The first playable match extends [fresh-game management](fresh-game-management.md): type `99` at the management menu, review the fixture and team strengths, adjust the picked team, then watch highlights and continue through the final score, other results, league table and weekly bills.
 
-This increment originally ended after the first league cycle. The [first-cup increment](first-cup-round.md) now adds the following cup tie and replays. Later fixtures, season progression, name editing and saving remain unavailable. The subsequent [transfer-market increment](transfer-market.md) now continues from bills to buying players before returning to management. After the first cup round, another fixture is explicitly unavailable.
+This increment originally ended after the first league cycle. The [first-cup increment](first-cup-round.md) now adds the following cup tie and replays. The [league-continuation increment](league-progression.md) now adds further league fixtures. Later cup rounds, season progression, name editing and saving remain unavailable. The subsequent [transfer-market increment](transfer-market.md) now continues from bills to buying players before returning to management. Active cup runs stop before cup round two; after elimination, league play stops before the season change.
 
 ## Pre-match selection
 

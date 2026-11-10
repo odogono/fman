@@ -1,4 +1,5 @@
 import { payWeeklyBills, type Game } from './management';
+import { add, divide, floor, fromNumber, multiply, toNumber } from './numeric';
 import { createRng } from './rng';
 
 const clamp = (value: number) => Math.max(1, Math.min(20, value));
@@ -36,20 +37,51 @@ export const togglePickedPlayer = (game: Game, id: number): Game => {
   };
 };
 
-export const prepareFirstMatch = (game: Game) => {
-  if (game.leagueMatches !== 0) {
-    throw new RangeError('Only the first league match is available');
+export const nextFixture = (game: Game) => {
+  if (game.leagueMatches >= 15) {
+    return 'season';
+  }
+  if ((game.scheduleCounter + 1) % 3 === 0 && !game.cupFinished) {
+    return game.cupRound === 0 ? 'cup' : 'later-cup';
+  }
+  return 'league';
+};
+
+export const prepareLeagueMatch = (game: Game) => {
+  if (nextFixture(game) !== 'league') {
+    throw new RangeError('The next fixture is not an available league match');
   }
   const offset = (game.division - 1) * 16;
-  const opponent = game.club === offset + 1 ? offset + 16 : offset + 1;
+  const leagueMatches = game.leagueMatches + 1;
+  const opponent =
+    offset + leagueMatches === game.club ? offset + 16 : offset + leagueMatches;
   const rng = createRng(game.seed);
-  const opponentStrength = Array.from({ length: 5 }, () =>
-    clamp(rng.int(1, 14) + game.level)
+  const pointsPerMatch = divide(
+    fromNumber(game.league[opponent - offset - 1]!.points),
+    fromNumber(leagueMatches)
   );
+  const opponentStrength = Array.from({ length: 5 }, () =>
+    clamp(
+      toNumber(
+        floor(add(fromNumber(rng.int(1, 14) + game.level), pointsPerMatch))
+      )
+    )
+  );
+  const home = !game.leagueHome;
   return {
-    game: { ...game, leagueMatches: 1, scheduleCounter: 2, seed: rng.seed },
-    gate: game.homeGate,
-    home: true,
+    game: {
+      ...game,
+      leagueHome: home,
+      leagueMatches,
+      scheduleCounter: (game.scheduleCounter + 1) % 3,
+      seed: rng.seed
+    },
+    gate: home
+      ? game.homeGate
+      : (17 - game.league[opponent - offset - 1]!.position) *
+        (5 - game.division) *
+        500,
+    home,
     kind: 'league' as const,
     opponent,
     opponentStrength
@@ -64,13 +96,17 @@ export type MatchFixture = {
   opponentStrength: readonly number[];
 };
 
-export const completeFirstMatch = (
+export const completeLeagueMatch = (
   game: Game,
   fixture: MatchFixture,
   score: readonly number[]
 ) => {
-  if (game.leagueMatches !== 1) {
-    throw new RangeError('Expected the first league match');
+  if (
+    game.leagueMatches < 1 ||
+    game.leagueMatches > 15 ||
+    fixture.kind !== 'league'
+  ) {
+    throw new RangeError('Expected a league match in the current season');
   }
   const factor = 5 - game.division;
   const offset = (game.division - 1) * 16;
@@ -89,9 +125,11 @@ export const completeFirstMatch = (
     a.points += goals[0]! > goals[1]! ? 3 : goals[0] === goals[1] ? 1 : 0;
     b.points += goals[1]! > goals[0]! ? 3 : goals[0] === goals[1] ? 1 : 0;
   };
-  record(user, opponent, score);
-  const win = score[0]! > score[1]!;
-  const loss = score[0]! < score[1]!;
+  record(fixture.home ? user : opponent, fixture.home ? opponent : user, score);
+  const ownGoals = score[fixture.home ? 0 : 1]!;
+  const opposingGoals = score[fixture.home ? 1 : 0]!;
+  const win = ownGoals > opposingGoals;
+  const loss = ownGoals < opposingGoals;
   const homeGate = loss
     ? Math.max(1000, game.homeGate - Math.floor(game.homeGate / 10))
     : win
@@ -118,8 +156,28 @@ export const completeFirstMatch = (
     } while (used.has(away));
     used.add(away);
     const goals = [
-      Math.floor(league[home]!.points + rng.next() * 4),
-      Math.floor(league[away]!.points + rng.next() * 4)
+      toNumber(
+        floor(
+          add(
+            divide(
+              fromNumber(league[home]!.points),
+              fromNumber(game.leagueMatches)
+            ),
+            multiply(fromNumber(rng.next()), fromNumber(4))
+          )
+        )
+      ),
+      toNumber(
+        floor(
+          add(
+            divide(
+              fromNumber(league[away]!.points),
+              fromNumber(game.leagueMatches)
+            ),
+            multiply(fromNumber(rng.next()), fromNumber(4))
+          )
+        )
+      )
     ];
     record(home, away, goals);
     results.push({
@@ -129,6 +187,9 @@ export const completeFirstMatch = (
     });
   }
   const order = Array.from({ length: 16 }, (_, i) => i);
+  if (game.leagueMatches > 1) {
+    order.sort((a, b) => game.league[a]!.position - game.league[b]!.position);
+  }
   for (let pass = 1; pass <= 16; pass++) {
     let changed = false;
     for (let i = 0; i < 16 - pass; i++) {
@@ -163,4 +224,4 @@ export const completeFirstMatch = (
   });
   return { ...billed, order, results };
 };
-export type MatchCompletion = ReturnType<typeof completeFirstMatch>;
+export type MatchCompletion = ReturnType<typeof completeLeagueMatch>;

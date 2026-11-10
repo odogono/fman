@@ -9,6 +9,8 @@ export const paintMatch = (session: Session, put: Paint) => {
   const opponent = game.clubs[fixture.opponent - 1]!.name;
   const home = fixture.home ? club : opponent;
   const away = fixture.home ? opponent : club;
+  const opponentPosition =
+    game.league[fixture.opponent - (game.division - 1) * 16 - 1]?.position ?? 0;
   let prompt = '';
   let label = 'Continue';
   let numeric = false;
@@ -39,7 +41,7 @@ export const paintMatch = (session: Session, put: Paint) => {
         0,
         fixture.kind === 'cup'
           ? `Division ${fixture.home ? game.division : Math.floor((fixture.opponent - 1) / 16) + 1}`
-          : `Lge.Pos. ${game.leaguePosition}`
+          : `Lge.Pos. ${fixture.home ? game.leaguePosition : opponentPosition}`
       );
       put(
         4,
@@ -49,7 +51,9 @@ export const paintMatch = (session: Session, put: Paint) => {
             ? fixture.home
               ? Math.floor((fixture.opponent - 1) / 16) + 1
               : game.division
-            : 0
+            : fixture.home
+              ? opponentPosition
+              : game.leaguePosition
         )
       );
       prompt = 'Hit ENTER to continue';

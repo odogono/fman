@@ -11,6 +11,13 @@ export type Player = Readonly<{
   value: number;
 }>;
 
+export type LeagueRecord = Readonly<{
+  against: number;
+  for: number;
+  points: number;
+  position: number;
+}>;
+
 export type Game = Readonly<{
   cash: number;
   club: number;
@@ -18,12 +25,15 @@ export type Game = Readonly<{
   colour: number;
   debt: number;
   division: number;
+  homeGate: number;
+  league: readonly LeagueRecord[];
   leagueMatches: number;
   leaguePosition: number;
   level: number;
   manager: string;
   morale: number;
   players: readonly Player[];
+  previousNet: number;
   rating: number;
   seasons: number;
   seed: number;
@@ -81,12 +91,20 @@ export const createNewGame = (options: {
     colour: options.colour,
     debt: 0,
     division: 4,
+    homeGate: 5000,
+    league: Array.from({ length: 16 }, () => ({
+      against: 0,
+      for: 0,
+      points: 0,
+      position: 0
+    })),
     leagueMatches: 0,
     leaguePosition: 0,
     level: options.level,
     manager: options.manager,
     morale: 10,
     players,
+    previousNet: 0,
     rating: 0,
     seasons: 0,
     seed: rng.seed

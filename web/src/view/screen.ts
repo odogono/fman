@@ -6,6 +6,7 @@ import {
   type Cell,
   type Style
 } from './management-layouts';
+import { paintMatch } from './match-layouts';
 
 export const makeScreen = (session: Session) => {
   const cells: Cell[] = Array.from({ length: 22 * 32 }, () => ({
@@ -193,6 +194,8 @@ export const makeScreen = (session: Session) => {
         copy();
       }
       break;
+    default:
+      ({ label, numeric, prompt } = paintMatch(session, put));
   }
   return {
     cells,

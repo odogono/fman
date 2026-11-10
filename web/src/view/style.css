@@ -145,3 +145,14 @@ main {
     display: none;
   }
 }
+
+#pitch {
+  display: block;
+  width: calc(32 * var(--cell));
+  height: calc(22 * var(--cell));
+  image-rendering: pixelated;
+}
+#screen[hidden],
+#pitch[hidden] {
+  display: none;
+}

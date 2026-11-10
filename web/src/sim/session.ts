@@ -1,4 +1,13 @@
 import { createFrameClock } from './frame-clock';
+import { simulateHighlights } from './highlights';
+import {
+  completeFirstMatch,
+  prepareFirstMatch,
+  teamStrength,
+  togglePickedPlayer,
+  type MatchCompletion,
+  type MatchFixture
+} from './league';
 import {
   borrow,
   createNewGame,
@@ -8,9 +17,22 @@ import {
   type Game,
   type SaleOffer
 } from './management';
+import {
+  createPlayback,
+  type HighlightResult,
+  type Playback
+} from './playback';
 import { createRng } from './rng';
 
 export type Screen =
+  | 'fixture'
+  | 'team'
+  | 'selection'
+  | 'highlights'
+  | 'result'
+  | 'other-matches'
+  | 'table'
+  | 'bills'
   | 'title'
   | 'manager'
   | 'clubs'
@@ -46,6 +68,17 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
   let resume: Screen = 'manager';
   let changingLevel = false;
   let offer: SaleOffer | undefined;
+  let fixture: MatchFixture | undefined;
+  let highlights: HighlightResult | undefined;
+  let playback: Playback | undefined;
+  let completion: MatchCompletion | undefined;
+  let selectionError = '';
+  const finishHighlights = () => {
+    if (playback?.done) {
+      game = { ...game!, seed: highlights!.seed };
+      screen = 'result';
+    }
+  };
 
   const showMessage = (text: string, next: Screen, frames = 0) => {
     message = text;
@@ -54,6 +87,11 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
     remaining = frames;
   };
   const skipPause = () => {
+    if (screen === 'highlights') {
+      playback!.skipPause();
+      finishHighlights();
+      return;
+    }
     if (remaining > 0) {
       remaining = 0;
       screen = resume;
@@ -61,6 +99,11 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
   };
   const advance = (frames: number) => {
     clock.advance(frames);
+    if (screen === 'highlights') {
+      playback!.advance(frames);
+      finishHighlights();
+      return;
+    }
     if (remaining > 0) {
       remaining = Math.max(0, remaining - frames);
       if (remaining === 0) {
@@ -69,7 +112,7 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
     }
   };
   const submit = (text: string): Effect | undefined => {
-    if (remaining > 0) {
+    if (remaining > 0 || screen === 'highlights') {
       return;
     }
     if (screen !== 'manager' && (text === 'h' || text === 'H')) {
@@ -146,21 +189,74 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
           changingLevel = true;
           level = game!.level;
           screen = 'level';
-        } else if (
-          text === '99' ||
-          isCommand(text, 'keep') ||
-          isCommand(text, 'change')
-        ) {
+        } else if (text === '99') {
+          if (game!.leagueMatches > 0) {
+            return { feature: 'Next fixture', type: 'unavailable' };
+          }
+          fixture = prepareFirstMatch(game!);
+          game = fixture.game;
+          screen = 'fixture';
+        } else if (isCommand(text, 'keep') || isCommand(text, 'change')) {
           return {
-            feature:
-              text === '99'
-                ? 'Match play'
-                : isCommand(text, 'keep')
-                  ? 'Saving'
-                  : 'Name editing',
+            feature: isCommand(text, 'keep') ? 'Saving' : 'Name editing',
             type: 'unavailable'
           };
         }
+        break;
+      case 'fixture':
+        screen = 'team';
+        break;
+      case 'team':
+        if (text === '99') {
+          highlights = simulateHighlights({
+            awayInk: 7 - game!.colour,
+            home: true,
+            homeInk: game!.colour,
+            opponent: fixture!.opponentStrength,
+            seed: game!.seed,
+            strength: teamStrength(game!)
+          });
+          playback = createPlayback(highlights);
+          screen = 'highlights';
+        } else {
+          selectionError = '';
+          screen = 'selection';
+        }
+        break;
+      case 'selection':
+        if (number === undefined) {
+          break;
+        }
+        if (
+          number === 99 &&
+          game!.players.filter(p => p.status === 2).length <= 11
+        ) {
+          screen = 'team';
+          break;
+        }
+        selectionError = '';
+        try {
+          game = togglePickedPlayer(game!, number);
+        } catch (error) {
+          if (!(error instanceof RangeError)) {
+            throw error;
+          }
+          selectionError = error.message;
+        }
+        break;
+      case 'result':
+        completion = completeFirstMatch(game!, fixture!, highlights!.score);
+        game = completion.game;
+        screen = 'other-matches';
+        break;
+      case 'other-matches':
+        screen = 'table';
+        break;
+      case 'table':
+        screen = 'bills';
+        break;
+      case 'bills':
+        screen = 'menu';
         break;
       case 'status':
         screen = 'menu';
@@ -222,11 +318,20 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
     get changingLevel() {
       return changingLevel;
     },
+    get completion() {
+      return completion;
+    },
+    get fixture() {
+      return fixture;
+    },
     get frames() {
       return clock.frames;
     },
     get game() {
       return game;
+    },
+    get highlights() {
+      return highlights;
     },
     get message() {
       return message;
@@ -238,10 +343,16 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
       return page;
     },
     get paused() {
-      return remaining > 0;
+      return remaining > 0 || screen === 'highlights';
+    },
+    get playback() {
+      return playback;
     },
     get screen() {
       return screen;
+    },
+    get selectionError() {
+      return selectionError;
     },
     skipPause,
     submit

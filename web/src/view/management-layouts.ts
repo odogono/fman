@@ -41,7 +41,7 @@ export const paintStatus = (game: Game, put: Paint) => {
   );
 };
 
-export const paintSquad = (game: Game, put: Paint) => {
+export const paintSquad = (game: Game, put: Paint, selection = false) => {
   put(0, 0, 'p = picked to play, i = injured');
   put(1, 0, '  NAME   NO. SKILL ENERGY VALUE', { bright: true, paper: 6 });
   const players = game.players.filter(player => player.status > 0);
@@ -68,12 +68,23 @@ export const paintSquad = (game: Game, put: Paint) => {
     `PLAYERS PICKED=${game.players.filter(player => player.status === 2).length}`,
     { inverse: true }
   );
-  put(players.length + 4, 0, 'TYPE NO. OF PLAYER TO BE SOLD', {
-    ink: 1,
-    inverse: true
-  });
-  put(players.length + 5, 0, 'OR type 99 to continue', {
-    bright: true,
-    paper: 6
-  });
+  put(
+    players.length + 4,
+    0,
+    selection
+      ? game.players.filter(p => p.status === 2).length > 11
+        ? 'Type player no. to remove from\nteam'
+        : 'Type Player No. to add to team'
+      : 'TYPE NO. OF PLAYER TO BE SOLD',
+    {
+      ink: 1,
+      inverse: true
+    }
+  );
+  if (!selection || game.players.filter(p => p.status === 2).length <= 11) {
+    put(players.length + 5, 0, 'OR type 99 to continue', {
+      bright: true,
+      paper: 6
+    });
+  }
 };

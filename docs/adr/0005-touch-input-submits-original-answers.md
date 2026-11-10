@@ -1,0 +1,3 @@
+# Touch input submits the original answers
+
+In the phase-two mobile work, every presentation mode (Classic and Modern) turns taps, steppers and presets into the same answer text the original BASIC `INPUT` prompts accept, and submits it through the session's single text-input path. We considered a separate typed command API for touch screens, but it would be a second way into the game that could drift from the original rules, and the existing parity tests would not cover it. The cost is a view-side layer that knows which answers each prompt accepts. Modern mode keeps the original pacing and RNG behaviour by default, so the same choices made at the same moments give the same game in either mode (ADR-0003).

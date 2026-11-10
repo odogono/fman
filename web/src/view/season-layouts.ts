@@ -2,6 +2,7 @@ import { clubInk, clubText } from '../sim/names';
 import type { Session } from '../sim/session';
 import { paintLeagueTable } from './league-table';
 import type { Paint } from './management-layouts';
+import { createPrintScreen } from './print-screen';
 
 export const paintSeason = (session: Session, put: Paint) => {
   switch (session.screen) {
@@ -13,9 +14,13 @@ export const paintSeason = (session: Session, put: Paint) => {
       break;
     case 'season-summary': {
       const season = session.season!;
-      put(0, 0, 'League Success Bonus Money =', { ink: 4, inverse: true });
-      put(2, 0, `        £${season.bonus}`, { ink: 4, inverse: true });
-      let row = 3;
+      const print = createPrintScreen();
+      const bonusStyle = { ink: 4, inverse: true };
+      print.text('League Success Bonus Money =', bonusStyle);
+      print.comma(bonusStyle);
+      print.comma(bonusStyle);
+      print.text(`        £${season.bonus}`, bonusStyle);
+      print.newline();
       for (const movement of season.movements) {
         const text =
           movement.kind === 'promoted'
@@ -23,8 +28,11 @@ export const paintSeason = (session: Session, put: Paint) => {
             : movement.kind === 'relegated'
               ? ' are relegated' + '+'.repeat(40)
               : ' are League Champions' + '*'.repeat(33);
-        put(row, 0, clubText(movement.club), { ink: clubInk(movement.club) });
-        put(row, clubText(movement.club).length, text, {
+        print.text(clubText(movement.club), { ink: clubInk(movement.club) });
+        if (movement.kind !== 'champions') {
+          print.text(' ', { ink: clubInk(movement.club) });
+        }
+        print.text(movement.kind === 'champions' ? text : text.slice(1), {
           ink:
             movement.kind === 'promoted'
               ? 1
@@ -32,10 +40,13 @@ export const paintSeason = (session: Session, put: Paint) => {
                 ? 3
                 : 2
         });
-        row += Math.ceil((clubText(movement.club).length + text.length) / 32);
+        print.newline();
       }
-      put(row, 0, '****New Season****', { ink: 1, inverse: true });
-      put(row + 1, 8, `Division ${session.game!.division}`);
+      print.text('****New Season****', { ink: 1, inverse: true });
+      print.newline();
+      print.tab(8);
+      print.text(`Division ${session.game!.division}`);
+      print.paint(put);
       break;
     }
   }

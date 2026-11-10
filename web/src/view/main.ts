@@ -140,7 +140,7 @@ form.addEventListener('submit', event => {
   const effect = session.submit(input.value);
   notice.textContent = '';
   if (effect?.type === 'copy') {
-    input.value = '';
+    render();
     window.print();
     input.focus({ preventScroll: true });
     return;

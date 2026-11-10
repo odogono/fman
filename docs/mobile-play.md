@@ -10,6 +10,20 @@ Design decisions for making the game playable without a keyboard, chiefly on pho
 - Desktop keyboard entry keeps working in both modes.
 - Free text (club and player names) uses the native soft keyboard; routine play needs no typing.
 
+## Answer mapping
+
+A view-side layer reads the session view and lists each prompt's **offered answers**. Both presentation modes render their touch controls from it (#41). It is built after the line editor (#29) and long-input parsing (#31) land, since both change what prompts accept.
+
+- **Valid answers** are every input a prompt handles differently from other input, including answers that end in one of the original's error messages. Tests use this full set.
+- **Offered answers** are a subset: the listed options on choice prompts; the numbers shown on screen for squad, team selection and the names lists; and free number entry where the original asks for an amount (borrow, repay, bid). Error-only answers on choice prompts, such as colour `3`, stay reachable from the keyboard.
+- Each offered answer has a stable id and its answer text (for example `menu.status` → `s`). Each mode writes its own label.
+- Where any input moves on, a tap submits an empty answer (plain Enter). Team selection never offers this, because an empty answer there means player 0.
+- The save question and the sale offer show plain Yes and No buttons. No submits `n` with no extra confirmation, as in the original.
+- Print (`h`) is not an offered answer. It moves to the game menu (#47); keyboard players can still type it.
+- Taps reproduce keypresses as well as answers ([ADR 0006](adr/0006-taps-reproduce-keypresses.md)). A tap that submits an answer presses and releases Enter. During a timed pause, a tap on the game area is a keypress for as long as the finger is down. At any other time a tap presses no key.
+
+Tests check, screen by screen, that each offered answer is valid and does what the original does. A journal test checks that a short game played by taps matches the same game typed at the same moments: same state, frames and RNG seed.
+
 ## Classic mode
 
 The original screen, scaled to fit, with a context bar of large buttons beneath it offering the current prompt's valid answers.

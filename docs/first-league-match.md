@@ -2,13 +2,13 @@
 
 The first playable match extends [fresh-game management](fresh-game-management.md): type `99` at the management menu, review the fixture and team strengths, adjust the picked team, then watch highlights and continue through the final score, other results, league table and weekly bills.
 
-This increment ends after the first league cycle. Subsequent fixtures, the cup, season progression, name editing and saving remain unavailable. The subsequent [transfer-market increment](transfer-market.md) now continues from bills to buying players before returning to management. Another fixture is explicitly unavailable.
+This increment originally ended after the first league cycle. The [first-cup increment](first-cup-round.md) now adds the following cup tie and replays. Later fixtures, season progression, name editing and saving remain unavailable. The subsequent [transfer-market increment](transfer-market.md) now continues from bills to buying players before returning to management. After the first cup round, another fixture is explicitly unavailable.
 
 ## Pre-match selection
 
 The first fixture is at home, against the first other club in the current division. Five opponent attributes consume five original RNG draws. Energy, Morale, Defence, Midfield and Attack are displayed using the original aggregation and 1–20 clamps. Team energy always divides the picked players' total energy by eleven, even for a depleted team.
 
-The original first-fixture exception skips energy recovery, fatigue and injury refresh. Injuries already caused by a refused sale remain. The later-fixture refresh will be added with subsequent fixtures.
+The original first-fixture exception skips energy recovery, fatigue and injury refresh. Injuries already caused by a refused sale remain. The [first-cup increment](first-cup-round.md) now adds refresh for cup legs.
 
 From the strength summary, `99` starts highlights; any other non-copy input opens selection, matching the BASIC fall-through. When at most eleven players are picked, only a reserve can be added. With twelve picked, a removal is required and `99` is rejected. After removal, `99` returns to the summary. The summary has no exact-eleven requirement, so a depleted team may play. This corrects the initial analysis's suggestion that a newly selected twelve-player team could proceed directly.
 

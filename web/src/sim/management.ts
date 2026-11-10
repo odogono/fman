@@ -1,4 +1,5 @@
 import { clubs, playerNames, type Club } from './catalogue';
+import { emptyAttackCarry, type AttackCarry } from './highlights';
 import { add, divide, floor, fromNumber, multiply, toNumber } from './numeric';
 import { createRng } from './rng';
 
@@ -19,10 +20,13 @@ export type LeagueRecord = Readonly<{
 }>;
 
 export type Game = Readonly<{
+  attackCarry: AttackCarry;
   cash: number;
   club: number;
   clubs: readonly Club[];
   colour: number;
+  cupFinished: boolean;
+  cupRound: number;
   debt: number;
   division: number;
   homeGate: number;
@@ -35,6 +39,7 @@ export type Game = Readonly<{
   players: readonly Player[];
   previousNet: number;
   rating: number;
+  scheduleCounter: number;
   seasons: number;
   seed: number;
 }>;
@@ -85,10 +90,13 @@ export const createNewGame = (options: {
     orderedClubs[63]!
   ];
   return {
+    attackCarry: emptyAttackCarry(),
     cash: 100_000,
     club: 64,
     clubs: orderedClubs,
     colour: options.colour,
+    cupFinished: false,
+    cupRound: 0,
     debt: 0,
     division: 4,
     homeGate: 5000,
@@ -106,8 +114,33 @@ export const createNewGame = (options: {
     players,
     previousNet: 0,
     rating: 0,
+    scheduleCounter: 1,
     seasons: 0,
     seed: rng.seed
+  };
+};
+
+export const payWeeklyBills = (game: Game) => {
+  const factor = 5 - game.division;
+  const wages = game.players
+    .filter(p => p.status > 0)
+    .reduce((sum, p) => sum + p.skill * 100 * factor, 0);
+  const rent = 500 * factor;
+  const interest = Math.floor(game.debt / 100);
+  const cash = game.cash - wages - rent - interest;
+  return {
+    bills: {
+      balance: cash - game.debt - game.previousNet,
+      interest,
+      rent,
+      wages
+    },
+    game: {
+      ...game,
+      cash: Math.max(0, cash),
+      debt: game.debt + Math.max(0, -cash),
+      previousNet: cash - game.debt
+    }
   };
 };
 

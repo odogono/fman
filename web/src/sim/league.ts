@@ -1,4 +1,4 @@
-import type { Game } from './management';
+import { payWeeklyBills, type Game } from './management';
 import { createRng } from './rng';
 
 const clamp = (value: number) => Math.max(1, Math.min(20, value));
@@ -47,14 +47,22 @@ export const prepareFirstMatch = (game: Game) => {
     clamp(rng.int(1, 14) + game.level)
   );
   return {
-    game: { ...game, leagueMatches: 1, seed: rng.seed },
+    game: { ...game, leagueMatches: 1, scheduleCounter: 2, seed: rng.seed },
     gate: game.homeGate,
     home: true,
+    kind: 'league' as const,
     opponent,
     opponentStrength
   };
 };
-export type MatchFixture = ReturnType<typeof prepareFirstMatch>;
+export type MatchFixture = {
+  game: Game;
+  gate: number;
+  home: boolean;
+  kind: 'league' | 'cup';
+  opponent: number;
+  opponentStrength: readonly number[];
+};
 
 export const completeFirstMatch = (
   game: Game,
@@ -144,28 +152,15 @@ export const completeFirstMatch = (
   order.forEach((index, rank) => {
     league[index]!.position = rank + 1;
   });
-  const wages = game.players
-    .filter(p => p.status > 0)
-    .reduce((sum, p) => sum + p.skill * 100 * factor, 0);
-  const rent = 500 * factor;
-  const interest = Math.floor(game.debt / 100);
-  const cash = game.cash + fixture.gate - wages - rent - interest;
-  const balance = cash - game.debt - game.previousNet;
-  return {
-    bills: { balance, interest, rent, wages },
-    game: {
-      ...game,
-      cash: Math.max(0, cash),
-      debt: game.debt + Math.max(0, -cash),
-      homeGate,
-      league,
-      leaguePosition: league[user]!.position,
-      morale,
-      previousNet: cash - game.debt,
-      seed: rng.seed
-    },
-    order,
-    results
-  };
+  const billed = payWeeklyBills({
+    ...game,
+    cash: game.cash + fixture.gate,
+    homeGate,
+    league,
+    leaguePosition: league[user]!.position,
+    morale,
+    seed: rng.seed
+  });
+  return { ...billed, order, results };
 };
 export type MatchCompletion = ReturnType<typeof completeFirstMatch>;

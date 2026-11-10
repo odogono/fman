@@ -17,7 +17,7 @@ app.innerHTML = `
     </form>
   </section>
   <pre id="transcript" class="sr-only" aria-live="polite" aria-atomic="true"></pre>
-  <p class="build-note">Play the first league match, buy players and manage your club.<br />Further fixtures, name editing and saves are coming next.</p>
+  <p class="build-note">Play the first league match and cup round, buy players and manage your club.<br />Later fixtures, name editing and saves are coming next.</p>
   <p id="notice" class="notice" role="status"></p>
 `;
 const screen = document.querySelector<HTMLElement>('#screen')!;
@@ -54,8 +54,12 @@ const render = () => {
       current.attack,
       current.index,
       session.playback!.score,
-      game.clubs[game.club - 1]!.name,
-      game.clubs[session.fixture!.opponent - 1]!.name
+      game.clubs[
+        (session.fixture!.home ? game.club : session.fixture!.opponent) - 1
+      ]!.name,
+      game.clubs[
+        (session.fixture!.home ? session.fixture!.opponent : game.club) - 1
+      ]!.name
     );
     if (audioKey !== session.playback!.key) {
       beeper.play(current.frame.tones);

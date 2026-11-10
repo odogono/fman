@@ -1,3 +1,9 @@
+import {
+  prepareFirstCup,
+  prepareReplay,
+  refreshPlayers,
+  settleCupLeg
+} from './cup';
 import { createFrameClock } from './frame-clock';
 import { simulateHighlights } from './highlights';
 import {
@@ -30,6 +36,8 @@ import {
 } from './transfers';
 
 export type Screen =
+  | 'replay'
+  | 'cup-result'
   | 'transfer'
   | 'transfer-result'
   | 'fixture'
@@ -79,6 +87,7 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
   let highlights: HighlightResult | undefined;
   let playback: Playback | undefined;
   let completion: MatchCompletion | undefined;
+  let bills: MatchCompletion['bills'] | undefined;
   let selectionError = '';
   let transfer: TransferOffer | undefined;
   const returnToManagement = () => {
@@ -89,7 +98,11 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
   };
   const finishHighlights = () => {
     if (playback?.done) {
-      game = { ...game!, seed: highlights!.seed };
+      game = {
+        ...game!,
+        attackCarry: highlights!.carry,
+        seed: highlights!.seed
+      };
       screen = 'result';
     }
   };
@@ -204,11 +217,16 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
           level = game!.level;
           screen = 'level';
         } else if (text === '99') {
-          if (game!.leagueMatches > 0) {
+          if (game!.cupRound > 0) {
             return { feature: 'Next fixture', type: 'unavailable' };
           }
-          fixture = prepareFirstMatch(game!);
+          fixture =
+            game!.leagueMatches === 0
+              ? prepareFirstMatch(game!)
+              : prepareFirstCup(game!);
           game = fixture.game;
+          completion = undefined;
+          bills = undefined;
           screen = 'fixture';
         } else if (isCommand(text, 'keep') || isCommand(text, 'change')) {
           return {
@@ -218,14 +236,16 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
         }
         break;
       case 'fixture':
+        game = refreshPlayers(game!);
         screen = 'team';
         break;
       case 'team':
         if (text === '99') {
           highlights = simulateHighlights({
-            awayInk: 7 - game!.colour,
-            home: true,
-            homeInk: game!.colour,
+            awayInk: fixture!.home ? 7 - game!.colour : game!.colour,
+            carry: game!.attackCarry,
+            home: fixture!.home,
+            homeInk: fixture!.home ? game!.colour : 7 - game!.colour,
             opponent: fixture!.opponentStrength,
             seed: game!.seed,
             strength: teamStrength(game!)
@@ -259,9 +279,24 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
         }
         break;
       case 'result':
+        if (fixture!.kind === 'cup') {
+          const result = settleCupLeg(game!, fixture!, highlights!.score);
+          game = result.game;
+          bills = result.bills;
+          screen = result.replay ? 'replay' : 'cup-result';
+          break;
+        }
         completion = completeFirstMatch(game!, fixture!, highlights!.score);
         game = completion.game;
+        bills = completion.bills;
         screen = 'other-matches';
+        break;
+      case 'replay':
+        fixture = prepareReplay(game!, fixture!);
+        screen = 'fixture';
+        break;
+      case 'cup-result':
+        screen = 'bills';
         break;
       case 'other-matches':
         screen = 'table';
@@ -362,6 +397,9 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
   };
   return {
     advance,
+    get bills() {
+      return bills;
+    },
     get changingLevel() {
       return changingLevel;
     },

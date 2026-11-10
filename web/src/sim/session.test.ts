@@ -122,10 +122,9 @@ test('plays the first league match through selection, highlights, table and bill
   expect(session.screen).toBe('transfer');
   session.submit('99');
   expect(session.screen).toBe('menu');
-  expect(session.submit('99')).toEqual({
-    feature: 'Next fixture',
-    type: 'unavailable'
-  });
+  session.submit('99');
+  expect(session.screen).toBe('fixture');
+  expect(session.fixture!.kind).toBe('cup');
 });
 
 test('transfer bids retry the same player; joining and declining return through the original reseed boundary', () => {
@@ -164,4 +163,47 @@ test('transfer bids retry the same player; joining and declining return through 
   session.submit('');
   expect(session.screen).toBe('menu');
   expect(session.game!.seed).toBe(session.frames % 65_536);
+});
+
+test('the first cup replays at the opposite ground, bills once, then returns through transfers', () => {
+  const session = setup();
+  session.submit('99');
+  session.submit('');
+  session.submit('99');
+  session.advance(1_000_000);
+  for (let i = 0; i < 4; i++) {
+    session.submit('');
+  }
+  session.advance((65_536 - (session.frames % 65_536)) % 65_536);
+  session.submit('99');
+  expect(session.game!.seed).toBe(0);
+  session.submit('99');
+  expect(session.fixture!.kind).toBe('cup');
+  const home = session.fixture!.home;
+  session.submit('');
+  session.submit('99');
+  session.advance(1_000_000);
+  expect(session.highlights!.score).toEqual([1, 1]);
+  session.submit('');
+  expect(session.screen).toBe('replay');
+  const cash = session.game!.cash;
+  session.submit('');
+  expect(session.fixture!.home).toBe(!home);
+  expect(session.screen).toBe('fixture');
+  session.submit('');
+  session.submit('99');
+  session.advance(1_000_000);
+  expect(session.highlights!.score).toEqual([0, 3]);
+  session.submit('');
+  expect(session.screen).toBe('cup-result');
+  expect(session.game!.cash).toBeGreaterThan(cash);
+  session.submit('');
+  expect(session.screen).toBe('bills');
+  session.submit('');
+  session.submit('99');
+  expect(session.screen).toBe('menu');
+  expect(session.submit('99')).toEqual({
+    feature: 'Next fixture',
+    type: 'unavailable'
+  });
 });

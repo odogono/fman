@@ -5,8 +5,10 @@ import { paintSquad, type Paint } from './management-layouts';
 export const paintMatch = (session: Session, put: Paint) => {
   const game = session.game!;
   const fixture = session.fixture!;
-  const home = game.clubs[game.club - 1]!.name;
-  const away = game.clubs[fixture.opponent - 1]!.name;
+  const club = game.clubs[game.club - 1]!.name;
+  const opponent = game.clubs[fixture.opponent - 1]!.name;
+  const home = fixture.home ? club : opponent;
+  const away = fixture.home ? opponent : club;
   let prompt = '';
   let label = 'Continue';
   let numeric = false;
@@ -23,16 +25,39 @@ export const paintMatch = (session: Session, put: Paint) => {
   };
   switch (session.screen) {
     case 'fixture':
-      put(0, 0, `League Match - Division ${game.division}`, { ink: 1 });
+      put(
+        0,
+        0,
+        fixture.kind === 'cup'
+          ? `F.A.Cup Match - Round ${game.cupRound}`
+          : `League Match - Division ${game.division}`,
+        { ink: fixture.kind === 'cup' ? 2 : 1 }
+      );
       put(2, 6, `${home} v ${away}`);
-      put(4, 0, `Lge.Pos. ${game.leaguePosition}`);
-      put(4, 20, '0');
+      put(
+        4,
+        0,
+        fixture.kind === 'cup'
+          ? `Division ${fixture.home ? game.division : Math.floor((fixture.opponent - 1) / 16) + 1}`
+          : `Lge.Pos. ${game.leaguePosition}`
+      );
+      put(
+        4,
+        20,
+        String(
+          fixture.kind === 'cup'
+            ? fixture.home
+              ? Math.floor((fixture.opponent - 1) / 16) + 1
+              : game.division
+            : 0
+        )
+      );
       prompt = 'Hit ENTER to continue';
       break;
     case 'team': {
       const strength = teamStrength(game);
-      put(0, 10, home);
-      put(0, 22, away);
+      put(0, 10, club);
+      put(0, 22, opponent);
       ['Energy', 'Morale', 'Defence', 'Midfield', 'Attack'].forEach(
         (name, index) => {
           put(index + 1, 0, name);
@@ -78,6 +103,21 @@ export const paintMatch = (session: Session, put: Paint) => {
       put(2, 0, `Gate receipts £${fixture.gate}`, { ink: 1, inverse: true });
       prompt = 'Hit ENTER to continue';
       break;
+    case 'replay':
+      put(0, 0, 'Replay-', { ink: 3 });
+      prompt = 'Hit ENTER to continue';
+      break;
+    case 'cup-result':
+      put(
+        0,
+        0,
+        game.cupFinished
+          ? "+++You're out of the Cup+++"
+          : '****You are through to the next\n\nround!****',
+        { ink: game.cupFinished ? 0 : 2, inverse: true }
+      );
+      prompt = 'Hit ENTER to continue';
+      break;
     case 'other-matches':
       put(0, 0, 'OTHER MATCHES-', { inverse: true });
       put(1, 8, `Division ${game.division}`);
@@ -112,7 +152,7 @@ export const paintMatch = (session: Session, put: Paint) => {
       prompt = 'Hit ENTER to continue';
       break;
     case 'bills': {
-      const bill = session.completion!.bills;
+      const bill = session.bills!;
       put(0, 0, '****WEEKLY BILLS****', { ink: 2, inverse: true });
       put(2, 0, `Wage Bill = £${bill.wages}`);
       put(3, 0, `Ground rent = £${bill.rent}`);

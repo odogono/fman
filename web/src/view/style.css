@@ -80,8 +80,17 @@ main {
 .machine:has(#screen.full-screen) {
   padding-bottom: 0;
 }
-#reload {
-  margin-top: 12px;
+main {
+  position: relative;
+}
+.menu-button {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+.menu-button,
+.game-menu button,
+.game-menu select {
   padding: 8px 12px;
   border: 1px solid #666;
   background: #222;
@@ -89,12 +98,43 @@ main {
   font: inherit;
   cursor: pointer;
 }
-#reload[hidden] {
-  display: none;
-}
-#reload:focus-visible {
+.menu-button:focus-visible,
+.game-menu :focus-visible {
   outline: 2px solid #ddd;
   outline-offset: 2px;
+}
+.game-menu {
+  width: min(360px, calc(100vw - 32px));
+  padding: 20px;
+  border: 1px solid #666;
+  background: #151515;
+  color: #eee;
+  font:
+    14px/1.5 system-ui,
+    sans-serif;
+}
+.game-menu::backdrop {
+  background: rgb(0 0 0 / 60%);
+}
+.game-menu h2 {
+  margin: 0 0 12px;
+  font-size: 18px;
+}
+.menu-actions {
+  display: grid;
+  gap: 8px;
+}
+.menu-actions button {
+  text-align: left;
+}
+.menu-actions button:disabled {
+  color: #777;
+  cursor: default;
+}
+.menu-status {
+  min-height: 1.5em;
+  margin: 12px 0 0;
+  color: #a6a6a6;
 }
 #prompt {
   white-space: pre;
@@ -118,7 +158,6 @@ main {
   box-shadow: inset 0 -1px var(--normal-0);
 }
 .build-note,
-.save-load,
 .notice {
   max-width: 64ch;
   margin: 16px 0 0;
@@ -162,8 +201,8 @@ main {
   }
   .build-note,
   .notice,
-  #reload,
-  .save-load {
+  .menu-button,
+  .game-menu {
     display: none;
   }
 }

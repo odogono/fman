@@ -2,9 +2,13 @@ import type { HighlightFrame } from '../sim/highlights';
 
 export const createBeeper = () => {
   let context: AudioContext | undefined;
+  let muted = false;
   return {
+    set muted(value: boolean) {
+      muted = value;
+    },
     play: (tones: HighlightFrame['tones']) => {
-      if (!context || context.state !== 'running') {
+      if (muted || !context || context.state !== 'running') {
         return;
       }
       let when = context.currentTime;

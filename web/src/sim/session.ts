@@ -632,6 +632,14 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
       program.resume = 'manager';
       return true;
     },
+    /** Puts an already reseeded game at the management menu. */
+    resumeMenu: (frames: number, resumed: Game) => {
+      const next = createFrameClock(frames);
+      clearProgram();
+      program.clock = next;
+      program.game = resumed;
+      program.screen = 'menu';
+    },
     saved: () => {
       if (program.screen !== 'menu' || !program.game) {
         return false;

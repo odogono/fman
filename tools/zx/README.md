@@ -18,6 +18,7 @@ Each writes `build/zx/<name>.json`; format it with Prettier and compare it to it
 | -------------------------- | -------------------------------------- | ------------------------- |
 | `capture-setup.ts`         | `23-colours.z80`                       | `fresh-setup.json`        |
 | `capture-match.ts`         | `24-fresh-menu.z80`                    | `first-matches.json`      |
+| `capture-pitch.ts`         | `24-fresh-menu.z80`                    | `pitch.json`              |
 | `capture-cup.ts`           | `24-fresh-menu.z80`                    | `first-cups.json`         |
 | `capture-later-cups.ts`    | `24-fresh-menu.z80`                    | `later-cups.json`         |
 | `capture-league.ts`        | `24-fresh-menu.z80`                    | `league-progression.json` |

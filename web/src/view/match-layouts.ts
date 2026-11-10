@@ -5,6 +5,7 @@ import type { Session } from '../sim/session';
 import { paintCupVictory } from './cup-victory';
 import { paintLeagueTable } from './league-table';
 import { paintSquad, type Paint } from './management-layouts';
+import { createPrintScreen } from './print-screen';
 
 export const paintMatch = (session: Session, put: Paint) => {
   const game = session.game!;
@@ -32,61 +33,77 @@ export const paintMatch = (session: Session, put: Paint) => {
     put(row, 28, String(goals[1]), { ink: awayInk });
   };
   switch (session.screen) {
-    case 'fixture':
-      put(
-        0,
-        0,
+    case 'fixture': {
+      const print = createPrintScreen();
+      print.text(
         fixture.kind === 'cup'
           ? `F.A.Cup Match - Round ${game.cupRound === 7 ? 'Semi-Final' : game.cupRound === 8 ? 'Final' : game.cupRound}`
           : `League Match - Division ${game.division}`,
         { ink: fixture.kind === 'cup' ? 2 : 1 }
       );
-      put(2, 6, clubText(home), { ink: clubInk(home) });
-      put(2, 6 + clubText(home).length, ' v ', { ink: clubInk(home) });
-      put(2, 9 + clubText(home).length, clubText(away), {
-        ink: clubInk(away, clubInk(home))
-      });
-      put(
-        4,
-        0,
+      print.newline();
+      print.newline();
+      print.tab(6);
+      const homeInk = clubInk(home),
+        awayInk = clubInk(away, homeInk);
+      print.text(clubText(home), { ink: homeInk });
+      print.text(' v ', { ink: homeInk });
+      print.text(clubText(away), { ink: awayInk });
+      for (let i = 0; i < 3; i++) {
+        print.comma({ ink: awayInk });
+      }
+      const homePosition =
         fixture.kind === 'cup'
-          ? `Division ${fixture.home ? game.division : Math.floor((fixture.opponent - 1) / 16) + 1}`
-          : `Lge.Pos. ${fixture.home ? game.leaguePosition : opponentPosition}`
+          ? fixture.home
+            ? game.division
+            : Math.floor((fixture.opponent - 1) / 16) + 1
+          : fixture.home
+            ? game.leaguePosition
+            : opponentPosition;
+      const awayPosition =
+        fixture.kind === 'cup'
+          ? fixture.home
+            ? Math.floor((fixture.opponent - 1) / 16) + 1
+            : game.division
+          : fixture.home
+            ? opponentPosition
+            : game.leaguePosition;
+      print.text(
+        `${fixture.kind === 'cup' ? 'Division ' : 'Lge.Pos. '}${homePosition}`,
+        { ink: awayInk }
       );
-      put(
-        4,
-        20,
-        String(
-          fixture.kind === 'cup'
-            ? fixture.home
-              ? Math.floor((fixture.opponent - 1) / 16) + 1
-              : game.division
-            : fixture.home
-              ? opponentPosition
-              : game.leaguePosition
-        )
-      );
+      print.tab(20, { ink: awayInk });
+      print.text(String(awayPosition), { ink: awayInk });
+      print.paint(put);
       prompt = 'Hit ENTER to continue';
       break;
+    }
     case 'team': {
+      const print = createPrintScreen();
+      print.tab(10);
+      print.text(clubText(club), { ink: clubInk(club) });
+      print.tab(22, { ink: clubInk(club) });
+      print.text(clubText(opponent), { ink: clubInk(opponent, clubInk(club)) });
+      print.newline();
       const strength = teamStrength(game);
-      put(0, 10, clubText(club), { ink: clubInk(club) });
-      put(0, 22, clubText(opponent), { ink: clubInk(opponent, clubInk(club)) });
       ['Energy', 'Morale', 'Defence', 'Midfield', 'Attack'].forEach(
         (name, index) => {
-          put(index + 1, 0, name);
-          put(index + 1, 13, String(strength[index]));
-          put(index + 1, 25, String(fixture.opponentStrength[index]));
+          print.text(name);
+          print.tab(13);
+          print.text(String(strength[index]));
+          print.tab(25);
+          print.text(String(fixture.opponentStrength[index]));
+          print.newline();
         }
       );
-      put(
-        6,
-        0,
-        `PLAYERS PICKED=${game.players.filter(p => p.status === 2).length}`,
-        { inverse: true }
-      );
-      put(8, 0, 'Type c to change team', { ink: 1, inverse: true });
-      put(9, 0, 'OR type 99 to continue', { bright: true, paper: 6 });
+      print.text('PLAYERS PICKED', { inverse: true });
+      print.text(`=${game.players.filter(p => p.status === 2).length}`);
+      print.newline();
+      print.newline();
+      print.text('Type c to change team', { ink: 1, inverse: true });
+      print.newline();
+      print.text('OR type 99 to continue', { bright: true, paper: 6 });
+      print.paint(put);
       label = 'c to change the picked team, or 99 to play';
       break;
     }

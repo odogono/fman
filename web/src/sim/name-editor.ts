@@ -7,10 +7,23 @@ import {
   renamePlayer
 } from './names';
 
+export type NameOutput = Readonly<{
+  ink: number;
+  text: string;
+  type:
+    | 'selected'
+    | 'renamed'
+    | 'error'
+    | 'range-error'
+    | 'retry-name'
+    | 'retry-more';
+}>;
+
 const yes = (text: string) => ['y', 'Y', 'yes', 'YES'].includes(text);
 
 export const createNameEditor = (initial: Game) => {
   let game = initial;
+  let output: NameOutput[] = [];
   let listGame = initial;
   let previousInk = 0;
   let kind: 'club' | 'player' = 'club';
@@ -25,6 +38,7 @@ export const createNameEditor = (initial: Game) => {
       done = true;
       return;
     }
+    output = [];
     kind = 'player';
     phase = 'question';
     page = 1;
@@ -37,6 +51,13 @@ export const createNameEditor = (initial: Game) => {
       return;
     }
     if (phase !== 'question' && (text === 'h' || text === 'H')) {
+      if (phase === 'name' || phase === 'more') {
+        output.push({
+          ink: 0,
+          text: '',
+          type: phase === 'name' ? 'retry-name' : 'retry-more'
+        });
+      }
       return { type: 'copy' };
     }
     switch (phase) {
@@ -45,6 +66,7 @@ export const createNameEditor = (initial: Game) => {
           phase = 'list';
           page = 1;
           listGame = game;
+          output = [];
         } else {
           nextKind();
         }
@@ -58,6 +80,7 @@ export const createNameEditor = (initial: Game) => {
           page = (page % (kind === 'club' ? 4 : 3)) + 1;
           error = '';
           listGame = game;
+          output = [];
           break;
         }
         const size = kind === 'club' ? 16 : 8;
@@ -66,6 +89,7 @@ export const createNameEditor = (initial: Game) => {
             kind === 'club'
               ? 'TEAM NUMBER OUT OF RANGE'
               : 'PLAYER NO. OUT OF RANGE';
+          output.push({ ink: 0, text: error, type: 'range-error' });
           break;
         }
         selectedId = id;
@@ -74,12 +98,14 @@ export const createNameEditor = (initial: Game) => {
             ? clubText(game.clubs[id - 1]!)
             : game.players[id - 1]!.name.padEnd(8);
         previousInk = kind === 'club' ? clubInk(game.clubs[id - 1]!) : 0;
+        output.push({ ink: previousInk, text: previousName, type: 'selected' });
         phase = 'name';
         error = '';
         break;
       }
       case 'name':
         if (text.length === 0) {
+          output.push({ ink: 0, text: '', type: 'retry-name' });
           break;
         }
         try {
@@ -87,6 +113,14 @@ export const createNameEditor = (initial: Game) => {
             kind === 'club'
               ? renameClub(game, selectedId, text)
               : renamePlayer(game, selectedId, text);
+          output.push({
+            ink: kind === 'club' ? clubInk(game.clubs[selectedId - 1]!) : 0,
+            text:
+              kind === 'club'
+                ? clubText(game.clubs[selectedId - 1]!)
+                : game.players[selectedId - 1]!.name.padEnd(8),
+            type: 'renamed'
+          });
           phase = 'more';
           error = '';
         } catch (error_) {
@@ -95,6 +129,7 @@ export const createNameEditor = (initial: Game) => {
             error = error_.message;
           } else if (error_ instanceof RangeError) {
             error = error_.message;
+            output.push({ ink: 0, text: error, type: 'error' });
           } else {
             throw error_;
           }
@@ -105,6 +140,7 @@ export const createNameEditor = (initial: Game) => {
           phase = 'list';
           error = '';
           listGame = game;
+          output = [];
         } else {
           nextKind();
         }
@@ -126,6 +162,9 @@ export const createNameEditor = (initial: Game) => {
     },
     get listGame() {
       return listGame;
+    },
+    get output(): readonly NameOutput[] {
+      return output;
     },
     get page() {
       return page;

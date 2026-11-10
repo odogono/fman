@@ -50,10 +50,9 @@ The browser still uses its native line editor. Spectrum keyboard mode/colour
 chords and the ROM cursor are not reproduced; a raw prefix can be supplied as
 control bytes, but there is no added colour-picker flow. Unsupported Unicode
 is refused. Extended graphics and embedded control bytes inside names retain
-their data but do not have a complete Spectrum PRINT interpreter. Cumulative
-scrolling after repeated invalid inputs, wrapping of twelve-column plain club
-names in the strength display and large edited season summaries remain to be
-verified. The captured single-attempt name screens include their original
-scroll offset. Existing font, prompt sound and pacing limits remain.
+their data but do not have a complete Spectrum PRINT interpreter. The [screen-layout fidelity pass](name-layout-fidelity.md) now verifies repeated
+errors, empty/COPY retries, twelve-column club names, fixture/strength wrapping
+and long season summaries against the original. It also verifies colour,
+brightness and inverse state in those captured screens. Existing font, prompt sound and pacing limits remain.
 
 [Web saving/loading](save-load.md) is now implemented.

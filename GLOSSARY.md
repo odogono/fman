@@ -70,3 +70,13 @@ A named place in the browser holding one saved game.
 **Game menu**:
 The web overlay, outside the reproduced Spectrum screen, from which the player resumes, saves, loads, starts a new game or changes options. Play is frozen while it is open.
 _Avoid_: Pause when referring to the game menu; a pause is the original's timed wait
+
+**Presentation mode**:
+How the game is shown and controlled; every mode drives the same game with the same rules and outcomes.
+
+**Classic mode**:
+The presentation mode that reproduces the original Spectrum screens, scaled to fit, with touch controls standing in for typed answers.
+
+**Modern mode**:
+The presentation mode with screens redesigned for phones, where choices are made by tapping rather than typing.
+_Avoid_: Mobile mode, since both modes are meant to work on mobile

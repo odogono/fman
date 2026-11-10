@@ -16,6 +16,8 @@ Start with [original-game-analysis.md](original-game-analysis.md): it maps the o
 - [name-layout-fidelity.md](name-layout-fidelity.md): name scrolling and wrapping
 - [save-load.md](save-load.md): web save files
 
+Phase-two design: [mobile-play.md](mobile-play.md): touch and mobile play.
+
 Remaining fidelity work and its completion gate: [remaining-work.md](remaining-work.md).
 
 Decisions: [adr/](adr/). Agent workflows: [agents/](agents/).

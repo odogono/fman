@@ -1,0 +1,623 @@
+{
+  "romSha256": "d55daa439b673b0e3f5897f99ac37ecb45f974d1862b4dadb85dec34af99cb42",
+  "skoolkit": "10.2",
+  "operations": [
+    {
+      "operation": "add",
+      "inputs": ["0000010000", "00000a0000"],
+      "result": "00000b0000"
+    },
+    {
+      "operation": "add",
+      "inputs": ["0000010000", "0000030000"],
+      "result": "0000040000"
+    },
+    {
+      "operation": "add",
+      "inputs": ["0000010000", "0000e80300"],
+      "result": "0000e90300"
+    },
+    {
+      "operation": "add",
+      "inputs": ["0000030000", "00000a0000"],
+      "result": "00000d0000"
+    },
+    {
+      "operation": "add",
+      "inputs": ["0000070000", "0000030000"],
+      "result": "00000a0000"
+    },
+    {
+      "operation": "add",
+      "inputs": ["7d4ccccccd", "7e4ccccccd"],
+      "result": "7f1999999a"
+    },
+    {
+      "operation": "add",
+      "inputs": ["8140000000", "0000020000"],
+      "result": "8260000000"
+    },
+    {
+      "operation": "add",
+      "inputs": ["81c0000000", "0000020000"],
+      "result": "8000000000"
+    },
+    {
+      "operation": "add",
+      "inputs": ["7dcccccccd", "7e4ccccccd"],
+      "result": "7d4cccccce"
+    },
+    {
+      "operation": "add",
+      "inputs": ["81c0000000", "00fffeff00"],
+      "result": "82e0000000"
+    },
+    {
+      "operation": "add",
+      "inputs": ["0000ffff00", "0000010000"],
+      "result": "9100000000"
+    },
+    {
+      "operation": "add",
+      "inputs": ["00ff180200", "00ffe8fd00"],
+      "result": "00ff000000"
+    },
+    {
+      "operation": "add",
+      "inputs": ["9143500000", "0000881300"],
+      "result": "914d140000"
+    },
+    {
+      "operation": "add",
+      "inputs": ["9151c00000", "0000b82400"],
+      "result": "91641c0000"
+    },
+    {
+      "operation": "add",
+      "inputs": ["0000000000", "0000050000"],
+      "result": "0000050000"
+    },
+    {
+      "operation": "add",
+      "inputs": ["0000010000", "6100000000"],
+      "result": "8100000001"
+    },
+    {
+      "operation": "add",
+      "inputs": ["0000010000", "6000000000"],
+      "result": "8100000000"
+    },
+    {
+      "operation": "add",
+      "inputs": ["0000010000", "6180000000"],
+      "result": "8100000000"
+    },
+    {
+      "operation": "add",
+      "inputs": ["0100000000", "8000000000"],
+      "result": "8000000000"
+    },
+    {
+      "operation": "add",
+      "inputs": ["0100000000", "0000010000"],
+      "result": "8100000000"
+    },
+    {
+      "operation": "add",
+      "inputs": ["ff00000000", "8000000000"],
+      "result": "ff00000000"
+    },
+    {
+      "operation": "subtract",
+      "inputs": ["0000010000", "00000a0000"],
+      "result": "00fff7ff00"
+    },
+    {
+      "operation": "subtract",
+      "inputs": ["0000010000", "0000030000"],
+      "result": "00fffeff00"
+    },
+    {
+      "operation": "subtract",
+      "inputs": ["0000010000", "0000e80300"],
+      "result": "00ff19fc00"
+    },
+    {
+      "operation": "subtract",
+      "inputs": ["0000030000", "00000a0000"],
+      "result": "00fff9ff00"
+    },
+    {
+      "operation": "subtract",
+      "inputs": ["0000070000", "0000030000"],
+      "result": "0000040000"
+    },
+    {
+      "operation": "subtract",
+      "inputs": ["7d4ccccccd", "7e4ccccccd"],
+      "result": "7dcccccccc"
+    },
+    {
+      "operation": "subtract",
+      "inputs": ["8140000000", "0000020000"],
+      "result": "8080000000"
+    },
+    {
+      "operation": "subtract",
+      "inputs": ["81c0000000", "0000020000"],
+      "result": "82e0000000"
+    },
+    {
+      "operation": "subtract",
+      "inputs": ["7dcccccccd", "7e4ccccccd"],
+      "result": "7f99999999"
+    },
+    {
+      "operation": "subtract",
+      "inputs": ["81c0000000", "00fffeff00"],
+      "result": "8000000000"
+    },
+    {
+      "operation": "subtract",
+      "inputs": ["0000ffff00", "0000010000"],
+      "result": "0000feff00"
+    },
+    {
+      "operation": "subtract",
+      "inputs": ["00ff180200", "00ffe8fd00"],
+      "result": "00ff300400"
+    },
+    {
+      "operation": "subtract",
+      "inputs": ["9143500000", "0000881300"],
+      "result": "91398c0000"
+    },
+    {
+      "operation": "subtract",
+      "inputs": ["9151c00000", "0000b82400"],
+      "result": "913f640000"
+    },
+    {
+      "operation": "subtract",
+      "inputs": ["0000000000", "0000050000"],
+      "result": "00fffbff00"
+    },
+    {
+      "operation": "subtract",
+      "inputs": ["0000010000", "6100000000"],
+      "result": "8100000000"
+    },
+    {
+      "operation": "subtract",
+      "inputs": ["0000010000", "6000000000"],
+      "result": "8100000000"
+    },
+    {
+      "operation": "subtract",
+      "inputs": ["0000010000", "6180000000"],
+      "result": "8100000001"
+    },
+    {
+      "operation": "subtract",
+      "inputs": ["0100000000", "8000000000"],
+      "result": "8080000000"
+    },
+    {
+      "operation": "subtract",
+      "inputs": ["0100000000", "0000010000"],
+      "result": "8180000000"
+    },
+    {
+      "operation": "subtract",
+      "inputs": ["ff00000000", "8000000000"],
+      "result": "ff00000000"
+    },
+    {
+      "operation": "multiply",
+      "inputs": ["0000010000", "00000a0000"],
+      "result": "00000a0000"
+    },
+    {
+      "operation": "multiply",
+      "inputs": ["0000010000", "0000030000"],
+      "result": "0000030000"
+    },
+    {
+      "operation": "multiply",
+      "inputs": ["0000010000", "0000e80300"],
+      "result": "0000e80300"
+    },
+    {
+      "operation": "multiply",
+      "inputs": ["0000030000", "00000a0000"],
+      "result": "00001e0000"
+    },
+    {
+      "operation": "multiply",
+      "inputs": ["0000070000", "0000030000"],
+      "result": "0000150000"
+    },
+    {
+      "operation": "multiply",
+      "inputs": ["7d4ccccccd", "7e4ccccccd"],
+      "result": "7b23d70a3e"
+    },
+    {
+      "operation": "multiply",
+      "inputs": ["8140000000", "0000020000"],
+      "result": "8240000000"
+    },
+    {
+      "operation": "multiply",
+      "inputs": ["81c0000000", "0000020000"],
+      "result": "82c0000000"
+    },
+    {
+      "operation": "multiply",
+      "inputs": ["7dcccccccd", "7e4ccccccd"],
+      "result": "7ba3d70a3e"
+    },
+    {
+      "operation": "multiply",
+      "inputs": ["81c0000000", "00fffeff00"],
+      "result": "8240000000"
+    },
+    {
+      "operation": "multiply",
+      "inputs": ["0000ffff00", "0000010000"],
+      "result": "0000ffff00"
+    },
+    {
+      "operation": "multiply",
+      "inputs": ["00ff180200", "00ffe8fd00"],
+      "result": "9a04e77000"
+    },
+    {
+      "operation": "multiply",
+      "inputs": ["9143500000", "0000881300"],
+      "result": "9d6e6b2800"
+    },
+    {
+      "operation": "multiply",
+      "inputs": ["9151c00000", "0000b82400"],
+      "result": "9e70ae1000"
+    },
+    {
+      "operation": "multiply",
+      "inputs": ["0000000000", "0000050000"],
+      "result": "0000000000"
+    },
+    {
+      "operation": "multiply",
+      "inputs": ["0000010000", "6100000000"],
+      "result": "6100000000"
+    },
+    {
+      "operation": "multiply",
+      "inputs": ["0000010000", "6000000000"],
+      "result": "6000000000"
+    },
+    {
+      "operation": "multiply",
+      "inputs": ["0000010000", "6180000000"],
+      "result": "6180000000"
+    },
+    {
+      "operation": "multiply",
+      "inputs": ["0100000000", "8000000000"],
+      "result": "0100000000"
+    },
+    {
+      "operation": "multiply",
+      "inputs": ["0100000000", "0000010000"],
+      "result": "0100000000"
+    },
+    {
+      "operation": "multiply",
+      "inputs": ["ff00000000", "8000000000"],
+      "result": "fe00000000"
+    },
+    {
+      "operation": "divide",
+      "inputs": ["0000010000", "00000a0000"],
+      "result": "7d4ccccccc"
+    },
+    {
+      "operation": "divide",
+      "inputs": ["0000010000", "0000030000"],
+      "result": "7f2aaaaaaa"
+    },
+    {
+      "operation": "divide",
+      "inputs": ["0000010000", "0000e80300"],
+      "result": "7703126e97"
+    },
+    {
+      "operation": "divide",
+      "inputs": ["0000030000", "00000a0000"],
+      "result": "7f1999999a"
+    },
+    {
+      "operation": "divide",
+      "inputs": ["0000070000", "0000030000"],
+      "result": "8215555555"
+    },
+    {
+      "operation": "divide",
+      "inputs": ["7d4ccccccd", "7e4ccccccd"],
+      "result": "8000000000"
+    },
+    {
+      "operation": "divide",
+      "inputs": ["8140000000", "0000020000"],
+      "result": "8040000000"
+    },
+    {
+      "operation": "divide",
+      "inputs": ["81c0000000", "0000020000"],
+      "result": "80c0000000"
+    },
+    {
+      "operation": "divide",
+      "inputs": ["7dcccccccd", "7e4ccccccd"],
+      "result": "8080000000"
+    },
+    {
+      "operation": "divide",
+      "inputs": ["81c0000000", "00fffeff00"],
+      "result": "8040000000"
+    },
+    {
+      "operation": "divide",
+      "inputs": ["0000ffff00", "0000010000"],
+      "result": "907fff0000"
+    },
+    {
+      "operation": "divide",
+      "inputs": ["00ff180200", "00ffe8fd00"],
+      "result": "8772898d60"
+    },
+    {
+      "operation": "divide",
+      "inputs": ["9143500000", "0000881300"],
+      "result": "8520000000"
+    },
+    {
+      "operation": "divide",
+      "inputs": ["9151c00000", "0000b82400"],
+      "result": "8436cb7e26"
+    },
+    {
+      "operation": "divide",
+      "inputs": ["0000000000", "0000050000"],
+      "result": "0000000000"
+    },
+    {
+      "operation": "divide",
+      "inputs": ["0000010000", "6100000000"],
+      "result": "a100000000"
+    },
+    {
+      "operation": "divide",
+      "inputs": ["0000010000", "6000000000"],
+      "result": "a200000000"
+    },
+    {
+      "operation": "divide",
+      "inputs": ["0000010000", "6180000000"],
+      "result": "a180000000"
+    },
+    {
+      "operation": "divide",
+      "inputs": ["0100000000", "8000000000"],
+      "result": "0200000000"
+    },
+    {
+      "operation": "divide",
+      "inputs": ["0100000000", "0000010000"],
+      "result": "0100000000"
+    },
+    {
+      "operation": "add",
+      "inputs": ["00ff000000", "0000020000"],
+      "result": "00ff020000"
+    },
+    {
+      "operation": "subtract",
+      "inputs": ["00ff000000", "0000020000"],
+      "result": "8280000000"
+    },
+    {
+      "operation": "multiply",
+      "inputs": ["00ff000000", "0000020000"],
+      "result": "0000000000"
+    },
+    {
+      "operation": "divide",
+      "inputs": ["00ff000000", "0000020000"],
+      "result": "0000000000"
+    },
+    {
+      "operation": "add",
+      "inputs": ["0000020000", "00ff000000"],
+      "result": "00ff020000"
+    },
+    {
+      "operation": "subtract",
+      "inputs": ["0000020000", "00ff000000"],
+      "result": "0000020000"
+    },
+    {
+      "operation": "multiply",
+      "inputs": ["0000020000", "00ff000000"],
+      "result": "0000000000"
+    },
+    {
+      "operation": "floor",
+      "inputs": ["00ff000000"],
+      "result": "8180000000"
+    },
+    {
+      "operation": "floor",
+      "inputs": ["0000000000"],
+      "result": "0000000000"
+    },
+    {
+      "operation": "floor",
+      "inputs": ["8140000000"],
+      "result": "0000010000"
+    },
+    {
+      "operation": "floor",
+      "inputs": ["81c0000000"],
+      "result": "00fffeff00"
+    },
+    {
+      "operation": "floor",
+      "inputs": ["7d4ccccccd"],
+      "result": "0000000000"
+    },
+    {
+      "operation": "floor",
+      "inputs": ["7dcccccccd"],
+      "result": "00ffffff00"
+    },
+    {
+      "operation": "floor",
+      "inputs": ["907fff8000"],
+      "result": "0000ffff00"
+    },
+    {
+      "operation": "floor",
+      "inputs": ["90ffff8000"],
+      "result": "00ff000000"
+    },
+    {
+      "operation": "floor",
+      "inputs": ["9143504000"],
+      "result": "9143500000"
+    }
+  ],
+  "frames": [
+    {
+      "before": 0,
+      "after": 1
+    },
+    {
+      "before": 65535,
+      "after": 65536
+    },
+    {
+      "before": 65536,
+      "after": 65537
+    },
+    {
+      "before": 65755,
+      "after": 65756
+    },
+    {
+      "before": 16777215,
+      "after": 0
+    }
+  ],
+  "randomize": [
+    {
+      "frames": 0,
+      "argument": 0,
+      "seed": 0
+    },
+    {
+      "frames": 0,
+      "argument": 42,
+      "seed": 42
+    },
+    {
+      "frames": 0,
+      "argument": 65535,
+      "seed": 65535
+    },
+    {
+      "frames": 65535,
+      "argument": 0,
+      "seed": 65535
+    },
+    {
+      "frames": 65535,
+      "argument": 42,
+      "seed": 42
+    },
+    {
+      "frames": 65535,
+      "argument": 65535,
+      "seed": 65535
+    },
+    {
+      "frames": 65536,
+      "argument": 0,
+      "seed": 0
+    },
+    {
+      "frames": 65536,
+      "argument": 42,
+      "seed": 42
+    },
+    {
+      "frames": 65536,
+      "argument": 65535,
+      "seed": 65535
+    },
+    {
+      "frames": 65755,
+      "argument": 0,
+      "seed": 219
+    },
+    {
+      "frames": 65755,
+      "argument": 42,
+      "seed": 42
+    },
+    {
+      "frames": 65755,
+      "argument": 65535,
+      "seed": 65535
+    },
+    {
+      "frames": 16777215,
+      "argument": 0,
+      "seed": 65535
+    },
+    {
+      "frames": 16777215,
+      "argument": 42,
+      "seed": 42
+    },
+    {
+      "frames": 16777215,
+      "argument": 65535,
+      "seed": 65535
+    }
+  ],
+  "randomSequences": [
+    {
+      "initial": 0,
+      "seeds": [74, 5624, 28652, 51790, 17641, 12409, 13231, 9344]
+    },
+    {
+      "initial": 1,
+      "seeds": [149, 11249, 57305, 38044, 35283, 24819, 26463, 18689]
+    },
+    {
+      "initial": 42,
+      "seeds": [3224, 45263, 52412, 64291, 37698, 9333, 44679, 8612]
+    },
+    {
+      "initial": 219,
+      "seeds": [16499, 57833, 12107, 56118, 14556, 43182, 27411, 24252]
+    },
+    {
+      "initial": 65535,
+      "seeds": [65461, 59911, 36883, 13745, 47894, 53126, 52304, 56191]
+    }
+  ],
+  "randomTransitionsSha256": "0e44d5c0b739a6237422e5de3f226446c68cd11e354f5ffecf0d1e2db3164e20"
+}

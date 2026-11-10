@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test';
 
 import {
-  prepareFirstCup,
+  prepareCupMatch,
   prepareReplay,
   refreshPlayers,
   settleCupLeg
@@ -45,7 +45,7 @@ for (const reference of cases) {
         status: initial['p(24)'][i]! as Player['status']
       }))
     };
-    let fixture = prepareFirstCup(game);
+    let fixture = prepareCupMatch(game);
     for (const [index, leg] of reference.legs.entries()) {
       if (index > 0) {
         fixture = prepareReplay(game, fixture);

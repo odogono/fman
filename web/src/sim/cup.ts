@@ -1,23 +1,26 @@
-import type { MatchFixture } from './league';
+import { nextFixture, type MatchFixture } from './league';
 import { payWeeklyBills, type Game, type Player } from './management';
 import { createRng } from './rng';
 
 const clamp = (n: number) => Math.max(1, Math.min(20, n));
 const gate = (game: Game, opponent: number, home: boolean) =>
-  home ? game.homeGate : (5 - (Math.floor((opponent - 1) / 16) + 1)) * 10_000;
+  game.cupRound === 8
+    ? 100_000
+    : game.cupRound === 7
+      ? 50_000
+      : home
+        ? game.homeGate
+        : (5 - (Math.floor((opponent - 1) / 16) + 1)) * 10_000;
 
-export const prepareFirstCup = (game: Game): MatchFixture => {
-  if (
-    game.leagueMatches !== 1 ||
-    game.scheduleCounter !== 2 ||
-    game.cupRound !== 0
-  ) {
-    throw new RangeError('Only the first cup round is available');
+export const prepareCupMatch = (game: Game): MatchFixture => {
+  if (nextFixture(game) !== 'cup' || game.cupRound >= 8) {
+    throw new RangeError('No cup round is scheduled');
   }
+  const cupRound = game.cupRound + 1;
   const rng = createRng(game.seed);
   let opponent: number;
   do {
-    opponent = 56 + rng.int(1, 8);
+    opponent = (8 - cupRound) * 8 + rng.int(1, 8);
   } while (opponent === game.club);
   const opponentStrength = Array.from({ length: 5 }, () =>
     clamp(
@@ -31,8 +34,8 @@ export const prepareFirstCup = (game: Game): MatchFixture => {
   );
   const home = rng.int(1, 2) === 1;
   return {
-    game: { ...game, cupRound: 1, scheduleCounter: 0, seed: rng.seed },
-    gate: gate(game, opponent, home),
+    game: { ...game, cupRound, scheduleCounter: 0, seed: rng.seed },
+    gate: gate({ ...game, cupRound }, opponent, home),
     home,
     kind: 'cup',
     opponent,
@@ -78,7 +81,7 @@ export const settleCupLeg = (
 ) => {
   const credited = { ...game, cash: game.cash + fixture.gate };
   if (score[0] === score[1]) {
-    return { bills: undefined, game: credited, replay: true };
+    return { bills: undefined, cupWon: false, game: credited, replay: true };
   }
   const win = score[fixture.home ? 0 : 1]! > score[fixture.home ? 1 : 0]!;
   const adjust = (morale: number) =>
@@ -87,8 +90,8 @@ export const settleCupLeg = (
     );
   const billed = payWeeklyBills({
     ...credited,
-    cupFinished: !win,
+    cupFinished: !win || game.cupRound === 8,
     morale: adjust(adjust(game.morale))
   });
-  return { ...billed, replay: false };
+  return { ...billed, cupWon: win && game.cupRound === 8, replay: false };
 };

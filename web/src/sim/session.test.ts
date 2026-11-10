@@ -217,12 +217,9 @@ test('the first cup replays at the opposite ground, bills once, then returns thr
     session.submit('99');
     expect(session.screen).toBe('menu');
   }
-  const game = session.game;
-  expect(session.submit('99')).toEqual({
-    feature: 'Later cup rounds',
-    type: 'unavailable'
-  });
-  expect(session.game).toBe(game);
+  session.submit('99');
+  expect(session.screen).toBe('fixture');
+  expect(session.game!.cupRound).toBe(2);
 });
 
 test('after cup elimination, all remaining league matches lead to a season boundary before transfers', () => {

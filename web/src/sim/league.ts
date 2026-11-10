@@ -38,13 +38,13 @@ export const togglePickedPlayer = (game: Game, id: number): Game => {
 };
 
 export const nextFixture = (game: Game) => {
-  if (game.leagueMatches >= 15) {
+  if (game.leagueMatches >= 15 && game.cupFinished) {
     return 'season';
   }
   if ((game.scheduleCounter + 1) % 3 === 0 && !game.cupFinished) {
-    return game.cupRound === 0 ? 'cup' : 'later-cup';
+    return 'cup';
   }
-  return 'league';
+  return game.leagueMatches >= 15 ? 'season' : 'league';
 };
 
 export const prepareLeagueMatch = (game: Game) => {

@@ -1,5 +1,5 @@
 import {
-  prepareFirstCup,
+  prepareCupMatch,
   prepareReplay,
   refreshPlayers,
   settleCupLeg
@@ -37,6 +37,7 @@ import {
 } from './transfers';
 
 export type Screen =
+  | 'cup-celebration'
   | 'replay'
   | 'cup-result'
   | 'transfer'
@@ -88,6 +89,7 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
   let highlights: HighlightResult | undefined;
   let playback: Playback | undefined;
   let completion: MatchCompletion | undefined;
+  let cupWon = false;
   let bills: MatchCompletion['bills'] | undefined;
   let selectionError = '';
   let transfer: TransferOffer | undefined;
@@ -115,6 +117,9 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
     remaining = frames;
   };
   const skipPause = () => {
+    if (screen === 'cup-celebration') {
+      return;
+    }
     if (screen === 'highlights') {
       playback!.skipPause();
       finishHighlights();
@@ -219,18 +224,18 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
           screen = 'level';
         } else if (text === '99') {
           const next = nextFixture(game!);
-          if (next === 'season' || next === 'later-cup') {
+          if (next === 'season') {
             return {
-              feature:
-                next === 'season' ? 'Season progression' : 'Later cup rounds',
+              feature: 'Season progression',
               type: 'unavailable'
             };
           }
           fixture =
             next === 'league'
               ? prepareLeagueMatch(game!)
-              : prepareFirstCup(game!);
+              : prepareCupMatch(game!);
           game = fixture.game;
+          cupWon = false;
           completion = undefined;
           bills = undefined;
           screen = 'fixture';
@@ -289,7 +294,16 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
           const result = settleCupLeg(game!, fixture!, highlights!.score);
           game = result.game;
           bills = result.bills;
-          screen = result.replay ? 'replay' : 'cup-result';
+          cupWon = result.cupWon;
+          screen = result.replay
+            ? 'replay'
+            : cupWon
+              ? 'cup-celebration'
+              : 'cup-result';
+          if (cupWon) {
+            remaining = 90;
+            resume = 'cup-result';
+          }
           break;
         }
         completion = completeLeagueMatch(game!, fixture!, highlights!.score);
@@ -303,6 +317,8 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
         break;
       case 'cup-result':
         screen = 'bills';
+        break;
+      case 'cup-celebration':
         break;
       case 'other-matches':
         screen = 'table';
@@ -417,6 +433,21 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
     },
     get completion() {
       return completion;
+    },
+    get cupCelebrationStep() {
+      return cupWon
+        ? screen === 'cup-celebration'
+          ? Math.min(9, Math.floor((90 - remaining) / 10) + 1)
+          : 9
+        : 0;
+    },
+    get cupDisplayKey() {
+      return cupWon && (screen === 'cup-celebration' || screen === 'cup-result')
+        ? `${this.cupCelebrationStep}:${Math.floor(clock.frames / 16) % 2}`
+        : '';
+    },
+    get cupWon() {
+      return cupWon;
     },
     get fixture() {
       return fixture;

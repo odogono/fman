@@ -109,11 +109,7 @@ for (const reference of cases) {
       expect(completion.bills.rent).toBe(end.x);
     }
     expect(nextFixture(game)).toBe(
-      game.leagueMatches === 15
-        ? 'season'
-        : game.cupFinished
-          ? 'league'
-          : 'later-cup'
+      game.leagueMatches === 15 ? 'season' : game.cupFinished ? 'league' : 'cup'
     );
   });
 }

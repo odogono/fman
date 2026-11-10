@@ -19,7 +19,7 @@ test('the original schedule alternates league grounds independently of cup groun
   expect(second.game.scheduleCounter).toBe(1);
   const third = prepareLeagueMatch(second.game);
   expect(third.home).toBe(true);
-  expect(nextFixture(third.game)).toBe('later-cup');
+  expect(nextFixture(third.game)).toBe('cup');
   expect(() => prepareLeagueMatch(third.game)).toThrow();
   const eliminated = { ...third.game, cupFinished: true };
   expect(nextFixture(eliminated)).toBe('league');

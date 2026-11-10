@@ -3,9 +3,9 @@
 A web recreation of Kevin Toms' ZX Spectrum Football Manager. The first goal
 is the original game's behaviour and presentation; enhancements follow later.
 
-Currently supports setup, management, home/away league fixtures and the first
-cup round (including replays), with selection, highlights, tables, bills and
-transfers. Later cup rounds, season changes, name editing and saving remain
+Currently supports setup, management, home/away league fixtures and all eight
+cup rounds (including replays), with selection, highlights, tables, bills and
+transfers. Season changes, dismissal, name editing and saving remain
 in progress. Exact interpreter pacing and ROM-pixel rendering are not yet established.
 
 ```sh
@@ -20,5 +20,6 @@ See the [original-game analysis](docs/original-game-analysis.md),
 [first-match verification](docs/first-league-match.md), plus
 [transfer verification](docs/transfer-market.md),
 [first-cup verification](docs/first-cup-round.md) and
-[league continuation](docs/league-progression.md).
+[league continuation](docs/league-progression.md), plus
+[complete cup progression](docs/cup-progression.md).
 Original game files belong under gitignored `roms/` and must never be committed.

@@ -1,5 +1,6 @@
 import { teamStrength } from '../sim/league';
 import type { Session } from '../sim/session';
+import { paintCupVictory } from './cup-victory';
 import { paintSquad, type Paint } from './management-layouts';
 
 export const paintMatch = (session: Session, put: Paint) => {
@@ -31,7 +32,7 @@ export const paintMatch = (session: Session, put: Paint) => {
         0,
         0,
         fixture.kind === 'cup'
-          ? `F.A.Cup Match - Round ${game.cupRound}`
+          ? `F.A.Cup Match - Round ${game.cupRound === 7 ? 'Semi-Final' : game.cupRound === 8 ? 'Final' : game.cupRound}`
           : `League Match - Division ${game.division}`,
         { ink: fixture.kind === 'cup' ? 2 : 1 }
       );
@@ -111,7 +112,19 @@ export const paintMatch = (session: Session, put: Paint) => {
       put(0, 0, 'Replay-', { ink: 3 });
       prompt = 'Hit ENTER to continue';
       break;
+    case 'cup-celebration':
     case 'cup-result':
+      if (session.cupWon) {
+        paintCupVictory(
+          put,
+          session.cupCelebrationStep,
+          Math.floor(session.frames / 16) % 2 === 1
+        );
+        if (session.screen === 'cup-result') {
+          prompt = 'Hit ENTER to continue';
+        }
+        break;
+      }
       put(
         0,
         0,
@@ -169,7 +182,12 @@ export const paintMatch = (session: Session, put: Paint) => {
     }
   }
   if (session.screen !== 'highlights') {
-    put(21, 24, '(h=copy)');
+    put(21, 24, '(h=copy)', {
+      bright: false,
+      ink: 0,
+      inverse: false,
+      paper: 7
+    });
   }
   return { label, numeric, prompt };
 };

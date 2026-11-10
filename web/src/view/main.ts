@@ -1,5 +1,6 @@
 import { createSession } from '../sim/session';
 import { createBeeper } from './beeper';
+import { cupVictoryTones } from './cup-victory';
 import { createFrameSampler } from './frame-sampler';
 import { paintAttack } from './pitch';
 import { makeScreen } from './screen';
@@ -17,7 +18,7 @@ app.innerHTML = `
     </form>
   </section>
   <pre id="transcript" class="sr-only" aria-live="polite" aria-atomic="true"></pre>
-  <p class="build-note">Play league matches and the first cup round, buy players and manage your club.<br />Later cup rounds, season changes, name editing and saves are coming next.</p>
+  <p class="build-note">Play league and cup matches, buy players and manage your club.<br />Season changes, dismissal, name editing and saves are coming next.</p>
   <p id="notice" class="notice" role="status"></p>
 `;
 const screen = document.querySelector<HTMLElement>('#screen')!;
@@ -32,7 +33,7 @@ const context = canvas.getContext('2d')!;
 const beeper = createBeeper();
 let audioKey = '';
 
-const render = () => {
+const render = (clearInput = true) => {
   const display = makeScreen(session);
   const fragment = document.createDocumentFragment();
   for (const cell of display.cells) {
@@ -44,6 +45,10 @@ const render = () => {
     fragment.append(span);
   }
   const current = session.playback?.current;
+  if (session.screen === 'cup-celebration' && audioKey !== 'cup-victory') {
+    beeper.play(cupVictoryTones);
+    audioKey = 'cup-victory';
+  }
   const playing = session.screen === 'highlights' && Boolean(current);
   canvas.hidden = !playing;
   screen.hidden = playing;
@@ -75,7 +80,9 @@ const render = () => {
   prompt.textContent = display.prompt;
   input.setAttribute('aria-label', display.label);
   input.inputMode = display.numeric ? 'numeric' : 'text';
-  input.value = '';
+  if (clearInput) {
+    input.value = '';
+  }
   if (!display.paused) {
     input.focus({ preventScroll: true });
   }
@@ -116,9 +123,14 @@ const tick = (now: number) => {
   const elapsed = sampleFrames(now);
   const before = session.screen;
   const frame = session.playback?.key;
+  const cup = session.cupDisplayKey;
   session.advance(elapsed);
-  if (before !== session.screen || frame !== session.playback?.key) {
-    render();
+  if (
+    before !== session.screen ||
+    frame !== session.playback?.key ||
+    cup !== session.cupDisplayKey
+  ) {
+    render(before !== session.screen);
   }
   requestAnimationFrame(tick);
 };

@@ -158,7 +158,7 @@ These are static-source findings unless marked as observed below. `R(n)` means o
 
 - Except at the first league fixture before a cup round, reserves and injured players gain 10 energy, picked players lose 1, and energy is clamped to 1–20. Injured players recover to reserve status before a fresh random injury test; owned players can then become injured with probability 1/20 (6000–6100). Energy zero is not a trigger in this source.
 - Team energy is `clamp(INT(sum(picked energy)/11))` regardless of how many players are picked. Defence, midfield and attack are clamped sums of skill in their eight-slot categories. Morale is retained and clamped (6500–6630).
-- The selection screen offers adding when the picked count is **at most 11**; it forces removal only above 11 (6200–6330). Thus a team of 12 can be selected, and continuing from the summary has no exact-eleven check. Treat this as a source-derived quirk pending an explicit runtime probe.
+- The selection screen offers adding when the picked count is **at most 11**; it forces removal only above 11 (6200–6330). Adding a twelfth player therefore switches to forced removal; the removal prompt does not accept `99`. A depleted team can still proceed from the summary, which has no exact-eleven check. The [first-match implementation](first-league-match.md) corrects the earlier interpretation that a newly selected twelve-player team could proceed directly.
 - After any fixture, a win adds `INT((20-morale)/2)` and a loss halves morale. Cup progression or elimination applies another morale adjustment before the general result adjustment (4350–4374, 5204–5237). Drawn cup replays return to selection and can trigger recovery/injuries again.
 
 ### Highlights determine the score

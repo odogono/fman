@@ -82,12 +82,46 @@ test('copy and unavailable commands do not reset the current game', () => {
   const session = setup();
   const game = session.game;
   expect(session.submit('h')).toEqual({ type: 'copy' });
-  expect(session.submit('99')).toEqual({
-    feature: 'Match play',
+  expect(session.submit('keep')).toEqual({
+    feature: 'Saving',
     type: 'unavailable'
   });
   expect(session.game).toBe(game);
   session.submit('a');
   session.submit('99');
   expect(session.screen).toBe('menu');
+});
+
+test('plays the first league match through selection, highlights, table and bills', () => {
+  const session = setup();
+  session.submit('99');
+  expect(session.screen).toBe('fixture');
+  session.submit('');
+  expect(session.screen).toBe('team');
+  session.submit('c');
+  session.submit('15');
+  expect(session.game?.players.filter(p => p.status === 2)).toHaveLength(12);
+  session.submit('99');
+  expect(session.screen).toBe('selection');
+  expect(session.selectionError).toBe('PLAYER NO. OUT OF RANGE');
+  session.submit('1');
+  session.submit('99');
+  expect(session.screen).toBe('team');
+  session.submit('99');
+  expect(session.screen).toBe('highlights');
+  session.advance(1_000_000);
+  expect(session.screen).toBe('result');
+  session.submit('');
+  expect(session.screen).toBe('other-matches');
+  session.submit('');
+  expect(session.screen).toBe('table');
+  session.submit('');
+  expect(session.screen).toBe('bills');
+  expect(session.game!.cash).toBeGreaterThan(0);
+  session.submit('');
+  expect(session.screen).toBe('menu');
+  expect(session.submit('99')).toEqual({
+    feature: 'Next fixture',
+    type: 'unavailable'
+  });
 });

@@ -43,3 +43,7 @@ _Avoid_: Replay when referring to highlights; a cup replay is another match
 
 **Gate receipts**:
 The income credited to the managed club for a match, including a cup replay.
+
+**Home gate**:
+The current gate-receipt value used for the managed club's home fixtures.
+_Avoid_: Attendance when referring to this monetary value

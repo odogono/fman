@@ -1,5 +1,7 @@
 import { createSession } from '../sim/session';
+import { createBeeper } from './beeper';
 import { createFrameSampler } from './frame-sampler';
+import { paintAttack } from './pitch';
 import { makeScreen } from './screen';
 
 const app = document.querySelector<HTMLElement>('#app');
@@ -9,13 +11,13 @@ if (!app) {
 app.innerHTML = `
   <h1 class="sr-only">Football Manager</h1>
   <section class="machine" aria-label="ZX Spectrum Football Manager">
-    <div id="screen" aria-hidden="true"></div>
+    <div id="screen" aria-hidden="true"></div><canvas id="pitch" width="256" height="176" aria-hidden="true" hidden></canvas>
     <form id="entry" autocomplete="off">
       <label for="command" id="prompt"></label><input id="command" name="command" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="256" />
     </form>
   </section>
   <pre id="transcript" class="sr-only" aria-live="polite" aria-atomic="true"></pre>
-  <p class="build-note">Setup, squad sales and loans are available.<br />Matches, name editing and saves are coming next.</p>
+  <p class="build-note">Play the first league match and manage your club.<br />Further fixtures, buying players, name editing and saves are coming next.</p>
   <p id="notice" class="notice" role="status"></p>
 `;
 const screen = document.querySelector<HTMLElement>('#screen')!;
@@ -25,6 +27,10 @@ const prompt = document.querySelector<HTMLElement>('#prompt')!;
 const transcript = document.querySelector<HTMLElement>('#transcript')!;
 const notice = document.querySelector<HTMLElement>('#notice')!;
 const session = createSession();
+const canvas = document.querySelector<HTMLCanvasElement>('#pitch')!;
+const context = canvas.getContext('2d')!;
+const beeper = createBeeper();
+let audioKey = '';
 
 const render = () => {
   const display = makeScreen(session);
@@ -37,8 +43,30 @@ const render = () => {
     span.style.backgroundColor = `var(--${palette}-${cell.inverse ? cell.ink : cell.paper})`;
     fragment.append(span);
   }
+  const current = session.playback?.current;
+  const playing = session.screen === 'highlights' && Boolean(current);
+  canvas.hidden = !playing;
+  screen.hidden = playing;
+  if (playing && current) {
+    const game = session.game!;
+    paintAttack(
+      context,
+      current.attack,
+      current.index,
+      session.playback!.score,
+      game.clubs[game.club - 1]!.name,
+      game.clubs[session.fixture!.opponent - 1]!.name
+    );
+    if (audioKey !== session.playback!.key) {
+      beeper.play(current.frame.tones);
+      audioKey = session.playback!.key;
+    }
+  }
   screen.replaceChildren(fragment);
-  transcript.textContent = display.lines.join('\n') + '\n' + display.prompt;
+  const text = display.lines.join('\n') + '\n' + display.prompt;
+  if (transcript.textContent !== text) {
+    transcript.textContent = text;
+  }
   form.hidden = display.paused;
   prompt.textContent = display.prompt;
   input.setAttribute('aria-label', display.label);
@@ -51,6 +79,7 @@ const render = () => {
 
 form.addEventListener('submit', event => {
   event.preventDefault();
+  beeper.unlock();
   const effect = session.submit(input.value);
   notice.textContent = '';
   if (effect?.type === 'copy') {
@@ -82,8 +111,9 @@ const sampleFrames = createFrameSampler(performance.now());
 const tick = (now: number) => {
   const elapsed = sampleFrames(now);
   const before = session.screen;
+  const frame = session.playback?.key;
   session.advance(elapsed);
-  if (before !== session.screen) {
+  if (before !== session.screen || frame !== session.playback?.key) {
     render();
   }
   requestAnimationFrame(tick);

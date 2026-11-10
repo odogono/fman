@@ -21,7 +21,7 @@ The original menu accepts line input followed by Enter:
 
 The original explicit lower- or uppercase command forms are accepted, rather than arbitrary mixed case. Numeric prompts accept digits only; blank numeric input means zero. Accepted sale offers remove ownership and increase cash. Refusing an offer consumes the original additional random draw and can injure the player. Injured players cannot be sold.
 
-`99` from the main menu, `change` and `keep` retain their original menu positions, but report that match play, name editing or saving is unavailable and leave the game untouched. The build's supported scope is also stated outside the reproduced game screen. There is no persistence yet: reloading starts a new game.
+`99` from the main menu now enters the [first league-match flow](first-league-match.md). Further fixtures, `change` and `keep` retain their original menu positions, but report that the requested continuation, name editing or saving is unavailable and leave the game untouched. The build's supported scope is also stated outside the reproduced game screen. There is no persistence yet: reloading starts a new game.
 
 ## Boundaries and verification
 
@@ -45,7 +45,7 @@ Tests cover setup/state parity, ownership counts, club swapping, loan limits, re
 
 ## Fidelity still to establish
 
-This is the first usable management slice, not full-game parity. Match fixtures, picked-team changes before matches, highlights, buying players, weekly bills, cup/league progression, name editing and saves are still absent. Native browser line editing replaces the Spectrum's editor and mode cursor; arbitrary Unicode/control-code entry, exact long-input error behaviour and byte-for-byte screen formatting have not been reproduced. The redraw font is a separate asset, not a claim of ROM-pixel equality. Prompt beeps and cycle-accurate BASIC execution/pacing also remain to be implemented.
+This is the first usable management slice, not full-game parity. The [first league-match increment](first-league-match.md) adds its fixture, picked-team changes, highlights, results/table and bills. Buying players, further fixtures, cup/season progression, name editing and saves are still absent. Native browser line editing replaces the Spectrum's editor and mode cursor; arbitrary Unicode/control-code entry, exact long-input error behaviour and byte-for-byte screen formatting have not been reproduced. The redraw font is a separate asset, not a claim of ROM-pixel equality. Prompt beeps and cycle-accurate BASIC execution/pacing also remain to be implemented.
 
 View timing converts elapsed browser time into explicit 50Hz frames, including time spent in a background tab. It does not estimate the original interpreter's execution cost. Player draws at setup are verified, but later live-input RNG seeds cannot yet be claimed to match a physical Spectrum at identical wall-clock input times.
 

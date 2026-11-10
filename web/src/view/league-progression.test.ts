@@ -32,7 +32,7 @@ test('an away league fixture shows the home club and its rank first', () => {
     game: fixture.game,
     screen: 'fixture'
   });
-  expect(display.lines[2]).toContain('Bury v Arsenal');
+  expect(display.lines[2]).toContain('Bury       v Arsenal   ');
   expect(display.lines[4]!.slice(0, 10)).toBe('Lge.Pos. 2');
   expect(display.lines[4]![20]).toBe('8');
   const team = makeScreen({

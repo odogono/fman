@@ -21,7 +21,9 @@ test('cup fixture, replay and score keep home/away order while the strength summ
   const club = session.game!.clubs[session.game!.club - 1]!.name;
   const opponent = session.game!.clubs[fixture.opponent - 1]!.name;
   expect(makeScreen(session).lines[2]).toContain(
-    fixture.home ? `${club} v ${opponent}` : `${opponent} v ${club}`
+    fixture.home
+      ? `${club.padEnd(10)} v ${opponent.padEnd(10)}`
+      : `${opponent.padEnd(10)} v ${club.padEnd(10)}`
   );
   session.submit('');
   const team = makeScreen(session);
@@ -36,6 +38,8 @@ test('cup fixture, replay and score keep home/away order while the strength summ
   expect(makeScreen(session).lines[0]).toContain('Replay-');
   session.submit('');
   expect(makeScreen(session).lines[2]).toContain(
-    fixture.home ? `${opponent} v ${club}` : `${club} v ${opponent}`
+    fixture.home
+      ? `${opponent.padEnd(10)} v ${club.padEnd(10)}`
+      : `${club.padEnd(10)} v ${opponent.padEnd(10)}`
   );
 });

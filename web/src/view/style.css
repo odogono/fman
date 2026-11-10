@@ -77,7 +77,7 @@ main {
 .machine:has(#entry[hidden]) {
   padding-bottom: calc(2 * var(--cell));
 }
-.machine:has(#screen.cleared) {
+.machine:has(#screen.full-screen) {
   padding-bottom: 0;
 }
 #reload {

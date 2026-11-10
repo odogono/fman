@@ -1,4 +1,6 @@
+import type { Club } from '../sim/catalogue';
 import type { Attack, SpriteDraw } from '../sim/highlights';
+import { clubInk, clubText } from '../sim/names';
 
 // BASIC DATA 261: fifteen 8×8 UDGs, transcribed for the recreated view.
 const sprites = [
@@ -199,8 +201,8 @@ export const paintAttack = (
   attack: Attack,
   index: number,
   score: readonly number[],
-  home: string,
-  away: string
+  home: Club,
+  away: Club
 ) => {
   context.putImageData(
     new ImageData(rasterizeAttack(attack, index), 256, 176),
@@ -238,9 +240,20 @@ export const paintAttack = (
   }
   context.fillStyle = '#d7d7d7';
   context.fillRect(0, 32, 256, 8);
-  context.fillStyle = '#000';
-  context.fillText(home, 0, 32);
+  const palette = [
+    '#000',
+    '#0000d7',
+    '#d70000',
+    '#d700d7',
+    '#00d700',
+    '#00d7d7',
+    '#d7d700',
+    '#d7d7d7'
+  ];
+  context.fillStyle = palette[clubInk(home)]!;
+  context.fillText(clubText(home), 0, 32);
   context.fillText(String(score[0]), 96, 32);
-  context.fillText(away, 128, 32);
+  context.fillStyle = palette[clubInk(away, clubInk(home))]!;
+  context.fillText(clubText(away), 128, 32);
   context.fillText(String(score[1]), 224, 32);
 };

@@ -35,7 +35,11 @@ export const playerNames = [
   'G.Shaw'
 ] as const;
 
-export type Club = Readonly<{ ink: number; name: string }>;
+export type Club = Readonly<{
+  ink: number | null;
+  name: string;
+  width?: number;
+}>;
 
 // Original DATA order (9230–9260). Derby's repeated colour prefix leaves
 // only eight visible characters in the original twelve-byte string array.
@@ -112,5 +116,6 @@ const inks = [
 ];
 export const clubs: readonly Club[] = names.map((name, index) => ({
   ink: inks[index]!,
-  name
+  name,
+  width: index === 22 ? 8 : 10
 }));

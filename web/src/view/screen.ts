@@ -1,4 +1,5 @@
 import { clubs, levels } from '../sim/catalogue';
+import { clubInk, clubText } from '../sim/names';
 import type { Session } from '../sim/session';
 import { paintBills, paintDismissal } from './bills';
 import {
@@ -9,10 +10,13 @@ import {
   type Style
 } from './management-layouts';
 import { paintMatch } from './match-layouts';
+import { paintNames } from './name-layouts';
 import { paintSeason } from './season-layouts';
 
 export const makeScreen = (session: Session) => {
-  const rows = session.screen === 'cleared' ? 24 : 22;
+  const fault =
+    session.screen === 'names' && session.nameEditor!.phase === 'fault';
+  const rows = session.screen === 'cleared' || fault ? 24 : 22;
   const cells: Cell[] = Array.from({ length: rows * 32 }, () => ({
     bright: false,
     ink: 0,
@@ -35,11 +39,13 @@ export const makeScreen = (session: Session) => {
       if (row >= rows) {
         break;
       }
-      cells[row * 32 + column] = {
-        ...cells[row * 32 + column]!,
-        ...style,
-        text: character
-      };
+      if (row >= 0) {
+        cells[row * 32 + column] = {
+          ...cells[row * 32 + column]!,
+          ...style,
+          text: character
+        };
+      }
       column++;
       if (column === 32) {
         row++;
@@ -68,6 +74,9 @@ export const makeScreen = (session: Session) => {
   let numeric = false;
   const game = session.game;
   switch (session.screen) {
+    case 'names':
+      ({ label, numeric, prompt } = paintNames(session, put));
+      break;
     case 'cleared':
       put(23, 0, '© 1982 Sinclair Research Ltd');
       break;
@@ -98,7 +107,7 @@ export const makeScreen = (session: Session) => {
       const offset = (session.page - 1) * 16;
       clubs.slice(offset, offset + 16).forEach((club, index) => {
         put(index + 2, 0, String(offset + index + 1));
-        put(index + 2, 16, club.name, { ink: club.ink });
+        put(index + 2, 16, club.name, { ink: clubInk(club) });
       });
       put(
         18,
@@ -169,7 +178,11 @@ export const makeScreen = (session: Session) => {
     }
     case 'sale': {
       const offer = session.offer!;
-      put(0, 0, `${offer.buyer} have offered £${offer.amount}`, { ink: 1 });
+      const buyer = game!.clubs[offer.buyerId - 1]!;
+      const ink = clubInk(buyer);
+      put(0, 0, clubText(buyer), { ink });
+      put(0, clubText(buyer).length, ' have offered £', { ink: 1 });
+      put(0, clubText(buyer).length + 15, String(offer.amount));
       put(2, 0, `for ${game!.players[offer.playerId - 1]!.name}`);
       put(4, 0, `He is worth £${game!.players[offer.playerId - 1]!.value}`);
       prompt = 'Do you accept? ';
@@ -250,7 +263,7 @@ export const makeScreen = (session: Session) => {
         .join('')
     ),
     numeric,
-    paused: session.paused || session.screen === 'cleared',
+    paused: session.paused || session.screen === 'cleared' || fault,
     prompt
   };
 };

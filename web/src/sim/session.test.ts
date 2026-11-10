@@ -340,3 +340,57 @@ test('a club beyond the debt cap is dismissed and NEW clears the session before 
   expect(session.game!.seed).toBe(350);
   expect(session.reload()).toBe(false);
 });
+
+test('change edits the live club and unowned pool players, preserving the RNG and confirmation flow', () => {
+  const session = setup();
+  const before = session.game!;
+  session.submit('CHANGE');
+  expect(session.screen).toBe('names');
+  session.submit('y');
+  for (let i = 0; i < 3; i++) {
+    session.submit('99');
+  }
+  session.submit('64');
+  session.submit('');
+  expect(session.nameEditor!.phase).toBe('name');
+  session.submit('ABCDEFGHIJK');
+  expect(session.nameEditor!.error).toContain('TOO LONG');
+  session.submit('New Club');
+  expect(session.nameEditor!.phase).toBe('more');
+  expect(session.submit('H')).toEqual({ type: 'copy' });
+  session.submit('y');
+  expect(session.nameEditor!.page).toBe(4);
+  session.submit('49');
+  session.submit(String.fromCharCode(16, 4) + 'Greens');
+  session.submit('n');
+  expect(session.nameEditor!.kind).toBe('player');
+  session.submit('Y');
+  session.submit('99');
+  session.submit('99');
+  session.submit('22');
+  session.submit('R.New');
+  session.submit('n');
+  expect(session.screen).toBe('menu');
+  expect(session.game!.clubs[63]!.name).toBe('New Club');
+  expect(session.game!.clubs[63]!.ink).toBeNull();
+  expect(session.game!.clubs[48]!.ink).toBe(4);
+  expect(session.game!.players[21]!.name).toBe('R.New');
+  expect(session.game!.players[21]!.status).toBe(0);
+  expect(session.game!.seed).toBe(before.seed);
+  expect(before.clubs[63]!.name).toBe('Arsenal');
+  expect(session.game!.cash).toBe(before.cash);
+});
+
+test('truncated name colour input stops at the original BASIC error without clearing the game', () => {
+  const session = setup();
+  const game = session.game;
+  session.submit('change');
+  session.submit('y');
+  session.submit('1');
+  session.submit(String.fromCharCode(16, 2));
+  expect(session.nameEditor!.phase).toBe('fault');
+  expect(session.nameEditor!.error).toBe('3 Subscript wrong, 9473:1');
+  session.submit('Town');
+  expect(session.game).toBe(game);
+  expect(session.reload()).toBe(false);
+});

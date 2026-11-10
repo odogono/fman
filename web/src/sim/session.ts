@@ -25,6 +25,7 @@ import {
   type Game,
   type SaleOffer
 } from './management';
+import { createNameEditor, type NameEditor } from './name-editor';
 import {
   createPlayback,
   type HighlightResult,
@@ -39,6 +40,7 @@ import {
 } from './transfers';
 
 export type Screen =
+  | 'names'
   | 'dismissal'
   | 'cleared'
   | 'end-season'
@@ -98,6 +100,7 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
   let playback: Playback | undefined;
   let completion: MatchCompletion | undefined;
   let season: SeasonCompletion | undefined;
+  let nameEditor: NameEditor | undefined;
   let cupWon = false;
   let bills: MatchCompletion['bills'] | undefined;
   let selectionError = '';
@@ -124,6 +127,7 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
     playback = undefined;
     completion = undefined;
     season = undefined;
+    nameEditor = undefined;
     cupWon = false;
     bills = undefined;
     selectionError = '';
@@ -184,7 +188,11 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
     if (remaining > 0 || screen === 'highlights' || screen === 'cleared') {
       return;
     }
-    if (screen !== 'manager' && (text === 'h' || text === 'H')) {
+    if (
+      screen !== 'manager' &&
+      screen !== 'names' &&
+      (text === 'h' || text === 'H')
+    ) {
       return { type: 'copy' };
     }
     const number = numericInput(text);
@@ -275,13 +283,25 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
           completion = undefined;
           bills = undefined;
           screen = 'fixture';
-        } else if (isCommand(text, 'keep') || isCommand(text, 'change')) {
+        } else if (isCommand(text, 'change')) {
+          nameEditor = createNameEditor(game!);
+          screen = 'names';
+        } else if (isCommand(text, 'keep')) {
           return {
-            feature: isCommand(text, 'keep') ? 'Saving' : 'Name editing',
+            feature: 'Saving',
             type: 'unavailable'
           };
         }
         break;
+      case 'names': {
+        const effect = nameEditor!.submit(text);
+        game = nameEditor!.game;
+        if (nameEditor!.done) {
+          nameEditor = undefined;
+          screen = 'menu';
+        }
+        return effect;
+      }
       case 'fixture':
         game = refreshPlayers(game!);
         screen = 'team';
@@ -511,6 +531,9 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
     },
     get message() {
       return message;
+    },
+    get nameEditor() {
+      return nameEditor;
     },
     get offer() {
       return offer;

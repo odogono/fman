@@ -2,6 +2,7 @@ import { expect, test } from 'bun:test';
 
 import { createSession } from '../sim/session';
 import { viewOn } from '../sim/view-on';
+import { submitInput } from '../test/input';
 import { makeScreen } from './screen';
 
 test('the market displays its player, current asking value and bid/copy prompts', () => {
@@ -9,11 +10,11 @@ test('the market displays its player, current asking value and bid/copy prompts'
   session.advance(5);
   session.skipPause();
   for (const input of ['alex', '1', '1', '0', '99', '', '99']) {
-    session.submit(input);
+    submitInput(session, input);
   }
   session.advance(1_000_000);
   for (let i = 0; i < 4; i++) {
-    session.submit('');
+    submitInput(session, '');
   }
   const player =
     session.view.game!.players[viewOn(session, 'transfer').playerId - 1]!;
@@ -24,8 +25,8 @@ test('the market displays its player, current asking value and bid/copy prompts'
   expect(display.lines.join('\n')).toContain('Type your bid (£)');
   expect(display.lines[21]).toContain('(h=copy)');
   expect(display.numeric).toBe(true);
-  session.submit('0');
-  session.submit('');
+  submitInput(session, '0');
+  submitInput(session, '');
   const changed = session.view.game!.players[player.id - 1]!;
   expect(makeScreen(session.view).lines.join('\n')).toContain(
     `£${changed.value}`

@@ -1,40 +1,107 @@
-import type { HighlightFrame } from '../sim/highlights';
+import { beeperSignal, type SoundEvent } from '../sim/beeper';
+import { spectrumClockHz } from '../sim/frame-clock';
+import { createSoundScheduler, type Signal } from './sound-scheduler';
+
+/** Integrate the one-bit pulse over each output sample (including partial edges). */
+export const sampleBeeper = (signal: Signal, sampleRate: number) => {
+  const samples = new Float32Array(
+    Math.ceil((signal.durationT * sampleRate) / spectrumClockHz)
+  );
+  const sampleT = spectrumClockHz / sampleRate;
+  let edge = 0;
+  let high = false;
+  for (let i = 0; i < samples.length; i++) {
+    let t = i * sampleT;
+    const end = Math.min(signal.durationT, (i + 1) * sampleT);
+    let area = 0;
+    while (t < end) {
+      const next = Math.min(end, signal.edges[edge] ?? Infinity);
+      if (high) {
+        area += next - t;
+      }
+      t = next;
+      if (t === signal.edges[edge]) {
+        high = !high;
+        edge++;
+      }
+    }
+    samples[i] = (0.05 * area) / sampleT;
+  }
+  return samples;
+};
 
 export const createBeeper = () => {
   let context: AudioContext | undefined;
+  let scheduler: ReturnType<typeof createSoundScheduler> | undefined;
   let muted = false;
+  let click: AudioBufferSourceNode | undefined;
+  let clickEnd = 0;
+  const sources = new Set<AudioBufferSourceNode>();
+  const play = (signal: Signal, when: number, offset: number) => {
+    const audio = context!;
+    const samples = sampleBeeper(signal, audio.sampleRate);
+    const buffer = audio.createBuffer(1, samples.length, audio.sampleRate);
+    buffer.copyToChannel(samples, 0);
+    const source = audio.createBufferSource();
+    source.buffer = buffer;
+    source.connect(audio.destination);
+    sources.add(source);
+    source.onended = () => {
+      sources.delete(source);
+      source.disconnect();
+    };
+    source.start(when, offset);
+    return { source, stop: () => source.stop() };
+  };
+  const reset = () => {
+    scheduler?.reset();
+    for (const source of sources) {
+      source.stop();
+    }
+    sources.clear();
+    click = undefined;
+    clickEnd = 0;
+  };
   return {
-    set muted(value: boolean) {
-      muted = value;
-    },
-    play: (tones: HighlightFrame['tones']) => {
-      if (muted || !context || context.state !== 'running') {
+    click: () => {
+      if (muted || context?.state !== 'running') {
         return;
       }
-      let when = context.currentTime;
-      for (const tone of tones) {
-        const oscillator = context.createOscillator();
-        const gain = context.createGain();
-        oscillator.type = 'square';
-        oscillator.frequency.value = 261.625_565 * 2 ** (tone.pitch / 12);
-        gain.gain.value = 0.025;
-        oscillator.connect(gain);
-        gain.connect(context.destination);
-        oscillator.start(when);
-        when += tone.duration;
-        oscillator.stop(when);
-        oscillator.onended = () => {
-          oscillator.disconnect();
-          gain.disconnect();
-        };
+      click?.stop();
+      const signal = beeperSignal(200, 0, 0);
+      click = play(signal, context.currentTime, 0).source;
+      clickEnd = context.currentTime + signal.durationT / spectrumClockHz;
+    },
+    set muted(value: boolean) {
+      if (muted !== value) {
+        reset();
+      }
+      muted = value;
+    },
+    reset,
+    restart: () => scheduler?.reset(),
+    sync: (events: readonly SoundEvent[], nowT: number) => {
+      if (!muted && context?.state === 'running') {
+        scheduler?.sync(events, nowT);
       }
     },
     unlock: () => {
       if (typeof AudioContext === 'undefined') {
         return;
       }
-      context ??= new AudioContext();
-      void context.resume().catch(() => {});
+      if (!context) {
+        context = new AudioContext();
+        scheduler = createSoundScheduler({
+          now: () => Math.max(context!.currentTime, clickEnd),
+          play
+        });
+        context.addEventListener('statechange', () => {
+          if (context?.state !== 'running') {
+            reset();
+          }
+        });
+      }
+      return context.resume().catch(() => {});
     }
   };
 };

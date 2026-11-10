@@ -1,5 +1,6 @@
 import { expect, test } from 'bun:test';
 
+import { submitInput } from '../test/input';
 import { prepareCupMatch } from './cup';
 import { createNewGame } from './management';
 import { renameClub, renamePlayer } from './names';
@@ -15,7 +16,7 @@ const setup = () => {
   s.advance(5);
   s.skipPause();
   for (const text of ['alex', '1', '1', '0']) {
-    s.submit(text);
+    submitInput(s, text);
   }
   return s;
 };
@@ -80,7 +81,7 @@ test('invalid saves are rejected before a live session changes', () => {
 test('saving waits for download acknowledgement; continuation and load share line 100', () => {
   const s = setup();
   const before = s.view.game;
-  const effect = s.submit('KEEP');
+  const effect = submitInput(s, 'KEEP');
   expect(effect?.type).toBe('save');
   if (effect?.type !== 'save') {
     throw new Error('Expected save');
@@ -97,8 +98,8 @@ test('saving waits for download acknowledgement; continuation and load share lin
   loaded.load(encodeSave(before!, s.view.frames));
   expect(loaded.view.game).toEqual(s.view.game);
   for (const text of ['99', '', '99']) {
-    s.submit(text);
-    loaded.submit(text);
+    submitInput(s, text);
+    submitInput(loaded, text);
   }
   s.advance(1_000_000);
   loaded.advance(1_000_000);
@@ -109,7 +110,7 @@ test('saving waits for download acknowledgement; continuation and load share lin
 for (const answer of ['n', '', 'Yes', 'h', 'H']) {
   test(`save continuation ${JSON.stringify(answer)} runs NEW`, () => {
     const s = setup();
-    s.submit('keep');
+    submitInput(s, 'keep');
     s.saved();
     s.submit(answer);
     expect(s.view.screen).toBe('cleared');
@@ -120,9 +121,9 @@ for (const answer of ['n', '', 'Yes', 'h', 'H']) {
 test('a save can be loaded after clearing and replaces transient match state', () => {
   const s = setup();
   const data = encodeSave(s.view.game!, 999);
-  s.submit('99');
-  s.submit('');
-  s.submit('99');
+  submitInput(s, '99');
+  submitInput(s, '');
+  submitInput(s, '99');
   s.load(data);
   expect(s.view.screen).toBe('menu');
   expect(Object.keys(s.view).sort()).toEqual([
@@ -131,9 +132,9 @@ test('a save can be loaded after clearing and replaces transient match state', (
     'paused',
     'screen'
   ]);
-  s.submit('keep');
+  submitInput(s, 'keep');
   s.saved();
-  s.submit('n');
+  submitInput(s, 'n');
   s.load(data);
   expect(s.view.game!.seed).toBe(999);
   expect(s.view.frames).toBe(999);
@@ -164,7 +165,7 @@ test('a midseason cup campaign and league table produce the same next fixture af
 for (const answer of ['y', 'Y', 'yes', 'YES']) {
   test(`save continuation ${answer} resumes with a frame-based seed`, () => {
     const s = setup();
-    s.submit('keep');
+    submitInput(s, 'keep');
     s.saved();
     s.advance(65_540);
     s.submit(answer);

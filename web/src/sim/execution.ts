@@ -1,6 +1,9 @@
+import { beepRegisters, beeperT } from './beeper';
 import costs from './execution-costs.json';
 import { spectrumFrameT } from './frame-clock';
 import type { HighlightFrame, SpriteDraw } from './highlights';
+
+export { beepRegisters, beeperT } from './beeper';
 
 type Budget = readonly number[];
 const budgets: Readonly<Record<string, Budget>> = costs;
@@ -48,33 +51,6 @@ export const executionBudget = (from: string, to: string): Budget => {
     }
   }
   throw new RangeError(`Unmeasured execution statement ${from}`);
-};
-
-/** ROM BEEP operand quantization; the playback clock accounts for its DI span. */
-export const beepRegisters = (duration: number, pitch: number) => {
-  const frequency = 261.625_565_300_598_6 * 2 ** (pitch / 12);
-  return {
-    de: Math.round(duration * frequency) - 1,
-    hl: Math.round(437_500 / frequency - 30.125)
-  };
-};
-
-const ioDelay = (t: number) => {
-  const phase =
-    (((t % spectrumFrameT) + spectrumFrameT) % spectrumFrameT) - 14_335;
-  return phase >= 0 && phase < 192 * 224 && phase % 224 < 128
-    ? Math.max(0, 6 - (phase % 8))
-    : 0;
-};
-export const beeperT = (hl: number, de: number, startT: number): number => {
-  let t = startT + 221 - 16 * (hl % 4);
-  for (let edge = 0; edge < 2 * (de + 1); edge++) {
-    t += ioDelay(t + 1);
-    if (edge < 2 * de + 1) {
-      t += 4 * hl + 118;
-    }
-  }
-  return t + 68 - startT;
 };
 
 type Event = Omit<HighlightFrame, 'duration'> & { t: number };

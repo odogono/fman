@@ -1,5 +1,6 @@
 import { expect, test } from 'bun:test';
 
+import { submitInput } from '../test/input';
 import { createSession } from './session';
 import { viewOn } from './view-on';
 
@@ -7,10 +8,10 @@ const setup = () => {
   const session = createSession(2 ** 24 - 5);
   session.advance(5);
   session.skipPause();
-  session.submit('alex');
-  session.submit('1');
-  session.submit('1');
-  session.submit('0');
+  submitInput(session, 'alex');
+  submitInput(session, '1');
+  submitInput(session, '1');
+  submitInput(session, '0');
   return session;
 };
 
@@ -20,25 +21,25 @@ test('title timing, manager limit and club paging follow the original setup', ()
   expect(session.view.screen).toBe('title');
   session.advance(1);
   expect(session.view.screen).toBe('manager');
-  session.submit('x'.repeat(21));
+  submitInput(session, 'x'.repeat(21));
   expect(session.view.screen).toBe('message');
   session.advance(205);
-  session.submit('alex');
+  submitInput(session, 'alex');
   expect(session.view.screen).toBe('clubs');
-  session.submit('17');
+  submitInput(session, '17');
   expect(session.view.screen).toBe('clubs');
-  session.submit('99');
+  submitInput(session, '99');
   expect(viewOn(session, 'clubs').page).toBe(2);
-  session.submit('17');
+  submitInput(session, '17');
   expect(session.view.screen).toBe('level');
-  session.submit('8');
+  submitInput(session, '8');
   expect(session.view.screen).toBe('level');
-  session.submit('7');
-  session.submit('1');
+  submitInput(session, '7');
+  submitInput(session, '1');
   expect(session.view.screen).toBe('message');
   session.advance(5);
   session.skipPause();
-  session.submit('7');
+  submitInput(session, '7');
   expect(session.view.screen).toBe('menu');
   expect(session.view.game?.clubs[63]?.name).toBe('Blackburn');
   expect(session.view.game?.level).toBe(7);
@@ -46,16 +47,16 @@ test('title timing, manager limit and club paging follow the original setup', ()
 
 test('line input requires Enter and preserves the original command cases', () => {
   const session = setup();
-  session.submit('s');
+  submitInput(session, 's');
   expect(session.view.screen).toBe('status');
-  session.submit('');
-  session.submit('LeVeL');
+  submitInput(session, '');
+  submitInput(session, 'LeVeL');
   expect(session.view.screen).toBe('menu');
-  session.submit('LEVEL');
+  submitInput(session, 'LEVEL');
   expect(session.view.screen).toBe('level');
-  session.submit('3');
+  submitInput(session, '3');
   expect(session.view.screen).toBe('message');
-  session.submit('');
+  submitInput(session, '');
   expect(session.view.game?.level).toBe(3);
   expect(session.view.screen).toBe('menu');
 });
@@ -64,18 +65,18 @@ test('management commands update finances, retry errors and do not reseed on men
   const session = setup();
   const seed = session.view.game!.seed;
   session.advance(100);
-  session.submit('l');
-  session.submit('not a number');
+  submitInput(session, 'l');
+  submitInput(session, 'not a number');
   expect(session.view.screen).toBe('borrow');
-  session.submit('250001');
+  submitInput(session, '250001');
   expect(session.view.screen).toBe('message');
-  session.submit('');
+  submitInput(session, '');
   expect(session.view.screen).toBe('borrow');
-  session.submit('40000');
+  submitInput(session, '40000');
   expect(session.view.game?.debt).toBe(40_000);
-  session.submit('');
-  session.submit('p');
-  session.submit('10000');
+  submitInput(session, '');
+  submitInput(session, 'p');
+  submitInput(session, '10000');
   expect(session.view.game?.cash).toBe(130_000);
   expect(session.view.game?.debt).toBe(30_000);
   expect(session.view.game?.seed).toBe(seed);
@@ -84,84 +85,84 @@ test('management commands update finances, retry errors and do not reseed on men
 test('copy and saving requests do not reset the current game', () => {
   const session = setup();
   const game = session.view.game;
-  expect(session.submit('h')).toEqual({ type: 'copy' });
-  expect(session.submit('keep')?.type).toBe('save');
+  expect(submitInput(session, 'h')).toEqual({ type: 'copy' });
+  expect(submitInput(session, 'keep')?.type).toBe('save');
   expect(session.view.game).toBe(game);
-  session.submit('a');
-  session.submit('99');
+  submitInput(session, 'a');
+  submitInput(session, '99');
   expect(session.view.screen).toBe('menu');
 });
 
 test('plays the first league match through selection, highlights, table and bills', () => {
   const session = setup();
-  session.submit('99');
+  submitInput(session, '99');
   expect(session.view.screen).toBe('fixture');
-  session.submit('');
+  submitInput(session, '');
   expect(session.view.screen).toBe('team');
-  session.submit('c');
-  session.submit('15');
+  submitInput(session, 'c');
+  submitInput(session, '15');
   expect(session.view.game?.players.filter(p => p.status === 2)).toHaveLength(
     12
   );
-  session.submit('99');
+  submitInput(session, '99');
   expect(session.view.screen).toBe('selection');
   expect(viewOn(session, 'selection').error).toBe('PLAYER NO. OUT OF RANGE');
-  session.submit('1');
-  session.submit('99');
+  submitInput(session, '1');
+  submitInput(session, '99');
   expect(session.view.screen).toBe('team');
-  session.submit('99');
+  submitInput(session, '99');
   expect(session.view.screen).toBe('highlights');
   session.advance(1_000_000);
   expect(session.view.screen).toBe('result');
-  session.submit('');
+  submitInput(session, '');
   expect(session.view.screen).toBe('other-matches');
-  session.submit('');
+  submitInput(session, '');
   expect(session.view.screen).toBe('table');
-  session.submit('');
+  submitInput(session, '');
   expect(session.view.screen).toBe('bills');
   expect(session.view.game!.cash).toBeGreaterThan(0);
-  session.submit('');
+  submitInput(session, '');
   expect(session.view.screen).toBe('transfer');
-  session.submit('99');
+  submitInput(session, '99');
   expect(session.view.screen).toBe('menu');
-  session.submit('99');
+  submitInput(session, '99');
   expect(session.view.screen).toBe('fixture');
   expect(viewOn(session, 'fixture').fixture.kind).toBe('cup');
 });
 
 test('transfer bids retry the same player; joining and declining return through the original reseed boundary', () => {
   const session = setup();
-  session.submit('99');
-  session.submit('');
-  session.submit('99');
+  submitInput(session, '99');
+  submitInput(session, '');
+  submitInput(session, '99');
   session.advance(1_000_000);
   for (let i = 0; i < 4; i++) {
-    session.submit('');
+    submitInput(session, '');
   }
   expect(session.view.screen).toBe('transfer');
   const id = viewOn(session, 'transfer').playerId;
   const cash = session.view.game!.cash;
   const seed = session.view.game!.seed;
-  expect(session.submit('h')).toEqual({ type: 'copy' });
-  session.submit('no');
+  expect(submitInput(session, 'h')).toEqual({ type: 'copy' });
+  submitInput(session, 'no');
   expect(session.view.game!.seed).toBe(seed);
-  session.submit(String(cash + 1));
+  submitInput(session, String(cash + 1));
   expect(viewOn(session, 'message').message).toEqual({
     kind: 'text',
     text: "You haven't enough money!"
   });
   expect(session.view.game!.seed).toBe(seed);
-  session.submit('');
+  submitInput(session, '');
   expect(session.view.screen).toBe('transfer');
-  session.submit('');
+  submitInput(session, '');
   expect(viewOn(session, 'message').message).toEqual({
     kind: 'text',
     text: 'YOUR BID IS REFUSED'
   });
-  session.submit('');
+  submitInput(session, '');
   expect(viewOn(session, 'transfer').playerId).toBe(id);
   const owned = session.view.game!.players.filter(p => p.status > 0).length;
-  session.submit(String(cash));
+  submitInput(session, String(cash));
   expect(session.view.game!.players.filter(p => p.status > 0)).toHaveLength(
     owned + 1
   );
@@ -175,57 +176,57 @@ test('transfer bids retry the same player; joining and declining return through 
 
 test('the first cup replays at the opposite ground, bills once, then returns through transfers', () => {
   const session = setup();
-  session.submit('99');
-  session.submit('');
-  session.submit('99');
+  submitInput(session, '99');
+  submitInput(session, '');
+  submitInput(session, '99');
   session.advance(1_000_000);
   for (let i = 0; i < 4; i++) {
-    session.submit('');
+    submitInput(session, '');
   }
   session.advance((65_536 - (session.view.frames % 65_536)) % 65_536);
-  session.submit('99');
+  submitInput(session, '99');
   expect(session.view.game!.seed).toBe(0);
-  session.submit('99');
+  submitInput(session, '99');
   expect(viewOn(session, 'fixture').fixture.kind).toBe('cup');
   const home = viewOn(session, 'fixture').fixture.home;
-  session.submit('');
-  session.submit('99');
+  submitInput(session, '');
+  submitInput(session, '99');
   session.advance(1_000_000);
   expect(viewOn(session, 'result').score).toEqual([1, 1]);
-  session.submit('');
+  submitInput(session, '');
   expect(session.view.screen).toBe('replay');
   const cash = session.view.game!.cash;
-  session.submit('');
+  submitInput(session, '');
   expect(viewOn(session, 'fixture').fixture.home).toBe(!home);
   expect(session.view.screen).toBe('fixture');
-  session.submit('');
-  session.submit('99');
+  submitInput(session, '');
+  submitInput(session, '99');
   session.advance(1_000_000);
   expect(viewOn(session, 'result').score).toEqual([0, 3]);
-  session.submit('');
+  submitInput(session, '');
   expect(session.view.screen).toBe('cup-result');
   expect(session.view.game!.cash).toBeGreaterThan(cash);
-  session.submit('');
+  submitInput(session, '');
   expect(session.view.screen).toBe('bills');
-  session.submit('');
-  session.submit('99');
+  submitInput(session, '');
+  submitInput(session, '99');
   expect(session.view.screen).toBe('menu');
   for (let match = 2; match <= 3; match++) {
-    session.submit('99');
+    submitInput(session, '99');
     expect(session.view.screen).toBe('fixture');
     expect(viewOn(session, 'fixture').fixture.kind).toBe('league');
     expect(viewOn(session, 'fixture').fixture.home).toBe(match === 3);
     expect(session.view.game!.leagueMatches).toBe(match);
-    session.submit('');
-    session.submit('99');
+    submitInput(session, '');
+    submitInput(session, '99');
     session.advance(1_000_000);
     for (let i = 0; i < 4; i++) {
-      session.submit('');
+      submitInput(session, '');
     }
-    session.submit('99');
+    submitInput(session, '99');
     expect(session.view.screen).toBe('menu');
   }
-  session.submit('99');
+  submitInput(session, '99');
   expect(session.view.screen).toBe('fixture');
   expect(session.view.game!.cupRound).toBe(2);
 });
@@ -233,87 +234,87 @@ test('the first cup replays at the opposite ground, bills once, then returns thr
 test('after cup elimination, all remaining league matches lead to a season boundary before transfers', () => {
   const session = setup();
   for (const input of ['99', '', '99']) {
-    session.submit(input);
+    submitInput(session, input);
   }
   session.advance(1_000_000);
   for (let i = 0; i < 4; i++) {
-    session.submit('');
+    submitInput(session, '');
   }
   session.advance((65_537 - (session.view.frames % 65_536)) % 65_536);
-  session.submit('99');
+  submitInput(session, '99');
   expect(session.view.game!.seed).toBe(1);
   for (const input of ['99', '', '99']) {
-    session.submit(input);
+    submitInput(session, input);
   }
   session.advance(1_000_000);
-  session.submit('');
+  submitInput(session, '');
   expect(session.view.game!.cupFinished).toBe(true);
-  session.submit('');
-  session.submit('');
-  session.submit('99');
+  submitInput(session, '');
+  submitInput(session, '');
+  submitInput(session, '99');
   for (let match = 2; match <= 15; match++) {
     for (const input of ['99', '', '99']) {
-      session.submit(input);
+      submitInput(session, input);
     }
     session.advance(1_000_000);
     for (let i = 0; i < 3; i++) {
-      session.submit('');
+      submitInput(session, '');
     }
     expect(session.view.screen).toBe('bills');
     if (match === 15) {
       break;
     }
-    session.submit('');
-    session.submit('99');
+    submitInput(session, '');
+    submitInput(session, '99');
   }
   const game = session.view.game;
-  session.submit('');
+  submitInput(session, '');
   expect(session.view.screen).toBe('end-season');
   expect(session.view.game).toBe(game);
-  session.submit('');
+  submitInput(session, '');
   expect(session.view.screen).toBe('season-table');
-  session.submit('');
+  submitInput(session, '');
   expect(session.view.screen).toBe('season-summary');
   expect(session.view.game!.seasons).toBe(1);
   expect(session.view.game!.leagueMatches).toBe(0);
-  session.submit('');
+  submitInput(session, '');
   expect(session.view.screen).toBe('menu');
-  session.submit('99');
+  submitInput(session, '99');
   expect(viewOn(session, 'fixture').fixture.home).toBe(true);
   expect(session.view.game!.leagueMatches).toBe(1);
 });
 
 test('a club beyond the debt cap is dismissed and NEW clears the session before an explicit reload', () => {
   const session = setup();
-  session.submit('l');
-  session.submit('250000');
-  session.submit('');
+  submitInput(session, 'l');
+  submitInput(session, '250000');
+  submitInput(session, '');
   for (const input of ['99', '', '99']) {
-    session.submit(input);
+    submitInput(session, input);
   }
   session.advance(1_000_000);
   for (let i = 0; i < 4; i++) {
-    session.submit('');
+    submitInput(session, '');
   }
-  session.submit(String(session.view.game!.cash));
+  submitInput(session, String(session.view.game!.cash));
   session.advance((65_537 - (session.view.frames % 65_536)) % 65_536);
-  session.submit('');
+  submitInput(session, '');
   expect(session.view.game!.seed).toBe(1);
   for (const input of ['99', '', '99']) {
-    session.submit(input);
+    submitInput(session, input);
   }
   session.advance(1_000_000);
-  session.submit('');
-  session.submit('');
+  submitInput(session, '');
+  submitInput(session, '');
   expect(session.view.screen).toBe('dismissal');
   expect(session.view.game!.debt).toBeGreaterThan(250_000);
-  expect(session.submit('h')).toEqual({ type: 'copy' });
+  expect(submitInput(session, 'h')).toEqual({ type: 'copy' });
   expect(session.view.screen).toBe('dismissal');
-  session.submit('');
+  submitInput(session, '');
   expect(session.view.screen).toBe('cleared');
   expect(session.view).toEqual({ frames: 0, paused: false, screen: 'cleared' });
-  session.submit('h');
-  session.submit('99');
+  submitInput(session, 'h');
+  submitInput(session, '99');
   session.skipPause();
   expect(session.view.screen).toBe('cleared');
   session.advance(50);
@@ -323,7 +324,7 @@ test('a club beyond the debt cap is dismissed and NEW clears the session before 
   session.advance(304);
   expect(session.view.screen).toBe('manager');
   for (const input of ['new boss', '1', '1', '0']) {
-    session.submit(input);
+    submitInput(session, input);
   }
   expect(session.view.screen).toBe('menu');
   expect(session.view.game!.cash).toBe(100_000);
@@ -338,32 +339,32 @@ test('a club beyond the debt cap is dismissed and NEW clears the session before 
 test('change edits the live club and unowned pool players, preserving the RNG and confirmation flow', () => {
   const session = setup();
   const before = session.view.game!;
-  session.submit('CHANGE');
+  submitInput(session, 'CHANGE');
   expect(session.view.screen).toBe('names');
-  session.submit('y');
+  submitInput(session, 'y');
   for (let i = 0; i < 3; i++) {
-    session.submit('99');
+    submitInput(session, '99');
   }
-  session.submit('64');
-  session.submit('');
+  submitInput(session, '64');
+  submitInput(session, '');
   expect(viewOn(session, 'names').nameEditor.phase).toBe('name');
-  session.submit('ABCDEFGHIJK');
+  submitInput(session, 'ABCDEFGHIJK');
   expect(viewOn(session, 'names').nameEditor.error).toContain('TOO LONG');
-  session.submit('New Club');
+  submitInput(session, 'New Club');
   expect(viewOn(session, 'names').nameEditor.phase).toBe('more');
-  expect(session.submit('H')).toEqual({ type: 'copy' });
-  session.submit('y');
+  expect(submitInput(session, 'H')).toEqual({ type: 'copy' });
+  submitInput(session, 'y');
   expect(viewOn(session, 'names').nameEditor.page).toBe(4);
-  session.submit('49');
-  session.submit(String.fromCharCode(16, 4) + 'Greens');
-  session.submit('n');
+  submitInput(session, '49');
+  submitInput(session, String.fromCharCode(16, 4) + 'Greens');
+  submitInput(session, 'n');
   expect(viewOn(session, 'names').nameEditor.kind).toBe('player');
-  session.submit('Y');
-  session.submit('99');
-  session.submit('99');
-  session.submit('22');
-  session.submit('R.New');
-  session.submit('n');
+  submitInput(session, 'Y');
+  submitInput(session, '99');
+  submitInput(session, '99');
+  submitInput(session, '22');
+  submitInput(session, 'R.New');
+  submitInput(session, 'n');
   expect(session.view.screen).toBe('menu');
   expect(session.view.game!.clubs[63]!.name).toBe('New Club');
   expect(session.view.game!.clubs[63]!.ink).toBeNull();
@@ -378,15 +379,15 @@ test('change edits the live club and unowned pool players, preserving the RNG an
 test('truncated name colour input stops at the original BASIC error without clearing the game', () => {
   const session = setup();
   const game = session.view.game;
-  session.submit('change');
-  session.submit('y');
-  session.submit('1');
-  session.submit(String.fromCharCode(16, 2));
+  submitInput(session, 'change');
+  submitInput(session, 'y');
+  submitInput(session, '1');
+  submitInput(session, String.fromCharCode(16, 2));
   expect(viewOn(session, 'names').nameEditor.phase).toBe('fault');
   expect(viewOn(session, 'names').nameEditor.error).toBe(
     '3 Subscript wrong, 9473:1'
   );
-  session.submit('Town');
+  submitInput(session, 'Town');
   expect(session.view.game).toBe(game);
   expect(session.reload()).toBe(false);
 });

@@ -1,0 +1,483 @@
+{
+  "sampleRate": 48000,
+  "errors": [],
+  "marks": [
+    {
+      "name": "menu-cancel",
+      "time": 64.45866666666667
+    },
+    {
+      "name": "highlight-import",
+      "time": 95.73866666666666
+    },
+    {
+      "name": "cup-start",
+      "time": 95.80266666666667
+    },
+    {
+      "name": "cup-finish",
+      "time": 99.02933333333333
+    }
+  ],
+  "sources": [
+    {
+      "when": 0,
+      "offset": 0,
+      "stopAt": 0.005333333333333333,
+      "duration": 0.0003541666666666667,
+      "samples": 17,
+      "rate": 48000
+    },
+    {
+      "when": 0.005333333333333333,
+      "offset": 0,
+      "stopAt": 15.216,
+      "duration": 0.0003541666666666667,
+      "samples": 17,
+      "rate": 48000
+    },
+    {
+      "when": 15.216,
+      "offset": 0,
+      "stopAt": 15.52,
+      "duration": 0.0003541666666666667,
+      "samples": 17,
+      "rate": 48000
+    },
+    {
+      "when": 15.52,
+      "offset": 0,
+      "stopAt": 15.824,
+      "duration": 0.0003541666666666667,
+      "samples": 17,
+      "rate": 48000
+    },
+    {
+      "when": 15.824,
+      "offset": 0,
+      "stopAt": null,
+      "duration": 0.0003541666666666667,
+      "samples": 17,
+      "rate": 48000
+    },
+    {
+      "when": 15.834666666666667,
+      "offset": 0,
+      "stopAt": null,
+      "duration": 0.196875,
+      "samples": 9450,
+      "rate": 48000
+    },
+    {
+      "when": 16.154666666666667,
+      "offset": 0,
+      "stopAt": null,
+      "duration": 0.196875,
+      "samples": 9450,
+      "rate": 48000
+    },
+    {
+      "when": 16.469333333333335,
+      "offset": 0,
+      "stopAt": null,
+      "duration": 0.196875,
+      "samples": 9450,
+      "rate": 48000
+    },
+    {
+      "when": 106.16050085714285,
+      "offset": 0,
+      "stopAt": 95.744,
+      "duration": 0.13491666666666666,
+      "samples": 6476,
+      "rate": 48000
+    },
+    {
+      "when": 108.65758342857143,
+      "offset": 0,
+      "stopAt": 95.744,
+      "duration": 0.24033333333333334,
+      "samples": 11536,
+      "rate": 48000
+    },
+    {
+      "when": 117.95701228571428,
+      "offset": 0,
+      "stopAt": 95.744,
+      "duration": 0.1349375,
+      "samples": 6477,
+      "rate": 48000
+    },
+    {
+      "when": 120.02945342857143,
+      "offset": 0,
+      "stopAt": 95.744,
+      "duration": 0.0500625,
+      "samples": 2403,
+      "rate": 48000
+    },
+    {
+      "when": 120.13842,
+      "offset": 0,
+      "stopAt": 95.744,
+      "duration": 0.04975,
+      "samples": 2388,
+      "rate": 48000
+    },
+    {
+      "when": 120.24706514285714,
+      "offset": 0,
+      "stopAt": 95.744,
+      "duration": 0.049416666666666664,
+      "samples": 2372,
+      "rate": 48000
+    },
+    {
+      "when": 120.35537542857142,
+      "offset": 0,
+      "stopAt": 95.744,
+      "duration": 0.0495,
+      "samples": 2376,
+      "rate": 48000
+    },
+    {
+      "when": 120.46376571428571,
+      "offset": 0,
+      "stopAt": 95.744,
+      "duration": 0.0498125,
+      "samples": 2391,
+      "rate": 48000
+    },
+    {
+      "when": 120.57247942857143,
+      "offset": 0,
+      "stopAt": 95.744,
+      "duration": 0.05,
+      "samples": 2400,
+      "rate": 48000
+    },
+    {
+      "when": 120.68137828571429,
+      "offset": 0,
+      "stopAt": 95.744,
+      "duration": 0.049625,
+      "samples": 2382,
+      "rate": 48000
+    },
+    {
+      "when": 132.43410828571427,
+      "offset": 0,
+      "stopAt": 95.744,
+      "duration": 0.13491666666666666,
+      "samples": 6476,
+      "rate": 48000
+    },
+    {
+      "when": 134.34292057142858,
+      "offset": 0,
+      "stopAt": 95.744,
+      "duration": 0.049854166666666665,
+      "samples": 2393,
+      "rate": 48000
+    },
+    {
+      "when": 134.45166742857143,
+      "offset": 0,
+      "stopAt": 95.744,
+      "duration": 0.04975,
+      "samples": 2388,
+      "rate": 48000
+    },
+    {
+      "when": 134.560316,
+      "offset": 0,
+      "stopAt": 95.744,
+      "duration": 0.049916666666666665,
+      "samples": 2396,
+      "rate": 48000
+    },
+    {
+      "when": 134.66912171428572,
+      "offset": 0,
+      "stopAt": 95.744,
+      "duration": 0.049416666666666664,
+      "samples": 2372,
+      "rate": 48000
+    },
+    {
+      "when": 134.77743828571428,
+      "offset": 0,
+      "stopAt": 95.744,
+      "duration": 0.049166666666666664,
+      "samples": 2360,
+      "rate": 48000
+    },
+    {
+      "when": 134.885508,
+      "offset": 0,
+      "stopAt": 95.744,
+      "duration": 0.049604166666666664,
+      "samples": 2381,
+      "rate": 48000
+    },
+    {
+      "when": 134.9940017142857,
+      "offset": 0,
+      "stopAt": 95.744,
+      "duration": 0.049375,
+      "samples": 2370,
+      "rate": 48000
+    },
+    {
+      "when": 135.102284,
+      "offset": 0,
+      "stopAt": 95.744,
+      "duration": 0.049666666666666665,
+      "samples": 2384,
+      "rate": 48000
+    },
+    {
+      "when": 135.21085257142857,
+      "offset": 0,
+      "stopAt": 95.744,
+      "duration": 0.0489375,
+      "samples": 2349,
+      "rate": 48000
+    },
+    {
+      "when": 148.68469685714285,
+      "offset": 0,
+      "stopAt": 95.744,
+      "duration": 0.1349375,
+      "samples": 6477,
+      "rate": 48000
+    },
+    {
+      "when": 150.4298917142857,
+      "offset": 0,
+      "stopAt": 95.744,
+      "duration": 0.0483125,
+      "samples": 2319,
+      "rate": 48000
+    },
+    {
+      "when": 150.53711142857142,
+      "offset": 0,
+      "stopAt": 95.744,
+      "duration": 0.04710416666666667,
+      "samples": 2261,
+      "rate": 48000
+    },
+    {
+      "when": 150.64310857142857,
+      "offset": 0,
+      "stopAt": 95.744,
+      "duration": 0.04927083333333333,
+      "samples": 2365,
+      "rate": 48000
+    },
+    {
+      "when": 150.75128514285714,
+      "offset": 0,
+      "stopAt": 95.744,
+      "duration": 0.049791666666666665,
+      "samples": 2390,
+      "rate": 48000
+    },
+    {
+      "when": 150.85996514285713,
+      "offset": 0,
+      "stopAt": 95.744,
+      "duration": 0.049875,
+      "samples": 2394,
+      "rate": 48000
+    },
+    {
+      "when": 150.96873142857143,
+      "offset": 0,
+      "stopAt": 95.744,
+      "duration": 0.049666666666666665,
+      "samples": 2384,
+      "rate": 48000
+    },
+    {
+      "when": 162.66033857142855,
+      "offset": 0,
+      "stopAt": 95.744,
+      "duration": 0.13491666666666666,
+      "samples": 6476,
+      "rate": 48000
+    },
+    {
+      "when": 164.32493085714287,
+      "offset": 0,
+      "stopAt": 95.744,
+      "duration": 0.048791666666666664,
+      "samples": 2342,
+      "rate": 48000
+    },
+    {
+      "when": 164.43262342857145,
+      "offset": 0,
+      "stopAt": 95.744,
+      "duration": 0.049854166666666665,
+      "samples": 2393,
+      "rate": 48000
+    },
+    {
+      "when": 164.54136857142856,
+      "offset": 0,
+      "stopAt": 95.744,
+      "duration": 0.04939583333333333,
+      "samples": 2371,
+      "rate": 48000
+    },
+    {
+      "when": 164.6496554285714,
+      "offset": 0,
+      "stopAt": 95.744,
+      "duration": 0.04710416666666667,
+      "samples": 2261,
+      "rate": 48000
+    },
+    {
+      "when": 164.75565085714285,
+      "offset": 0,
+      "stopAt": 95.744,
+      "duration": 0.049541666666666664,
+      "samples": 2378,
+      "rate": 48000
+    },
+    {
+      "when": 164.8640817142857,
+      "offset": 0,
+      "stopAt": 95.744,
+      "duration": 0.0494375,
+      "samples": 2373,
+      "rate": 48000
+    },
+    {
+      "when": 174.66109628571428,
+      "offset": 0,
+      "stopAt": 95.744,
+      "duration": 0.13491666666666666,
+      "samples": 6476,
+      "rate": 48000
+    },
+    {
+      "when": 176.59228685714285,
+      "offset": 0,
+      "stopAt": 95.744,
+      "duration": 0.140625,
+      "samples": 6750,
+      "rate": 48000
+    },
+    {
+      "when": 176.7539582857143,
+      "offset": 0,
+      "stopAt": 95.744,
+      "duration": 0.057875,
+      "samples": 2778,
+      "rate": 48000
+    },
+    {
+      "when": 178.62072085714286,
+      "offset": 0,
+      "stopAt": 95.744,
+      "duration": 0.24033333333333334,
+      "samples": 11536,
+      "rate": 48000
+    },
+    {
+      "when": 183.07311114285716,
+      "offset": 0,
+      "stopAt": 95.744,
+      "duration": 0.196875,
+      "samples": 9450,
+      "rate": 48000
+    },
+    {
+      "when": 96.2712065714295,
+      "offset": 0,
+      "stopAt": null,
+      "duration": 0.196625,
+      "samples": 9438,
+      "rate": 48000
+    },
+    {
+      "when": 96.54420914285947,
+      "offset": 0,
+      "stopAt": null,
+      "duration": 0.1993125,
+      "samples": 9567,
+      "rate": 48000
+    },
+    {
+      "when": 96.81988571428519,
+      "offset": 0,
+      "stopAt": null,
+      "duration": 0.1976875,
+      "samples": 9489,
+      "rate": 48000
+    },
+    {
+      "when": 97.0939520000029,
+      "offset": 0,
+      "stopAt": null,
+      "duration": 0.19872916666666668,
+      "samples": 9539,
+      "rate": 48000
+    },
+    {
+      "when": 97.36905142857358,
+      "offset": 0,
+      "stopAt": null,
+      "duration": 0.19910416666666667,
+      "samples": 9557,
+      "rate": 48000
+    },
+    {
+      "when": 97.64453142857383,
+      "offset": 0,
+      "stopAt": null,
+      "duration": 0.198625,
+      "samples": 9534,
+      "rate": 48000
+    },
+    {
+      "when": 97.91952800000217,
+      "offset": 0,
+      "stopAt": null,
+      "duration": 0.19772916666666668,
+      "samples": 9491,
+      "rate": 48000
+    },
+    {
+      "when": 98.19362285714305,
+      "offset": 0,
+      "stopAt": null,
+      "duration": 0.198625,
+      "samples": 9534,
+      "rate": 48000
+    },
+    {
+      "when": 98.46862971428709,
+      "offset": 0,
+      "stopAt": null,
+      "duration": 0.19885416666666667,
+      "samples": 9545,
+      "rate": 48000
+    },
+    {
+      "when": 98.67413342857253,
+      "offset": 0,
+      "stopAt": null,
+      "duration": 0.196875,
+      "samples": 9450,
+      "rate": 48000
+    }
+  ],
+  "cupCount": 10,
+  "cupCanceled": 0,
+  "highlightCanceled": 39
+}

@@ -34,11 +34,23 @@ const screenPlayback = (
       (sum, event) => sum + Math.round(event.duration * spectrumFrameT),
       0
     ),
+    get elapsedT() {
+      return timeline.elapsedT;
+    },
+    get endT() {
+      return timeline.endT;
+    },
     get index() {
       return timeline.index;
     },
     get progress() {
       return { stars, text, trophy };
+    },
+    get remainingT() {
+      return timeline.remainingT;
+    },
+    get sounds() {
+      return timeline.sounds;
     }
   };
 };

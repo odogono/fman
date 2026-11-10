@@ -2,6 +2,7 @@ import { expect, test } from 'bun:test';
 
 import { createSession } from '../sim/session';
 import { viewOn } from '../sim/view-on';
+import { submitInput } from '../test/input';
 import { makeScreen } from './screen';
 
 test('cup fixture, replay and score keep home/away order while the strength summary keeps the managed club first', () => {
@@ -9,15 +10,15 @@ test('cup fixture, replay and score keep home/away order while the strength summ
   session.advance(5);
   session.skipPause();
   for (const text of ['alex', '1', '1', '0', '99', '', '99']) {
-    session.submit(text);
+    submitInput(session, text);
   }
   session.advance(1_000_000);
   for (let i = 0; i < 4; i++) {
-    session.submit('');
+    submitInput(session, '');
   }
   session.advance((65_536 - (session.view.frames % 65_536)) % 65_536);
-  session.submit('99');
-  session.submit('99');
+  submitInput(session, '99');
+  submitInput(session, '99');
   expect(makeScreen(session.view).lines[0]).toContain(
     'F.A.Cup Match - Round 1'
   );
@@ -29,18 +30,18 @@ test('cup fixture, replay and score keep home/away order while the strength summ
       ? `${club.padEnd(10)} v ${opponent.padEnd(10)}`
       : `${opponent.padEnd(10)} v ${club.padEnd(10)}`
   );
-  session.submit('');
+  submitInput(session, '');
   const team = makeScreen(session.view);
   expect(team.lines[0]!.slice(10, 10 + club.length)).toBe(club);
-  session.submit('99');
+  submitInput(session, '99');
   session.advance(1_000_000);
   const result = makeScreen(session.view);
   expect(
     result.lines[1]!.slice(0, (fixture.home ? club : opponent).length)
   ).toBe(fixture.home ? club : opponent);
-  session.submit('');
+  submitInput(session, '');
   expect(makeScreen(session.view).lines[0]).toContain('Replay-');
-  session.submit('');
+  submitInput(session, '');
   expect(makeScreen(session.view).lines[2]).toContain(
     fixture.home
       ? `${opponent.padEnd(10)} v ${club.padEnd(10)}`

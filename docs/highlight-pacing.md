@@ -42,9 +42,8 @@ identify initial placement, dribble, release, collision and ball states for
 
 BEEP durations use quantized ROM operands and a BEEPER loop/port-contention
 model. BEEPER disables interrupts: playback advances ULA time while withholding
-those ROM FRAMES ticks and keyboard scans. The browser still uses nominal
-oscillator audio; sound event delivery and audible parity remain
-[#27](https://github.com/odogono/fman/issues/27).
+those ROM FRAMES ticks and keyboard scans. The [beeper playback work](beeper-playback.md) now uses exact captured speaker
+edge calculations, sampled output and audio-clock event scheduling.
 
 ## PAUSE and timed screens
 
@@ -79,18 +78,18 @@ captured stable animation pixel states and both empty pitches remain equal.
 
 The following bounds apply to this corpus, measured in the simulation clock:
 
-| Comparison                                          |     Test bound |                          Measured difference |
-| --------------------------------------------------- | -------------: | -------------------------------------------: |
-| Natural-match sprite completion times               | < 2 ULA frames |                         maximum 0.414 frames |
-| Natural-match final transition                      | < 2 ULA frames |  −0.015 frames at level 1; −0.313 at level 7 |
-| Pitch-statement, outcome and score completion times | < 2 ULA frames | within bound across the four natural matches |
-| Fresh/held-key sprite times and final transition    | < 2 ULA frames |              within bound across both traces |
-| Lost ROM interrupt ticks over each highlight run    |      ≤ 2 ticks |        natural runs differ by at most 1 tick |
-| BEEPER entry-to-RET duration                        |  ≤ 32 T-states |                          maximum 25 T-states |
-| Natural title routine                               |  < 1 ULA frame |                                   +1 T-state |
-| Manager / colour / changed-level error routines     |  < 1 ULA frame |                      +69 / +66 / −6 T-states |
-| Cup-victory routine                                 |  < 1 ULA frame |                                −306 T-states |
-| Fresh/held-key title completion                     |  < 1 ULA frame |                            both within bound |
+| Comparison                                           |     Test bound |                                   Measured difference |
+| ---------------------------------------------------- | -------------: | ----------------------------------------------------: |
+| Natural-match sprite completion times                | < 2 ULA frames |                                  maximum 0.414 frames |
+| Natural-match final transition                       | < 2 ULA frames |           −0.015 frames at level 1; −0.313 at level 7 |
+| Pitch-statement, outcome and score completion times  | < 2 ULA frames |          within bound across the four natural matches |
+| Fresh/held-key sprite times and final transition     | < 2 ULA frames |                       within bound across both traces |
+| Lost ROM interrupt ticks over each highlight run     |      ≤ 2 ticks |                 natural runs differ by at most 1 tick |
+| BEEPER entry-to-RET duration at captured entry phase | exact equality | 0 T-states; see [beeper playback](beeper-playback.md) |
+| Natural title routine                                |  < 1 ULA frame |                                            +1 T-state |
+| Manager / colour / changed-level error routines      |  < 1 ULA frame |                               +69 / +66 / −6 T-states |
+| Cup-victory routine                                  |  < 1 ULA frame |                                         −313 T-states |
+| Fresh/held-key title completion                      |  < 1 ULA frame |                                     both within bound |
 
 One frame is 69,888 T-states, 19.968 ms; two frames are 39.936 ms. Signed
 differences are model minus reference. PRINT comparisons use the declared
@@ -104,7 +103,7 @@ timing parity for those seeds.
 Operand sizes, PRINT contents and ULA contention produce variation around the
 medians. Edited names and arbitrary operands outside the corpus are not timing
 certified. This is an approximate execution-path model, not instruction-exact
-BASIC execution, beam-exact video, exact audio or complete-session timing.
+BASIC execution, beam-exact video or complete-session audio timing.
 [Glyph fidelity #28](https://github.com/odogono/fman/issues/28),
 [line editing #29](https://github.com/odogono/fman/issues/29) and
 [uninterrupted multi-season comparison #34](https://github.com/odogono/fman/issues/34)
@@ -113,12 +112,12 @@ simulation boundaries.
 
 ## Saves and reproduction
 
-The journal is now **version 3**. Menu checkpoints retain ROM FRAMES, ULA time
+The pacing increment introduced journal version 3; [beeper playback](beeper-playback.md) advances it to **version 4**. Menu checkpoints retain ROM FRAMES, ULA time
 and PAUSE keyboard state; subsequent inputs include key transitions. Replaying
 restores mid-drawing, held/released-key and interrupt-loss behavior. Version-1
 Game files still import through the reseed boundary. Version-2 files import only
 when they contain an idle three-field menu checkpoint and no subsequent inputs.
-Active version-2 journals are rejected because replaying old frame counts with
+Active version-2/version-3 journals are rejected because replaying old frame counts with
 new animation durations would silently change their state. Browser fractional
 phase and time spent with the page closed remain outside the save contract.
 

@@ -1,5 +1,6 @@
 import { expect, test } from 'bun:test';
 
+import { submitInput } from '../test/input';
 import { createJournal, openSave } from './journal';
 import { encodeSave } from './save';
 
@@ -18,17 +19,17 @@ const setup = () => {
   const journal = createJournal();
   journal.advance(137);
   journal.skipPause();
-  journal.submit('alex');
-  journal.submit('1');
-  journal.submit('1');
-  journal.submit('0');
+  submitInput(journal, 'alex');
+  submitInput(journal, '1');
+  submitInput(journal, '1');
+  submitInput(journal, '0');
   return journal;
 };
 
 const toHighlights = (journal: ReturnType<typeof createJournal>) => {
-  journal.submit('99');
-  journal.submit('');
-  journal.submit('99');
+  submitInput(journal, '99');
+  submitInput(journal, '');
+  submitInput(journal, '99');
 };
 
 test('a snapshot before setup completes replays to the same screen', () => {
@@ -55,13 +56,13 @@ test('a snapshot mid-highlights resumes on the same playback frame', () => {
   const journal = setup();
   toHighlights(journal);
   expect(journal.session.view.screen).toBe('highlights');
+  const priorInputCount = JSON.parse(journal.snapshot()).inputs.length;
   for (let i = 0; i < 40; i++) {
     journal.advance(3);
   }
   const data = journal.snapshot();
-  expect(
-    JSON.parse(data).inputs.filter(([kind]: [string]) => kind === 'advance')
-  ).toHaveLength(1);
+  expect(JSON.parse(data).inputs).toHaveLength(priorInputCount + 1);
+  expect(JSON.parse(data).inputs.at(-1)).toEqual(['advance', 120]);
   const restored = openSave(data);
   expect(state(restored)).toBe(state(journal));
   for (
@@ -73,16 +74,16 @@ test('a snapshot mid-highlights resumes on the same playback frame', () => {
     restored.advance(7);
     expect(state(restored)).toBe(state(journal));
   }
-  journal.submit('');
-  restored.submit('');
+  submitInput(journal, '');
+  submitInput(restored, '');
   expect(state(restored)).toBe(state(journal));
 });
 
 test('the cleared program is restored as cleared', () => {
   const journal = setup();
-  journal.submit('keep');
+  submitInput(journal, 'keep');
   expect(journal.saved()).toBe(true);
-  journal.submit('n');
+  submitInput(journal, 'n');
   expect(journal.session.view.screen).toBe('cleared');
   expect(openSave(journal.snapshot()).session.view.screen).toBe('cleared');
 });
@@ -115,7 +116,7 @@ test('invalid snapshots are rejected', () => {
       base: { kind: 'title' },
       format: 'fman-web',
       inputs: [],
-      version: 4
+      version: 5
     })
   ]) {
     expect(() => openSave(data)).toThrow(RangeError);
@@ -132,7 +133,7 @@ test('version-2 migration accepts only the original idle menu checkpoint', () =>
   const restored = openSave(JSON.stringify(legacy));
   expect(restored.session.view.game).toEqual(data.base.game);
   expect(restored.session.view.frames).toBe(data.base.frames);
-  expect(JSON.parse(restored.snapshot()).version).toBe(3);
+  expect(JSON.parse(restored.snapshot()).version).toBe(4);
   for (const invalid of [
     { ...legacy, inputs: [['advance', 1]] },
     { ...legacy, base: { kind: 'title' } },

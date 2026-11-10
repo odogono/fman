@@ -77,6 +77,12 @@ export const createMatchday = (initial: Game, keyboard?: PauseKeyboard) => {
       finishPlayback();
       return missed;
     },
+    advanceT: (t: number) => {
+      expect('highlights');
+      const missed = playback!.advanceT(t);
+      finishPlayback();
+      return missed;
+    },
     get fixture() {
       return fixture;
     },

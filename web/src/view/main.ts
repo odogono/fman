@@ -52,7 +52,6 @@ const loadInput = document.querySelector<HTMLInputElement>('#load-save')!;
 const canvas = document.querySelector<HTMLCanvasElement>('#pitch')!;
 const context = canvas.getContext('2d')!;
 const beeper = createBeeper();
-let audioKey = '';
 
 let journal: Journal;
 let storageWorks = true;
@@ -89,8 +88,8 @@ const displayKey = (view: View) =>
     ? view.playback.key
     : (view.screen === 'cup-celebration' || view.screen === 'cup-result') &&
         view.celebration !== undefined
-      ? `${view.timingKey}:${view.celebration}:${Math.floor((view.ulaFrames ?? view.frames) / 16) % 2}`
-      : `${view.timingKey ?? ''}`;
+      ? `${view.paused}:${view.timingKey}:${view.celebration}:${Math.floor((view.ulaFrames ?? view.frames) / 16) % 2}`
+      : `${view.paused}:${view.timingKey ?? ''}`;
 
 const paintEntry = () => {
   const rgba = new Uint8ClampedArray(256 * 16 * 4);
@@ -120,10 +119,6 @@ const render = (clearInput = true) => {
   );
   const current =
     view.screen === 'highlights' ? view.playback.current : undefined;
-  if (view.tones && audioKey !== `${view.screen}:${view.timingKey}`) {
-    beeper.play(view.tones);
-    audioKey = `${view.screen}:${view.timingKey}`;
-  }
   const playing = Boolean(current && !current.frame.intro);
   canvas.hidden = !playing;
   screen.hidden = playing;
@@ -146,10 +141,6 @@ const render = (clearInput = true) => {
       game.clubs[(fixture.home ? game.club : fixture.opponent) - 1]!,
       game.clubs[(fixture.home ? fixture.opponent : game.club) - 1]!
     );
-    if (audioKey !== playback.key) {
-      beeper.play(current.frame.tones);
-      audioKey = playback.key;
-    }
   }
   const text = display.lines.join('\n') + '\n' + display.prompt;
   if (transcript.textContent !== text) {
@@ -193,7 +184,7 @@ const replaceJournal = (next: Journal, message: string) => {
   journal = next;
   // Saves contain whole frames; a replacement starts a new browser phase.
   sampleFrames = createFrameSampler(performance.now());
-  audioKey = '';
+  beeper.reset();
   persist();
   notice.textContent = message;
   menu.close();
@@ -359,6 +350,7 @@ const openMenu = () => {
   advanceTo(performance.now());
   pendingSlot = 0;
   showMenu('main');
+  beeper.reset();
   menu.showModal();
 };
 menu.addEventListener('cancel', event => {
@@ -372,6 +364,7 @@ menu.addEventListener('close', () => {
   // Exclude the host-menu interval, retaining the current fractional phase.
   sampleFrames(performance.now(), false);
   render();
+  syncSound();
 });
 menuButton.addEventListener('click', openMenu);
 
@@ -403,6 +396,10 @@ form.addEventListener('submit', event => {
   }
   const text = input.value;
   advanceTo(performance.now());
+  if (journal.session.view.paused) {
+    return;
+  }
+  beeper.restart();
   const effect = journal.submit(text);
   persist();
   notice.textContent = '';
@@ -443,6 +440,7 @@ form.addEventListener('submit', event => {
     notice.textContent = `${effect.feature} is not available in this build.`;
   }
   render();
+  syncSound();
 });
 document.addEventListener('keydown', event => {
   if (event.key === 'Escape') {
@@ -455,7 +453,23 @@ document.addEventListener('keydown', event => {
   if (menu.open) {
     return;
   }
+  void beeper.unlock()?.then(syncSound);
   advanceTo(performance.now());
+  if (
+    !journal.session.view.paused &&
+    document.activeElement === input &&
+    [
+      'Enter',
+      'Backspace',
+      'Delete',
+      'ArrowLeft',
+      'ArrowRight',
+      'Home',
+      'End'
+    ].includes(event.key)
+  ) {
+    beeper.click();
+  }
   if (!event.repeat && !event.metaKey && !event.ctrlKey && !event.altKey) {
     journal.setKey(event.code);
     if (journal.session.view.paused) {
@@ -465,6 +479,20 @@ document.addEventListener('keydown', event => {
     persist();
   }
 });
+input.addEventListener('input', event => {
+  void beeper.unlock()?.then(syncSound);
+  if (
+    !journal.session.view.paused &&
+    'inputType' in event &&
+    typeof event.inputType === 'string' &&
+    event.inputType.startsWith('insert')
+  ) {
+    beeper.click();
+  }
+});
+document.addEventListener('pointerdown', () => {
+  void beeper.unlock()?.then(syncSound);
+});
 document.addEventListener('keyup', () => {
   if (!menu.open) {
     advanceTo(performance.now());
@@ -473,12 +501,18 @@ document.addEventListener('keyup', () => {
   persist();
 });
 
+const syncSound = () => {
+  if (!menu.open && document.visibilityState !== 'hidden') {
+    beeper.sync(journal.session.sounds, journal.session.soundTimeT);
+  }
+};
 const advanceTo = (now: number) => {
   const session = journal.session;
   const elapsed = sampleFrames(now);
   const before = session.view;
   const beforeKey = displayKey(before);
   journal.advance(elapsed);
+  syncSound();
   const after = session.view;
   if (before.screen !== after.screen) {
     persist();
@@ -490,7 +524,7 @@ const advanceTo = (now: number) => {
   }
 };
 const tick = (now: number) => {
-  if (!menu.open) {
+  if (!menu.open && document.visibilityState !== 'hidden') {
     advanceTo(now);
   }
   requestAnimationFrame(tick);
@@ -505,6 +539,10 @@ addEventListener('pagehide', persistCurrent);
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') {
     persistCurrent();
+    beeper.reset();
+  } else {
+    sampleFrames(performance.now(), false);
+    syncSound();
   }
 });
 render();

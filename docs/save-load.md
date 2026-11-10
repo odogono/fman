@@ -30,7 +30,7 @@ The browser cannot confirm that the user retained the downloaded file.
 The game menu's Import action loads a web save and
 replaces the current game only after validation. Cancellation or invalid,
 oversized, malformed or unsupported-version input leaves the game unchanged.
-This was the first save contract. ADR 0004 replaces it: the full session is autosaved to browser storage, and a game menu offers saved games in five save slots plus export/import of session journals (now version 3). Version-1 files stay importable and resume at the reseed boundary.
+This was the first save contract. ADR 0004 replaces it: the full session is autosaved to browser storage, and a game menu offers saved games in five save slots plus export/import of session journals (now version 4). Version-1 files stay importable and resume at the reseed boundary.
 
 ## Exact resume and the game menu (ADR 0004)
 
@@ -42,15 +42,16 @@ timed pauses and highlight playback consume elapsed frames additively.
 Restoring replays those inputs, so a reload lands on the same screen and
 highlight frame, with the same RNG. The autosave is written after every
 input and screen change, at most once a second during animation, and when
-the page is hidden. Exports and save slots use this format (version 3).
+the page is hidden. Exports and save slots use this format (version 4).
 `keep` still writes the original version-1 contract.
 
 The [measured pacing change](highlight-pacing.md#saves-and-reproduction) bumps
 the journal version because old frame counts would replay different animation
-states. Version 3 restores the raw seed and timing/keyboard state. Version 1
+states. [Measured beeper playback](beeper-playback.md) advances the journal to
+version 4, including prompts in progress. Version 4 restores the raw seed and timing/keyboard state. Version 1
 still imports through the reseed boundary. Version 2 imports only an idle
 original three-field menu checkpoint with no subsequent inputs; active version-2
-journals are rejected.
+journals are rejected. Version-3 journals likewise import only idle menu checkpoints.
 Fractional browser phase is not stored; restoring starts a fresh phase and
 does not simulate time spent with the page closed.
 

@@ -80,14 +80,15 @@ establish complete session parity.
 
 The [pacing change](highlight-pacing.md#saves-and-reproduction) bumps the journal
 from version 2 to version 3 because replay timing and keyboard state changed.
+[Measured beeper playback](beeper-playback.md) advances this to version 4.
 
 - Version 1 stores Game and whole ROM FRAMES. Import restores that counter
   and executes the line-100 reseed boundary, as the accepted web-load
   adaptation. Actual tape LOAD uses the target machine's current counter.
-- Version 3 restores the raw seed, ROM/ULA counters and PAUSE keyboard state,
+- Version 4 restores the raw seed, ROM/ULA counters and PAUSE keyboard state,
   then replays explicit whole-frame advances and key transitions without reseeding.
-- Version 2 imports only an idle original menu checkpoint with no subsequent
-  inputs. Active journals are rejected because their old durations cannot replay
+- Versions 2 and 3 import only idle menu checkpoints with no subsequent
+  inputs (version 2 requires the original three-field base). Active journals are rejected because their old durations cannot replay
   exactly under the new scheduler.
 
 Fractional browser phase and time outside a closed page remain outside the

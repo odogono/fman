@@ -230,7 +230,8 @@ outside this clock. Web save/print adapters remain the accepted boundary in
 general command-console parity are not inferred from the isolated probe.
 These observations provide reference evidence for #25–#27.
 [Measured pacing](highlight-pacing.md) now compares the covered web paths,
-including BEEPER interrupt losses. Complete-session pacing, audio parity and
+including BEEPER interrupt losses. [Beeper playback](beeper-playback.md) establishes
+the covered speaker signals and event scheduling. Complete-session pacing/audio and
 uninterrupted multi-season comparisons remain #34's work.
 
 The separate [frame/reseed capture](frame-clock-and-reseeding.md) now observes

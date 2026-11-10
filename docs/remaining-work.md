@@ -18,7 +18,6 @@ an uninterrupted multi-season run, with permitted differences stated explicitly.
 | Capture contention-aware timing and timed reference inputs          | [#24](https://github.com/odogono/fman/issues/24) | —                                                                                                                                                                                                                                                                                                          |
 | Match the Spectrum frame clock and frame-based reseeding            | [#25](https://github.com/odogono/fman/issues/25) | [#24](https://github.com/odogono/fman/issues/24)                                                                                                                                                                                                                                                           |
 | Reproduce measured highlights and timed-screen pacing               | [#26](https://github.com/odogono/fman/issues/26) | [#24](https://github.com/odogono/fman/issues/24), [#25](https://github.com/odogono/fman/issues/25)                                                                                                                                                                                                         |
-| Match original prompt sounds and beeper event playback              | [#27](https://github.com/odogono/fman/issues/27) | [#24](https://github.com/odogono/fman/issues/24)                                                                                                                                                                                                                                                           |
 | Establish original glyph raster fidelity for text and graphics      | [#28](https://github.com/odogono/fman/issues/28) | —                                                                                                                                                                                                                                                                                                          |
 | Reproduce the Spectrum line editor and lower input screen           | [#29](https://github.com/odogono/fman/issues/29) | [#25](https://github.com/odogono/fman/issues/25), [#28](https://github.com/odogono/fman/issues/28)                                                                                                                                                                                                         |
 | Reproduce reachable name control codes and graphics PRINT behaviour | [#30](https://github.com/odogono/fman/issues/30) | [#28](https://github.com/odogono/fman/issues/28), [#25](https://github.com/odogono/fman/issues/25)                                                                                                                                                                                                         |
@@ -61,8 +60,9 @@ for #25–#27. It does not establish web timing parity or beam-exact ULA video.
 19.968 ms browser sampling, input-dispatch sampling and timed original
 boundary comparisons. [Measured highlight/timed-screen pacing](highlight-pacing.md)
 adds execution-path budgets, progressive drawing, PAUSE keyboard state and
-BEEPER interrupt losses within declared corpus tolerances. Complete session
-timing remains outside these bounded comparisons.
+BEEPER interrupt losses within declared corpus tolerances. [Measured beeper playback](beeper-playback.md) adds prompt/input clicks, exact
+speaker-edge calculations and audio-clock scheduling through delayed frames and
+shortened pauses. Complete session timing remains outside these bounded comparisons.
 
 [Glyph raster verification](glyph-raster-fidelity.md) establishes the printable
 and block repertoire, ordinary cell colours/inverse/brightness and captured

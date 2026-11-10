@@ -75,10 +75,10 @@ test('whole-frame advances remain associative through multiple counter wraps', (
   expect(chunked.frames).toBe(single.frames);
 });
 
-test('version 3 restores a raw seed; version 1 deliberately reseeds from saved frames', () => {
+test('version 4 restores a raw seed; version 1 deliberately reseeds from saved frames', () => {
   const raw = { ...game, seed: 42 };
   const exact = createJournal({ frames: 65_536, game: raw, kind: 'menu' });
-  expect(JSON.parse(exact.snapshot()).version).toBe(3);
+  expect(JSON.parse(exact.snapshot()).version).toBe(4);
   const restored = openSave(exact.snapshot());
   expect(restored.session.view.game!.seed).toBe(42);
   const legacy = encodeSave(raw, 65_536);

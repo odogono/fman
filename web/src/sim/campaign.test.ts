@@ -1,5 +1,6 @@
 import { expect, test } from 'bun:test';
 
+import { submitInput } from '../test/input';
 import { prepareCupMatch, refreshPlayers } from './cup';
 import { simulateHighlights } from './highlights';
 import { nextFixture, teamStrength, togglePickedPlayer } from './league';
@@ -25,7 +26,7 @@ export const winningCampaign = () => {
   session.advance(5);
   session.skipPause();
   for (const input of ['alex', '1', '1', '0']) {
-    session.submit(input);
+    submitInput(session, input);
   }
   for (let fixtureNumber = 0; fixtureNumber < 23; fixtureNumber++) {
     if (fixtureNumber > 0) {
@@ -56,38 +57,38 @@ export const winningCampaign = () => {
       session.advance(
         (seed - (session.view.frames % 65_536) + 65_536) % 65_536
       );
-      session.submit('99');
+      submitInput(session, '99');
     }
-    session.submit('99');
+    submitInput(session, '99');
     expect(session.view.screen).toBe('fixture');
-    session.submit('');
-    session.submit('c');
+    submitInput(session, '');
+    submitInput(session, 'c');
     for (const p of session.view.game!.players) {
       if (session.view.game!.players.filter(p => p.status === 2).length >= 11) {
         break;
       }
       if (p.status === 1) {
-        session.submit(String(p.id));
+        submitInput(session, String(p.id));
       }
     }
-    session.submit('99');
-    session.submit('99');
+    submitInput(session, '99');
+    submitInput(session, '99');
     expect(session.view.screen).toBe('highlights');
     const cup = viewOn(session, 'highlights').fixture.kind === 'cup';
     session.advance(1_000_000);
-    session.submit('');
+    submitInput(session, '');
     if (session.view.game!.cupRound === 8 && cup) {
       return session;
     }
     if (session.view.screen === 'cup-result') {
-      session.submit('');
+      submitInput(session, '');
     } else {
       expect(session.view.screen).toBe('other-matches');
-      session.submit('');
-      session.submit('');
+      submitInput(session, '');
+      submitInput(session, '');
     }
     expect(session.view.screen).toBe('bills');
-    session.submit('');
+    submitInput(session, '');
   }
   throw new Error('Final not reached');
 };
@@ -106,13 +107,13 @@ test('a complete winning campaign reaches the final after league match fifteen a
   expect(session.view.screen).toBe('cup-result');
   expect(viewOn(session, 'cup-result').celebration).toBe(9);
   expect(session.view.game!.seed).toBe(seed);
-  session.submit('');
+  submitInput(session, '');
   expect(session.view.screen).toBe('bills');
   const old = session.view.game!;
-  session.submit('');
+  submitInput(session, '');
   expect(session.view.screen).toBe('end-season');
-  session.submit('');
-  session.submit('');
+  submitInput(session, '');
+  submitInput(session, '');
   expect(session.view.screen).toBe('season-summary');
   expect(session.view.game!.cash).toBe(
     old.cash + viewOn(session, 'season-summary').season.bonus

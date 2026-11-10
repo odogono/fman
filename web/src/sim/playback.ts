@@ -40,13 +40,25 @@ export const createPlayback = (
     get done() {
       return timeline.done;
     },
+    get elapsedT() {
+      return timeline.elapsedT;
+    },
+    get endT() {
+      return timeline.endT;
+    },
     get key() {
       return String(timeline.index);
+    },
+    get remainingT() {
+      return timeline.remainingT;
     },
     get score(): readonly number[] {
       return score;
     },
-    skipPause: timeline.skipPause
+    skipPause: timeline.skipPause,
+    get sounds() {
+      return timeline.sounds;
+    }
   };
 };
 export type Playback = ReturnType<typeof createPlayback>;

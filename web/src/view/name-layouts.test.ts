@@ -8,6 +8,7 @@ import { createNewGame } from '../sim/management';
 import { renameClub } from '../sim/names';
 import { completeSeason } from '../sim/season';
 import { createSession } from '../sim/session';
+import { submitInput } from '../test/input';
 import { makeScreen } from './screen';
 
 const fresh = () =>
@@ -37,14 +38,14 @@ for (const [index, episode] of observations.edits.entries()) {
     s.advance(5);
     s.skipPause();
     for (const text of ['alex', '1', '1', '0', 'change']) {
-      s.submit(text);
+      submitInput(s, text);
     }
     if (episode.kind === 'player') {
-      s.submit('n');
+      submitInput(s, 'n');
     }
     for (const step of episode.steps) {
       for (let i = 0; i < step.repeat; i++) {
-        s.submit(step.input);
+        submitInput(s, step.input);
       }
       compare(makeScreen(s.view), step);
     }

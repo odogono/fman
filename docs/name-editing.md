@@ -53,6 +53,6 @@ is refused. Extended graphics and embedded control bytes inside names retain
 their data but do not have a complete Spectrum PRINT interpreter. The [screen-layout fidelity pass](name-layout-fidelity.md) now verifies repeated
 errors, empty/COPY retries, twelve-column club names, fixture/strength wrapping
 and long season summaries against the original. It also verifies colour,
-brightness and inverse state in those captured screens. The [glyph raster verification](glyph-raster-fidelity.md) now establishes printable/block masks and ordinary cell colours, inverse and brightness. Prompt sound and complete-session pacing limits remain.
+brightness and inverse state in those captured screens. The [glyph raster verification](glyph-raster-fidelity.md) now establishes printable/block masks and ordinary cell colours, inverse and brightness. [Measured input clicks and prompt sounds](beeper-playback.md) now play through the browser audio clock; native editing semantics and complete-session pacing remain separate limits.
 
 [Web saving/loading](save-load.md) is now implemented.

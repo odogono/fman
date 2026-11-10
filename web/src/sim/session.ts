@@ -1,3 +1,4 @@
+import { beepRegisters, beeperT, type SoundEvent } from './beeper';
 import { createFrameClock, framePeriod, spectrumFrameT } from './frame-clock';
 import { seasonOver, type MatchCompletion, type MatchFixture } from './league';
 import {
@@ -23,6 +24,7 @@ import {
   titlePlayback,
   type TimedScreen
 } from './timed-screens';
+import { createTimeline } from './timeline';
 import {
   bidForPlayer,
   openTransferMarket,
@@ -99,7 +101,6 @@ export type View = ScreenView & {
   paused: boolean;
   printed?: number;
   timingKey?: number;
-  tones?: readonly { duration: number; pitch: number }[];
   ulaFrames?: number;
 };
 
@@ -131,6 +132,7 @@ const freshProgram = (frames = 0, seed = 0) => ({
   nameEditor: undefined as NameEditor | undefined,
   offer: undefined as SaleOffer | undefined,
   page: 1,
+  promptSound: undefined as ReturnType<typeof createTimeline> | undefined,
   resume: 'manager' as Screen,
   screen: 'title' as Screen,
   season: undefined as SeasonCompletion | undefined,
@@ -144,6 +146,53 @@ const freshProgram = (frames = 0, seed = 0) => ({
 
 export const createSession = (initialFrames = 0, initialSeed = 0) => {
   let program = freshProgram(initialFrames, initialSeed);
+  let soundTimeT = 0;
+  let soundGeneration = 0;
+  const promptScreens = new Set<Screen>([
+    'menu',
+    'status',
+    'squad',
+    'fixture',
+    'team',
+    'selection',
+    'result',
+    'other-matches',
+    'table',
+    'bills',
+    'dismissal',
+    'replay',
+    'cup-result',
+    'end-season',
+    'season-table',
+    'season-summary',
+    'transfer',
+    'transfer-result',
+    'message'
+  ]);
+  const promptSound = (phase = program.ulaFrames * spectrumFrameT) => {
+    if (
+      !promptScreens.has(program.screen) ||
+      (program.timed && !program.timed.done) ||
+      (program.screen === 'selection' &&
+        program.game!.players.filter(player => player.status === 2).length > 11)
+    ) {
+      return;
+    }
+    const tone = { duration: 0.2, pitch: 0 };
+    const { de, hl } = beepRegisters(tone.duration, tone.pitch);
+    program.promptSound = createTimeline(
+      [
+        {
+          duration: beeperT(hl, de, phase) / spectrumFrameT,
+          interrupts: false,
+          tones: [tone]
+        }
+      ],
+      program.keyboard,
+      undefined,
+      phase
+    );
+  };
   program.timed = titlePlayback(program.keyboard);
   const showBills = () => {
     program.screen = isDismissed(program.game!) ? 'dismissal' : 'bills';
@@ -193,6 +242,9 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
     }
     if (program.screen === 'highlights') {
       play(m => m.skipPause());
+      if (program.matchday!.stage === 'result') {
+        promptSound(program.matchday!.playback!.elapsedT % spectrumFrameT);
+      }
       return;
     }
     if (program.timed && !program.timed.done) {
@@ -216,25 +268,48 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
     }
     program.ulaFrames =
       (program.ulaFrames + (frames % framePeriod)) % framePeriod;
+    let left = frames * spectrumFrameT;
     let missed = 0;
-    if (program.screen === 'highlights') {
-      play(m => {
-        missed = m.advance(frames);
-      });
-      program.clock.advance(frames - missed);
-      return;
+    let phase = soundTimeT % spectrumFrameT;
+    const timeline =
+      program.screen === 'highlights'
+        ? program.matchday!.playback
+        : program.timed && !program.timed.done
+          ? program.timed
+          : undefined;
+    if (timeline && !(program.promptSound && !program.promptSound.done)) {
+      const amount = Math.min(left, timeline.remainingT);
+      missed +=
+        program.screen === 'highlights'
+          ? program.matchday!.advanceT(amount)
+          : timeline.advanceT(amount);
+      soundTimeT += amount;
+      left -= amount;
+      phase = timeline.elapsedT % spectrumFrameT;
+      if (program.screen === 'highlights') {
+        program.game = program.matchday!.game;
+        if (program.matchday!.stage === 'result') {
+          program.screen = 'result';
+        }
+      } else {
+        finishTimed();
+      }
+      if (timeline.done) {
+        promptSound(phase);
+      }
     }
-    if (program.timed && !program.timed.done) {
-      missed = program.timed.advance(frames);
-      program.clock.advance(frames - missed);
-      finishTimed();
-      return;
+    if (program.promptSound && !program.promptSound.done) {
+      missed += program.promptSound.advanceT(left);
+    } else {
+      program.keyboard.advance(Math.floor((phase + left) / spectrumFrameT));
     }
-    program.clock.advance(frames);
-    program.keyboard.advance(frames);
+    soundTimeT += left;
+    program.clock.advance(frames - missed);
   };
-  const submit = (text: string): Effect | undefined => {
+
+  const accept = (text: string): Effect | undefined => {
     if (
+      (program.promptSound && !program.promptSound.done) ||
       (program.timed && !program.timed.done) ||
       program.screen === 'highlights' ||
       program.screen === 'cleared'
@@ -550,6 +625,28 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
         break;
     }
   };
+  const submit = (text: string): Effect | undefined => {
+    if (program.promptSound && !program.promptSound.done) {
+      return;
+    }
+    const before = program.screen;
+    const effect = accept(text);
+    if (
+      before !== program.screen ||
+      (program.screen === 'selection' && !program.selectionError && !effect) ||
+      (before === 'menu' && program.screen === 'menu' && !effect)
+    ) {
+      soundGeneration++;
+      promptSound();
+    } else if (
+      effect?.type === 'copy' &&
+      promptScreens.has(before) &&
+      !['menu', 'squad', 'team', 'selection', 'transfer'].includes(before)
+    ) {
+      promptSound();
+    }
+    return effect;
+  };
   const settlement = () => program.matchday?.settlement;
   const screenView = (): ScreenView => {
     const { game, matchday, screen } = program;
@@ -664,6 +761,7 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
     }
   };
   const paused = () =>
+    (program.promptSound !== undefined && !program.promptSound.done) ||
     (program.timed !== undefined && !program.timed.done) ||
     program.screen === 'highlights';
   return {
@@ -709,6 +807,43 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
     },
     setKey: (key: string) => program.keyboard.set(key),
     skipPause,
+    get sounds(): readonly SoundEvent[] {
+      const timeline =
+        program.screen === 'highlights'
+          ? program.matchday?.playback
+          : program.promptSound && !program.promptSound.done
+            ? program.promptSound
+            : program.timed && !program.timed.done
+              ? program.timed
+              : undefined;
+      if (!timeline) {
+        return [];
+      }
+      const prompt = timeline === program.promptSound;
+      const events = timeline.sounds.map(sound => ({
+        de: sound.de,
+        hl: sound.hl,
+        id: `${soundGeneration}:${prompt ? 'prompt' : `timeline:${sound.index}`}`,
+        phaseT: sound.t,
+        startT: soundTimeT + sound.t - timeline.elapsedT
+      }));
+      if (
+        !prompt &&
+        (program.screen === 'highlights' ||
+          program.screen === 'cup-celebration')
+      ) {
+        events.push({
+          ...beepRegisters(0.2, 0),
+          id: `${soundGeneration}:prompt`,
+          phaseT: timeline.endT % spectrumFrameT,
+          startT: soundTimeT + timeline.remainingT
+        });
+      }
+      return events;
+    },
+    get soundTimeT() {
+      return soundTimeT;
+    },
     submit,
     get timingState() {
       return { keyboard: program.keyboard.state, ulaFrames: program.ulaFrames };
@@ -721,8 +856,7 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
         ['title', 'message', 'cup-celebration'].includes(program.screen)
           ? {
               printed: program.timed.progress.text,
-              timingKey: program.timed.index,
-              tones: program.timed.current?.tones ?? []
+              timingKey: program.timed.index
             }
           : {}),
         ...(program.screen === 'cup-celebration' ||

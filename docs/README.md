@@ -7,6 +7,7 @@ Start with [original-game-analysis.md](original-game-analysis.md): it maps the o
 - [spectrum-timing-sources.md](spectrum-timing-sources.md): timing sources, independent verification and limits
 - [frame-clock-and-reseeding.md](frame-clock-and-reseeding.md): exact frame cadence, timed reseed boundaries and browser scheduling policy
 - [fresh-game-management.md](fresh-game-management.md): setup, club management, view timing
+- [beeper-playback.md](beeper-playback.md): measured prompt/editor, highlight and cup sounds; audio-clock scheduling
 - [highlight-pacing.md](highlight-pacing.md): measured execution-path timing, progressive drawing, PAUSE and save compatibility
 - [pitch-rendering.md](pitch-rendering.md): pitch and pre-outcome sprite pixel verification
 - [glyph-raster-fidelity.md](glyph-raster-fidelity.md): original printable/block glyph pixels, raster text and asset provenance

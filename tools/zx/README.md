@@ -30,6 +30,7 @@ Each writes `build/zx/<name>.json`; format it with Prettier and compare it to it
 | `capture-dismissal.ts`                | `10-bills.z80`                                    | `dismissal.json`          |
 | `capture-compatibility.ts`            | (none; optional sample count)                     | `spectrum-rom.json`       |
 | `capture-timing.ts`                   | `timing-start.z80`, via input script              | `spectrum-timing.json`    |
+| `capture-sound.ts`                    | `timing-start.z80`, separate input script         | `spectrum-sound.json`     |
 | `capture-pacing.ts`                   | `timing-start.z80`, separate input script         | `spectrum-pacing.json`    |
 | `capture-timing.ts --frame-reseeding` | `timing-start.z80`, separate input script         | `frame-reseeding.json`    |
 
@@ -48,3 +49,7 @@ The [pacing capture](../../docs/highlight-pacing.md) adds BASIC dispatch,
 character-print and DRAW boundaries to the same reference runs, plus manager
 and changed-level validation errors. `pacing-costs.ts` derives the production
 execution budgets from these numeric observations with PAUSE/BEEPER waits removed.
+
+The [sound capture](../../docs/beeper-playback.md) records prompt/editor calls on
+the same clock without video output, plus separately marked synthetic ROM operand
+probes for every reachable tone. Existing timing traces supply highlights/cup edges.

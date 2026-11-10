@@ -46,7 +46,7 @@ export const createJournal = (base: Base = { kind: 'title' }) => {
   let inputs: JournalInput[] = [];
   const checkpoint = () => {
     const view = session.view;
-    if (view.screen === 'menu') {
+    if (view.screen === 'menu' && !view.paused) {
       start = {
         ...session.timingState,
         frames: view.frames,
@@ -74,6 +74,9 @@ export const createJournal = (base: Base = { kind: 'title' }) => {
         last[1] += frames;
       } else {
         inputs.push(['advance', frames]);
+      }
+      if (session.view.screen === 'menu' && !session.view.paused) {
+        checkpoint();
       }
     },
     reload: () => {
@@ -107,7 +110,7 @@ export const createJournal = (base: Base = { kind: 'title' }) => {
         base: start,
         format: 'fman-web',
         inputs,
-        version: 3
+        version: 4
       }),
     submit: (text: string): Effect | undefined => {
       const effect = session.submit(text);
@@ -143,9 +146,9 @@ const validInput = (v: unknown): v is JournalInput => {
 };
 
 /**
- * Restores a web save: version 3 resumes the exact session; version 1
- * resumes at the reseed boundary before management. Version 2 accepts only
- * an idle menu checkpoint, since its animation durations cannot replay exactly.
+ * Restores a web save: version 4 resumes the exact session; version 1
+ * resumes at the reseed boundary before management. Versions 2 and 3 accept only
+ * an idle menu checkpoint, since their animation durations cannot replay exactly.
  */
 export const openSave = (data: string): Journal => {
   if (data.length > saveLimit) {
@@ -173,7 +176,7 @@ export const openSave = (data: string): Journal => {
   if (
     !record(value) ||
     value.format !== 'fman-web' ||
-    (value.version !== 3 && value.version !== 2) ||
+    (value.version !== 4 && value.version !== 3 && value.version !== 2) ||
     Object.keys(value).length !== 4 ||
     !record(value.base) ||
     !Array.isArray(value.inputs) ||
@@ -182,13 +185,13 @@ export const openSave = (data: string): Journal => {
   ) {
     throw invalid();
   }
-  // A v2 menu checkpoint has the same Game/FRAMES boundary. An active v2
-  // journal used different animation durations and cannot be replayed exactly.
+  // Idle v2/v3 menu checkpoints retain their Game/FRAMES boundary. Active
+  // journals used different sound/animation durations and cannot replay exactly.
   if (
-    value.version === 2 &&
+    (value.version === 2 || value.version === 3) &&
     (value.inputs.length > 0 ||
       value.base.kind !== 'menu' ||
-      Object.keys(value.base).length !== 3)
+      (value.version === 2 && Object.keys(value.base).length !== 3))
   ) {
     throw invalid();
   }

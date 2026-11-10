@@ -59,7 +59,7 @@ An additional 1,000-seed robustness run completed without simulation errors, usi
 
 ## Presentation limits
 
-The view uses the original fifteen UDG sprites, XOR drawing, pitch coordinates, four-row goal banner and nominal BEEP pitches/durations. Rasterization is independently tested to restore the pitch when a sprite is XOR-erased. Sound uses a quiet browser square-wave oscillator and requires a user gesture.
+The view uses the original fifteen UDG sprites, XOR drawing, pitch coordinates, four-row goal banner and [measured BEEPER signals](beeper-playback.md). Rasterization is independently tested to restore the pitch when a sprite is XOR-erased. Sound uses quiet sampled speaker pulses scheduled on the browser audio clock and requires a user gesture.
 
 The [pitch pixel verification](pitch-rendering.md) now establishes exact pitch and pre-outcome sprite-frame pixels for its captured cases. The arc uses the original ROM-rounded chords; the existing straight-line rasterizer was already correct for these drawings. The [glyph raster verification](glyph-raster-fidelity.md) now establishes printable/block masks and captured goal/miss/score overlay cells. The browser line editor remains. Full-screen ROM-pixel equality is not established. Rendering does not supply collision attributes or influence scores.
 

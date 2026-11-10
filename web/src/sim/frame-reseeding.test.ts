@@ -1,5 +1,6 @@
 import { expect, test } from 'bun:test';
 
+import { submitInput } from '../test/input';
 import reference from './fixtures/frame-reseeding.json';
 import { framePeriod, spectrumClockHz, spectrumFrameT } from './frame-clock';
 import { createNewGame } from './management';
@@ -95,18 +96,20 @@ test('a completed match and declined transfer return through the timed reseed bo
   const name = 'match-management-return';
   const session = setup(name);
   for (const text of ['99', '', '99']) {
-    session.submit(text);
+    submitInput(session, text);
   }
   const before = checkpoint(name, 'randomize-enter', 100, 1);
   advanceTo(session, before.romFrames);
   expect(session.view.screen).toBe('result');
   for (let i = 0; i < 4; i++) {
-    session.submit('');
+    submitInput(session, '');
   }
   expect(session.view.screen).toBe('transfer');
   expect(session.view.game!.seed).toBe(before.seed);
-  session.submit('99');
   const after = checkpoint(name, 'randomize-exit', 100, 1);
+  // Align after the newly modeled result/table/bills/bid prompt waits.
+  advanceTo(session, after.romFrames);
+  session.submit('99');
   expect(session.view.screen).toBe('menu');
   expect(session.view.game!.seed).toBe(after.seed);
   expect(session.view.frames).toBe(after.romFrames);

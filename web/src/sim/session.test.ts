@@ -78,14 +78,11 @@ test('management commands update finances, retry errors and do not reseed on men
   expect(session.game?.seed).toBe(seed);
 });
 
-test('copy and unavailable commands do not reset the current game', () => {
+test('copy and saving requests do not reset the current game', () => {
   const session = setup();
   const game = session.game;
   expect(session.submit('h')).toEqual({ type: 'copy' });
-  expect(session.submit('keep')).toEqual({
-    feature: 'Saving',
-    type: 'unavailable'
-  });
+  expect(session.submit('keep')?.type).toBe('save');
   expect(session.game).toBe(game);
   session.submit('a');
   session.submit('99');

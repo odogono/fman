@@ -32,6 +32,7 @@ import {
   type Playback
 } from './playback';
 import { createRng } from './rng';
+import { decodeSave, encodeSave } from './save';
 import { completeSeason, type SeasonCompletion } from './season';
 import {
   bidForPlayer,
@@ -40,6 +41,7 @@ import {
 } from './transfers';
 
 export type Screen =
+  | 'save-question'
   | 'names'
   | 'dismissal'
   | 'cleared'
@@ -72,7 +74,9 @@ export type Screen =
   | 'borrow'
   | 'repay';
 export type Effect =
-  { type: 'copy' } | { feature: string; type: 'unavailable' };
+  | { type: 'copy' }
+  | { data: string; type: 'save' }
+  | { feature: string; type: 'unavailable' };
 
 const isCommand = (text: string, command: string) =>
   text === command || text === command.toUpperCase();
@@ -191,6 +195,7 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
     if (
       screen !== 'manager' &&
       screen !== 'names' &&
+      screen !== 'save-question' &&
       (text === 'h' || text === 'H')
     ) {
       return { type: 'copy' };
@@ -287,10 +292,14 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
           nameEditor = createNameEditor(game!);
           screen = 'names';
         } else if (isCommand(text, 'keep')) {
-          return {
-            feature: 'Saving',
-            type: 'unavailable'
-          };
+          return { data: encodeSave(game!, clock.frames), type: 'save' };
+        }
+        break;
+      case 'save-question':
+        if (['y', 'Y', 'yes', 'YES'].includes(text)) {
+          returnToManagement();
+        } else {
+          clearProgram();
         }
         break;
       case 'names': {
@@ -529,6 +538,13 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
     get highlights() {
       return highlights;
     },
+    load: (data: string) => {
+      const saved = decodeSave(data);
+      clearProgram();
+      clock = createFrameClock(saved.frames);
+      game = saved.game;
+      returnToManagement();
+    },
     get message() {
       return message;
     },
@@ -554,6 +570,13 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
       screen = 'title';
       remaining = 300;
       resume = 'manager';
+      return true;
+    },
+    saved: () => {
+      if (screen !== 'menu' || !game) {
+        return false;
+      }
+      screen = 'save-question';
       return true;
     },
     get screen() {

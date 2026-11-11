@@ -27,6 +27,6 @@ Gameplay baseline: [gameplay-baseline.md](gameplay-baseline.md): automated runs 
 
 Phase-two design: [mobile-play.md](mobile-play.md): touch and mobile play.
 
-Remaining fidelity work and its completion gate: [remaining-work.md](remaining-work.md).
+Which parity is required: [ADR-0008](adr/0008-relax-presentation-parity.md) keeps rules parity and makes presentation parity best effort.
 
 Decisions: [adr/](adr/). Agent workflows: [agents/](agents/).

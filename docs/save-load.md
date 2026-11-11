@@ -84,7 +84,7 @@ browser page errors. The post-SAVE ROM screen contents are not yet dynamically
 verified; the web continuation screen currently displays the original question
 on a cleared display.
 
-The [phase-one boundary](adr/0004-define-phase-one-fidelity-boundary.md) explicitly
-accepts web file storage as a host adaptation. [Original tape interoperability](https://github.com/odogono/fman/issues/35)
-is deferred; [post-save continuation presentation](https://github.com/odogono/fman/issues/32)
-remains required fidelity work.
+Web file storage is an accepted host adaptation. Under
+[ADR-0008](adr/0008-relax-presentation-parity.md), original tape interoperability
+and an exact post-save continuation screen are not planned; the cleared display is
+an accepted difference.

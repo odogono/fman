@@ -98,8 +98,8 @@ latency is outside this reference. The desktop native text field produces the
 measured click for host text/key events; its cursor, repeat cadence, paste/IME
 and edit timing remain browser behavior under [line editing #29](https://github.com/odogono/fman/issues/29).
 These limits do not justify a full-session audio timing or physical-machine
-certification. That comparison remains [#34](https://github.com/odogono/fman/issues/34).
-Tape-recording sounds are excluded from phase one.
+certification; [ADR-0008](adr/0008-relax-presentation-parity.md) drops that
+comparison. Tape-recording sounds are not reproduced.
 
 ## Saves and reproduction
 

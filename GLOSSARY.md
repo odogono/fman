@@ -99,8 +99,14 @@ The presentation mode that reproduces the original Spectrum screens, scaled to f
 The presentation mode with screens redesigned for phones, where choices are made by tapping rather than typing.
 _Avoid_: Mobile mode, since both modes are meant to work on mobile
 
+**Rules parity**:
+The original ruleset giving the same game state, numbers and random draws as the Spectrum game for the same answers, including the original's rule bugs.
+
+**Presentation parity**:
+Screens, input editing, sound and timing matching the original. Unlike rules parity, it is kept where already achieved but not required.
+
 **Ruleset**:
-A named set of game rules. The original ruleset reproduces the Spectrum game exactly and is the default; any other ruleset is an experimental variation measured against it.
+A named set of game rules. The original ruleset holds rules parity and is the default; any other ruleset is an experimental variation measured against it.
 _Avoid_: Mode or difficulty when referring to a ruleset
 
 **Run**:

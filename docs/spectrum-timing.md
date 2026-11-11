@@ -225,8 +225,8 @@ electrical measurements first; no numeric hardware tolerance is claimed here.
 
 Host keyboard dispatch, OS/browser frame scheduling, monitor scanout, audio
 buffering, speaker acoustics, browser file dialogs and browser printing are
-outside this clock. Web save/print adapters remain the accepted boundary in
-[ADR-0004](adr/0004-define-phase-one-fidelity-boundary.md). Tape loading and
+outside this clock. Web save/print adapters are accepted host adaptations, and
+[ADR-0008](adr/0008-relax-presentation-parity.md) makes timing parity best effort. Tape loading and
 general command-console parity are not inferred from the isolated probe.
 These observations provide reference evidence for #25–#27.
 [Measured pacing](highlight-pacing.md) now compares the covered web paths,

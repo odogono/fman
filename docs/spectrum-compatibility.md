@@ -1,6 +1,6 @@
 # Spectrum compatibility foundation
 
-The first implementation increment provides headless numeric operations, the original random generator and explicit frame state. It supports the [original-game analysis](original-game-analysis.md) and [ADR-0003](adr/0003-preserve-spectrum-randomness-and-arithmetic.md). The [fresh-game management slice](fresh-game-management.md) now uses this foundation; the [first league-match flow](first-league-match.md) now adds verified highlights and results. League/cup/season progression is now implemented; see the [feature index](README.md) and [remaining fidelity work](remaining-work.md).
+The first implementation increment provides headless numeric operations, the original random generator and explicit frame state. It supports the [original-game analysis](original-game-analysis.md) and [ADR-0003](adr/0003-preserve-spectrum-randomness-and-arithmetic.md). The [fresh-game management slice](fresh-game-management.md) now uses this foundation; the [first league-match flow](first-league-match.md) now adds verified highlights and results. League/cup/season progression is now implemented; see the [feature index](README.md) and [ADR-0008](adr/0008-relax-presentation-parity.md) for which parity is still required.
 
 ## Numeric values
 

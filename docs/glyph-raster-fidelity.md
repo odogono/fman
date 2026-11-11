@@ -89,9 +89,10 @@ Spectrum mode cursors and lower-screen behaviour remain in #29. The TTF remains
 only for native editor/caret metrics, with visible prompt/input text painted by
 the bitmap renderer.
 
-Arbitrary control/token streams, runtime UDG printing in names, transparent or
-contrast INK/PAPER controls, OVER and FLASH attribute semantics are not established
-by this probe; reachable control/graphics PRINT behaviour remains in #30. Pitch
+The [name PRINT capture](name-print-fidelity.md) now establishes reachable
+control/token output, runtime UDGs, transparent/contrast colours, OVER and FLASH
+attributes, including combinations over existing cells. It records its bounded
+protocol and remaining editor/pagination limits separately. Pitch
 sprite XOR drawing and the existing cup flash presentation have their own bounded
 tests. No claim is made for arbitrary Unicode, other ROM revisions, beam timing,
 font-independent native caret placement or all browser accessibility combinations.

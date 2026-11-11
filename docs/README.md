@@ -19,6 +19,7 @@ Start with [original-game-analysis.md](original-game-analysis.md): it maps the o
 - [season-progression.md](season-progression.md): promotion, relegation, new season
 - [dismissal-restart.md](dismissal-restart.md): debt-cap dismissal, NEW, reloading
 - [name-editing.md](name-editing.md): club and player names
+- [name-print-fidelity.md](name-print-fidelity.md): embedded name controls, graphics and PRINT reports
 - [name-layout-fidelity.md](name-layout-fidelity.md): name scrolling and wrapping
 - [save-load.md](save-load.md): web save files
 

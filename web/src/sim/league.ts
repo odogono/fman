@@ -1,4 +1,5 @@
 import { payWeeklyBills, type Game } from './management';
+import { scorePrintReport, tablePrintReport } from './name-print-fault';
 import { add, divide, floor, fromNumber, multiply, toNumber } from './numeric';
 import { createRng } from './rng';
 
@@ -148,6 +149,15 @@ export const completeLeagueMatch = (
   );
   const rng = createRng(game.seed);
   const used = new Set([user, opponent]);
+  const retained = (): Game => ({
+    ...game,
+    cash: game.cash + fixture.gate,
+    homeGate,
+    league,
+    leaguePosition: league[user]!.position,
+    morale,
+    seed: rng.seed
+  });
   for (let i = 0; i < 7; i++) {
     let home: number;
     let away: number;
@@ -183,12 +193,33 @@ export const completeLeagueMatch = (
         )
       )
     ];
-    record(home, away, goals);
     results.push({
       away: away + offset + 1,
       home: home + offset + 1,
       score: goals
     });
+    const printFault = scorePrintReport(
+      game,
+      home + offset + 1,
+      away + offset + 1,
+      goals,
+      7630
+    );
+    if (printFault) {
+      // BASIC reuses t() for pairing flags; this PRINT precedes the score
+      // updates, sorting and weekly bills, even for the failing pairing.
+      league.forEach((entry, index) => {
+        entry.position = Number(used.has(index));
+      });
+      return {
+        bills: undefined,
+        game: retained(),
+        order: [],
+        printFault,
+        results
+      };
+    }
+    record(home, away, goals);
   }
   const order = Array.from({ length: 16 }, (_, i) => i);
   if (game.leagueMatches > 1) {
@@ -214,18 +245,17 @@ export const completeLeagueMatch = (
       break;
     }
   }
-  order.forEach((index, rank) => {
+  league.forEach(entry => {
+    entry.position = 1;
+  });
+  for (const [rank, index] of order.entries()) {
+    const printFault = tablePrintReport(retained(), index);
+    if (printFault) {
+      return { bills: undefined, game: retained(), order, printFault, results };
+    }
     league[index]!.position = rank + 1;
-  });
-  const billed = payWeeklyBills({
-    ...game,
-    cash: game.cash + fixture.gate,
-    homeGate,
-    league,
-    leaguePosition: league[user]!.position,
-    morale,
-    seed: rng.seed
-  });
-  return { ...billed, order, results };
+  }
+  const billed = payWeeklyBills(retained());
+  return { ...billed, order, printFault: undefined, results };
 };
 export type MatchCompletion = ReturnType<typeof completeLeagueMatch>;

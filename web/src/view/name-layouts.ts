@@ -1,5 +1,4 @@
 import type { NameEditor } from '../sim/name-editor';
-import { clubInk, clubText } from '../sim/names';
 import type { Paint } from './management-layouts';
 import { createPrintScreen } from './print-screen';
 
@@ -14,7 +13,7 @@ export const paintNames = (editor: NameEditor, put: Paint) => {
       : 'Do you want to change any playernames (y/n)?';
     label = club ? 'Change club names, y or n' : 'Change player names, y or n';
   } else {
-    const print = createPrintScreen();
+    const print = createPrintScreen(editor.game.leagueMatches > 0);
     print.text(
       club
         ? `Division ${editor.page}`
@@ -30,12 +29,11 @@ export const paintNames = (editor: NameEditor, put: Paint) => {
       const id = (editor.page - 1) * size + i + 1;
       print.text(String(id));
       print.tab(16);
-      print.text(
-        club
-          ? clubText(editor.listGame.clubs[id - 1]!)
-          : editor.listGame.players[id - 1]!.name.padEnd(8),
-        { ink: club ? clubInk(editor.listGame.clubs[id - 1]!) : 0 }
-      );
+      if (club) {
+        print.club(editor.listGame.clubs[id - 1]!);
+      } else {
+        print.name(editor.listGame.players[id - 1]!.name.padEnd(8));
+      }
       print.newline();
     }
     print.text(
@@ -53,6 +51,9 @@ export const paintNames = (editor: NameEditor, put: Paint) => {
     copy();
     for (const event of editor.output) {
       switch (event.type) {
+        case 'input-reserve':
+          print.reserveRows(event.rows!);
+          break;
         case 'range-error':
           print.text(event.text, { inverse: true });
           print.newline();
@@ -60,7 +61,8 @@ export const paintNames = (editor: NameEditor, put: Paint) => {
           break;
         case 'selected':
           print.text(club ? 'Present team is ' : 'Present player is ');
-          print.text(event.text, { ink: event.ink });
+          print.text('', { ink: event.ink });
+          print.name(event.text);
           print.newline();
           print.reserveInput();
           break;
@@ -79,7 +81,8 @@ export const paintNames = (editor: NameEditor, put: Paint) => {
           break;
         case 'renamed':
           print.text(club ? 'New team name ' : 'New player name ');
-          print.text(event.text, { ink: event.ink });
+          print.text('', { ink: event.ink });
+          print.name(event.text);
           print.newline();
           if (club) {
             print.reserveInput();

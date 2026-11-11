@@ -13,6 +13,7 @@ import {
 } from './management';
 import { createMatchday, type Matchday } from './matchday';
 import { createNameEditor, type NameEditor } from './name-editor';
+import { screenPrintFault } from './name-print-fault';
 import { createPauseKeyboard, type PauseKeyboardState } from './pause-keyboard';
 import type { Playback } from './playback';
 import { createRng } from './rng';
@@ -39,7 +40,7 @@ export type Message =
   /** The club's cash and debt, after a loan or repayment. */
   | { cash: number; debt: number; kind: 'balance' };
 
-type Bills = MatchCompletion['bills'];
+type Bills = NonNullable<MatchCompletion['bills']>;
 
 /** One variant per screen in `S`, each with data `D`. */
 type Each<S extends string, D> = S extends unknown ? D & { screen: S } : never;
@@ -100,6 +101,7 @@ export type View = ScreenView & {
   /** A timed pause or highlights are running; input waits. */
   paused: boolean;
   printed?: number;
+  printFault?: string;
   timingKey?: number;
   ulaFrames?: number;
 };
@@ -172,6 +174,7 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
   const promptSound = (phase = program.ulaFrames * spectrumFrameT) => {
     if (
       !promptScreens.has(program.screen) ||
+      screenPrintFault(screenView()) ||
       (program.timed && !program.timed.done) ||
       (program.screen === 'selection' &&
         program.game!.players.filter(player => player.status === 2).length > 11)
@@ -543,7 +546,7 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
         if (result.outcome === 'declined') {
           returnToManagement();
         } else if (result.outcome === 'joined') {
-          program.transferText = `${program.game.players[program.transfer!.playerId - 1]!.name} has joined your team`;
+          program.transferText = `${program.game.players[program.transfer!.playerId - 1]!.name.padEnd(8)} has joined your team`;
           program.screen = 'transfer-result';
         } else {
           showMessage(
@@ -582,7 +585,8 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
         break;
       case 'sale': {
         const accepted = isCommand(text, 'yes') || isCommand(text, 'y');
-        const name = program.game!.players[program.offer!.playerId - 1]!.name;
+        const name =
+          program.game!.players[program.offer!.playerId - 1]!.name.padEnd(8);
         program.game = respondToSale(program.game!, program.offer!, accepted);
         if (accepted) {
           showMessage(`${name} has been sold`, 'menu');
@@ -626,6 +630,9 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
     }
   };
   const submit = (text: string): Effect | undefined => {
+    if (screenPrintFault(screenView())) {
+      return;
+    }
     if (program.promptSound && !program.promptSound.done) {
       return;
     }
@@ -696,7 +703,7 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
           bills:
             settled!.kind === 'cup'
               ? settled!.bills
-              : settled!.completion.bills,
+              : settled!.completion.bills!,
           game,
           screen
         };
@@ -850,8 +857,11 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
     },
     /** The current screen and its data, as a plain value. */
     get view(): View {
+      const screen = screenView();
+      const fault = screenPrintFault(screen);
       return {
-        ...screenView(),
+        ...screen,
+        ...(fault ? { printFault: fault } : {}),
         ...(program.timed &&
         ['title', 'message', 'cup-celebration'].includes(program.screen)
           ? {
@@ -859,12 +869,11 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
               timingKey: program.timed.index
             }
           : {}),
-        ...(program.screen === 'cup-celebration' ||
-        program.screen === 'cup-result'
+        ...(screen.game && screen.screen !== 'menu'
           ? { ulaFrames: program.ulaFrames }
           : {}),
         frames: program.clock.frames,
-        paused: paused()
+        paused: paused() || Boolean(fault)
       };
     }
   };

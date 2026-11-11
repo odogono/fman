@@ -1,6 +1,6 @@
 import type { Game } from '../sim/management';
-import { clubInk, clubText } from '../sim/names';
 import type { Paint } from './management-layouts';
+import { createPrintScreen } from './print-screen';
 
 export const paintLeagueTable = (
   game: Game,
@@ -12,23 +12,28 @@ export const paintLeagueTable = (
     game.league
       .map((_, i) => i)
       .sort((a, b) => game.league[a]!.position - game.league[b]!.position);
-  put(0, 0, 'TEAM              F   A    PTS', {
+  const print = createPrintScreen(game.leagueMatches > 0);
+  print.text('TEAM              F   A    PTS', {
     bright: true,
     ink: 7,
     paper: 1
   });
-  rows.forEach((index, row) => {
+  print.newline();
+  rows.forEach(index => {
     const record = game.league[index]!;
-    const club = game.clubs[(game.division - 1) * 16 + index]!;
-    const ink = clubInk(club);
-    put(row + 1, 0, clubText(club), { ink });
-    put(row + 1, 18, String(record.for), { ink });
-    put(row + 1, 22, String(record.against), { ink });
-    put(row + 1, 28, String(record.points), { ink });
+    print.club(game.clubs[(game.division - 1) * 16 + index]!);
+    print.tab(18);
+    print.text(String(record.for));
+    print.tab(22);
+    print.text(String(record.against));
+    print.tab(28);
+    print.text(String(record.points));
+    print.newline();
   });
-  put(
-    18,
-    0,
-    `Lge.Pos. ${game.leaguePosition}   League match no.=${game.leagueMatches}`
-  );
+  print.comma();
+  print.comma();
+  print.text(`Lge.Pos. ${game.leaguePosition}`);
+  print.tab(13);
+  print.text(`League match no.=${game.leagueMatches}`);
+  print.paint(put);
 };

@@ -1,12 +1,14 @@
 import { levels } from '../sim/catalogue';
 import type { Game, Player } from '../sim/management';
-import { clubInk, clubText } from '../sim/names';
+import { createPrintScreen } from './print-screen';
 
 export type Cell = {
   bright: boolean;
+  flash?: boolean;
   ink: number;
   inverse: boolean;
   paper: number;
+  pixels?: readonly number[];
   text: string;
 };
 export type Style = Partial<Omit<Cell, 'text'>>;
@@ -19,78 +21,131 @@ export type Paint = (
 ) => void;
 
 export const paintStatus = (game: Game, put: Paint) => {
-  const ink = clubInk(game.clubs[game.club - 1]!);
-  put(0, 0, clubText(game.clubs[game.club - 1]!), { ink });
-  put(0, 16, `Colours = ${game.colour === 0 ? 'Black' : 'White'}`, { ink });
-  put(2, 0, `Manager : ${game.manager}`);
-  put(4, 0, `Managerial Rating(Max 100)= ${game.rating}`, {
+  const print = createPrintScreen(game.leagueMatches > 0);
+  print.club(game.clubs[game.club - 1]!);
+  print.comma();
+  print.text(`Colours = ${game.colour === 0 ? 'Black' : 'White'}`);
+  print.newline();
+  print.newline();
+  print.text(`Manager : ${game.manager}`);
+  print.newline();
+  print.newline();
+  print.text(`Managerial Rating(Max 100)= ${game.rating}`, {
     ink: 2,
     inverse: true
   });
-  put(6, 0, `Level ${game.level}`, { ink: 2 });
-  put(6, 16, levels[game.level - 1]!.padEnd(16), {
+  print.newline();
+  print.newline();
+  print.text(`Level ${game.level}`, { ink: 2 });
+  print.comma();
+  print.text(levels[game.level - 1]!.padEnd(16), {
     bright: true,
     ink: game.level,
     paper: game.level > 3 ? 0 : 7
   });
-  put(9, 0, `Seasons ${game.seasons}`);
-  put(11, 0, `You've £${game.cash}  You owe £${game.debt}`);
-  put(13, 0, `Morale   ${game.morale}`);
-  put(
-    15,
-    0,
-    `Lge.Pos. ${game.leaguePosition}   League match no.=${game.leagueMatches}`
-  );
+  print.text(' ', { bright: false, ink: 0, paper: 7 });
+  print.newline();
+  print.newline();
+  print.text(`Seasons ${game.seasons}`);
+  print.newline();
+  print.newline();
+  print.text(`You've £${game.cash} `);
+  print.text(`You owe £${game.debt}`, { ink: 2 });
+  print.newline();
+  print.newline();
+  print.text(`Morale   ${game.morale}`);
+  print.newline();
+  print.newline();
+  print.text(`Lge.Pos. ${game.leaguePosition}`);
+  print.tab(13);
+  print.text(`League match no.=${game.leagueMatches}`);
+  print.paint(put);
 };
 
-export const paintPlayer = (player: Player, row: number, put: Paint) => {
+export const printPlayer = (
+  player: Player,
+  print: ReturnType<typeof createPrintScreen>
+) => {
   const category = Math.floor((player.id - 1) / 8);
-  const ink = category;
-  put(row, 0, ['D█', 'M█', 'A█'][category]!, { ink, inverse: true });
-  put(row, 2, player.name.padEnd(8), { ink });
-  put(row, 11, String(player.id), { ink });
-  put(row, 15, String(player.skill), { ink });
-  put(row, 20, String(player.energy), { ink });
-  put(row, 24, `£${player.value}`, { ink });
-  if (player.status > 1) {
-    put(row, 31, player.status === 2 ? 'p' : 'i', {
-      ink: player.status === 2 ? 3 : 4,
-      inverse: true
-    });
-  }
+  print.reset({ ink: category });
+  print.text(['D█', 'M█', 'A█'][category]!, { inverse: true });
+  print.text('', { inverse: false });
+  print.name(player.name.padEnd(8));
+  print.text(` ${player.id}`);
+  print.tab(15);
+  print.text(String(player.skill));
+  print.tab(20);
+  print.text(String(player.energy));
+  print.tab(24);
+  print.text(`£${player.value}`);
+  print.tab(31);
+  print.text(player.status > 1 ? (player.status === 2 ? 'p' : 'i') : ' ', {
+    ink: player.status > 1 ? (player.status === 2 ? 3 : 4) : 6,
+    inverse: true
+  });
+  print.newline();
+};
+
+export const paintPlayer = (
+  player: Player,
+  row: number,
+  put: Paint,
+  udgSprites = false
+) => {
+  const print = createPrintScreen(udgSprites);
+  print.at(row, 0);
+  printPlayer(player, print);
+  print.paint(put, true);
 };
 
 export const paintSquad = (game: Game, put: Paint, selection = false) => {
-  put(0, 0, 'p = picked to play, i = injured');
-  put(1, 0, '  NAME   NO. SKILL ENERGY VALUE', { bright: true, paper: 6 });
+  const print = createPrintScreen(game.leagueMatches > 0);
+  print.text('p', { ink: 3, inverse: true });
+  print.text(' = picked to play, ', { ink: 0, inverse: false });
+  print.text('i', { ink: 4, inverse: true });
+  print.text(' = injured', { ink: 0, inverse: false });
+  print.newline();
+  print.text('  NAME   NO. SKILL ENERGY VALUE', { bright: true, paper: 6 });
+  print.newline();
   const players = game.players.filter(player => player.status > 0);
-  players.forEach((player, index) => {
-    const row = index + 2;
-    paintPlayer(player, row, put);
-  });
-  put(
-    players.length + 2,
-    0,
-    `PLAYERS PICKED=${game.players.filter(player => player.status === 2).length}`,
-    { inverse: true }
-  );
-  put(
-    players.length + 4,
-    0,
+  players.forEach(player => printPlayer(player, print));
+  print.text('PLAYERS PICKED', { inverse: true });
+  const picked = game.players.filter(player => player.status === 2).length;
+  print.text(`=${picked}`, { inverse: false });
+  print.newline();
+  print.newline();
+  print.text(
     selection
-      ? game.players.filter(p => p.status === 2).length > 11
+      ? picked > 11
         ? 'Type player no. to remove from\nteam'
         : 'Type Player No. to add to team'
       : 'TYPE NO. OF PLAYER TO BE SOLD',
-    {
-      ink: 1,
-      inverse: true
-    }
+    { ink: 1, inverse: true }
   );
-  if (!selection || game.players.filter(p => p.status === 2).length <= 11) {
-    put(players.length + 5, 0, 'OR type 99 to continue', {
-      bright: true,
-      paper: 6
-    });
+  print.newline();
+  if (!selection || picked <= 11) {
+    print.text('OR type 99 to continue', { bright: true, paper: 6 });
   }
+  print.paint(put);
+};
+
+export const paintMarket = (game: Game, playerId: number, put: Paint) => {
+  const print = createPrintScreen(game.leagueMatches > 0);
+  print.text('****Transfer Market****', { ink: 4, inverse: true });
+  print.newline();
+  print.newline();
+  print.newline();
+  print.text(`You've £${game.cash} `);
+  print.text(`You owe £${game.debt}`, { ink: 2 });
+  print.newline();
+  print.newline();
+  print.text('  NAME   NO. SKILL ENERGY VALUE', { bright: true, paper: 6 });
+  print.newline();
+  printPlayer(game.players[playerId - 1]!, print);
+  print.newline();
+  print.text('Type your bid (£)', { ink: 1, inverse: true });
+  print.newline();
+  print.newline();
+  print.text('OR type 99 to continue', { bright: true, paper: 6 });
+  print.paint(put);
 };

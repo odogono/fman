@@ -1,7 +1,6 @@
 import type { Club } from '../sim/catalogue';
 import { teamStrength, type MatchFixture } from '../sim/league';
 import type { Game } from '../sim/management';
-import { clubInk, clubText } from '../sim/names';
 import type { View } from '../sim/session';
 import { paintCupVictory } from './cup-victory';
 import { paintLeagueTable } from './league-table';
@@ -41,18 +40,24 @@ export const paintMatch = (view: MatchView, put: Paint) => {
   let prompt = '';
   let label = 'Continue';
   let numeric = false;
-  const score = (
-    goals: readonly number[],
-    homeName: Club,
-    awayName: Club,
-    row = 1
-  ) => {
-    const homeInk = clubInk(homeName),
-      awayInk = clubInk(awayName, homeInk);
-    put(row, 0, clubText(homeName), { ink: homeInk });
-    put(row, 12, String(goals[0]), { ink: homeInk });
-    put(row, 16, clubText(awayName), { ink: awayInk });
-    put(row, 28, String(goals[1]), { ink: awayInk });
+  const output = createPrintScreen(
+    view.screen !== 'fixture' && view.screen !== 'team'
+  );
+  const write: Paint = (row, column, text, style = {}) => {
+    output.at(row, column);
+    output.reset(style);
+    output.text(text);
+  };
+  const score = (goals: readonly number[], homeName: Club, awayName: Club) => {
+    output.reset();
+    output.club(homeName);
+    output.tab(12);
+    output.text(String(goals[0]));
+    output.comma();
+    output.club(awayName);
+    output.tab(28);
+    output.text(String(goals[1]));
+    output.newline();
   };
   switch (view.screen) {
     case 'fixture': {
@@ -71,13 +76,11 @@ export const paintMatch = (view: MatchView, put: Paint) => {
       print.newline();
       print.newline();
       print.tab(6);
-      const homeInk = clubInk(home),
-        awayInk = clubInk(away, homeInk);
-      print.text(clubText(home), { ink: homeInk });
-      print.text(' v ', { ink: homeInk });
-      print.text(clubText(away), { ink: awayInk });
+      print.club(home);
+      print.text(' v ');
+      print.club(away);
       for (let i = 0; i < 3; i++) {
-        print.comma({ ink: awayInk });
+        print.comma();
       }
       const homePosition =
         fixture.kind === 'cup'
@@ -96,12 +99,11 @@ export const paintMatch = (view: MatchView, put: Paint) => {
             ? opponentPosition
             : game.leaguePosition;
       print.text(
-        `${fixture.kind === 'cup' ? 'Division ' : 'Lge.Pos. '}${homePosition}`,
-        { ink: awayInk }
+        `${fixture.kind === 'cup' ? 'Division ' : 'Lge.Pos. '}${homePosition}`
       );
-      print.tab(20, { ink: awayInk });
-      print.text(String(awayPosition), { ink: awayInk });
-      print.paint(put);
+      print.tab(20);
+      print.text(String(awayPosition));
+      print.paint(write);
       prompt = 'Hit ENTER to continue';
       break;
     }
@@ -110,9 +112,9 @@ export const paintMatch = (view: MatchView, put: Paint) => {
       const { club, opponent } = sides(game, fixture);
       const print = createPrintScreen();
       print.tab(10);
-      print.text(clubText(club), { ink: clubInk(club) });
-      print.tab(22, { ink: clubInk(club) });
-      print.text(clubText(opponent), { ink: clubInk(opponent, clubInk(club)) });
+      print.club(club);
+      print.tab(22);
+      print.club(opponent);
       print.newline();
       const strength = teamStrength(game);
       ['Energy', 'Morale', 'Defence', 'Midfield', 'Attack'].forEach(
@@ -126,20 +128,22 @@ export const paintMatch = (view: MatchView, put: Paint) => {
         }
       );
       print.text('PLAYERS PICKED', { inverse: true });
-      print.text(`=${game.players.filter(p => p.status === 2).length}`);
+      print.text(`=${game.players.filter(p => p.status === 2).length}`, {
+        inverse: false
+      });
       print.newline();
       print.newline();
       print.text('Type c to change team', { ink: 1, inverse: true });
       print.newline();
       print.text('OR type 99 to continue', { bright: true, paper: 6 });
-      print.paint(put);
+      print.paint(write);
       label = 'c to change the picked team, or 99 to play';
       break;
     }
     case 'selection':
-      paintSquad(game, put, true);
+      paintSquad(game, write, true);
       if (view.error) {
-        put(19, 0, view.error, { ink: 2, inverse: true });
+        write(19, 0, view.error, { ink: 2, inverse: true });
       }
       label =
         game.players.filter(p => p.status === 2).length > 11
@@ -150,19 +154,21 @@ export const paintMatch = (view: MatchView, put: Paint) => {
     case 'highlights': {
       const { playback } = view;
       const { away, home } = sides(game, view.fixture);
-      put(0, 0, 'MATCH HIGHLIGHTS');
+      write(0, 0, 'MATCH HIGHLIGHTS');
+      output.at(1, 0);
       score(playback.score, home, away);
       const current = playback.current;
       if (current && current.index >= current.attack.frames.length - 2) {
-        put(3, 0, current.attack.goal ? 'GOAL!' : 'NO GOAL!');
+        write(3, 0, current.attack.goal ? 'GOAL!' : 'NO GOAL!');
       }
       break;
     }
     case 'result': {
       const { away, home } = sides(game, view.fixture);
-      put(0, 0, '**** FINAL SCORE ****', { ink: 2, inverse: true });
+      write(0, 0, '**** FINAL SCORE ****', { ink: 2, inverse: true });
+      output.at(1, 0);
       score(view.score, home, away);
-      put(2, 0, `Gate receipts £${view.fixture.gate}`, {
+      output.text(`Gate receipts £${view.fixture.gate}`, {
         ink: 1,
         inverse: true
       });
@@ -170,14 +176,14 @@ export const paintMatch = (view: MatchView, put: Paint) => {
       break;
     }
     case 'replay':
-      put(0, 0, 'Replay-', { ink: 3 });
+      write(0, 0, 'Replay-', { ink: 3 });
       prompt = 'Hit ENTER to continue';
       break;
     case 'cup-celebration':
     case 'cup-result':
       if (view.celebration !== undefined) {
         paintCupVictory(
-          put,
+          write,
           view.celebration,
           Math.floor((view.ulaFrames ?? view.frames) / 16) % 2 === 1,
           view.celebrationProgress
@@ -187,7 +193,7 @@ export const paintMatch = (view: MatchView, put: Paint) => {
         }
         break;
       }
-      put(
+      write(
         0,
         0,
         game.cupFinished
@@ -198,30 +204,33 @@ export const paintMatch = (view: MatchView, put: Paint) => {
       prompt = 'Hit ENTER to continue';
       break;
     case 'other-matches':
-      put(0, 0, 'OTHER MATCHES-', { inverse: true });
-      put(1, 8, `Division ${game.division}`);
-      view.completion.results.forEach((result, index) =>
+      output.text('OTHER MATCHES-', { inverse: true });
+      output.newline();
+      output.tab(8);
+      output.text(`Division ${game.division}`);
+      output.newline();
+      view.completion.results.forEach(result =>
         score(
           result.score,
           game.clubs[result.home - 1]!,
-          game.clubs[result.away - 1]!,
-          index + 2
+          game.clubs[result.away - 1]!
         )
       );
       prompt = 'Hit ENTER to continue';
       break;
     case 'table':
-      paintLeagueTable(game, put, view.completion.order);
+      paintLeagueTable(game, write, view.completion.order);
       prompt = 'Hit ENTER to continue';
       break;
   }
-  if (view.screen !== 'highlights') {
-    put(21, 24, '(h=copy)', {
+  if (view.screen !== 'highlights' && !view.printFault) {
+    write(21, 24, '(h=copy)', {
       bright: false,
       ink: 0,
       inverse: false,
       paper: 7
     });
   }
+  output.paint(put);
   return { label, numeric, prompt };
 };

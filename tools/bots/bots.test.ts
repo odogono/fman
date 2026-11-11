@@ -1,6 +1,10 @@
 import { expect, test } from 'bun:test';
 
-import { borrow, createNewGame } from '../../web/src/sim/management';
+import {
+  borrow,
+  createNewGame,
+  type Player
+} from '../../web/src/sim/management';
 import { createHarnessRng } from './random';
 import { playRun, type RunRecord } from './run';
 import {
@@ -58,6 +62,66 @@ test('team choices are eleven available players', () => {
     for (const id of team) {
       expect([1, 2]).toContain(game.players[id - 1]!.status);
     }
+  }
+});
+
+// The search keeps running sums; this is the plain search it replaced.
+const naiveStrongest = (players: readonly Player[]) => {
+  const pool = players
+    .filter(p => p.status === 1 || p.status === 2)
+    .sort((a, b) => a.id - b.id);
+  const size = Math.min(11, pool.length);
+  const clamp = (v: number) => Math.max(1, Math.min(20, v));
+  let best: Player[] = [];
+  let bestKey = [-1, -1];
+  const visit = (from: number, chosen: Player[]) => {
+    if (chosen.length === size) {
+      const skill = [0, 0, 0];
+      for (const p of chosen) {
+        skill[Math.floor((p.id - 1) / 8)]! += p.skill;
+      }
+      const energy = chosen.reduce((sum, p) => sum + p.energy, 0);
+      const key = [
+        clamp(Math.floor(energy / 11)) +
+          skill.reduce((a, v) => a + clamp(v), 0),
+        chosen.reduce((sum, p) => sum + p.skill * 20 + p.energy, 0)
+      ];
+      if (
+        key[0]! > bestKey[0]! ||
+        (key[0] === bestKey[0] && key[1]! > bestKey[1]!)
+      ) {
+        best = chosen;
+        bestKey = key;
+      }
+      return;
+    }
+    for (let i = from; i <= pool.length - (size - chosen.length); i++) {
+      visit(i + 1, [...chosen, pool[i]!]);
+    }
+  };
+  visit(0, []);
+  return new Set(best.map(p => p.id));
+};
+
+test('the strongest team is the one a plain search finds', () => {
+  const rng = createHarnessRng(5);
+  for (let seed = 0; seed < 40; seed++) {
+    const game = createNewGame({
+      club: 1,
+      colour: 0,
+      level: 1,
+      manager: 'bot',
+      seed
+    });
+    // Squads of varied size, with injuries and extreme attributes.
+    const players = game.players.map(p => ({
+      ...p,
+      energy: rng.int(1, 20),
+      skill: rng.int(1, 5),
+      status: rng.pick([0, 1, 1, 2, 3] as const)
+    }));
+    const varied = { ...game, players };
+    expect(strongestTeam(varied)).toEqual(naiveStrongest(players));
   }
 });
 

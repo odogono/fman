@@ -179,14 +179,18 @@ export const playRun = (config: RunConfig): RunRecord => {
     session.advance(frames);
     session.setKey('');
   };
-  /** Waits out a pause, sometimes pressing a key partway through. */
-  const waitOutPause = () => {
+  /**
+   * Waits out a pause, sometimes pressing a key partway through, and
+   * returns the view it ends on. Building a view is a large part of a run's
+   * cost, so each state's view is read once and passed along.
+   */
+  const waitOutPause = (from: View) => {
+    let view = from;
     let episode = '';
     let elapsed = 0;
     let pressAt: number | undefined;
-    while (session.view.paused) {
+    while (view.paused) {
       step();
-      const view = session.view;
       const key = `${view.screen}:${view.timingKey ?? ''}`;
       if (key !== episode) {
         episode = key;
@@ -210,7 +214,9 @@ export const playRun = (config: RunConfig): RunRecord => {
         session.advance(frames);
         elapsed += frames;
       }
+      view = session.view;
     }
+    return view;
   };
   const observe = (view: View) => {
     if (view.game) {
@@ -294,10 +300,10 @@ export const playRun = (config: RunConfig): RunRecord => {
     strategy: config.strategy.name
   });
 
+  let current = session.view;
   for (;;) {
-    waitOutPause();
+    const view = waitOutPause(current);
     step();
-    const view = session.view;
     observe(view);
     if (view.screen === 'dismissal') {
       return finish('dismissed');
@@ -323,5 +329,6 @@ export const playRun = (config: RunConfig): RunRecord => {
         `${config.strategy.name} answered ${JSON.stringify(answer)} on ${view.screen}: ${reason}`
       );
     }
+    current = after;
   }
 };

@@ -1,5 +1,5 @@
-// Browser storage for the autosave, save slots and options. Every access is
-// guarded: private windows and full quotas throw, and play must continue.
+// Storage for the autosave, save slots and options. Every access is guarded:
+// private windows and full quotas throw, and play must continue.
 export const slotCount = 5;
 const autosaveKey = 'fman:autosave';
 const optionsKey = 'fman:options';
@@ -9,50 +9,55 @@ export type SlotEntry = { data: string; label: string; savedAt: string };
 export type Options = { scale: 'auto' | 1 | 2 | 3; sound: boolean };
 export const defaultOptions: Options = { scale: 'auto', sound: true };
 
-const read = (key: string) => {
-  try {
-    return localStorage.getItem(key);
-  } catch {
-    return null;
-  }
-};
-const write = (key: string, value: string) => {
-  try {
-    localStorage.setItem(key, value);
-    return true;
-  } catch {
-    return false;
-  }
-};
+/** The key-value store underneath, such as `localStorage`; reaching it may throw too. */
+export type StorageBackend = Pick<Storage, 'getItem' | 'setItem'>;
 
-export const readAutosave = () => read(autosaveKey);
-export const writeAutosave = (data: string) => write(autosaveKey, data);
-
-export const readSlot = (slot: number): SlotEntry | undefined => {
-  try {
-    const value = JSON.parse(read(slotKey(slot)) ?? 'null');
-    return typeof value?.data === 'string' &&
-      typeof value.label === 'string' &&
-      typeof value.savedAt === 'string'
-      ? value
-      : undefined;
-  } catch {
-    return undefined;
-  }
+export const createStorage = (backend: () => StorageBackend) => {
+  const read = (key: string) => {
+    try {
+      return backend().getItem(key);
+    } catch {
+      return null;
+    }
+  };
+  const write = (key: string, value: string) => {
+    try {
+      backend().setItem(key, value);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  return {
+    readAutosave: () => read(autosaveKey),
+    readOptions: (): Options => {
+      try {
+        const value = JSON.parse(read(optionsKey) ?? 'null');
+        return {
+          scale: [1, 2, 3].includes(value?.scale) ? value.scale : 'auto',
+          sound: value?.sound !== false
+        };
+      } catch {
+        return defaultOptions;
+      }
+    },
+    readSlot: (slot: number): SlotEntry | undefined => {
+      try {
+        const value = JSON.parse(read(slotKey(slot)) ?? 'null');
+        return typeof value?.data === 'string' &&
+          typeof value.label === 'string' &&
+          typeof value.savedAt === 'string'
+          ? value
+          : undefined;
+      } catch {
+        return undefined;
+      }
+    },
+    writeAutosave: (data: string) => write(autosaveKey, data),
+    writeOptions: (options: Options) =>
+      write(optionsKey, JSON.stringify(options)),
+    writeSlot: (slot: number, entry: SlotEntry) =>
+      write(slotKey(slot), JSON.stringify(entry))
+  };
 };
-export const writeSlot = (slot: number, entry: SlotEntry) =>
-  write(slotKey(slot), JSON.stringify(entry));
-
-export const readOptions = (): Options => {
-  try {
-    const value = JSON.parse(read(optionsKey) ?? 'null');
-    return {
-      scale: [1, 2, 3].includes(value?.scale) ? value.scale : 'auto',
-      sound: value?.sound !== false
-    };
-  } catch {
-    return defaultOptions;
-  }
-};
-export const writeOptions = (options: Options) =>
-  write(optionsKey, JSON.stringify(options));
+export type AppStorage = ReturnType<typeof createStorage>;

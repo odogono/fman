@@ -279,7 +279,8 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
   const clearProgram = () => {
     program = { ...freshProgram(), screen: 'cleared' };
   };
-  const returnToManagement = () => {
+  /** Play reaches the management menu: reseed from the frame counter (ADR 0003). */
+  const enterMenu = () => {
     const rng = createRng(program.game!.seed);
     rng.randomize(0, program.clock.frames);
     program.game = { ...program.game!, seed: rng.seed };
@@ -454,12 +455,7 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
           manager: program.manager,
           seed: program.setupSeed
         });
-        {
-          const rng = createRng(program.game.seed);
-          rng.randomize(0, program.clock.frames);
-          program.game = { ...program.game, seed: rng.seed };
-        }
-        program.screen = 'menu';
+        enterMenu();
         break;
       case 'menu':
         if (isCommand(text, 's')) {
@@ -497,7 +493,7 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
         break;
       case 'save-question':
         if (['y', 'Y', 'yes', 'YES'].includes(text)) {
-          returnToManagement();
+          enterMenu();
         } else {
           clearProgram();
         }
@@ -581,7 +577,7 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
         }
         program.transfer = openTransferMarket(program.game!);
         if (!program.transfer) {
-          returnToManagement();
+          enterMenu();
           break;
         }
         program.game = program.transfer.game;
@@ -604,7 +600,7 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
         program.screen = 'season-summary';
         break;
       case 'season-summary':
-        returnToManagement();
+        enterMenu();
         break;
       case 'transfer': {
         if (number === undefined) {
@@ -617,7 +613,7 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
         );
         program.game = result.game;
         if (result.outcome === 'declined') {
-          returnToManagement();
+          enterMenu();
         } else if (result.outcome === 'joined') {
           program.transferText = `${program.game.players[program.transfer!.playerId - 1]!.name.padEnd(8)} has joined your team`;
           program.screen = 'transfer-result';
@@ -632,7 +628,7 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
         break;
       }
       case 'transfer-result':
-        returnToManagement();
+        enterMenu();
         break;
       case 'status':
         program.screen = 'menu';
@@ -865,7 +861,7 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
       program.clock = createFrameClock(saved.frames);
       program.ulaFrames = saved.frames;
       program.game = saved.game;
-      returnToManagement();
+      enterMenu();
     },
     reload: () => {
       if (program.screen !== 'cleared') {

@@ -18,6 +18,18 @@ export const teamStrength = (game: Game): number[] => {
   return result.map(clamp);
 };
 
+/** The clubs at a fixture: home and away, and the managed club and its opponent. */
+export const fixtureSides = (game: Game, fixture: MatchFixture) => {
+  const club = game.clubs[game.club - 1]!;
+  const opponent = game.clubs[fixture.opponent - 1]!;
+  return {
+    away: fixture.home ? opponent : club,
+    club,
+    home: fixture.home ? club : opponent,
+    opponent
+  };
+};
+
 /** How many players are in the picked team. */
 export const pickedCount = (game: Game) =>
   game.players.filter(player => player.status === 2).length;

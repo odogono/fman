@@ -1,10 +1,10 @@
 # Steep difficulty ruleset
 
-[#90](https://github.com/odogono/fman/issues/90). `steep-difficulty` is an experimental ruleset ([ADR 0007](adr/0007-experimental-rules-as-rulesets.md)): [lasting skill](lasting-skill.md) with a retuned difficulty curve. It is being measured, and has not joined the [Enhanced rules](enhanced-rules.md).
+[#90](https://github.com/odogono/fman/issues/90). Under the Enhanced rules from version 4, the difficulty curve is steeper, to match [lasting skill](lasting-skill.md). It was measured as the experimental ruleset `steep-difficulty` ([ADR 0007](adr/0007-experimental-rules-as-rulesets.md)), lasting skill with the retuned curve, then became part of [`enhanced-4`](enhanced-rules.md) together with lasting skill.
 
 ## The problem
 
-The [smoother difficulty curve](even-difficulty.md) was tuned so that Genius plays like the original's level 4: hard but still winnable. Lasting skill makes a squad that buys well far stronger, so the two together make the upper levels easy. Under the held `enhanced-3` (`enhanced-2` plus lasting skill), balanced at Genius wins 63.8% of league matches and finishes in Division 1 in most runs, against 44.5% and Division 3 under `enhanced-2`.
+The [smoother difficulty curve](even-difficulty.md) was tuned so that Genius plays like the original's level 4: hard but still winnable. Lasting skill makes a squad that buys well far stronger, so the two together make the upper levels easy. With the two together (`enhanced-2` plus lasting skill, a promotion that was held back), balanced at Genius wins 63.8% of league matches and finishes in Division 1 in most runs, against 44.5% and Division 3 under `enhanced-2`.
 
 Lasting skill changes how much each point of opponent strength costs, so the retuning is measured on top of `lasting-skill`, not on top of `original` alone.
 
@@ -18,7 +18,7 @@ Lasting skill changes how much each point of opponent strength costs, so the ret
 | Smooth (Enhanced)  | 1   | 2   | 2.75 | 3    | 3.5  | 3.75 | 4   |
 | `steep-difficulty` | 1   | 3   | 3.75 | 4.25 | 4.75 | 5    | 5.5 |
 
-The values were chosen as #73's were: quarters, from the gameplay baseline, so that balanced play's mean league position worsens by about the same amount at every level. The ends are fixed: level 1 keeps a bonus of 1, and Genius aims for where balanced finishes under `enhanced-2`. A first table interpolated from the `lasting-skill` and held `enhanced-3` baselines hit both. Raising level 6 to 5.25 made the last two steps less even (1.5 and 0.7 places), so it stayed at 5.
+The values were chosen as #73's were: quarters, from the gameplay baseline, so that balanced play's mean league position worsens by about the same amount at every level. The ends are fixed: level 1 keeps a bonus of 1, and Genius aims for where balanced finishes under `enhanced-2`. A first table interpolated from the `lasting-skill` baseline and that held-back promotion's baseline hit both. Raising level 6 to 5.25 made the last two steps less even (1.5 and 0.7 places), so it stayed at 5.
 
 ## Result
 
@@ -50,6 +50,22 @@ Clubs that borrow pay for the steeper curve. Dismissed, `original` / `enhanced-2
 | 6     | 99.0% / 35.0% / 99.5% / 79.5% | 99.0% / 4.5% / 99.5% / 78.5% |
 | 7     | 100% / 42.5% / 100% / 93.5%   | 100% / 15.5% / 100% / 93.0%  |
 
-Lasting skill does little for aggressive, which borrows to fill its squad and never sells, so it feels the stronger opponents without the matching gain. Recovering's numbers here lack the grace period, which `enhanced-2` has and the rebuilt `enhanced-3` would too: under the original curve the grace period cut its Genius-level dismissals only from 100% to 100%, and at level 5 from 84% to 74.5% ([grace period](grace-period.md#measuring-it)).
+Lasting skill does little for aggressive, which borrows to fill its squad and never sells, so it feels the stronger opponents without the matching gain. Recovering's numbers here lack the grace period, which `enhanced-2` and `enhanced-4` have: under the original curve the grace period cut its Genius-level dismissals only from 100% to 100%, and at level 5 from 84% to 74.5% ([grace period](grace-period.md#measuring-it)).
 
 So Enhanced with lasting skill and this curve rewards building a squad from earned money, and makes playing on borrowed money much riskier above level 4 than `enhanced-2` does.
+
+## In Enhanced
+
+`enhanced-4` is `enhanced-3` with lasting skill and this curve ([full baseline](baseline/enhanced-4.md)). `enhanced-3` only adds present-day clubs and players to `enhanced-2`, so its rules are `enhanced-2`'s. Against `enhanced-3`, balanced's mean league position improves by about half a place at levels 1–4 and is within 0.4 places at 5–7, and it ends richer at every level (£2,403k against £1,873k at level 1, £324k against £262k at Genius). Dismissed, `enhanced-3` → `enhanced-4`:
+
+| Level | Aggressive    | Recovering    |
+| ----- | ------------- | ------------- |
+| 1     | 1.5% → 1.0%   | 0% → 0%       |
+| 2     | 10.0% → 22.5% | 0% → 0%       |
+| 3     | 19.5% → 27.0% | 0% → 2.5%     |
+| 4     | 29.0% → 36.0% | 0.5% → 13.0%  |
+| 5     | 27.0% → 59.5% | 0.5% → 40.0%  |
+| 6     | 37.0% → 75.5% | 1.0% → 62.0%  |
+| 7     | 45.0% → 91.0% | 12.5% → 81.0% |
+
+The grace period softens recovering's losses a little (81.0% at Genius against 93.0% under `steep-difficulty`), but playing on borrowed money is much riskier above level 4 than under `enhanced-3`.

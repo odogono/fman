@@ -29,8 +29,8 @@ Rulesets ([ADR-0007](adr/0007-experimental-rules-as-rulesets.md), [ADR-0009](adr
 - [even-difficulty.md](even-difficulty.md): a gentler step between difficulty levels (Enhanced version 1)
 - [grace-period.md](grace-period.md): weeks to clear a debt over the credit limit before dismissal (Enhanced version 2)
 - [present-day-clubs.md](present-day-clubs.md): 2026/27 clubs and players in their own colours (Enhanced version 3)
-- [lasting-skill.md](lasting-skill.md): owned players keep their skill between seasons, with skill drift (experimental, being measured)
-- [steep-difficulty.md](steep-difficulty.md): a steeper difficulty curve for lasting skill (experimental, being measured)
+- [lasting-skill.md](lasting-skill.md): owned players keep their skill between seasons, with skill drift (Enhanced version 4)
+- [steep-difficulty.md](steep-difficulty.md): a steeper difficulty curve for lasting skill (Enhanced version 4)
 
 Gameplay baseline: [gameplay-baseline.md](gameplay-baseline.md): automated runs by strategy and difficulty level, and how to compare rulesets against [the original's baseline](baseline/original.md).
 

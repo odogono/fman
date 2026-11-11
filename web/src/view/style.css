@@ -247,7 +247,7 @@ main {
   padding: 8px;
   border: 2px solid transparent;
   color: var(--bright-7);
-  /* The game's own font, at whole multiples of its 8px cell to stay crisp. */
+  /* The game's own font at twice its 8px cell, crisp and the same on every button. */
   font:
     16px/24px Spectrum,
     monospace;
@@ -265,7 +265,6 @@ main {
   grid-column: span 1;
   background: var(--normal-0);
   border-color: var(--normal-7);
-  font-size: 24px;
 }
 .context-bar .red {
   background: var(--bright-2);
@@ -274,11 +273,10 @@ main {
   background: var(--normal-1);
 }
 .context-bar .primary {
-  min-height: 64px;
+  min-height: 56px;
   background: var(--bright-6);
   border-color: var(--normal-0);
   color: var(--normal-0);
-  font-size: 24px;
 }
 .context-bar button:focus-visible {
   outline: 3px solid var(--bright-7);

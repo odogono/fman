@@ -112,9 +112,10 @@ main {
 .screen-title {
   margin: 0;
   color: var(--bright-7);
-  /* The game's font at twice its 8px cell, as on the context bar. */
+  /* The game's font, 12px on a phone so long titles fit, up to 16px as the
+     screen grows. */
   font:
-    16px/24px Spectrum,
+    clamp(12px, var(--cell), 16px) / 1.5 Spectrum,
     monospace;
   font-synthesis: none;
   /* Two long club names wrap onto a second line. */

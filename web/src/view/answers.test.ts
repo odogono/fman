@@ -11,6 +11,7 @@ import {
 import { viewOn } from '../sim/view-on';
 import { finishPrompt, submitInput } from '../test/input';
 import { answersFor, tapAnswer, type OfferedAnswer } from './answers';
+import { barFor } from './context-bar';
 
 /** A short description of where an answer led, to compare with the table. */
 const outcome = (view: View, effect: Effect | undefined) => {
@@ -160,6 +161,8 @@ const probe = (journal: Journal) => {
   const view = journal.session.view;
   visited.add(view.screen);
   const answers = answersFor(view);
+  // Classic mode's bar has a label for every offered answer.
+  expect(barFor(answers)).toHaveLength(answers.length);
   if (view.paused) {
     expect(answers).toEqual([]);
     return;

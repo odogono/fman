@@ -1,6 +1,7 @@
 import { fixtureSides } from '../sim/league';
 import { flashPhase } from '../sim/session';
 import type { App, Dom, MenuControl } from './app';
+import type { BarButton } from './context-bar';
 import { rasterText, rasterizeCells } from './glyphs';
 import { paintAttack } from './pitch';
 
@@ -56,6 +57,10 @@ const control = (item: MenuControl) => {
   }
 };
 
+/** The context bar button an event came from, if any. */
+const barButton = (event: Event) =>
+  (event.target as Element).closest<HTMLButtonElement>('#context-bar button');
+
 /** Builds the page inside `app` and returns the app's view of it. */
 export const createBrowserDom = (app: HTMLElement) => {
   app.innerHTML = `
@@ -67,6 +72,7 @@ export const createBrowserDom = (app: HTMLElement) => {
       <label for="command" id="prompt"></label><input id="command" name="command" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="256" />
     </form>
   </section>
+  <div id="context-bar" class="context-bar" aria-label="Answers" hidden></div>
   <pre id="transcript" class="sr-only" aria-live="polite" aria-atomic="true"></pre>
   <button id="menu-button" class="menu-button" type="button" aria-haspopup="dialog">Menu</button>
   <p class="build-note">Play league and cup matches, edit names and manage your club.<br />Play resumes where you left it. Press Esc or Menu to save, load or start again.</p>
@@ -90,6 +96,38 @@ export const createBrowserDom = (app: HTMLElement) => {
   const loadInput = find<HTMLInputElement>('#load-save');
   const pitch = find<HTMLCanvasElement>('#pitch');
   const pitchContext = pitch.getContext('2d')!;
+  const machine = find<HTMLElement>('.machine');
+  const bar = find<HTMLElement>('#context-bar');
+  let barKey = '';
+
+  const paintBar = (buttons: readonly BarButton[] | undefined) => {
+    bar.hidden = !buttons;
+    const key = JSON.stringify(buttons?.map(b => [b.answer.id, b.label]));
+    if (!buttons || key === barKey) {
+      return;
+    }
+    // A new prompt without a typed answer closes the soft keyboard.
+    if (
+      document.activeElement === input &&
+      buttons.every(button => button.answer.kind === 'choice')
+    ) {
+      input.blur();
+    }
+    // Keep the bar's height while nothing is offered, so the page holds still.
+    bar.style.minHeight = buttons.length ? '' : `${bar.offsetHeight}px`;
+    barKey = key;
+    bar.replaceChildren(
+      ...buttons.map(button => {
+        const element = document.createElement('button');
+        element.type = 'button';
+        element.textContent = button.label;
+        element.dataset.id = button.answer.id;
+        element.dataset.kind = button.answer.kind;
+        element.className = `${button.tone}${button.wide ? ' wide' : ''}`;
+        return element;
+      })
+    );
+  };
 
   const paintEntry = () => {
     const rgba = new Uint8ClampedArray(256 * 16 * 4);
@@ -109,7 +147,11 @@ export const createBrowserDom = (app: HTMLElement) => {
   input.addEventListener('input', paintEntry);
 
   const dom: Dom = {
-    applyOptions: options => {
+    applyOptions: (options, fit) => {
+      document.documentElement.classList.toggle(
+        'fit',
+        fit && options.scale === 'auto'
+      );
       if (options.scale === 'auto') {
         document.documentElement.style.removeProperty('--pixel');
       } else {
@@ -121,6 +163,9 @@ export const createBrowserDom = (app: HTMLElement) => {
     },
     chooseFile: () => loadInput.click(),
     closeMenu: () => menu.close(),
+    get coarsePointer() {
+      return matchMedia('(pointer: coarse)').matches;
+    },
     focusInput: () => input.focus({ preventScroll: true }),
     get hidden() {
       return document.visibilityState === 'hidden';
@@ -129,7 +174,8 @@ export const createBrowserDom = (app: HTMLElement) => {
       notice.textContent = text;
     },
     openMenu: () => menu.showModal(),
-    render: ({ clearInput, display, focus, view }) => {
+    render: ({ bar: buttons, clearInput, display, focus, view }) => {
+      paintBar(buttons);
       screen.height = display.lines.length * 8;
       screenContext.putImageData(
         new ImageData(
@@ -236,6 +282,31 @@ export const createBrowserDom = (app: HTMLElement) => {
       )
     );
     document.addEventListener('pointerdown', target.pointerDown);
+    bar.addEventListener('pointerdown', event => {
+      const button = barButton(event);
+      if (!button || button.dataset.kind !== 'choice') {
+        return;
+      }
+      // Submit on the way down, as a key does; keep focus off the button.
+      event.preventDefault();
+      target.tap(button.dataset.id!);
+    });
+    bar.addEventListener('click', event => {
+      const button = barButton(event);
+      if (!button) {
+        return;
+      }
+      if (button.dataset.kind !== 'choice') {
+        // Typed answers use the soft keyboard, which opens only on a tap.
+        input.focus({ preventScroll: true });
+      } else if (event.detail === 0) {
+        // Activated from the keyboard, whose own key is already down.
+        target.tap(button.dataset.id!, false);
+      }
+    });
+    machine.addEventListener('pointerdown', target.pressScreen);
+    addEventListener('pointerup', target.pointerUp);
+    addEventListener('pointercancel', target.pointerUp);
     document.addEventListener('keyup', target.keyUp);
     addEventListener('pagehide', target.pageHide);
     document.addEventListener('visibilitychange', target.visibilityChanged);

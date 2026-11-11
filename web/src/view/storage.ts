@@ -6,8 +6,17 @@ const optionsKey = 'fman:options';
 const slotKey = (slot: number) => `fman:slot:${slot}`;
 
 export type SlotEntry = { data: string; label: string; savedAt: string };
-export type Options = { scale: 'auto' | 1 | 2 | 3; sound: boolean };
-export const defaultOptions: Options = { scale: 'auto', sound: true };
+export type Options = {
+  scale: 'auto' | 1 | 2 | 3;
+  sound: boolean;
+  /** Classic mode's context bar: shown on touch-first devices when `auto`. */
+  touch: 'auto' | 'on' | 'off';
+};
+export const defaultOptions: Options = {
+  scale: 'auto',
+  sound: true,
+  touch: 'auto'
+};
 
 /** The key-value store underneath, such as `localStorage`; reaching it may throw too. */
 export type StorageBackend = Pick<Storage, 'getItem' | 'setItem'>;
@@ -35,7 +44,8 @@ export const createStorage = (backend: () => StorageBackend) => {
         const value = JSON.parse(read(optionsKey) ?? 'null');
         return {
           scale: [1, 2, 3].includes(value?.scale) ? value.scale : 'auto',
-          sound: value?.sound !== false
+          sound: value?.sound !== false,
+          touch: ['on', 'off'].includes(value?.touch) ? value.touch : 'auto'
         };
       } catch {
         return defaultOptions;

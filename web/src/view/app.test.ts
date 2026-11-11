@@ -2,6 +2,7 @@ import { expect, test } from 'bun:test';
 
 import { spectrumClockHz, spectrumFrameT } from '../sim/frame-clock';
 import { createApp, type Dom, type Menu, type MenuControl } from './app';
+import type { BarButton } from './context-bar';
 import { createStorage, type Options } from './storage';
 
 const frameMs = (1000 * spectrumFrameT) / spectrumClockHz;
@@ -9,10 +10,12 @@ const frameMs = (1000 * spectrumFrameT) / spectrumClockHz;
 /** The app with every browser effect replaced by an in-memory one. */
 const harness = ({
   autosave,
+  coarsePointer = false,
   downloadFails = false,
   storageFails = false
 }: {
   autosave?: string;
+  coarsePointer?: boolean;
   downloadFails?: boolean;
   storageFails?: boolean;
 } = {}) => {
@@ -22,8 +25,12 @@ const harness = ({
   }
   const page = {
     applied: [] as Options[],
+    bar: undefined as readonly BarButton[] | undefined,
     downloads: [] as { data: string; name: string }[],
     filesChosen: 0,
+    fit: false,
+    focused: 0,
+    inputFocus: false,
     menu: undefined as Menu | undefined,
     menuOpen: false,
     notice: '',
@@ -31,12 +38,18 @@ const harness = ({
     rendered: 0
   };
   const dom: Dom = {
-    applyOptions: options => page.applied.push(options),
+    applyOptions: (options, fit) => {
+      page.applied.push(options);
+      page.fit = fit;
+    },
     chooseFile: () => page.filesChosen++,
     closeMenu: () => {
       page.menuOpen = false;
     },
-    focusInput: () => {},
+    coarsePointer,
+    focusInput: () => {
+      page.focused++;
+    },
     hidden: false,
     notice: text => {
       page.notice = text;
@@ -44,7 +57,9 @@ const harness = ({
     openMenu: () => {
       page.menuOpen = true;
     },
-    render: () => {
+    render: ({ bar, focus }) => {
+      page.bar = bar;
+      page.inputFocus = focus;
       page.rendered++;
     },
     showMenu: menu => {
@@ -117,17 +132,40 @@ const harness = ({
     settle();
     expect(view().screen).toBe('menu');
   };
+  /** Advances the page clock by `frames` Spectrum frames. */
+  const wait = (frames: number) => {
+    for (let i = 0; i < frames; i++) {
+      now += frameMs;
+      app.tick(now);
+    }
+  };
+  /** The bar's labels, as shown. */
+  const labels = () => page.bar?.map(button => button.label);
+  /** Taps the bar button labelled `label`, holding it for `frames`. */
+  const tap = (label: string, frames = 3) => {
+    settle();
+    const button = page.bar?.find(b => b.label === label);
+    if (!button) {
+      throw new Error(`No bar button ${label} in ${labels()?.join(', ')}`);
+    }
+    app.tap(button.answer.id);
+    wait(frames);
+    app.pointerUp();
+  };
   return {
     app,
     beeper,
     control,
+    labels,
     page,
     press,
     settle,
     stored,
+    tap,
     toMenu,
     type,
-    view
+    view,
+    wait
   };
 };
 
@@ -268,10 +306,15 @@ test('options are stored and applied to sound and the page', () => {
   sound.change(false);
   size.change('2');
   expect(run.beeper.muted).toBe(true);
-  expect(run.page.applied.at(-1)).toEqual({ scale: 2, sound: false });
+  expect(run.page.applied.at(-1)).toEqual({
+    scale: 2,
+    sound: false,
+    touch: 'auto'
+  });
   expect(JSON.parse(run.stored.get('fman:options')!)).toEqual({
     scale: 2,
-    sound: false
+    sound: false,
+    touch: 'auto'
   });
 });
 
@@ -291,3 +334,128 @@ const escape = {
   modified: false,
   repeat: false
 };
+
+test('touch controls show the bar on coarse pointers, or when switched on', () => {
+  const desktop = harness();
+  expect(desktop.page.bar).toBeUndefined();
+  expect(desktop.page.fit).toBe(false);
+
+  const phone = harness({ coarsePointer: true });
+  phone.settle();
+  expect(phone.page.fit).toBe(true);
+  expect(phone.labels()).toEqual(['Type name']);
+  expect(phone.page.inputFocus).toBe(false);
+
+  phone.app.openMenu();
+  phone.press('Options');
+  const touch = phone.control('Touch controls');
+  if (touch.kind !== 'select') {
+    throw new Error('Unexpected touch control');
+  }
+  touch.change('off');
+  phone.app.menuClosed();
+  expect(phone.page.bar).toBeUndefined();
+  expect(phone.page.fit).toBe(false);
+
+  desktop.app.openMenu();
+  desktop.press('Options');
+  const on = desktop.control('Touch controls');
+  if (on.kind !== 'select') {
+    throw new Error('Unexpected touch control');
+  }
+  on.change('on');
+  desktop.app.menuClosed();
+  expect(desktop.page.bar).toEqual([]);
+});
+
+test('the bar offers the menu answers and a tap submits one', () => {
+  const run = harness({ coarsePointer: true });
+  run.toMenu();
+  run.settle();
+  expect(run.labels()).toEqual([
+    'Score etc (s)',
+    'Sell/list players (a)',
+    'Loan (l)',
+    'Pay off (p)',
+    'Level',
+    'Names (change)',
+    'Save (keep)',
+    'Continue (99)'
+  ]);
+  run.tap('Score etc (s)');
+  expect(run.view().screen).toBe('status');
+  run.tap('Continue');
+  run.tap('Continue (99)');
+  expect(run.view().screen).toBe('fixture');
+  expect(run.page.focused).toBe(0);
+});
+
+test('a tap holds Enter until the finger lifts, as a key does', () => {
+  const run = harness({ coarsePointer: true });
+  run.toMenu();
+  run.settle();
+  run.app.tap('menu.status');
+  expect(run.app.journal.session.timingState.keyboard.key).toBe('Enter');
+  run.wait(2);
+  expect(run.app.journal.session.timingState.keyboard.key).toBe('Enter');
+  run.app.pointerUp();
+  expect(run.app.journal.session.timingState.keyboard.key).toBe('');
+});
+
+test('a keyboard-activated bar button submits without pressing Enter again', () => {
+  const run = harness({ coarsePointer: true });
+  run.toMenu();
+  run.settle();
+  run.app.keyDown({
+    code: 'Enter',
+    inputFocused: false,
+    key: 'Enter',
+    modified: false,
+    repeat: false
+  });
+  run.app.tap('menu.status', false);
+  expect(run.view().screen).toBe('status');
+  run.app.pointerUp();
+  expect(run.app.journal.session.timingState.keyboard.key).toBe('Enter');
+  run.app.keyUp();
+  expect(run.app.journal.session.timingState.keyboard.key).toBe('');
+});
+
+test('a finger on the screen is a keypress only during a timed pause', () => {
+  const run = harness({ coarsePointer: true });
+  run.app.pressScreen();
+  expect(run.view().paused).toBe(true);
+  expect(run.app.journal.session.timingState.keyboard.key).toBe('Space');
+  run.wait(3);
+  run.app.pointerUp();
+  expect(run.app.journal.session.timingState.keyboard.key).toBe('');
+  run.settle();
+  expect(run.view().screen).toBe('manager');
+  run.app.pressScreen();
+  expect(run.app.journal.session.timingState.keyboard.key).toBe('');
+});
+
+test('a soft keyboard submit presses Enter until a frame has passed', () => {
+  const run = harness({ coarsePointer: true });
+  run.settle();
+  run.app.submit('alex');
+  expect(run.view().screen).toBe('clubs');
+  expect(run.app.journal.session.timingState.keyboard.key).toBe('Enter');
+  run.wait(2);
+  expect(run.app.journal.session.timingState.keyboard.key).toBe('');
+});
+
+test('a physical Enter keeps its own press through a submit', () => {
+  const run = harness();
+  run.settle();
+  run.app.keyDown({
+    code: 'NumpadEnter',
+    inputFocused: true,
+    key: 'Enter',
+    modified: false,
+    repeat: false
+  });
+  run.app.submit('alex');
+  run.wait(2);
+  expect(run.app.journal.session.timingState.keyboard.key).toBe('NumpadEnter');
+});

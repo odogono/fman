@@ -1,6 +1,8 @@
 import type { SoundEvent } from '../sim/beeper';
 import { createJournal, openSave, type Journal } from '../sim/journal';
-import type { View } from '../sim/session';
+import type { Effect, View } from '../sim/session';
+import { answersFor, tapAnswer } from './answers';
+import { barFor, type BarButton } from './context-bar';
 import { createFrameSampler } from './frame-sampler';
 import { makeScreen } from './screen';
 import { slotCount, type AppStorage, type Options } from './storage';
@@ -31,15 +33,20 @@ export type Menu = {
 
 /** The page: it paints what the app gives it and reports what the player does. */
 export type Dom = {
-  applyOptions: (options: Options) => void;
+  /** `fit` scales the screen to the page width, for the context bar. */
+  applyOptions: (options: Options, fit: boolean) => void;
   /** Opens the file picker; a chosen file arrives through `importSave`. */
   chooseFile: () => void;
   closeMenu: () => void;
+  /** The page's main pointer is coarse, as on a phone or tablet. */
+  readonly coarsePointer: boolean;
   focusInput: () => void;
   readonly hidden: boolean;
   notice: (text: string) => void;
   openMenu: () => void;
   render: (screen: {
+    /** The context bar's buttons, or `undefined` when the bar is hidden. */
+    bar: readonly BarButton[] | undefined;
     clearInput: boolean;
     display: Display;
     focus: boolean;
@@ -131,14 +138,20 @@ export const createApp = ({
   let menuOpen = false;
   let menuView: MenuView = 'main';
   let pendingSlot = 0;
+  /** A finger is holding a key down: Enter after a tap, or a pause keypress. */
+  let touchHeld = false;
+  /** The frame at which a soft keyboard's submit pressed Enter. */
+  let softEnterAt: number | undefined;
 
+  const barShown = () =>
+    options.touch === 'on' || (options.touch === 'auto' && dom.coarsePointer);
   const persist = () => {
     lastPersist = clock.now();
     storageWorks = storage.writeAutosave(journal.snapshot());
   };
   const applyOptions = () => {
     beeper.muted = !options.sound;
-    dom.applyOptions(options);
+    dom.applyOptions(options, barShown());
   };
   const setOptions = (next: Options) => {
     options = next;
@@ -159,10 +172,12 @@ export const createApp = ({
     ) {
       dom.notice('Printing stopped. Open the menu to start a new game.');
     }
+    const bar = barShown();
     dom.render({
+      bar: bar ? barFor(answersFor(view)) : undefined,
       clearInput,
       display,
-      focus: !display.paused && !menuOpen,
+      focus: !display.paused && !menuOpen && !bar,
       view
     });
   };
@@ -291,6 +306,18 @@ export const createApp = ({
             label: 'Display size',
             value: String(options.scale)
           },
+          {
+            change: value =>
+              setOptions({ ...options, touch: value as Options['touch'] }),
+            choices: [
+              ['auto', 'Auto'],
+              ['on', 'On'],
+              ['off', 'Off']
+            ],
+            kind: 'select',
+            label: 'Touch controls',
+            value: options.touch
+          },
           button('Back', () => showMenu('main'))
         );
         break;
@@ -367,6 +394,44 @@ export const createApp = ({
   const unlockSound = () => {
     void beeper.unlock()?.then(syncSound);
   };
+  /** Submits at the current moment, unless input waits; then shows the result. */
+  const answer = (send: () => Effect | undefined) => {
+    void beeper.unlock();
+    if (menuOpen) {
+      return;
+    }
+    advanceTo(clock.now());
+    if (journal.session.view.paused) {
+      return;
+    }
+    beeper.restart();
+    const effect = send();
+    persist();
+    dom.notice('');
+    if (effect?.type === 'copy') {
+      render();
+      print();
+      if (!barShown()) {
+        dom.focusInput();
+      }
+      return;
+    }
+    if (effect?.type === 'save') {
+      keep(effect.data);
+    }
+    if (effect?.type === 'unavailable') {
+      dom.notice(`${effect.feature} is not available in this build.`);
+    }
+    render();
+    syncSound();
+  };
+  const release = () => {
+    if (!menuOpen) {
+      advanceTo(clock.now());
+    }
+    journal.setKey('');
+    persist();
+  };
 
   render();
   return {
@@ -406,13 +471,7 @@ export const createApp = ({
       }
       return prevent;
     },
-    keyUp: () => {
-      if (!menuOpen) {
-        advanceTo(clock.now());
-      }
-      journal.setKey('');
-      persist();
-    },
+    keyUp: release,
     /** A save file was chosen; `read` gives its text. */
     importSave: async (read: () => Promise<string>) => {
       try {
@@ -438,38 +497,72 @@ export const createApp = ({
     /** The page is about to go away. */
     pageHide: persistCurrent,
     pointerDown: unlockSound,
-    submit: (text: string) => {
-      void beeper.unlock();
+    /** A finger lifted or its touch was cancelled. */
+    pointerUp: () => {
+      if (touchHeld) {
+        touchHeld = false;
+        release();
+      }
+    },
+    /**
+     * A finger went down on the screen. During a timed pause it is a
+     * keypress until it lifts (ADR 0006); otherwise it does nothing.
+     */
+    pressScreen: () => {
+      unlockSound();
       if (menuOpen) {
         return;
       }
       advanceTo(clock.now());
-      if (journal.session.view.paused) {
+      if (!journal.session.view.paused) {
         return;
       }
-      beeper.restart();
-      const effect = journal.submit(text);
-      persist();
-      dom.notice('');
-      if (effect?.type === 'copy') {
-        render();
-        print();
-        dom.focusInput();
-        return;
-      }
-      if (effect?.type === 'save') {
-        keep(effect.data);
-      }
-      if (effect?.type === 'unavailable') {
-        dom.notice(`${effect.feature} is not available in this build.`);
-      }
+      touchHeld = true;
+      journal.setKey('Space');
       render();
-      syncSound();
+      persist();
     },
+    /** The command line's answer: typed, or sent from a soft keyboard. */
+    submit: (text: string) =>
+      answer(() => {
+        // A soft keyboard often sends no Enter keydown; press it for the
+        // submit, as a keyboard does, and release it once a frame passes.
+        if (!journal.session.timingState.keyboard.key) {
+          journal.setKey('Enter');
+          softEnterAt = journal.session.view.frames;
+        }
+        return journal.submit(text);
+      }),
+    /**
+     * A context bar button. A finger presses Enter and holds it until it
+     * lifts; a keyboard activation already holds its own key.
+     */
+    tap: (id: string, pressEnter = true) =>
+      answer(() => {
+        const offered = answersFor(journal.session.view).find(a => a.id === id);
+        if (offered?.kind !== 'choice') {
+          return;
+        }
+        if (!pressEnter) {
+          return journal.submit(offered.text);
+        }
+        touchHeld = true;
+        return tapAnswer(journal, offered);
+      }),
     /** An animation frame at `now`. */
     tick: (now: number) => {
       if (!menuOpen && !dom.hidden) {
         advanceTo(now);
+        if (
+          softEnterAt !== undefined &&
+          journal.session.view.frames > softEnterAt
+        ) {
+          softEnterAt = undefined;
+          if (journal.session.timingState.keyboard.key === 'Enter') {
+            journal.setKey('');
+            persist();
+          }
+        }
       }
     },
     /** Text went into the command line. */

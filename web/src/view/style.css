@@ -223,6 +223,11 @@ main {
   margin-top: 4px;
   color: #eee;
 }
+.version {
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: #777;
+}
 .update-ready {
   margin: 8px 0 0;
   font-size: 12px;
@@ -266,6 +271,7 @@ main {
   .build-note,
   .notice,
   .update-ready,
+  .version,
   .top-bar,
   .game-menu {
     display: none;

@@ -1,3 +1,4 @@
+import { version } from '../../../package.json';
 import { fixtureSides } from '../sim/league';
 import { flashPhase } from '../sim/session';
 import {
@@ -161,6 +162,7 @@ export const createBrowserDom = (app: HTMLElement) => {
   <pre id="transcript" class="sr-only" aria-live="polite" aria-atomic="true"></pre>
   <p class="build-note">Play league and cup matches, edit names and manage your club.<br />Play resumes where you left it. Press Esc or the menu button to save, load or start again.</p>
   <p id="notice" class="notice" role="status"></p>
+  <p class="version">v${version}</p>
   <dialog id="game-menu" class="game-menu" aria-labelledby="game-menu-title"></dialog>
   <input id="load-save" type="file" accept=".json,.fman.json" hidden />
 `;

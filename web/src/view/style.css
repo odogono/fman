@@ -247,9 +247,11 @@ main {
   padding: 8px;
   border: 2px solid transparent;
   color: var(--bright-7);
+  /* The game's own font, at whole multiples of its 8px cell to stay crisp. */
   font:
-    700 18px/1.2 system-ui,
-    sans-serif;
+    16px/24px Spectrum,
+    monospace;
+  font-synthesis: none;
   cursor: pointer;
   touch-action: manipulation;
   user-select: none;
@@ -263,7 +265,7 @@ main {
   grid-column: span 1;
   background: var(--normal-0);
   border-color: var(--normal-7);
-  font-size: 22px;
+  font-size: 24px;
 }
 .context-bar .red {
   background: var(--bright-2);

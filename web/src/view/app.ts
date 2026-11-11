@@ -7,10 +7,16 @@ import {
   type AmountAction,
   type AmountEntry
 } from './amount-entry';
-import { answersFor, tapAnswer, type OfferedAnswer } from './answers';
+import {
+  answersFor,
+  printAccepted,
+  tapAnswer,
+  type OfferedAnswer
+} from './answers';
 import { barFor, type BarButton } from './context-bar';
 import { createFrameSampler } from './frame-sampler';
 import { makeScreen } from './screen';
+import { screenTitle } from './screen-title';
 import { slotCount, type AppStorage, type Options } from './storage';
 
 export type Display = ReturnType<typeof makeScreen>;
@@ -39,8 +45,8 @@ export type Menu = {
 
 /** The page: it paints what the app gives it and reports what the player does. */
 export type Dom = {
-  /** `fit` scales the screen to the page width, for the context bar. */
-  applyOptions: (options: Options, fit: boolean) => void;
+  /** `touch`: the context bar shows, so the screen fits the page width. */
+  applyOptions: (options: Options, touch: boolean) => void;
   /** Opens the file picker; a chosen file arrives through `importSave`. */
   chooseFile: () => void;
   closeMenu: () => void;
@@ -58,6 +64,8 @@ export type Dom = {
     clearInput: boolean;
     display: Display;
     focus: boolean;
+    /** The name of the screen on show, for the title above it. */
+    title: string;
     view: View;
   }) => void;
   showMenu: (menu: Menu) => void;
@@ -148,7 +156,7 @@ export const createApp = ({
   let pendingSlot = 0;
   /** A finger is holding a key down: Enter after a tap, or a pause keypress. */
   let touchHeld = false;
-  /** The frame at which a soft keyboard's submit pressed Enter. */
+  /** The frame at which a submit with no key down pressed Enter. */
   let softEnterAt: number | undefined;
   /** The amount being entered; it starts afresh each time its prompt does. */
   let amountEntry: AmountEntry | undefined;
@@ -199,6 +207,7 @@ export const createApp = ({
       clearInput,
       display,
       focus: !display.paused && !menuOpen && !bar,
+      title: screenTitle(view),
       view
     });
   };
@@ -262,6 +271,11 @@ export const createApp = ({
         title = 'Game menu';
         controls.push(
           button('Resume', closeMenu),
+          button(
+            'Print screen',
+            printScreen,
+            !printAccepted(journal.session.view)
+          ),
           button('Save', () => showMenu('save'), !storageWorks),
           button('Load', () => showMenu('load')),
           button('New game', () => showMenu('new-game')),
@@ -383,6 +397,11 @@ export const createApp = ({
     }
     showMenu('main', status);
   };
+  /** The original's `h`, sent from the menu once play resumes. */
+  const printScreen = () => {
+    closeMenu();
+    answer(() => submitPressingEnter('h'));
+  };
   /** KEEP downloads the save; only then does the original ask whether to play on. */
   const keep = (data: string) => {
     try {
@@ -445,6 +464,18 @@ export const createApp = ({
     }
     render();
     syncSound();
+  };
+  /**
+   * Submits `text` with Enter down, as a keyboard does, when no key is
+   * already down (a soft keyboard or the menu sends none); Enter lifts once
+   * a frame passes.
+   */
+  const submitPressingEnter = (text: string) => {
+    if (!journal.session.timingState.keyboard.key) {
+      journal.setKey('Enter');
+      softEnterAt = journal.session.view.frames;
+    }
+    return journal.submit(text);
   };
   const release = () => {
     if (!menuOpen) {
@@ -544,16 +575,7 @@ export const createApp = ({
       persist();
     },
     /** The command line's answer: typed, or sent from a soft keyboard. */
-    submit: (text: string) =>
-      answer(() => {
-        // A soft keyboard often sends no Enter keydown; press it for the
-        // submit, as a keyboard does, and release it once a frame passes.
-        if (!journal.session.timingState.keyboard.key) {
-          journal.setKey('Enter');
-          softEnterAt = journal.session.view.frames;
-        }
-        return journal.submit(text);
-      }),
+    submit: (text: string) => answer(() => submitPressingEnter(text)),
     /** A change to the amount being entered; it presses no key. */
     amount: (action: AmountAction) => {
       if (amountEntry && !menuOpen) {

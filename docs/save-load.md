@@ -56,8 +56,14 @@ Fractional browser phase is not stored; restoring starts a fresh phase and
 does not simulate time spent with the page closed.
 
 Escape or the Menu button opens the game menu, which freezes play. It offers
-Resume, Save and Load (five slots), New game (after a confirmation), Export
-and Import of a save file, and Options (sound, display size). Options are
+Resume, Print screen, Save and Load (five slots), New game (after a
+confirmation), Export and Import of a save file, and Options (sound, display
+size, touch controls). Print screen closes the menu and submits the original's
+`h`, pressing Enter for it as a keyboard does; it is enabled only at prompts
+where the original copies the screen and that offer answers. The menu button
+is an icon at the top left, beside the name of the screen on show (the
+highlights name the clubs playing, home club first). Every menu control is a
+tap target of at least 44px. Options are
 stored per browser and kept apart from saved games. If an autosave can't be
 restored, the game starts at the title screen with a notice. If storage
 fails, Save is disabled and the menu suggests Export.

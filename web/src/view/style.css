@@ -40,7 +40,8 @@ body {
 main {
   display: grid;
   justify-items: center;
-  align-content: center;
+  /* From the top, so the menu button and title hold still between screens. */
+  align-content: start;
   min-height: 100vh;
   padding: 24px 12px;
 }
@@ -90,20 +91,62 @@ main {
 main {
   position: relative;
 }
-.menu-button {
-  position: absolute;
-  top: 12px;
-  right: 12px;
+/* The menu button and the name of the screen, above the screen. */
+.top-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: calc(36 * var(--cell));
+  max-width: 100%;
+  margin-bottom: 12px;
 }
+.menu-button {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+}
+.top-bar .menu-button {
+  padding: 0;
+}
+.screen-title {
+  margin: 0;
+  color: var(--bright-7);
+  /* The game's font, 12px on a phone so long titles fit, up to 16px as the
+     screen grows. */
+  font:
+    clamp(12px, var(--cell), 16px) / 1.5 Spectrum,
+    monospace;
+  font-synthesis: none;
+  /* Two long club names wrap onto a second line. */
+  overflow-wrap: anywhere;
+}
+/* Every menu control is a tap target of at least 44px. */
 .menu-button,
 .game-menu button,
 .game-menu select {
+  min-height: 44px;
   padding: 8px 12px;
   border: 1px solid #666;
   background: #222;
   color: #eee;
   font: inherit;
   cursor: pointer;
+  touch-action: manipulation;
+}
+.game-menu label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  cursor: pointer;
+}
+.game-menu input[type='checkbox'] {
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  order: 1;
 }
 .menu-button:focus-visible,
 .game-menu :focus-visible {
@@ -116,8 +159,9 @@ main {
   border: 1px solid #666;
   background: #151515;
   color: #eee;
+  /* 16px, so a phone does not zoom in on a focused select. */
   font:
-    14px/1.5 system-ui,
+    16px/1.5 system-ui,
     sans-serif;
 }
 .game-menu::backdrop {
@@ -209,7 +253,7 @@ main {
   }
   .build-note,
   .notice,
-  .menu-button,
+  .top-bar,
   .game-menu {
     display: none;
   }

@@ -19,7 +19,7 @@ A view-side layer (`web/src/view/answers.ts`) reads the session view and lists e
 - Each offered answer has a stable id and its answer text (for example `menu.status` → `s`). Each mode writes its own label.
 - Where any input moves on, a tap submits an empty answer (plain Enter). Team selection never offers this, because an empty answer there means player 0.
 - The save question and the sale offer show plain Yes and No buttons. No submits `n` with no extra confirmation, as in the original.
-- Print (`h`) is not an offered answer. It moves to the game menu (#47); keyboard players can still type it.
+- Print (`h`) is not an offered answer. The game menu offers it as Print screen, enabled only where the original copies the screen; keyboard players can still type it.
 - Taps reproduce keypresses as well as answers ([ADR 0006](adr/0006-taps-reproduce-keypresses.md)). A tap that submits an answer presses Enter and holds it until the finger lifts; a long press held into the highlights can shorten their pauses, as a held key does. During a timed pause, a tap on the game area is a keypress for as long as the finger is down. At any other time a tap presses no key.
 
 Tests check, screen by screen, that each offered answer is valid and does what the original does. A journal test checks that a short game played by taps matches the same game typed at the same moments: same state, frames and RNG seed.
@@ -60,5 +60,5 @@ Style is "paper & ink": light grey paper, black text with red and blue ink rows,
 
 - Phone portrait first; wider screens show the same layout centred, or the two-pane desktop layout.
 - An installable PWA that plays offline.
-- The existing **autosave**, **save slots** and **game menu** ([ADR 0004](adr/0004-resume-exact-session.md)) carry over; mobile adds only touch-sized controls for them.
+- The existing **autosave**, **save slots** and **game menu** ([ADR 0004](adr/0004-resume-exact-session.md)) carry over; mobile adds only touch-sized controls for them. A bar above the screen holds the menu button, an icon at the top left, and the name of the screen on show; during the highlights it names the clubs playing, home club first. Every menu control, slots included, is at least 44px tall.
 - The first tap unlocks sound; a mute toggle in Settings remembers the choice.

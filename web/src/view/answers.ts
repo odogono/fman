@@ -178,6 +178,15 @@ export const answersFor = (view: View): readonly OfferedAnswer[] => {
 };
 
 /**
+ * Whether the prompt on screen takes the original's screen copy (`h`). Print
+ * is not an offered answer; the game menu offers it instead. Only prompts
+ * that offer answers count, so nothing the original refuses becomes reachable.
+ */
+export const printAccepted = (view: View) =>
+  !['manager', 'names', 'save-question'].includes(view.screen) &&
+  answersFor(view).length > 0;
+
+/**
  * Submits an offered answer the way a keyboard does: Enter goes down and the
  * answer is submitted (ADR 0006). Enter stays down while the finger does; on
  * release, advance to the moment and call `journal.setKey('')`, as a key-up

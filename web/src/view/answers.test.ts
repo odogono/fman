@@ -10,7 +10,12 @@ import {
 } from '../sim/session';
 import { viewOn } from '../sim/view-on';
 import { finishPrompt, submitInput } from '../test/input';
-import { answersFor, tapAnswer, type OfferedAnswer } from './answers';
+import {
+  answersFor,
+  printAccepted,
+  tapAnswer,
+  type OfferedAnswer
+} from './answers';
 import { barFor } from './context-bar';
 
 /** A short description of where an answer led, to compare with the table. */
@@ -172,7 +177,15 @@ const probe = (journal: Journal) => {
   expect(barFor(answers)).toHaveLength(answers.length);
   if (view.paused) {
     expect(answers).toEqual([]);
+    expect(printAccepted(view)).toBe(false);
     return;
+  }
+  // The game menu's Print is there only where the original copies the screen.
+  if (printAccepted(view)) {
+    const copy = openSave(journal.snapshot());
+    expect(
+      `${view.screen}: h → ${tap(copy, { id: 'print', kind: 'choice', text: 'h' })}`
+    ).toBe(`${view.screen}: h → effect:copy`);
   }
   expect(new Set(answers.map(a => a.id)).size).toBe(answers.length);
   const outcomes = answers.map(answer => {

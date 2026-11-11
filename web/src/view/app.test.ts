@@ -38,7 +38,8 @@ const harness = ({
     menuOpen: false,
     notice: '',
     printed: 0,
-    rendered: 0
+    rendered: 0,
+    title: ''
   };
   const dom: Dom = {
     applyOptions: (options, fit) => {
@@ -60,8 +61,9 @@ const harness = ({
     openMenu: () => {
       page.menuOpen = true;
     },
-    render: ({ amount, bar, focus }) => {
+    render: ({ amount, bar, focus, title }) => {
       page.amount = amount;
+      page.title = title;
       page.bar = bar;
       page.inputFocus = focus;
       page.rendered++;
@@ -329,6 +331,31 @@ test('h prints the screen', () => {
   run.settle();
   run.type('h');
   expect(run.page.printed).toBe(1);
+});
+
+test('the game menu prints the screen where the original takes h', () => {
+  const run = harness({ coarsePointer: true });
+  run.app.openMenu();
+  expect(run.control('Print screen')).toMatchObject({ disabled: true });
+  run.press('Resume');
+
+  run.toMenu();
+  expect(run.page.title).toBe('Main menu');
+  run.tap('Score (s)');
+  run.settle();
+  expect(run.page.title).toBe('Club status');
+  const before = run.app.journal.session.view;
+  run.app.openMenu();
+  run.press('Print screen');
+  expect(run.page.menuOpen).toBe(false);
+  expect(run.page.printed).toBe(1);
+  expect(run.view().screen).toBe('status');
+  expect(run.view().game).toEqual(before.game);
+  // Enter goes down for the answer, as a typed h presses it, and lifts a
+  // frame after the replayed prompt beep.
+  expect(run.app.journal.session.timingState.keyboard.key).toBe('Enter');
+  run.wait(200);
+  expect(run.app.journal.session.timingState.keyboard.key).toBe('');
 });
 
 const escape = {

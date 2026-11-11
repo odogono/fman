@@ -108,9 +108,10 @@ export type View = ScreenView & {
 
 export type Screen = ScreenView['screen'];
 
+const flashAt = (frames: number) => Math.floor(frames / 16) % 2 === 1;
 /** Whether a view's FLASH attributes show inverted; ULA time once a game exists. */
 export const flashPhase = (view: Pick<View, 'frames' | 'ulaFrames'>) =>
-  Math.floor((view.ulaFrames ?? view.frames) / 16) % 2 === 1;
+  flashAt(view.ulaFrames ?? view.frames);
 
 /**
  * A screen that plays out on its own before `next` takes over. `skip` is what
@@ -310,16 +311,26 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
       program.timed = undefined;
     }
   };
-  /** What a repaint depends on, besides the screen's data. */
-  const displayKey = () => {
-    const frames = program.clock.frames;
-    const flash = flashPhase(
+  const flash = () =>
+    flashAt(
       program.game && program.screen !== 'menu'
-        ? { frames, ulaFrames: program.ulaFrames }
-        : { frames }
+        ? program.ulaFrames
+        : program.clock.frames
     );
-    return `${program.screen}:${paused()}:${program.timed?.timeline.index ?? ''}:${flash}`;
-  };
+  /** What a repaint depends on, besides the screen's data. */
+  const display = () => ({
+    flash: flash(),
+    index: program.timed?.timeline.index,
+    paused: paused(),
+    screen: program.screen,
+    timed: program.timed
+  });
+  const changed = (before: ReturnType<typeof display>) =>
+    before.screen !== program.screen ||
+    before.timed !== program.timed ||
+    before.index !== program.timed?.timeline.index ||
+    before.paused !== paused() ||
+    before.flash !== flash();
   /** Runs the program for `frames`; returns whether the screen needs a repaint. */
   const advance = (frames: number) => {
     // Validate before changing either the playback or the ULA counter.
@@ -330,7 +341,7 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
     ) {
       throw new RangeError('Invalid frame advance');
     }
-    const before = displayKey();
+    const before = display();
     program.ulaFrames =
       (program.ulaFrames + (frames % framePeriod)) % framePeriod;
     let left = frames * spectrumFrameT;
@@ -352,7 +363,7 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
     }
     soundTimeT += left;
     program.clock.advance(frames - missed);
-    return displayKey() !== before;
+    return changed(before);
   };
 
   const accept = (text: string): Effect | undefined => {

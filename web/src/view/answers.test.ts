@@ -35,11 +35,8 @@ const outcome = (view: View, effect: Effect | undefined) => {
 };
 
 const sampleText: Record<string, string> = {
-  'borrow.amount': '1000',
   'manager.name': 'alex',
-  'names.name': 'Ace',
-  'repay.amount': '0',
-  'transfer.bid': '0'
+  'names.name': 'Ace'
 };
 
 /** The view, narrowed to `screen`; throws when it shows another. */
@@ -58,6 +55,7 @@ const expected = (answer: OfferedAnswer, view: View): string | string[] => {
   const table: Record<string, () => string | string[]> = {
     'bills.continue': () => ['end-season', 'transfer', 'transfer-result'],
     'borrow.amount': () => 'message:balance',
+    'borrow.cancel': () => 'message:balance',
     'clubs.club.#': () => 'level',
     'clubs.next-page': () => `clubs:${(narrow(view, 'clubs').page % 4) + 1}`,
     'colours.black': () => 'menu',
@@ -98,6 +96,7 @@ const expected = (answer: OfferedAnswer, view: View): string | string[] => {
       `names:list:${names!.kind}:${names!.phase === 'question' ? 1 : names!.page}`,
     'other-matches.continue': () => 'table',
     'repay.amount': () => 'message:balance',
+    'repay.cancel': () => 'message:balance',
     'replay.continue': () => 'fixture',
     'result.continue': () => [
       'replay',
@@ -124,7 +123,8 @@ const expected = (answer: OfferedAnswer, view: View): string | string[] => {
     'team.change': () => `selection:${narrow(view, 'team').pickedCount}`,
     'team.kick-off': () => 'highlights',
     'transfer-result.continue': () => 'menu',
-    'transfer.bid': () => 'message:text',
+    // The largest bid the club can afford: refused or accepted, never short.
+    'transfer.bid': () => ['message:text', 'transfer-result'],
     'transfer.decline': () => 'menu'
   };
   const want = table[key];
@@ -140,11 +140,18 @@ const shown = (view: View) => {
   return JSON.stringify(rest);
 };
 
-const tap = (journal: Journal, answer: OfferedAnswer) => {
+/** Taps an answer; an amount goes in at its largest, or at `amount`. */
+const tap = (journal: Journal, answer: OfferedAnswer, amount?: number) => {
   const effect =
     answer.kind === 'choice'
       ? tapAnswer(journal, answer)
-      : tapAnswer(journal, answer, sampleText[answer.id]!);
+      : tapAnswer(
+          journal,
+          answer,
+          answer.kind === 'amount'
+            ? String(amount ?? answer.max)
+            : sampleText[answer.id]!
+        );
   journal.setKey('');
   finishPrompt(journal);
   return outcome(journal.session.view, effect);
@@ -174,6 +181,15 @@ const probe = (journal: Journal) => {
     expect(`${answer.id} → ${wants.includes(got) ? 'as listed' : got}`).toBe(
       `${answer.id} → as listed`
     );
+    if (answer.kind === 'amount') {
+      // One past the range ends on one of the original's errors.
+      const over = openSave(journal.snapshot());
+      tap(over, answer, answer.max + 1);
+      const message = narrow(over.session.view, 'message').message;
+      expect(message.kind === 'text' ? message.text : '').toMatch(
+        /credit limit|DON'T OWE|haven't enough/
+      );
+    }
     return got;
   });
   const copy = openSave(journal.snapshot());

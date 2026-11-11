@@ -2,8 +2,8 @@ import type { OfferedAnswer } from './answers';
 
 /**
  * One button in Classic mode's context bar. `number` buttons sit in a grid;
- * `primary` is the yellow full-width action; `entry` buttons open the
- * soft keyboard for a typed answer.
+ * `primary` is the yellow action; a `text` answer's button opens the soft
+ * keyboard, and an `amount` answer's button submits the entered amount.
  */
 export type BarButton = Readonly<{
   answer: OfferedAnswer;
@@ -13,7 +13,8 @@ export type BarButton = Readonly<{
 }>;
 
 const labels: Record<string, string> = {
-  'borrow.amount': 'Type amount',
+  'borrow.amount': 'Take loan',
+  'borrow.cancel': 'Cancel (0)',
   'clubs.next-page': 'Next page (99)',
   'colours.black': 'Black (0)',
   'colours.white': 'White (7)',
@@ -28,12 +29,13 @@ const labels: Record<string, string> = {
   'menu.status': 'Score (s)',
   'names.name': 'Type name',
   'names.next-page': 'Next page (99)',
-  'repay.amount': 'Type amount',
+  'repay.amount': 'Repay',
+  'repay.cancel': 'Cancel (0)',
   'selection.done': 'Done (99)',
   'squad.back': 'Back (99)',
   'team.change': 'Change team',
   'team.kick-off': 'Kick off (99)',
-  'transfer.bid': 'Type bid',
+  'transfer.bid': 'Place bid',
   'transfer.decline': 'Pass (99)'
 };
 
@@ -68,7 +70,8 @@ const labelFor = (answer: OfferedAnswer) => {
 
 /**
  * The bar for a prompt's offered answers: numbers first, as a grid, then the
- * other choices in red and blue pairs, then the yellow primary action.
+ * other choices in red and blue pairs, then the yellow primary action. An
+ * amount's submit sits beside its way out (Cancel or Pass) instead.
  */
 export const barFor = (answers: readonly OfferedAnswer[]): BarButton[] => {
   const numbers: BarButton[] = [];
@@ -78,6 +81,8 @@ export const barFor = (answers: readonly OfferedAnswer[]): BarButton[] => {
     const label = labelFor(answer);
     if (/\.\d+$/.test(answer.id)) {
       numbers.push({ answer, label, tone: 'number', wide: false });
+    } else if (answer.kind === 'amount') {
+      primaries.push({ answer, label, tone: 'primary', wide: false });
     } else if (
       primary.has(answer.id) ||
       answer.id.endsWith('.continue') ||
@@ -92,7 +97,10 @@ export const barFor = (answers: readonly OfferedAnswer[]): BarButton[] => {
     answer,
     label: labelFor(answer),
     tone: i % 2 === 0 ? 'red' : 'blue',
-    wide: i === others.length - 1 && i % 2 === 0
+    wide:
+      i === others.length - 1 &&
+      i % 2 === 0 &&
+      !answers.some(a => a.kind === 'amount')
   }));
   return [...numbers, ...paired, ...primaries];
 };

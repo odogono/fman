@@ -1,5 +1,13 @@
 import { fixtureSides } from '../sim/league';
 import { flashPhase } from '../sim/session';
+import {
+  amountChips,
+  amountStep,
+  digitAllowed,
+  formatAmount,
+  type AmountAction,
+  type AmountEntry
+} from './amount-entry';
 import type { App, Dom, MenuControl } from './app';
 import type { BarButton } from './context-bar';
 import { rasterText, rasterizeCells } from './glyphs';
@@ -57,6 +65,77 @@ const control = (item: MenuControl) => {
   }
 };
 
+/** A bar button that changes the amount being entered, not the game. */
+const amountButton = (
+  label: string,
+  action: AmountAction,
+  className: string,
+  disabled = false
+) => {
+  const element = document.createElement('button');
+  element.type = 'button';
+  element.textContent = label;
+  element.className = className;
+  element.disabled = disabled;
+  element.dataset.action = JSON.stringify(action);
+  return element;
+};
+
+/** The stepper and chips, or the keypad while an exact amount is typed. */
+const amountPanel = (entry: AmountEntry) => {
+  const shown = document.createElement('output');
+  shown.className = 'amount wide';
+  if (entry.typing !== undefined) {
+    shown.textContent = `£${entry.typing}_`;
+    const digits = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map(digit =>
+      amountButton(
+        String(digit),
+        { digit, type: 'digit' },
+        'number',
+        !digitAllowed(entry, digit)
+      )
+    );
+    return [
+      shown,
+      ...digits,
+      amountButton('Del', { type: 'back' }, 'number', !entry.typing),
+      amountButton('Done', { type: 'done' }, 'number')
+    ];
+  }
+  shown.className = 'amount';
+  shown.textContent = formatAmount(entry.value);
+  return [
+    amountButton(
+      '-',
+      { delta: -amountStep, type: 'step' },
+      'number',
+      entry.value <= entry.min
+    ),
+    shown,
+    amountButton(
+      '+',
+      { delta: amountStep, type: 'step' },
+      'number',
+      entry.value >= entry.max
+    ),
+    ...amountChips.map(chip =>
+      amountButton(
+        `+£${chip / 1000}k`,
+        { delta: chip, type: 'step' },
+        'number chip',
+        entry.value >= entry.max
+      )
+    ),
+    amountButton(
+      'Max',
+      { type: 'max' },
+      'number chip',
+      entry.value >= entry.max
+    ),
+    amountButton('Exact amount', { type: 'keypad' }, 'blue wide')
+  ];
+};
+
 /** The context bar button an event came from, if any. */
 const barButton = (event: Event) =>
   (event.target as Element).closest<HTMLButtonElement>('#context-bar button');
@@ -100,16 +179,22 @@ export const createBrowserDom = (app: HTMLElement) => {
   const bar = find<HTMLElement>('#context-bar');
   let barKey = '';
 
-  const paintBar = (buttons: readonly BarButton[] | undefined) => {
+  const paintBar = (
+    buttons: readonly BarButton[] | undefined,
+    amount: AmountEntry | undefined
+  ) => {
     bar.hidden = !buttons;
-    const key = JSON.stringify(buttons?.map(b => [b.answer.id, b.label]));
+    const key = JSON.stringify([
+      buttons?.map(b => [b.answer.id, b.label]),
+      amount
+    ]);
     if (!buttons || key === barKey) {
       return;
     }
     // A new prompt without a typed answer closes the soft keyboard.
     if (
       document.activeElement === input &&
-      buttons.every(button => button.answer.kind === 'choice')
+      buttons.every(button => button.answer.kind !== 'text')
     ) {
       input.blur();
     }
@@ -117,6 +202,7 @@ export const createBrowserDom = (app: HTMLElement) => {
     bar.style.minHeight = buttons.length ? '' : `${bar.offsetHeight}px`;
     barKey = key;
     bar.replaceChildren(
+      ...(amount ? amountPanel(amount) : []),
       ...buttons.map(button => {
         const element = document.createElement('button');
         element.type = 'button';
@@ -179,8 +265,8 @@ export const createBrowserDom = (app: HTMLElement) => {
       notice.textContent = text;
     },
     openMenu: () => menu.showModal(),
-    render: ({ bar: buttons, clearInput, display, focus, view }) => {
-      paintBar(buttons);
+    render: ({ amount, bar: buttons, clearInput, display, focus, view }) => {
+      paintBar(buttons, amount);
       screen.height = display.lines.length * 8;
       screenContext.putImageData(
         new ImageData(
@@ -289,7 +375,7 @@ export const createBrowserDom = (app: HTMLElement) => {
     document.addEventListener('pointerdown', target.pointerDown);
     bar.addEventListener('pointerdown', event => {
       const button = barButton(event);
-      if (!button || button.dataset.kind !== 'choice') {
+      if (!button?.dataset.id || button.dataset.kind === 'text') {
         return;
       }
       // Submit on the way down, as a key does; keep focus off the button.
@@ -301,7 +387,9 @@ export const createBrowserDom = (app: HTMLElement) => {
       if (!button) {
         return;
       }
-      if (button.dataset.kind !== 'choice') {
+      if (button.dataset.action) {
+        target.amount(JSON.parse(button.dataset.action) as AmountAction);
+      } else if (button.dataset.kind === 'text') {
         // Typed answers use the soft keyboard, which opens only on a tap.
         input.focus({ preventScroll: true });
       } else if (event.detail === 0) {

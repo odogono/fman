@@ -31,7 +31,8 @@ The original screen, scaled to fit, with a context bar of large buttons beneath 
 - **Touch controls** in Options: Auto (the default) shows the bar on any device with a touchscreen; On and Off force it. With the bar showing and Display size on Fit window, the screen scales fractionally to the page width.
 - Labels give a short wording and the original key, such as "Loan (l)". Numbered answers sit in a grid of number-only buttons; Continue, Kick off, Play, Yes, Done and Next page are full-width yellow; other choices alternate red and blue.
 - A button submits as its finger goes down and holds Enter until it lifts. While nothing is offered the bar keeps its height, empty.
-- Names and amounts show a "Type" button that opens the soft keyboard; the keyboard's Go key submits, pressing Enter for at least a frame when the keyboard sends no Enter key of its own. #46 replaces the amount button. While the bar shows, the command line is never focused on its own.
+- Names show a "Type name" button that opens the soft keyboard; the keyboard's Go key submits, pressing Enter for at least a frame when the keyboard sends no Enter key of its own. While the bar shows, the command line is never focused on its own.
+- Amounts (loan, repayment, bid) use touch entry: − and + by £1,000, chips +£10k, +£50k, +£100k and Max, and "Exact amount" for an on-screen keypad. Entry stays within what the original accepts: a loan up to the credit limit less the debt, a repayment up to the smaller of the debt and the cash, a bid up to the cash. A bid starts at the player's value; a loan or repayment at £0. Cancel (0) leaves a loan or repayment the original's way, and Pass (99) declines a bid. Typing on a keyboard can still reach the original's error messages.
 
 ![Classic mode](https://gist.githubusercontent.com/odogono/00dcc8e44efa42a79b1c8599d68c7496/raw/classic.jpg)
 

@@ -1,5 +1,5 @@
 import type { Journal } from '../sim/journal';
-import type { Game } from '../sim/management';
+import { creditLimit, type Game } from '../sim/management';
 import type { Effect, View } from '../sim/session';
 
 /** An offered answer whose text is fixed; a continue is an empty one. */
@@ -8,8 +8,17 @@ export type ChoiceAnswer = Readonly<{
   kind: 'choice';
   text: string;
 }>;
-/** Free number entry where the original asks for an amount. */
-export type AmountAnswer = Readonly<{ id: string; kind: 'amount' }>;
+/**
+ * Free number entry where the original asks for an amount. Every amount from
+ * `min` to `max` is one the original accepts; `start` is where entry begins.
+ */
+export type AmountAnswer = Readonly<{
+  id: string;
+  kind: 'amount';
+  max: number;
+  min: number;
+  start: number;
+}>;
 /** Free text entry where the original asks for a name. */
 export type TextAnswer = Readonly<{
   id: string;
@@ -34,6 +43,10 @@ const numbered = (prefix: string, ids: readonly number[]) =>
   ids.map(id => choice(`${prefix}.${id}`, String(id)));
 const range = (from: number, to: number) =>
   Array.from({ length: to - from + 1 }, (_, i) => from + i);
+const amount = (id: string, max: number, start = 0): AmountAnswer => {
+  const top = Math.max(0, max);
+  return { id, kind: 'amount', max: top, min: 0, start: Math.min(start, top) };
+};
 const playerIds = (game: Game, keep: (status: number) => boolean) =>
   game.players.filter(player => keep(player.status)).map(player => player.id);
 
@@ -87,12 +100,25 @@ export const answersFor = (view: View): readonly OfferedAnswer[] => {
         ),
         choice('squad.back', '99')
       ];
+    // A loan stays within the credit limit; a repayment within the debt and
+    // the cash; a bid within the cash. Zero leaves, as in the original.
     case 'borrow':
+      return [
+        amount('borrow.amount', creditLimit(view.game) - view.game.debt),
+        choice('borrow.cancel', '0')
+      ];
     case 'repay':
-      return [{ id: `${view.screen}.amount`, kind: 'amount' }];
+      return [
+        amount('repay.amount', Math.min(view.game.debt, view.game.cash)),
+        choice('repay.cancel', '0')
+      ];
     case 'transfer':
       return [
-        { id: 'transfer.bid', kind: 'amount' },
+        amount(
+          'transfer.bid',
+          view.game.cash,
+          view.game.players[view.playerId - 1]!.value
+        ),
         choice('transfer.decline', '99')
       ];
     case 'team':

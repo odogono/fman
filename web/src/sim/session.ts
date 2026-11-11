@@ -188,12 +188,17 @@ const freshProgram = (frames = 0, seed = 0) => ({
   ulaFrames: frames
 });
 
-/** `ruleset` applies to every new game the session starts; a loaded game keeps its own. */
+/**
+ * `ruleset` applies to the games the session starts. Clearing the program, as
+ * the original's NEW does, keeps the rules of the game it clears, so a restart
+ * plays under the same rules.
+ */
 export const createSession = (
   initialFrames = 0,
   initialSeed = 0,
-  ruleset: Ruleset = 'original'
+  initialRuleset: Ruleset = 'original'
 ) => {
+  let ruleset = initialRuleset;
   let program = freshProgram(initialFrames, initialSeed);
   let soundTimeT = 0;
   let soundGeneration = 0;
@@ -283,6 +288,7 @@ export const createSession = (
     program.screen = isDismissed(program.game!) ? 'dismissal' : 'bills';
   };
   const clearProgram = () => {
+    ruleset = program.game?.ruleset ?? ruleset;
     program = { ...freshProgram(), screen: 'cleared' };
   };
   /** Play reaches the management menu: reseed from the frame counter (ADR 0003). */
@@ -904,6 +910,10 @@ export const createSession = (
     },
     setKey: (key: string) => program.keyboard.set(key),
     skipPause,
+    /** The rules of the game in play, or of the next game the session starts. */
+    get ruleset(): Ruleset {
+      return program.game?.ruleset ?? ruleset;
+    },
     get sounds(): readonly SoundEvent[] {
       const run = running();
       const timeline =

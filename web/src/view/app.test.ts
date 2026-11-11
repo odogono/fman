@@ -14,16 +14,22 @@ const harness = ({
   autosave,
   coarsePointer = false,
   downloadFails = false,
+  options,
   storageFails = false
 }: {
   autosave?: string;
   coarsePointer?: boolean;
   downloadFails?: boolean;
+  /** The stored options, as the page finds them on opening. */
+  options?: string;
   storageFails?: boolean;
 } = {}) => {
   const stored = new Map<string, string>();
   if (autosave !== undefined) {
     stored.set('fman:autosave', autosave);
+  }
+  if (options !== undefined) {
+    stored.set('fman:options', options);
   }
   const page = {
     amount: undefined as AmountEntry | undefined,
@@ -316,11 +322,13 @@ test('options are stored and applied to sound and the page', () => {
   size.change('2');
   expect(run.beeper.muted).toBe(true);
   expect(run.page.applied.at(-1)).toEqual({
+    rules: 'enhanced',
     scale: 2,
     sound: false,
     touch: 'auto'
   });
   expect(JSON.parse(run.stored.get('fman:options')!)).toEqual({
+    rules: 'enhanced',
     scale: 2,
     sound: false,
     touch: 'auto'
@@ -577,4 +585,92 @@ test('Cancel leaves a loan the original way, by borrowing nothing', () => {
   run.tap('Cancel (0)');
   expect(run.view().screen).toBe('message');
   expect(run.view().game!.debt).toBe(debt);
+});
+
+const rulesChoice = (run: ReturnType<typeof harness>) => {
+  const choice = run.control('Rules');
+  if (choice.kind !== 'choice') {
+    throw new Error('Rules is not a choice');
+  }
+  return choice;
+};
+
+test('a first visit plays Enhanced rules, and the menu says so', () => {
+  const run = harness();
+  expect(run.app.journal.session.ruleset).toBe('enhanced-1');
+  run.toMenu();
+  expect(run.view().game!.ruleset).toBe('enhanced-1');
+  run.app.openMenu();
+  expect(run.page.menu?.detail).toBe('Rules: Enhanced');
+});
+
+test('New game offers Enhanced first, then remembers the rules chosen', () => {
+  const run = harness();
+  run.toMenu();
+  run.app.openMenu();
+  run.press('New game');
+  const offered = rulesChoice(run);
+  expect(offered.value).toBe('enhanced');
+  expect(offered.choices.map(c => c.text)).toEqual(['Enhanced', 'Original']);
+  expect(offered.choices.every(c => c.description.length > 0)).toBe(true);
+
+  offered.change('original');
+  run.press('Start new game');
+  expect(run.page.notice).toBe('New game started with Original rules.');
+  expect(run.app.journal.session.ruleset).toBe('original');
+  run.toMenu();
+  expect(run.view().game!.ruleset).toBe('original');
+  expect(JSON.parse(run.stored.get('fman:options')!).rules).toBe('original');
+
+  run.app.openMenu();
+  expect(run.page.menu?.detail).toBe('Rules: Original');
+  run.press('New game');
+  expect(rulesChoice(run).value).toBe('original');
+  // Backing out keeps the game and the remembered choice.
+  rulesChoice(run).change('enhanced');
+  run.press('Back');
+  run.press('New game');
+  expect(rulesChoice(run).value).toBe('original');
+  expect(run.app.journal.session.ruleset).toBe('original');
+});
+
+test('the rules survive the autosave, and a broken one starts afresh under the last choice', () => {
+  const first = harness();
+  first.app.openMenu();
+  first.press('New game');
+  rulesChoice(first).change('original');
+  first.press('Start new game');
+  first.toMenu();
+  const autosave = first.stored.get('fman:autosave')!;
+  const options = first.stored.get('fman:options')!;
+
+  const resumed = harness({ autosave });
+  expect(resumed.view().game!.ruleset).toBe('original');
+
+  const broken = harness({ autosave: 'broken', options });
+  expect(broken.page.notice).toContain('Could not resume');
+  expect(broken.app.journal.session.ruleset).toBe('original');
+  // With no autosave, a returning player also starts under their last choice.
+  expect(harness({ options }).app.journal.session.ruleset).toBe('original');
+});
+
+test('save slots show each game’s rules; slots from before rule choice are Original', () => {
+  const run = harness();
+  run.toMenu();
+  run.app.openMenu();
+  run.press('Save');
+  run.press('1.');
+  run.stored.set(
+    'fman:slot:2',
+    JSON.stringify({
+      data: JSON.parse(run.stored.get('fman:slot:1')!).data,
+      label: 'old game',
+      savedAt: '2025-01-01T00:00:00.000Z'
+    })
+  );
+  run.press('Back');
+  run.press('Load');
+  const labels = run.page.menu!.controls.map(c => c.label);
+  expect(labels[0]).toContain('season 1, Enhanced rules');
+  expect(labels[1]).toContain('old game, Original rules');
 });

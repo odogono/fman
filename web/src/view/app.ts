@@ -10,6 +10,14 @@ import {
 import { answersFor, printAccepted, type OfferedAnswer } from './answers';
 import { barFor, type BarButton } from './context-bar';
 import { createFrameSampler } from './frame-sampler';
+import {
+  isRules,
+  rulesChoices,
+  rulesName,
+  rulesOf,
+  rulesetFor,
+  type Rules
+} from './rules';
 import { makeScreen } from './screen';
 import { screenTitle } from './screen-title';
 import { slotCount, type AppStorage, type Options } from './storage';
@@ -31,9 +39,23 @@ export type MenuControl =
       kind: 'select';
       label: string;
       value: string;
+    }
+  /** One of a few choices, each with a line saying what it means. */
+  | {
+      change: (value: string) => void;
+      choices: readonly {
+        description: string;
+        text: string;
+        value: string;
+      }[];
+      kind: 'choice';
+      label: string;
+      value: string;
     };
 export type Menu = {
   controls: readonly MenuControl[];
+  /** A line under the title about the game in play, such as its rules. */
+  detail?: string;
   status: string;
   title: string;
 };
@@ -130,25 +152,30 @@ export const createApp = ({
   print,
   storage
 }: Adapters) => {
+  let options = storage.readOptions();
+  /** A fresh game at the title, under the rules last chosen (Enhanced at first). */
+  const newJournal = (rules: Rules = options.rules) =>
+    createJournal({ kind: 'title', ruleset: rulesetFor(rules) });
   let journal: Journal;
   let storageWorks = true;
   {
     const saved = storage.readAutosave();
     try {
-      journal = saved ? openSave(saved) : createJournal();
+      journal = saved ? openSave(saved) : newJournal();
     } catch {
-      journal = createJournal();
+      journal = newJournal();
       dom.notice(
         'Could not resume the previous session; a new game has started.'
       );
     }
   }
-  let options = storage.readOptions();
   let lastPersist = 0;
   let sampleFrames = createFrameSampler(clock.now());
   let menuOpen = false;
   let menuView: MenuView = 'main';
   let pendingSlot = 0;
+  /** The rules picked in the New game step, until it starts a game. */
+  let chosenRules = options.rules;
   /** The held keypress is a finger's, so its lift releases it. */
   let touchHeld = false;
   /** The amount being entered; it starts afresh each time its prompt does. */
@@ -258,10 +285,12 @@ export const createApp = ({
   const showMenu = (view: MenuView, status = '') => {
     menuView = view;
     let title: string;
+    let detail: string | undefined;
     const controls: MenuControl[] = [];
     switch (view) {
       case 'main':
         title = 'Game menu';
+        detail = `Rules: ${rulesName(rulesOf(journal.session.ruleset))}`;
         controls.push(
           button('Resume', closeMenu),
           button(
@@ -271,7 +300,10 @@ export const createApp = ({
           ),
           button('Save', () => showMenu('save'), !storageWorks),
           button('Load', () => showMenu('load')),
-          button('New game', () => showMenu('new-game')),
+          button('New game', () => {
+            chosenRules = options.rules;
+            showMenu('new-game');
+          }),
           button('Export save file', exportSave),
           button('Import save file', dom.chooseFile),
           button('Options', () => showMenu('options'))
@@ -287,7 +319,7 @@ export const createApp = ({
         for (let slot = 1; slot <= slotCount; slot++) {
           const entry = storage.readSlot(slot);
           const label = entry
-            ? `${slot}. ${entry.label} (${new Date(entry.savedAt).toLocaleString()})`
+            ? `${slot}. ${entry.label}, ${rulesName(entry.rules ?? 'original')} rules (${new Date(entry.savedAt).toLocaleString()})`
             : `${slot}. Empty`;
           controls.push(
             button(
@@ -303,9 +335,28 @@ export const createApp = ({
         title = 'Start a new game?';
         status = 'Progress not saved to a slot will be lost.';
         controls.push(
-          button('Start new game', () =>
-            replaceJournal(createJournal(), 'New game started.')
-          ),
+          {
+            change: value => {
+              if (isRules(value)) {
+                chosenRules = value;
+              }
+            },
+            choices: rulesChoices.map(choice => ({
+              description: choice.description,
+              text: choice.name,
+              value: choice.rules
+            })),
+            kind: 'choice',
+            label: 'Rules',
+            value: chosenRules
+          },
+          button('Start new game', () => {
+            setOptions({ ...options, rules: chosenRules });
+            replaceJournal(
+              newJournal(chosenRules),
+              `New game started with ${rulesName(chosenRules)} rules.`
+            );
+          }),
           button('Back', () => showMenu('main'))
         );
         break;
@@ -350,7 +401,12 @@ export const createApp = ({
         );
         break;
     }
-    dom.showMenu({ controls, status, title });
+    dom.showMenu({
+      controls,
+      ...(detail === undefined ? {} : { detail }),
+      status,
+      title
+    });
   };
   const saveTo = (slot: number) => {
     if (storage.readSlot(slot) && pendingSlot !== slot) {
@@ -362,6 +418,7 @@ export const createApp = ({
     const saved = storage.writeSlot(slot, {
       data: journal.snapshot(),
       label: describe(),
+      rules: rulesOf(journal.session.ruleset),
       savedAt: clock.today()
     });
     showMenu(

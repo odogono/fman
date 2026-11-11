@@ -167,7 +167,7 @@ test('mid-prompt saves resume the remaining sound; older active timing journals 
   restored.advance(6);
   expect(restored.session.view).toEqual(journal.session.view);
   expect(restored.session.view.paused).toBe(false);
-  expect(JSON.parse(journal.snapshot()).version).toBe(6);
+  expect(JSON.parse(journal.snapshot()).version).toBe(7);
 });
 
 const positions = (rows: number[][]) =>

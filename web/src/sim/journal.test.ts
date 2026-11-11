@@ -140,7 +140,7 @@ test('version-2 migration accepts only the original idle menu checkpoint', () =>
   const restored = openSave(JSON.stringify(legacy));
   expect(restored.session.view.game).toEqual(data.base.game);
   expect(restored.session.view.frames).toBe(data.base.frames);
-  expect(JSON.parse(restored.snapshot()).version).toBe(6);
+  expect(JSON.parse(restored.snapshot()).version).toBe(7);
   for (const invalid of [
     { ...legacy, inputs: [['advance', 1]] },
     { ...legacy, base: { kind: 'title' } },
@@ -284,12 +284,16 @@ test('version-4 saves replay their logged keypresses unchanged', () => {
   live.advance(3);
   live.release();
   live.advance(20);
-  const data = { ...JSON.parse(live.snapshot()), version: 4 };
+  const data = {
+    ...JSON.parse(live.snapshot()),
+    base: { kind: 'title' },
+    version: 4
+  };
   expect(data.inputs).toContainEqual(['key', 'Enter']);
   const restored = openSave(JSON.stringify(data));
   expect(keyboard(restored)).toEqual(keyboard(live));
   expect(state(restored)).toBe(state(live));
-  expect(JSON.parse(restored.snapshot()).version).toBe(6);
+  expect(JSON.parse(restored.snapshot()).version).toBe(7);
   for (const input of [['press', 'Enter'], ['let-go']]) {
     expect(() =>
       openSave(JSON.stringify({ ...data, inputs: [...data.inputs, input] }))

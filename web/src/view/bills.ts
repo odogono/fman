@@ -1,9 +1,10 @@
 import type { View } from '../sim/session';
-import type { Paint } from './management-layouts';
+import type { Paint } from './grid';
 
-type BillsView = Extract<View, { screen: 'bills' | 'dismissal' }>;
-
-export const paintBills = (view: BillsView, put: Paint) => {
+export const paintBills = (
+  view: Extract<View, { screen: 'bills' | 'dismissal' }>,
+  put: Paint
+) => {
   const bill = view.bills;
   put(0, 0, '****WEEKLY BILLS****', { ink: 2, inverse: true });
   put(2, 0, `Wage Bill = £${bill.wages}`);
@@ -17,13 +18,16 @@ export const paintBills = (view: BillsView, put: Paint) => {
   }
 };
 
-export const paintDismissal = (view: BillsView, put: Paint) => {
+export const paintDismissal = (
+  view: Extract<View, { screen: 'dismissal' }>,
+  put: Paint
+) => {
   paintBills(view, put);
   const row = view.bills.loanIncreased ? 7 : 6;
   const green = { ink: 4, inverse: true };
   const black = { ink: 0, inverse: true };
   put(row, 0, '+'.repeat(164), green);
-  put(row + 5, 4, `YOU OWE OVER £${250_000 * (5 - view.game.division)}`, black);
+  put(row + 5, 4, `YOU OWE OVER £${view.creditLimit}`, black);
   put(row + 6, 0, '++++', green);
   put(row + 6, 4, "YOU'VE BEEN SACKED BY THE ", black);
   put(row + 6, 30, '+'.repeat(27), green);

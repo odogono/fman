@@ -45,6 +45,7 @@ test('renamed fixture clubs preserve native padding and inherited or explicit in
       frames: 0,
       game: fixture.game,
       paused: false,
+      roundName: undefined,
       screen: 'fixture'
     });
     expect(display.lines[2]!.trimEnd()).toBe(observed.line);

@@ -3,7 +3,7 @@ import { expect, test } from 'bun:test';
 
 import observations from '../sim/fixtures/name-layouts.json';
 import seasonObservations from '../sim/fixtures/seasons.json';
-import { prepareLeagueMatch } from '../sim/league';
+import { pickedCount, prepareLeagueMatch } from '../sim/league';
 import { createNewGame } from '../sim/management';
 import { renameClub } from '../sim/names';
 import { completeSeason } from '../sim/season';
@@ -62,8 +62,14 @@ for (const observed of observations.matches) {
     }
     const fixture = prepareLeagueMatch(game);
     const s = { fixture, frames: 0, game: fixture.game, paused: false };
-    compare(makeScreen({ ...s, screen: 'fixture' }), observed.fixture);
-    compare(makeScreen({ ...s, screen: 'team' }), observed.team);
+    compare(
+      makeScreen({ ...s, roundName: undefined, screen: 'fixture' }),
+      observed.fixture
+    );
+    compare(
+      makeScreen({ ...s, pickedCount: pickedCount(s.game), screen: 'team' }),
+      observed.team
+    );
   });
 }
 for (const observed of observations.seasons) {

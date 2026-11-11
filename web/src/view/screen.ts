@@ -4,13 +4,8 @@ import { screenPrintFault } from '../sim/name-print-fault';
 import { clubInk } from '../sim/names';
 import type { View } from '../sim/session';
 import { paintBills, paintDismissal } from './bills';
-import {
-  paintMarket,
-  paintSquad,
-  paintStatus,
-  type Cell,
-  type Style
-} from './management-layouts';
+import type { Cell, Style } from './grid';
+import { paintMarket, paintSquad, paintStatus } from './management-layouts';
 import { paintMatch } from './match-layouts';
 import { paintNames } from './name-layouts';
 import { createPrintScreen } from './print-screen';
@@ -191,7 +186,7 @@ export const makeScreen = (view: View) => {
       copy();
       break;
     case 'squad': {
-      paintSquad(view.game, put);
+      paintSquad(view.game, put, view.pickedCount);
       label = 'Player number to sell, or 99 to return';
       numeric = true;
       copy();

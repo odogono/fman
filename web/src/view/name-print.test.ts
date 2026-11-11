@@ -3,7 +3,11 @@ import { expect, test } from 'bun:test';
 
 import reference from '../sim/fixtures/name-print.json';
 import seasonObservations from '../sim/fixtures/seasons.json';
-import { completeLeagueMatch, prepareLeagueMatch } from '../sim/league';
+import {
+  completeLeagueMatch,
+  pickedCount,
+  prepareLeagueMatch
+} from '../sim/league';
 import { createNewGame, makeSaleOffer, type Game } from '../sim/management';
 import { createNameEditor } from '../sim/name-editor';
 import {
@@ -17,7 +21,7 @@ import { completeSeason } from '../sim/season';
 import { createSession, type ScreenView } from '../sim/session';
 import { submitInput } from '../test/input';
 import { glyphMask } from './glyphs';
-import type { Cell } from './management-layouts';
+import type { Cell } from './grid';
 import { createPrintScreen } from './print-screen';
 import { makeScreen } from './screen';
 
@@ -170,8 +174,17 @@ for (const record of reference.scenes) {
           offer: makeSaleOffer({ ...game, seed: 219 }, 1),
           screen
         });
-      } else if (screen === 'fixture' || screen === 'team') {
-        actual = render({ fixture, game, screen });
+      } else if (screen === 'fixture') {
+        actual = render({ fixture, game, roundName: undefined, screen });
+      } else if (screen === 'team') {
+        actual = render({
+          fixture,
+          game,
+          pickedCount: pickedCount(game),
+          screen
+        });
+      } else if (screen === 'squad') {
+        actual = render({ game, pickedCount: pickedCount(game), screen });
       } else if (screen === 'result') {
         actual = render({
           fixture,

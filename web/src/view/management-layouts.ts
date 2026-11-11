@@ -1,24 +1,7 @@
 import { levels } from '../sim/catalogue';
 import type { Game, Player } from '../sim/management';
+import type { Paint } from './grid';
 import { createPrintScreen } from './print-screen';
-
-export type Cell = {
-  bright: boolean;
-  flash?: boolean;
-  ink: number;
-  inverse: boolean;
-  paper: number;
-  pixels?: readonly number[];
-  text: string;
-};
-export type Style = Partial<Omit<Cell, 'text'>>;
-
-export type Paint = (
-  row: number,
-  column: number,
-  text: string,
-  style?: Style
-) => void;
 
 export const paintStatus = (game: Game, put: Paint) => {
   const print = createPrintScreen(game.leagueMatches > 0);
@@ -98,7 +81,12 @@ export const paintPlayer = (
   print.paint(put, true);
 };
 
-export const paintSquad = (game: Game, put: Paint, selection = false) => {
+export const paintSquad = (
+  game: Game,
+  put: Paint,
+  picked: number,
+  selection = false
+) => {
   const print = createPrintScreen(game.leagueMatches > 0);
   print.text('p', { ink: 3, inverse: true });
   print.text(' = picked to play, ', { ink: 0, inverse: false });
@@ -110,7 +98,6 @@ export const paintSquad = (game: Game, put: Paint, selection = false) => {
   const players = game.players.filter(player => player.status > 0);
   players.forEach(player => printPlayer(player, print));
   print.text('PLAYERS PICKED', { inverse: true });
-  const picked = game.players.filter(player => player.status === 2).length;
   print.text(`=${picked}`, { inverse: false });
   print.newline();
   print.newline();

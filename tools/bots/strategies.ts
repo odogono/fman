@@ -1,4 +1,8 @@
-import type { Game, Player } from '../../web/src/sim/management';
+import {
+  creditLimit,
+  type Game,
+  type Player
+} from '../../web/src/sim/management';
 import type { View } from '../../web/src/sim/session';
 import type { HarnessRng } from './random';
 
@@ -38,9 +42,6 @@ export type Strategy = Readonly<{
   description: string;
   name: string;
 }>;
-
-/** The most a club in this division may owe; owing more is dismissal. */
-export const creditLimit = (game: Game) => 250_000 * (5 - game.division);
 
 const owned = (game: Game) => game.players.filter(p => p.status > 0);
 const picked = (game: Game) => game.players.filter(p => p.status === 2);

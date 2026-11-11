@@ -4,6 +4,8 @@ import reference from './fixtures/fresh-setup.json';
 import {
   borrow,
   createNewGame,
+  creditLimit,
+  isDismissed,
   makeSaleOffer,
   repay,
   respondToSale
@@ -70,6 +72,15 @@ test('borrowing and repayment preserve net funds and enforce original limits', (
   );
   expect(() => borrow(game, -1)).toThrow();
   expect(game.cash).toBe(100_000);
+});
+
+test('the credit limit grows by £250,000 a division and owing more is dismissal', () => {
+  const game = fresh();
+  expect(
+    [4, 3, 2, 1].map(division => creditLimit({ ...game, division }))
+  ).toEqual([250_000, 500_000, 750_000, 1_000_000]);
+  expect(isDismissed({ ...game, debt: 250_000 })).toBe(false);
+  expect(isDismissed({ ...game, debt: 250_001 })).toBe(true);
 });
 
 test('selling changes ownership and cash only on acceptance', () => {

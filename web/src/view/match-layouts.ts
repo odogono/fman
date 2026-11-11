@@ -3,8 +3,9 @@ import { teamStrength, type MatchFixture } from '../sim/league';
 import type { Game } from '../sim/management';
 import { flashPhase, type View } from '../sim/session';
 import { paintCupVictory } from './cup-victory';
+import type { Paint } from './grid';
 import { paintLeagueTable } from './league-table';
-import { paintSquad, type Paint } from './management-layouts';
+import { paintSquad } from './management-layouts';
 import { createPrintScreen } from './print-screen';
 
 export type MatchView = Extract<
@@ -69,7 +70,7 @@ export const paintMatch = (view: MatchView, put: Paint) => {
       const print = createPrintScreen();
       print.text(
         fixture.kind === 'cup'
-          ? `F.A.Cup Match - Round ${game.cupRound === 7 ? 'Semi-Final' : game.cupRound === 8 ? 'Final' : game.cupRound}`
+          ? `F.A.Cup Match - Round ${view.roundName}`
           : `League Match - Division ${game.division}`,
         { ink: fixture.kind === 'cup' ? 2 : 1 }
       );
@@ -128,7 +129,7 @@ export const paintMatch = (view: MatchView, put: Paint) => {
         }
       );
       print.text('PLAYERS PICKED', { inverse: true });
-      print.text(`=${game.players.filter(p => p.status === 2).length}`, {
+      print.text(`=${view.pickedCount}`, {
         inverse: false
       });
       print.newline();
@@ -141,12 +142,12 @@ export const paintMatch = (view: MatchView, put: Paint) => {
       break;
     }
     case 'selection':
-      paintSquad(game, write, true);
+      paintSquad(game, write, view.pickedCount, true);
       if (view.error) {
         write(19, 0, view.error, { ink: 2, inverse: true });
       }
       label =
-        game.players.filter(p => p.status === 2).length > 11
+        view.pickedCount > 11
           ? 'Player number to remove'
           : 'Player number to add, or 99 to continue';
       numeric = true;

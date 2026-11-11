@@ -17,7 +17,7 @@ import {
 import type { Job } from './worker';
 
 const usage = `Usage:
-  bun run baseline [--ruleset original] [--levels 1,4,7] [--strategies all]
+  bun run baseline [--ruleset original] [--levels 1,3,5,7] [--strategies all]
                    [--runs 200] [--seasons 10] [--seed 1] [--out build/baseline]
                    [--workers N]
   bun run baseline:compare <a.json> <b.json>`;
@@ -90,7 +90,7 @@ const baseline = async (args: string[]) => {
   const { values } = parseArgs({
     args,
     options: {
-      levels: { default: '1,4,7', type: 'string' },
+      levels: { default: '1,3,5,7', type: 'string' },
       out: { default: 'build/baseline', type: 'string' },
       ruleset: { default: 'original', type: 'string' },
       runs: { default: '200', type: 'string' },

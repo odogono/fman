@@ -7,7 +7,7 @@ The committed reference is [baseline/original.md](baseline/original.md), with th
 ## Running
 
 ```sh
-bun run baseline                       # levels 1, 4, 7 × 4 strategies × 200 runs
+bun run baseline                       # levels 1, 3, 5, 7 × 4 strategies × 200 runs
 bun run baseline --out docs/baseline   # refresh the committed reference
 bun run baseline --levels 7 --strategies passive,balanced --runs 50
 bun run baseline:compare docs/baseline/original.json build/baseline/original.json
@@ -15,7 +15,7 @@ bun run baseline:compare docs/baseline/original.json build/baseline/original.jso
 
 Options: `--ruleset`, `--levels`, `--strategies` (`all` or a comma list), `--runs`, `--seasons` (the season limit, default 10), `--seed` (harness seed, default 1), `--out` (default `build/baseline`) and `--workers` (default: every core). Raw runs always go to `build/baseline/<ruleset>-runs.jsonl`, which is gitignored.
 
-The default grid takes about 2 minutes on 10 cores, and a 10-season run costs about 0.3 s of CPU. For a quick check before a full run, `--runs 50` takes about 30 seconds. On the same rules, its intervals are about 1.5× wider: roughly ±2 points of league win rate and ±0.3 league places. All seven levels take about 4½ minutes.
+The default grid takes about 2½ minutes on 10 cores, and a 10-season run costs about 0.45 s of CPU. For a quick check before a full run, `--runs 50` takes about 40 seconds. On the same rules, its intervals are about 1.5× wider: roughly ±2 points of league win rate and ±0.3 league places. All seven levels take about 4½ minutes; run them when a change touches opponent strength or its 1–20 clamp, where an in-between level could behave differently.
 
 The output is deterministic. The same seed, options and code give byte-identical files, whatever the worker count. A PR that changes play under the `original` ruleset therefore changes `baseline/original.json` too, and refreshes it on purpose.
 
@@ -54,9 +54,10 @@ Each run records its end, its peak debt, its final cash, debt and division, and 
 
 The summary reduces each run to these numbers: dismissed, seasons completed, best and final division, promotions, relegations, mean league position, league win rate, goals for and against per league match, cup wins, peak debt, and final cash minus debt. Rates and counts show the mean over runs. The others show the median and interquartile range.
 
-`compare` matches cells by level and strategy. For each metric, it bootstraps a 95% interval for the change in the mean (2,000 resamples, seeded). It flags only changes whose interval excludes zero. With 13 metrics in 12 cells, a few false flags at 95% are expected even with no real change. Treat an isolated flag as a lead, not a result.
+`compare` matches cells by level and strategy. For each metric, it bootstraps a 95% interval for the change in the mean (2,000 resamples, seeded). It flags only changes whose interval excludes zero. With 13 metrics in 16 cells, a few false flags at 95% are expected even with no real change. Treat an isolated flag as a lead, not a result.
 
 ## Findings worth knowing
 
 - The difficulty level just adds its value (1–7) to each of an opponent's five strength attributes (`web/src/sim/league.ts`, `web/src/sim/cup.ts`). The manager's choices are the same at every level.
 - Borrowing never prevents dismissal, and interest is 1% of the debt per week. Aggressive at Genius is dismissed in every run.
+- The default levels are 1, 3, 5 and 7, not every level. Win rate, league position and goals change evenly with level, but Aggressive's dismissal rate rises steeply between levels 3 and 6 (about 30%, 44%, 87%, 99%), and Balanced stops winning promotion between 3 and 5. Levels 3 and 5 sample that stretch; above level 5 every strategy's median finish is the bottom division, so level 7 shows little else.

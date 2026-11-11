@@ -1,14 +1,14 @@
 import { expect, test } from 'bun:test';
 
 import { createNewGame, type Game, type Player } from './management';
-import { lastingSkill, type Ruleset } from './ruleset';
+import { lastingSkill, presentDay, type Ruleset } from './ruleset';
 import { completeSeason } from './season';
 
 /** A finished season in which the club, 8th in Division 2, stays put. */
 const finished = (ruleset: Ruleset, seed: number, skill: number): Game => {
   const fresh = createNewGame({
     club: 1,
-    colour: 0,
+    ...(presentDay(ruleset) ? {} : { colour: 0 }),
     level: 1,
     manager: 'alex',
     ruleset,
@@ -36,9 +36,14 @@ const finished = (ruleset: Ruleset, seed: number, skill: number): Game => {
   };
 };
 
-test('only lasting-skill keeps skill between seasons', () => {
-  expect(lastingSkill('lasting-skill')).toBe(true);
-  for (const ruleset of ['original', 'enhanced-1', 'enhanced-2'] as const) {
+test('Enhanced keeps skill between seasons from version 4', () => {
+  expect(lastingSkill('enhanced-4')).toBe(true);
+  for (const ruleset of [
+    'original',
+    'enhanced-1',
+    'enhanced-2',
+    'enhanced-3'
+  ] as const) {
     expect(lastingSkill(ruleset)).toBe(false);
   }
 });
@@ -47,7 +52,7 @@ test('owned players drift by at most one, unowned reroll, and every draw matches
   const drifts = new Set<number>();
   const rerolled = new Set<number>();
   for (let seed = 0; seed < 300; seed++) {
-    const before = finished('lasting-skill', seed, 3);
+    const before = finished('enhanced-4', seed, 3);
     const lasting = completeSeason(before).game;
     const original = completeSeason(finished('original', seed, 3)).game;
     expect(lasting.seed).toBe(original.seed);
@@ -74,7 +79,7 @@ test('skill drift stays within 1 to 5', () => {
   for (let seed = 0; seed < 300; seed++) {
     for (const skill of [1, 5] as const) {
       const { players } = completeSeason(
-        finished('lasting-skill', seed, skill)
+        finished('enhanced-4', seed, skill)
       ).game;
       for (const p of players.filter(q => q.status > 0)) {
         seen[skill].add(p.skill);
@@ -86,7 +91,7 @@ test('skill drift stays within 1 to 5', () => {
 });
 
 test('value follows the new division after drift', () => {
-  const before = finished('lasting-skill', 7, 4);
+  const before = finished('enhanced-4', 7, 4);
   const promoted = completeSeason({
     ...before,
     league: before.league.map((r, i) => ({

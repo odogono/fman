@@ -3,6 +3,9 @@
 # staged TypeScript. `bun install` turns
 # this on through core.hooksPath.
 cd "$(git rev-parse --show-toplevel)" || exit 1
+# Without `bun install`, Prettier and ESLint are missing and the checks
+# below would misreport it as unformatted or unlinted files.
+bun tools/preflight.ts || exit 1
 staged=$(git diff --cached --name-only --diff-filter=ACMR)
 
 # Autofix only files staged whole, so a partly staged file keeps its

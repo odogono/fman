@@ -6,6 +6,7 @@ import { simulateHighlights } from './highlights';
 import { createJournal, openSave } from './journal';
 import { createPauseKeyboard } from './pause-keyboard';
 import { createPlayback } from './playback';
+import { saveVersion } from './save';
 import { createSession } from './session';
 import { cupPlayback } from './timed-screens';
 import { createTimeline } from './timeline';
@@ -167,7 +168,7 @@ test('mid-prompt saves resume the remaining sound; older active timing journals 
   restored.advance(6);
   expect(restored.session.view).toEqual(journal.session.view);
   expect(restored.session.view.paused).toBe(false);
-  expect(JSON.parse(journal.snapshot()).version).toBe(8);
+  expect(JSON.parse(journal.snapshot()).version).toBe(saveVersion);
 });
 
 const positions = (rows: number[][]) =>

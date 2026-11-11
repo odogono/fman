@@ -189,6 +189,15 @@ const freshProgram = (frames = 0, seed = 0) => ({
 });
 
 /**
+ * The session, one screen at a time. Inside it:
+ * - `advance`: elapsed frames, timed screens, PAUSE and reseeds.
+ * - `accept`, behind `submit`: the answer typed on each screen, one
+ *   `case '<screen>'` each.
+ * - `screenView`: what each screen shows, one `case '<screen>'` each.
+ * - The returned object (`advance`, `submit`, `setKey`, `view`, …): the API
+ *   the view, journal and bots call.
+ * Search for `case '<screen>'` to find both halves of a screen.
+ *
  * `ruleset` applies to the games the session starts. Clearing the program, as
  * the original's NEW does, keeps the rules of the game it clears, so a restart
  * plays under the same rules.

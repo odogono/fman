@@ -3,7 +3,7 @@ import { expect, test } from 'bun:test';
 import { createFrameClock, framePeriod } from '../sim/frame-clock';
 import { createJournal, openSave } from '../sim/journal';
 import { createNewGame } from '../sim/management';
-import { encodeSave } from '../sim/save';
+import { encodeSave, saveVersion } from '../sim/save';
 import { createFrameSampler } from './frame-sampler';
 
 const frameMs = 19.968;
@@ -78,11 +78,11 @@ test('whole-frame advances remain associative through multiple counter wraps', (
 test('journals restore a raw seed; kept games deliberately reseed from saved frames', () => {
   const raw = { ...game, seed: 42 };
   const exact = createJournal({ frames: 65_536, game: raw, kind: 'menu' });
-  expect(JSON.parse(exact.snapshot()).version).toBe(8);
+  expect(JSON.parse(exact.snapshot()).version).toBe(saveVersion);
   const restored = openSave(exact.snapshot());
   expect(restored.session.view.game!.seed).toBe(42);
   const legacy = encodeSave(raw, 65_536);
-  expect(JSON.parse(legacy).version).toBe(8);
+  expect(JSON.parse(legacy).version).toBe(saveVersion);
   expect(openSave(legacy).session.view.game!.seed).toBe(0);
   const sample = createFrameSampler(0);
   restored.advance(sample(frameMs));

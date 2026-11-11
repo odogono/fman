@@ -1,8 +1,11 @@
 import { framePeriod, validateFrames } from './frame-clock';
 import type { Game } from './management';
 import { nameBytes } from './names';
+import { isRuleset } from './ruleset';
 
 export const saveLimit = 100_000;
+/** The first save version whose games name their ruleset. */
+export const saveVersion = 6;
 const invalid = () => new RangeError('Invalid Football Manager web save');
 const record = (v: unknown): v is Record<string, unknown> =>
   typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -67,8 +70,10 @@ export const validGame = (v: unknown): v is Game => {
       'manager',
       'morale',
       'players',
+      'ruleset',
       'seed'
     ]) &&
+    isRuleset(v.ruleset) &&
     numeric.every(key => integer(v[key])) &&
     integer(v.club, 1, 64) &&
     integer(v.division, 1, 4) &&
@@ -126,6 +131,21 @@ export const validGame = (v: unknown): v is Game => {
   );
 };
 
+/**
+ * Reads the game from a save of the given version. Saves before version 6
+ * predate rulesets, so their games play the original rules.
+ */
+export const savedGame = (v: unknown, version: number): Game | undefined => {
+  if (version >= saveVersion) {
+    return validGame(v) ? v : undefined;
+  }
+  if (!record(v) || 'ruleset' in v) {
+    return undefined;
+  }
+  const game = { ...v, ruleset: 'original' };
+  return validGame(game) ? game : undefined;
+};
+
 export const decodeSave = (data: string): { frames: number; game: Game } => {
   if (data.length > saveLimit) {
     throw invalid();
@@ -140,18 +160,26 @@ export const decodeSave = (data: string): { frames: number; game: Game } => {
     !record(value) ||
     !keys(value, ['format', 'frames', 'game', 'version']) ||
     value.format !== 'fman-web' ||
-    value.version !== 1 ||
-    !integer(value.frames, 0, framePeriod - 1) ||
-    !validGame(value.game)
+    (value.version !== 1 && value.version !== saveVersion) ||
+    !integer(value.frames, 0, framePeriod - 1)
   ) {
     throw invalid();
   }
-  return { frames: value.frames, game: value.game };
+  const game = savedGame(value.game, value.version);
+  if (!game) {
+    throw invalid();
+  }
+  return { frames: value.frames, game };
 };
 
 export const encodeSave = (game: Game, frames: number): string => {
   validateFrames(frames);
-  const data = JSON.stringify({ format: 'fman-web', frames, game, version: 1 });
+  const data = JSON.stringify({
+    format: 'fman-web',
+    frames,
+    game,
+    version: saveVersion
+  });
   decodeSave(data);
   return data;
 };

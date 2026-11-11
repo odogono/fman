@@ -1,4 +1,5 @@
 import type { Game } from '../../web/src/sim/management';
+import type { Ruleset } from '../../web/src/sim/ruleset';
 import { createSession, type View } from '../../web/src/sim/session';
 import { createHarnessRng, mixSeed, type HarnessRng } from './random';
 import {
@@ -7,9 +8,7 @@ import {
   type Strategy
 } from './strategies';
 
-/** Only the original rules exist so far (ADR 0007). */
-export const rulesets = ['original'] as const;
-export type Ruleset = (typeof rulesets)[number];
+export { rulesets, type Ruleset } from '../../web/src/sim/ruleset';
 
 /** How a bot paces itself; the same for every strategy. */
 export const timing = {
@@ -157,7 +156,7 @@ export const playRun = (config: RunConfig): RunRecord => {
   const decide = config.strategy.create(
     createHarnessRng(mixSeed(config.seed, 2))
   );
-  const session = createSession();
+  const session = createSession(0, 0, config.ruleset);
   const seasons: SeasonRecord[] = [];
   const league = emptyTally();
   let seasonLeague = emptyTally();

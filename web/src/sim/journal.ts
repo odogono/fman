@@ -1,7 +1,7 @@
 import { framePeriod, spectrumFrameT } from './frame-clock';
 import type { Game } from './management';
 import type { PauseKeyboardState } from './pause-keyboard';
-import { saveLimit, validGame } from './save';
+import { saveLimit, saveVersion, savedGame } from './save';
 import { createSession, type Effect, type Session } from './session';
 
 /**
@@ -171,7 +171,7 @@ export const createJournal = (base: Base = { kind: 'title' }) => {
         base: start,
         format: 'fman-web',
         inputs,
-        version: 5
+        version: saveVersion
       }),
     /**
      * Submits an answer, pressing Enter as a keyboard does when no key is
@@ -223,10 +223,12 @@ const validInput = (v: unknown, version: number): v is JournalInput => {
 };
 
 /**
- * Restores a web save: versions 4 and 5 resume the exact session, letting
- * go of any held keypress; version 1 resumes at the reseed boundary before
- * management. Versions 2 and 3 accept only an idle menu checkpoint, since
- * their animation durations cannot replay exactly.
+ * Restores a web save: journals from version 4 resume the exact session,
+ * letting go of any held keypress; a kept game (version 1, or version 6 with a
+ * frame counter) resumes at the reseed boundary before management. Games
+ * stored before version 6 play the original ruleset. Versions 2 and 3 accept
+ * only an idle menu checkpoint, since their animation durations cannot replay
+ * exactly.
  */
 export const openSave = (data: string): Journal => {
   if (data.length > saveLimit) {
@@ -238,7 +240,11 @@ export const openSave = (data: string): Journal => {
   } catch {
     throw invalid();
   }
-  if (record(value) && value.version === 1) {
+  if (
+    record(value) &&
+    (value.version === 1 ||
+      (value.version === saveVersion && 'frames' in value))
+  ) {
     const saved = createSession();
     saved.load(data);
     const view = saved.view;
@@ -254,7 +260,7 @@ export const openSave = (data: string): Journal => {
   if (
     !record(value) ||
     value.format !== 'fman-web' ||
-    ![2, 3, 4, 5].includes(value.version as number) ||
+    ![2, 3, 4, 5, saveVersion].includes(value.version as number) ||
     Object.keys(value).length !== 4 ||
     !record(value.base) ||
     !Array.isArray(value.inputs) ||
@@ -274,6 +280,7 @@ export const openSave = (data: string): Journal => {
     throw invalid();
   }
   const base = value.base;
+  const game = savedGame(base.game, value.version as number);
   let start: Base;
   if (base.kind === 'title' && Object.keys(base).length === 1) {
     start = { kind: 'title' };
@@ -286,7 +293,7 @@ export const openSave = (data: string): Journal => {
     Number.isInteger(base.frames) &&
     (base.frames as number) >= 0 &&
     (base.frames as number) < framePeriod &&
-    validGame(base.game)
+    game !== undefined
   ) {
     if (base.ulaFrames !== undefined || base.keyboard !== undefined) {
       if (
@@ -309,7 +316,7 @@ export const openSave = (data: string): Journal => {
     }
     start = {
       frames: base.frames as number,
-      game: base.game,
+      game,
       kind: 'menu',
       ...(base.ulaFrames !== undefined
         ? {

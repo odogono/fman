@@ -30,7 +30,7 @@ The browser cannot confirm that the user retained the downloaded file.
 The game menu's Import action loads a web save and
 replaces the current game only after validation. Cancellation or invalid,
 oversized, malformed or unsupported-version input leaves the game unchanged.
-This was the first save contract. ADR 0004 replaces it: the full session is autosaved to browser storage, and a game menu offers saved games in five save slots plus export/import of session journals (now version 4). Version-1 files stay importable and resume at the reseed boundary.
+This was the first save contract. ADR 0004 replaces it: the full session is autosaved to browser storage, and a game menu offers saved games in five save slots plus export/import of session journals (now version 6). Version-1 files stay importable and resume at the reseed boundary.
 
 ## Exact resume and the game menu (ADR 0004)
 
@@ -42,8 +42,9 @@ timed pauses and highlight playback consume elapsed frames additively.
 Restoring replays those inputs, so a reload lands on the same screen and
 highlight frame, with the same RNG. The autosave is written after every
 input and screen change, at most once a second during animation, and when
-the page is hidden. Exports and save slots use this format (version 5).
-`keep` still writes the original version-1 contract.
+the page is hidden. Exports and save slots use this format (version 6).
+`keep` writes the same game and frame counter fields as the version-1 contract,
+now as version 6.
 
 The [measured pacing change](highlight-pacing.md#saves-and-reproduction) bumps
 the journal version because old frame counts would replay different animation
@@ -56,6 +57,9 @@ Version-4 journals still replay unchanged. Version 1
 still imports through the reseed boundary. Version 2 imports only an idle
 original three-field menu checkpoint with no subsequent inputs; active version-2
 journals are rejected. Version-3 journals likewise import only idle menu checkpoints.
+Version 6 adds the game's [ruleset](even-difficulty.md) to every stored game, in
+journals and `keep` files alike. Games stored before version 6 have none and
+play the original ruleset.
 Fractional browser phase is not stored; restoring starts a fresh phase and
 does not simulate time spent with the page closed.
 

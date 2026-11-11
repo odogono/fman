@@ -1,6 +1,7 @@
 import { nextFixture, type MatchFixture } from './league';
 import { payWeeklyBills, type Game, type Player } from './management';
 import { createRng } from './rng';
+import { opponentBonus } from './ruleset';
 
 const clamp = (n: number) => Math.max(1, Math.min(20, n));
 const gate = (game: Game, opponent: number, home: boolean) =>
@@ -30,7 +31,7 @@ export const prepareCupMatch = (game: Game): MatchFixture => {
     clamp(
       Math.floor(
         rng.int(1, 16) +
-          game.level +
+          opponentBonus(game.ruleset, game.level) +
           (game.club - 1) / 16 -
           ((opponent - 1) / 16 + 1)
       )

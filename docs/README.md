@@ -23,6 +23,8 @@ Start with [original-game-analysis.md](original-game-analysis.md): it maps the o
 - [name-layout-fidelity.md](name-layout-fidelity.md): name scrolling and wrapping
 - [save-load.md](save-load.md): web save files
 
+Rulesets ([ADR-0007](adr/0007-experimental-rules-as-rulesets.md)): [even-difficulty.md](even-difficulty.md): a gentler step between difficulty levels.
+
 Gameplay baseline: [gameplay-baseline.md](gameplay-baseline.md): automated runs by strategy and difficulty level, and how to compare rulesets against [the original's baseline](baseline/original.md).
 
 Phase-two design: [mobile-play.md](mobile-play.md): touch and mobile play.

@@ -12,6 +12,8 @@
     "changelog:release": "bun tools/commits/changelog.ts release",
     "dev": "bun run --cwd web dev",
     "build": "bun run --cwd web build",
+    "baseline": "bun tools/bots/cli.ts baseline",
+    "baseline:compare": "bun tools/bots/cli.ts compare",
     "typecheck": "tsc --noEmit && bun run --cwd web typecheck",
     "test": "bun test tools && bun run --cwd web test",
     "lint": "eslint --cache .",

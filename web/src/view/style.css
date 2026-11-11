@@ -223,6 +223,18 @@ main {
   margin-top: 4px;
   color: #eee;
 }
+.update-ready {
+  margin: 8px 0 0;
+  font-size: 12px;
+  text-align: center;
+  color: #eee;
+}
+.update-ready button {
+  margin-left: 8px;
+  padding: 4px 12px;
+  min-height: 32px;
+  font: inherit;
+}
 .sr-only {
   position: absolute;
   width: 1px;
@@ -253,6 +265,7 @@ main {
   }
   .build-note,
   .notice,
+  .update-ready,
   .top-bar,
   .game-menu {
     display: none;

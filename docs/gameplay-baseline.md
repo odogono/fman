@@ -41,12 +41,13 @@ Run _i_ uses the same seed in every level × strategy cell. Cells therefore shar
 
 Strategies are defined in `tools/bots/strategies.ts`. None of them changes the difficulty level.
 
-| Strategy   | Team                                                     | Money                                                                                                                                                                           |
-| ---------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| random     | A random walk through team and selection answers         | Uniform among the menu answers `s`, `a`, `l`, `p` and `99`, with random amounts, sales, replies and bids                                                                        |
-| passive    | The 11 available players with the most energy            | Never buys, sells or borrows                                                                                                                                                    |
-| balanced   | The 11 available players with the highest skill × energy | Keeps four weeks of bills in hand. Bids a player's value for skill ≥ 3 out of the surplus, sells its weakest reserve above 14 players, repays debt with the rest. Never borrows |
-| aggressive | The available team with the highest total team strength  | Borrows to the credit limit. Bids twice the value, up to three times, for any player of skill ≥ 3. Never sells                                                                  |
+| Strategy   | Team                                                     | Money                                                                                                                                                                                                  |
+| ---------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| random     | A random walk through team and selection answers         | Uniform among the menu answers `s`, `a`, `l`, `p` and `99`, with random amounts, sales, replies and bids                                                                                               |
+| passive    | The 11 available players with the most energy            | Never buys, sells or borrows                                                                                                                                                                           |
+| balanced   | The 11 available players with the highest skill × energy | Keeps four weeks of bills in hand. Bids a player's value for skill ≥ 3 out of the surplus, sells its weakest reserve above 14 players, repays debt with the rest. Never borrows                        |
+| aggressive | The available team with the highest total team strength  | Borrows to the credit limit. Bids twice the value, up to three times, for any player of skill ≥ 3. Never sells                                                                                         |
+| recovering | As aggressive                                            | As aggressive while within the credit limit. Over it, as after a relegation, it stops buying, repays from its cash and sells its weakest reserves (down to eleven players) until back within the limit |
 
 Total team strength is the sum of the five attributes the original compares, each clamped to 1–20. Morale is the same for every choice, so it is left out. The issue had Balanced borrowing "only to avoid dismissal". A loan can't do that: dismissal is judged on debt, and a loan adds to it. So Balanced never borrows.
 
@@ -58,8 +59,11 @@ The summary reduces each run to these numbers: dismissed, seasons completed, bes
 
 `compare` matches cells by level and strategy. For each metric, it bootstraps a 95% interval for the change in the mean (2,000 resamples, seeded). It flags only changes whose interval excludes zero. With 13 metrics in 16 cells, a few false flags at 95% are expected even with no real change. Treat an isolated flag as a lead, not a result.
 
+Recovering was added for #74 to measure a grace period before dismissal: aggressive never sells or repays, so a grace period can help it only if gate money happens to clear its debt. Recovering shows what the rule offers a manager who acts on it. Adding it added rows to every baseline and left the existing ones unchanged.
+
 ## Findings worth knowing
 
+- Aggressive's dismissals mostly follow a relegation: it borrows to its division's credit limit, and relegation lowers the limit beneath its debt. Under `enhanced-1`, 44 of 44 dismissals at level 3 and 54 of 56 at level 5 came straight after one (#74).
 - The difficulty level just adds its value (1–7) to each of an opponent's five strength attributes (`web/src/sim/league.ts`, `web/src/sim/cup.ts`). The manager's choices are the same at every level.
 - Borrowing never prevents dismissal, and interest is 1% of the debt per week. Aggressive at Genius is dismissed in every run.
 - Win rate, league position and goals change evenly with level, but Aggressive's dismissal rate rises steeply between levels 3 and 6 (about 30%, 44%, 87%, 99%), and Balanced stops winning promotion between 3 and 5. Above level 5 every strategy's median finish is the bottom division.

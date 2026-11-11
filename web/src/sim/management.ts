@@ -2,7 +2,7 @@ import { clubs, playerNames, type Club } from './catalogue';
 import { emptyAttackCarry, type AttackCarry } from './highlights';
 import { add, divide, floor, fromNumber, multiply, toNumber } from './numeric';
 import { createRng } from './rng';
-import { isRuleset, type Ruleset } from './ruleset';
+import { gracePeriodWeeks, isRuleset, type Ruleset } from './ruleset';
 
 export type Player = Readonly<{
   energy: number;
@@ -30,6 +30,11 @@ export type Game = Readonly<{
   cupRound: number;
   debt: number;
   division: number;
+  /**
+   * Weeks of bills left to get back under the credit limit, while a grace
+   * period runs (#74); absent otherwise. At 0 the period has run out.
+   */
+  graceWeeks?: number;
   homeGate: number;
   league: readonly LeagueRecord[];
   leagueHome: boolean;
@@ -146,19 +151,45 @@ export const payWeeklyBills = (game: Game) => {
       rent,
       wages
     },
-    game: {
+    game: countGraceWeek({
       ...game,
       cash: Math.max(0, cash),
       debt: game.debt + Math.max(0, -cash),
       previousNet: cash - game.debt
-    }
+    })
   };
 };
 
 /** The most a club may owe: the loan limit, and the debt beyond which the manager is dismissed. */
 export const creditLimit = (game: Game) => 250_000 * (5 - game.division);
 
-export const isDismissed = (game: Game) => game.debt > creditLimit(game);
+/**
+ * After the bills, under a ruleset with a grace period: going over the credit
+ * limit starts one, each further week over counts it down, and getting back
+ * to the limit ends it. The original's rules leave the game unchanged.
+ */
+const countGraceWeek = (game: Game): Game => {
+  const weeks = gracePeriodWeeks(game.ruleset);
+  if (weeks === undefined) {
+    return game;
+  }
+  const { graceWeeks, ...rest } = game;
+  if (game.debt <= creditLimit(game)) {
+    return rest;
+  }
+  return {
+    ...rest,
+    graceWeeks: graceWeeks === undefined ? weeks : graceWeeks - 1
+  };
+};
+
+/**
+ * The club owes more than its credit limit: at once under the original's
+ * rules, or once a grace period has run out.
+ */
+export const isDismissed = (game: Game) =>
+  game.debt > creditLimit(game) &&
+  (gracePeriodWeeks(game.ruleset) === undefined || game.graceWeeks === 0);
 
 const validateAmount = (amount: number) => {
   if (!isIntegerIn(amount, 0, Number.MAX_SAFE_INTEGER)) {

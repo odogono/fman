@@ -30,7 +30,7 @@ The browser cannot confirm that the user retained the downloaded file.
 The game menu's Import action loads a web save and
 replaces the current game only after validation. Cancellation or invalid,
 oversized, malformed or unsupported-version input leaves the game unchanged.
-This was the first save contract. ADR 0004 replaces it: the full session is autosaved to browser storage, and a game menu offers saved games in five save slots plus export/import of session journals (now version 7). Version-1 files stay importable and resume at the reseed boundary.
+This was the first save contract. ADR 0004 replaces it: the full session is autosaved to browser storage, and a game menu offers saved games in five save slots plus export/import of session journals (now version 8). Version-1 files stay importable and resume at the reseed boundary.
 
 ## Exact resume and the game menu (ADR 0004)
 
@@ -42,9 +42,9 @@ timed pauses and highlight playback consume elapsed frames additively.
 Restoring replays those inputs, so a reload lands on the same screen and
 highlight frame, with the same RNG. The autosave is written after every
 input and screen change, at most once a second during animation, and when
-the page is hidden. Exports and save slots use this format (version 7).
+the page is hidden. Exports and save slots use this format (version 8).
 `keep` writes the same game and frame counter fields as the version-1 contract,
-now as version 7.
+now as version 8.
 
 The [measured pacing change](highlight-pacing.md#saves-and-reproduction) bumps
 the journal version because old frame counts would replay different animation
@@ -62,7 +62,9 @@ journals and `keep` files alike. Games stored before version 6 have none and
 play the original ruleset. Version 7 adds the ruleset to a journal that starts
 at the title screen, before any game exists, so replay sets up a new game under
 the rules the player chose; earlier title-screen journals play the original.
-`keep` files are written as version 7 too; what they hold is unchanged from version 6.
+`keep` files from version 7 hold the same as version 6. Version 8 adds a running
+[grace period](grace-period.md)'s weeks left to the stored game; earlier games
+have none running.
 Fractional browser phase is not stored; restoring starts a fresh phase and
 does not simulate time spent with the page closed.
 

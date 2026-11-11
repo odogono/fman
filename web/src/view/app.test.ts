@@ -597,9 +597,9 @@ const rulesChoice = (run: ReturnType<typeof harness>) => {
 
 test('a first visit plays Enhanced rules, and the menu says so', () => {
   const run = harness();
-  expect(run.app.journal.session.ruleset).toBe('enhanced-1');
+  expect(run.app.journal.session.ruleset).toBe('enhanced-2');
   run.toMenu();
-  expect(run.view().game!.ruleset).toBe('enhanced-1');
+  expect(run.view().game!.ruleset).toBe('enhanced-2');
   run.app.openMenu();
   expect(run.page.menu?.detail).toBe('Rules: Enhanced');
 });

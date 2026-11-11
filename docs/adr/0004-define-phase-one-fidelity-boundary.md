@@ -12,3 +12,5 @@ comparing visible screen frames, sound events, game state and RNG, including an
 uninterrupted multi-season run. Permitted differences must be explicit: stable
 screenshots or similar-looking average pacing alone cannot establish completion,
 particularly because frame/input timing affects reseeding (ADR-0003).
+
+Superseded by [ADR-0008](0008-relax-presentation-parity.md): presentation parity is now best effort, and this completion gate no longer applies.

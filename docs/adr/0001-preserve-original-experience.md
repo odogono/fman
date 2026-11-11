@@ -7,3 +7,5 @@ The supplied snapshot is the provisional reference edition. Its identity and com
 The [initial analysis](../original-game-analysis.md) subsequently established that the snapshot's BASIC is byte-for-byte identical to the compared archived original-release tape. Use the snapshot for continued-play evidence and that tape's saved variables for fresh-game initialization; the snapshot contains a progressed, renamed club.
 
 The user's local `Football Manager.tzx` was then verified byte-for-byte identical to the archived tape. Prefer that supplied tape for fresh-game initialization; the archive comparison supplies corroborating provenance.
+
+Amended by [ADR-0008](0008-relax-presentation-parity.md): fidelity before enhancement now covers the rules only; presentation parity is best effort.

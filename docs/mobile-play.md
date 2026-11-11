@@ -1,6 +1,6 @@
 # Mobile play (phase two design)
 
-Design decisions for making the game playable without a keyboard, chiefly on phones. This is phase-two work: nothing here is built until the phase-one fidelity boundary ([ADR 0004](adr/0004-define-phase-one-fidelity-boundary.md)) is met. The mockups are AI-generated references for look and layout; their wording, names and numbers are illustrative, not specs.
+Design decisions for making the game playable without a keyboard, chiefly on phones. This is phase-two work, unblocked by [ADR 0008](adr/0008-relax-presentation-parity.md). The mockups are AI-generated references for look and layout; their wording, names and numbers are illustrative, not specs.
 
 ## Principles
 

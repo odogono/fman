@@ -326,11 +326,55 @@ const aggressive: Strategy = {
   name: 'aggressive'
 };
 
+/**
+ * Plays as aggressive does until its debt is over the credit limit, as after
+ * a relegation or bills it can't cover (#74). Then it stops bidding, repays
+ * from whatever cash it has, and sells its weakest reserves (down to eleven
+ * players) to raise more, until the debt is back within the limit. It measures
+ * what a grace period offers a manager who acts on it.
+ */
+const recovering: Strategy = {
+  create: rng => {
+    const play = aggressive.create(rng);
+    return view => {
+      const { game } = view;
+      if (game.debt <= creditLimit(game)) {
+        return play(view);
+      }
+      const weakestReserve = [...game.players]
+        .filter(p => p.status === 1)
+        .sort((a, b) => a.skill - b.skill || a.energy - b.energy)[0];
+      const canSell = owned(game).length > 11 && weakestReserve;
+      switch (view.screen) {
+        case 'menu':
+          if (game.cash > 0) {
+            return 'p';
+          }
+          return canSell ? 'a' : '99';
+        case 'repay':
+          return String(Math.min(game.debt, game.cash));
+        case 'squad':
+          return canSell ? String(weakestReserve.id) : '99';
+        case 'sale':
+          return 'yes';
+        case 'transfer':
+          return '99';
+        default:
+          return play(view);
+      }
+    };
+  },
+  description:
+    'Plays as aggressive, but when over the credit limit stops buying, repays and sells reserves until back within it.',
+  name: 'recovering'
+};
+
 export const strategies: readonly Strategy[] = [
   random,
   passive,
   balanced,
-  aggressive
+  aggressive,
+  recovering
 ];
 
 export const strategyNamed = (name: string) => {

@@ -118,7 +118,7 @@ test('a journal started at the title keeps the chosen rules through a save', () 
   const journal = createJournal({ kind: 'title', ruleset: 'enhanced-1' });
   journal.advance(100);
   const snapshot = JSON.parse(journal.snapshot());
-  expect(snapshot.version).toBe(7);
+  expect(snapshot.version).toBe(8);
   expect(snapshot.base).toEqual({ kind: 'title', ruleset: 'enhanced-1' });
   const restored = openSave(journal.snapshot());
   expect(restored.session.ruleset).toBe('enhanced-1');

@@ -2,7 +2,13 @@ import { framePeriod, spectrumFrameT } from './frame-clock';
 import type { Game } from './management';
 import type { PauseKeyboardState } from './pause-keyboard';
 import { isRuleset, type Ruleset } from './ruleset';
-import { rulesetSaveVersion, saveLimit, saveVersion, savedGame } from './save';
+import {
+  keptVersion,
+  saveLimit,
+  saveVersion,
+  savedGame,
+  titleRulesetSaveVersion
+} from './save';
 import { createSession, type Effect, type Session } from './session';
 
 /**
@@ -250,9 +256,8 @@ export const openSave = (data: string): Journal => {
   }
   if (
     record(value) &&
-    (value.version === 1 ||
-      ([rulesetSaveVersion, saveVersion].includes(value.version as number) &&
-        'frames' in value))
+    keptVersion(value.version) &&
+    (value.version === 1 || 'frames' in value)
   ) {
     const saved = createSession();
     saved.load(data);
@@ -269,9 +274,9 @@ export const openSave = (data: string): Journal => {
   if (
     !record(value) ||
     value.format !== 'fman-web' ||
-    ![2, 3, 4, 5, rulesetSaveVersion, saveVersion].includes(
-      value.version as number
-    ) ||
+    !Number.isInteger(value.version) ||
+    (value.version as number) < 2 ||
+    (value.version as number) > saveVersion ||
     Object.keys(value).length !== 4 ||
     !record(value.base) ||
     !Array.isArray(value.inputs) ||
@@ -295,14 +300,14 @@ export const openSave = (data: string): Journal => {
   let start: Base;
   if (
     base.kind === 'title' &&
-    (value.version as number) < saveVersion &&
+    (value.version as number) < titleRulesetSaveVersion &&
     Object.keys(base).length === 1
   ) {
     // Title-screen journals from before version 7 predate rule choice.
     start = { kind: 'title', ruleset: 'original' };
   } else if (
     base.kind === 'title' &&
-    value.version === saveVersion &&
+    (value.version as number) >= titleRulesetSaveVersion &&
     Object.keys(base).length === 2 &&
     isRuleset(base.ruleset)
   ) {

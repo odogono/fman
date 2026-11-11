@@ -16,6 +16,20 @@ export const paintBills = (
   if (bill.loanIncreased) {
     put(6, 0, 'LOAN INCREASED TO PAY BILLS', { inverse: true });
   }
+  // A grace period running (#74, Enhanced rules only): ADR 0010.
+  const weeks = view.game.graceWeeks;
+  if (weeks !== undefined && weeks > 0) {
+    const warning = { ink: 2, inverse: true };
+    put(8, 0, 'OVER YOUR CREDIT LIMIT', warning);
+    put(
+      9,
+      0,
+      weeks === 1
+        ? 'LAST WEEK TO CLEAR YOUR DEBT'
+        : `${weeks} WEEKS TO CLEAR IT`,
+      warning
+    );
+  }
 };
 
 export const paintDismissal = (

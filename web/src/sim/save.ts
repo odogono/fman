@@ -1,13 +1,22 @@
 import { framePeriod, validateFrames } from './frame-clock';
 import type { Game } from './management';
 import { nameBytes } from './names';
-import { isRuleset } from './ruleset';
+import { gracePeriodWeeks, isRuleset } from './ruleset';
 
 export const saveLimit = 100_000;
 /** The version every save is written with. */
-export const saveVersion = 7;
+export const saveVersion = 8;
 /** The first save version whose games name their ruleset. */
 export const rulesetSaveVersion = 6;
+/** The first save version whose title-screen journals name their ruleset. */
+export const titleRulesetSaveVersion = 7;
+/** A version `keep` has written: the first contract, or one naming the ruleset. */
+export const keptVersion = (version: unknown) =>
+  version === 1 ||
+  (typeof version === 'number' &&
+    Number.isInteger(version) &&
+    version >= rulesetSaveVersion &&
+    version <= saveVersion);
 const invalid = () => new RangeError('Invalid Football Manager web save');
 const record = (v: unknown): v is Record<string, unknown> =>
   typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -64,6 +73,7 @@ export const validGame = (v: unknown): v is Game => {
       'cupFinished',
       'cupRound',
       'division',
+      'graceWeeks',
       'league',
       'leagueHome',
       'leagueMatches',
@@ -76,6 +86,8 @@ export const validGame = (v: unknown): v is Game => {
       'seed'
     ]) &&
     isRuleset(v.ruleset) &&
+    (v.graceWeeks === undefined ||
+      integer(v.graceWeeks, 0, gracePeriodWeeks(v.ruleset) ?? -1)) &&
     numeric.every(key => integer(v[key])) &&
     integer(v.club, 1, 64) &&
     integer(v.division, 1, 4) &&
@@ -138,6 +150,10 @@ export const validGame = (v: unknown): v is Game => {
  * predate rulesets, so their games play the original rules.
  */
 export const savedGame = (v: unknown, version: number): Game | undefined => {
+  // Grace periods (#74) arrived in version 8.
+  if (version < 8 && record(v) && 'graceWeeks' in v) {
+    return undefined;
+  }
   if (version >= rulesetSaveVersion) {
     return validGame(v) ? v : undefined;
   }
@@ -162,7 +178,7 @@ export const decodeSave = (data: string): { frames: number; game: Game } => {
     !record(value) ||
     !keys(value, ['format', 'frames', 'game', 'version']) ||
     value.format !== 'fman-web' ||
-    ![1, rulesetSaveVersion, saveVersion].includes(value.version as number) ||
+    !keptVersion(value.version) ||
     !integer(value.frames, 0, framePeriod - 1)
   ) {
     throw invalid();

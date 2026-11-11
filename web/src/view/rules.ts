@@ -21,7 +21,8 @@ export const rulesOf = (ruleset: Ruleset): Rules =>
 /** How each choice is shown, Enhanced first. */
 export const rulesChoices = [
   {
-    description: 'The original game with a smoother difficulty curve',
+    description:
+      'The original game with a smoother difficulty curve, and a few weeks to clear debts before dismissal',
     name: 'Enhanced',
     rules: 'enhanced'
   },

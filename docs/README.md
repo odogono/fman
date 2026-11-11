@@ -27,6 +27,7 @@ Rulesets ([ADR-0007](adr/0007-experimental-rules-as-rulesets.md), [ADR-0009](adr
 
 - [enhanced-rules.md](enhanced-rules.md): choosing Original or Enhanced rules, and Enhanced versions
 - [even-difficulty.md](even-difficulty.md): a gentler step between difficulty levels (Enhanced version 1)
+- [grace-period.md](grace-period.md): weeks to clear a debt over the credit limit before dismissal (Enhanced version 2)
 
 Gameplay baseline: [gameplay-baseline.md](gameplay-baseline.md): automated runs by strategy and difficulty level, and how to compare rulesets against [the original's baseline](baseline/original.md).
 

@@ -66,26 +66,49 @@ const resolveBudget = (from: string, to: string): Budget => {
   throw new RangeError(`Unmeasured execution statement ${from}`);
 };
 
-type Event = Omit<HighlightFrame, 'duration'> & { t: number };
+// The scheduler runs thousands of statements per match, so it looks budgets
+// up by a numeric edge rather than building a string key for each one. A
+// statement's id is line × 1000 + statement: BASIC lines stay below 10000
+// and statements below 1000, so ids stay below 10^7 and an edge below 10^14.
+const statementId = (line: number, statement: number) =>
+  line * 1000 + statement;
+const edges = new Map<number, Budget>();
+
+// An event becomes a frame once its duration is known. Times are kept
+// beside the events, so a frame is the event itself and is not copied.
+type Event = { -readonly [K in keyof HighlightFrame]?: HighlightFrame[K] };
 
 /** A small execution-path scheduler, fed by the same branches as the sim. */
 export const createExecution = (startT = 0) => {
   let t = startT;
   let current: string | undefined;
+  let currentId = 0;
   let draws: SpriteDraw[] = [];
   let tone: HighlightFrame['tones'][number] | undefined;
   let drawing: number | undefined;
   type TextField = 'text' | 'trophy' | 'stars' | 'outcomeChars' | 'scoreChars';
   let printing: { field: TextField; offset: number } | undefined;
   const events: Event[] = [];
+  const times: number[] = [];
   const path: string[] = [];
-  const emit = (at: number, fields: Partial<Event> = {}) => {
-    events.push({ draws: [], kind: 'draw', t: at, tones: [], ...fields });
+  const emit = (at: number, fields?: Event) => {
+    events.push(
+      fields
+        ? { draws: [], kind: 'draw', tones: [], ...fields }
+        : { draws: [], kind: 'draw', tones: [] }
+    );
+    times.push(at);
   };
   const at = (line: number, statement = 0) => {
     const next = `${line}:${statement}`;
+    const nextId = statementId(line, statement);
     if (current) {
-      const budget = executionBudget(current, next);
+      const edge = currentId * 10_000_000 + nextId;
+      let budget = edges.get(edge);
+      if (!budget) {
+        budget = executionBudget(current, next);
+        edges.set(edge, budget);
+      }
       if (printing) {
         for (const [i, offset] of budget.slice(1).entries()) {
           emit(t + Math.min(budget[0]!, offset), {
@@ -127,6 +150,7 @@ export const createExecution = (startT = 0) => {
       }
     }
     current = next;
+    currentId = nextId;
     path.push(next);
     draws = [];
     tone = undefined;
@@ -141,15 +165,17 @@ export const createExecution = (startT = 0) => {
       drawing = progress;
     },
     finish: () => {
-      events.sort((a, b) => a.t - b.t);
-      const frames: HighlightFrame[] = events.map((event, index) => {
-        const { t: eventT, ...frame } = event;
-        return {
-          ...frame,
-          duration: ((events[index + 1]?.t ?? t) - eventT) / spectrumFrameT
-        };
+      // A stable sort by time, as events were emitted in order.
+      const order = times.map((_, index) => index);
+      order.sort((a, b) => times[a]! - times[b]!);
+      return order.map((index, position) => {
+        const event = events[index]!;
+        const next = order[position + 1];
+        event.duration =
+          ((next === undefined ? t : times[next]!) - times[index]!) /
+          spectrumFrameT;
+        return event as HighlightFrame;
       });
-      return frames;
     },
     mark: (checkpoint: NonNullable<HighlightFrame['checkpoint']>) =>
       emit(t, { checkpoint }),

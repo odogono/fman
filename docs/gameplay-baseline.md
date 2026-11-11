@@ -2,20 +2,22 @@
 
 [#57](https://github.com/odogono/fman/issues/57). The baseline shows how the game plays across many automated runs, so a rule change can be measured against it. It is a statistical profile, not an exact-replay check; the fidelity fixtures already do that. Rule changes are built as experimental rulesets beside `original` ([ADR 0007](adr/0007-experimental-rules-as-rulesets.md)), then join the [Enhanced rules](enhanced-rules.md) as a new version ([ADR 0009](adr/0009-enhanced-rules-by-default.md)). Each Enhanced version has its own baseline, such as [baseline/enhanced-1.md](baseline/enhanced-1.md), compared against the version before it with `bun run baseline:compare`. Retired experimental rulesets keep theirs, such as [baseline/even-difficulty.md](baseline/even-difficulty.md).
 
-The committed reference is [baseline/original.md](baseline/original.md), with the per-run values in `baseline/original.json`.
+The committed reference is [baseline/original.md](baseline/original.md), with the per-run values in `baseline/original.json`. It covers all seven levels, so `compare` has every cell for a ruleset's baseline.
 
 ## Running
 
 ```sh
-bun run baseline                       # levels 1, 3, 5, 7 × 4 strategies × 200 runs
+bun run baseline                       # levels 1–7 × 4 strategies × 200 runs
 bun run baseline --out docs/baseline   # refresh the committed reference
 bun run baseline --levels 7 --strategies passive,balanced --runs 50
 bun run baseline:compare docs/baseline/original.json build/baseline/original.json
 ```
 
-Options: `--ruleset`, `--levels`, `--strategies` (`all` or a comma list), `--runs`, `--seasons` (the season limit, default 10), `--seed` (harness seed, default 1), `--out` (default `build/baseline`) and `--workers` (default: every core). Raw runs always go to `build/baseline/<ruleset>-runs.jsonl`, which is gitignored.
+Options: `--ruleset`, `--levels` (default all seven), `--strategies` (`all` or a comma list), `--runs`, `--seasons` (the season limit, default 10), `--seed` (harness seed, default 1), `--out` (default `build/baseline`) and `--workers` (default: every core). Raw runs always go to `build/baseline/<ruleset>-runs.jsonl`, which is gitignored.
 
-The default grid takes about 2½ minutes on 10 cores, and a 10-season run costs about 0.45 s of CPU. For a quick check before a full run, `--runs 50` takes about 40 seconds. On the same rules, its intervals are about 1.5× wider: roughly ±2 points of league win rate and ±0.3 league places. All seven levels take about 4½ minutes; run them when a change touches opponent strength or its 1–20 clamp, where an in-between level could behave differently.
+The default grid takes about 2½ minutes on 10 cores, and a 10-season run costs about 0.25 s of CPU. For a quick check before a full run, `--runs 50` takes about 40 seconds. On the same rules, its intervals are about 1.5× wider: roughly ±2 points of league win rate and ±0.3 league places. `--levels 1,3,5,7` takes about 1½ minutes; the in-between levels matter when a change touches opponent strength or its 1–20 clamp, so a ruleset's baseline uses all seven.
+
+Most of a run's time goes on building each match's highlights at kick-off, then on the bots' own decisions and on reading the view. Stepping through frames costs little, because a pause is advanced 50 frames at a time.
 
 The output is deterministic. The same seed, options and code give byte-identical files, whatever the worker count. A PR that changes play under the `original` ruleset therefore changes `baseline/original.json` too, and refreshes it on purpose.
 
@@ -60,4 +62,4 @@ The summary reduces each run to these numbers: dismissed, seasons completed, bes
 
 - The difficulty level just adds its value (1–7) to each of an opponent's five strength attributes (`web/src/sim/league.ts`, `web/src/sim/cup.ts`). The manager's choices are the same at every level.
 - Borrowing never prevents dismissal, and interest is 1% of the debt per week. Aggressive at Genius is dismissed in every run.
-- The default levels are 1, 3, 5 and 7, not every level. Win rate, league position and goals change evenly with level, but Aggressive's dismissal rate rises steeply between levels 3 and 6 (about 30%, 44%, 87%, 99%), and Balanced stops winning promotion between 3 and 5. Levels 3 and 5 sample that stretch; above level 5 every strategy's median finish is the bottom division, so level 7 shows little else.
+- Win rate, league position and goals change evenly with level, but Aggressive's dismissal rate rises steeply between levels 3 and 6 (about 30%, 44%, 87%, 99%), and Balanced stops winning promotion between 3 and 5. Above level 5 every strategy's median finish is the bottom division.

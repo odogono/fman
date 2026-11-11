@@ -11,23 +11,29 @@ export const decodeName = (bytes: readonly number[]) =>
           : String.fromCharCode(b >= 128 ? 0xe0_00 + b : b)
     )
     .join('');
-export const nameBytes = (text: string) =>
-  [...text].map(c => {
-    const code = c.codePointAt(0)!;
-    if (c === '£') {
-      return 96;
-    }
-    if (c === '©') {
-      return 127;
-    }
-    if (code <= 127) {
-      return code;
-    }
-    if (code >= 0xe0_80 && code <= 0xe0_ff) {
-      return code - 0xe0_00;
-    }
-    throw new RangeError('Unsupported Spectrum character');
-  });
+const characterByte = (code: number) => {
+  if (code === 0xa3) {
+    return 96; // £
+  }
+  if (code === 0xa9) {
+    return 127; // ©
+  }
+  if (code <= 127) {
+    return code;
+  }
+  if (code >= 0xe0_80 && code <= 0xe0_ff) {
+    return code - 0xe0_00;
+  }
+  throw new RangeError('Unsupported Spectrum character');
+};
+// A plain loop: this runs for every name on screen each time a view is read.
+export const nameBytes = (text: string) => {
+  const bytes: number[] = [];
+  for (const character of text) {
+    bytes.push(characterByte(character.codePointAt(0)!));
+  }
+  return bytes;
+};
 export const clubInk = (club: Club, inherited = 0) => club.ink ?? inherited;
 export const clubText = (club: Club) =>
   club.name.padEnd(club.width ?? (club.ink === null ? 12 : 10));

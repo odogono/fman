@@ -70,37 +70,33 @@ export const topEleven = (game: Game, score: (p: Player) => number) =>
   );
 
 /**
- * The sum of the five team-strength attributes a picked team would have,
- * as the original computes them: average energy over eleven, and skill
- * summed per playing category (players 1-8, 9-16, 17-24), each 1 to 20.
+ * The available team with the highest total strength, by exhaustive search.
+ *
+ * Total strength is the sum of the five team-strength attributes a picked
+ * team would have, as the original computes them: average energy over
+ * eleven, and skill summed per playing category (players 1-8, 9-16,
+ * 17-24), each 1 to 20. Ties go to the higher skill × 20 + energy, then to
+ * the first team in id order. The sums are kept as the search goes, so a
+ * candidate team costs a few additions rather than a pass over its players.
  */
-const strengthTotal = (team: readonly Player[]) => {
-  let energy = 0;
-  const skill = [0, 0, 0];
-  for (const p of team) {
-    energy += p.energy;
-    skill[Math.floor((p.id - 1) / 8)]! += p.skill;
-  }
-  return (
-    clamp(Math.floor(energy / 11)) +
-    clamp(skill[0]!) +
-    clamp(skill[1]!) +
-    clamp(skill[2]!)
-  );
-};
-
-/** The available team with the highest total strength, by exhaustive search. */
 export const strongestTeam = (game: Game) => {
   const pool = [...available(game)].sort((a, b) => a.id - b.id);
   const size = Math.min(11, pool.length);
-  let best: Player[] = [];
+  const category = pool.map(p => Math.floor((p.id - 1) / 8));
+  const chosen: number[] = [];
+  const skill = [0, 0, 0];
+  let energy = 0;
+  let raw = 0;
+  let best: number[] = [];
   let bestScore = -1;
   let bestRaw = -1;
-  const chosen: Player[] = [];
   const search = (from: number) => {
     if (chosen.length === size) {
-      const score = strengthTotal(chosen);
-      const raw = chosen.reduce((sum, p) => sum + p.skill * 20 + p.energy, 0);
+      const score =
+        clamp(Math.floor(energy / 11)) +
+        clamp(skill[0]!) +
+        clamp(skill[1]!) +
+        clamp(skill[2]!);
       if (score > bestScore || (score === bestScore && raw > bestRaw)) {
         best = [...chosen];
         bestScore = score;
@@ -109,13 +105,20 @@ export const strongestTeam = (game: Game) => {
       return;
     }
     for (let i = from; i <= pool.length - (size - chosen.length); i++) {
-      chosen.push(pool[i]!);
+      const p = pool[i]!;
+      chosen.push(p.id);
+      energy += p.energy;
+      skill[category[i]!]! += p.skill;
+      raw += p.skill * 20 + p.energy;
       search(i + 1);
       chosen.pop();
+      energy -= p.energy;
+      skill[category[i]!]! -= p.skill;
+      raw -= p.skill * 20 + p.energy;
     }
   };
   search(0);
-  return new Set(best.map(p => p.id));
+  return new Set(best);
 };
 
 /**
@@ -280,6 +283,18 @@ const aggressive: Strategy = {
   create: () => {
     let bidFor: number | undefined;
     let bids = 0;
+    // Picking a team takes several answers over an unchanged squad, so the
+    // search runs once per squad rather than once per answer.
+    let strongest: { squad: string; team: ReadonlySet<number> } | undefined;
+    const strongestFor = (game: Game) => {
+      const squad = available(game)
+        .map(p => `${p.id}:${p.skill}:${p.energy}`)
+        .join();
+      if (strongest?.squad !== squad) {
+        strongest = { squad, team: strongestTeam(game) };
+      }
+      return strongest.team;
+    };
     return view => {
       const { game } = view;
       switch (view.screen) {
@@ -290,7 +305,7 @@ const aggressive: Strategy = {
           return String(creditLimit(game) - game.debt);
         case 'team':
         case 'selection':
-          return pickToward(view, strongestTeam(game));
+          return pickToward(view, strongestFor(game));
         case 'transfer': {
           const player = game.players[view.playerId - 1]!;
           bids = bidFor === view.playerId ? bids + 1 : 1;

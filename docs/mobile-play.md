@@ -59,6 +59,6 @@ Style is "paper & ink": light grey paper, black text with red and blue ink rows,
 ## Device and platform
 
 - Phone portrait first; wider screens show the same layout centred, or the two-pane desktop layout.
-- An installable PWA that plays offline.
+- An installable PWA that plays offline. `bun run build` (`web/src/site/build.ts`) writes a web app manifest, icons drawn from the Spectrum font at build time, and a service worker that caches every built file under a cache named after the build's contents. The page registers the worker only in that build, so `bun run dev` never caches. Once loaded, the game starts with no network. A new deploy is a new worker: it caches the new files, removes the old cache and takes over, and players see it on their next load.
 - The existing **autosave**, **save slots** and **game menu** ([ADR 0004](adr/0004-resume-exact-session.md)) carry over; mobile adds only touch-sized controls for them. A bar above the screen holds the menu button, an icon at the top left, and the name of the screen on show; during the highlights it names the clubs playing, home club first. Every menu control, slots included, is at least 44px tall.
-- The first tap unlocks sound; a mute toggle in Settings remembers the choice.
+- The first tap unlocks sound; the Sound option in the game menu's Options mutes it and is remembered.

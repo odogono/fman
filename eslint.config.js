@@ -27,6 +27,8 @@ export default [
             resolve(process.cwd(), './tsconfig.json'),
             resolve(process.cwd(), './web/src/sim/tsconfig.json'),
             resolve(process.cwd(), './web/src/view/tsconfig.json'),
+            resolve(process.cwd(), './web/src/offline/tsconfig.json'),
+            resolve(process.cwd(), './web/src/site/tsconfig.json'),
             resolve(process.cwd(), './web/tsconfig.test.json')
           ]
         }

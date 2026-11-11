@@ -2,7 +2,7 @@ import { expect, test } from 'bun:test';
 
 import { finishPrompt, submitInput } from '../test/input';
 import { createJournal, openSave, type Journal } from './journal';
-import { encodeSave } from './save';
+import { encodeSave, saveVersion } from './save';
 
 const state = (journal: ReturnType<typeof createJournal>) => {
   const view = journal.session.view;
@@ -140,7 +140,7 @@ test('version-2 migration accepts only the original idle menu checkpoint', () =>
   const restored = openSave(JSON.stringify(legacy));
   expect(restored.session.view.game).toEqual(data.base.game);
   expect(restored.session.view.frames).toBe(data.base.frames);
-  expect(JSON.parse(restored.snapshot()).version).toBe(8);
+  expect(JSON.parse(restored.snapshot()).version).toBe(saveVersion);
   for (const invalid of [
     { ...legacy, inputs: [['advance', 1]] },
     { ...legacy, base: { kind: 'title' } },
@@ -293,7 +293,7 @@ test('version-4 saves replay their logged keypresses unchanged', () => {
   const restored = openSave(JSON.stringify(data));
   expect(keyboard(restored)).toEqual(keyboard(live));
   expect(state(restored)).toBe(state(live));
-  expect(JSON.parse(restored.snapshot()).version).toBe(8);
+  expect(JSON.parse(restored.snapshot()).version).toBe(saveVersion);
   for (const input of [['press', 'Enter'], ['let-go']]) {
     expect(() =>
       openSave(JSON.stringify({ ...data, inputs: [...data.inputs, input] }))

@@ -47,6 +47,18 @@ export default [
     files: ['web/src/sim/**/*.ts'],
     ignores: ['**/*.test.ts'],
     rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/view/**', '**/offline/**', '**/site/**'],
+              message:
+                'The sim is headless (CODING_STANDARDS.md): it imports nothing outside web/src/sim.'
+            }
+          ]
+        }
+      ],
       'no-restricted-properties': [
         'error',
         {

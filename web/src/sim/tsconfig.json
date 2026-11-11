@@ -1,6 +1,6 @@
 {
-  // The simulation is headless (CODING_STANDARDS.md): no DOM and no Bun globals, so
-  // using either here, or importing from view/, fails the typecheck.
+  // The simulation is headless: no DOM and no Bun globals, so using either here
+  // fails the typecheck. ESLint rejects imports from outside web/src/sim.
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "lib": ["ES2023"],

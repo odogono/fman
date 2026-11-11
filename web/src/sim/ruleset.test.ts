@@ -6,7 +6,7 @@ import { createJournal, openSave } from './journal';
 import { prepareLeagueMatch } from './league';
 import { createNewGame } from './management';
 import { opponentBonus, type Ruleset } from './ruleset';
-import { decodeSave, encodeSave } from './save';
+import { decodeSave, encodeSave, saveVersion } from './save';
 import { createSession } from './session';
 
 const game = (level: number, ruleset: Ruleset, seed = 219) =>
@@ -118,7 +118,7 @@ test('a journal started at the title keeps the chosen rules through a save', () 
   const journal = createJournal({ kind: 'title', ruleset: 'enhanced-1' });
   journal.advance(100);
   const snapshot = JSON.parse(journal.snapshot());
-  expect(snapshot.version).toBe(8);
+  expect(snapshot.version).toBe(saveVersion);
   expect(snapshot.base).toEqual({ kind: 'title', ruleset: 'enhanced-1' });
   const restored = openSave(journal.snapshot());
   expect(restored.session.ruleset).toBe('enhanced-1');

@@ -2,6 +2,7 @@ import { expect, test } from 'bun:test';
 
 import { spectrumClockHz, spectrumFrameT } from '../sim/frame-clock';
 import { creditLimit } from '../sim/management';
+import { latestEnhanced } from '../sim/ruleset';
 import type { AmountEntry } from './amount-entry';
 import { createApp, type Dom, type Menu, type MenuControl } from './app';
 import type { BarButton } from './context-bar';
@@ -597,9 +598,9 @@ const rulesChoice = (run: ReturnType<typeof harness>) => {
 
 test('a first visit plays Enhanced rules, and the menu says so', () => {
   const run = harness();
-  expect(run.app.journal.session.ruleset).toBe('enhanced-2');
+  expect(run.app.journal.session.ruleset).toBe(latestEnhanced);
   run.toMenu();
-  expect(run.view().game!.ruleset).toBe('enhanced-2');
+  expect(run.view().game!.ruleset).toBe(latestEnhanced);
   run.app.openMenu();
   expect(run.page.menu?.detail).toBe('Rules: Enhanced');
 });

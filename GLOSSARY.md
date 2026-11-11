@@ -112,8 +112,19 @@ The original ruleset giving the same game state, numbers and random draws as the
 Screens, input editing, sound and timing matching the original. Unlike rules parity, it is kept where already achieved but not required.
 
 **Ruleset**:
-A named set of game rules. The original ruleset holds rules parity and is the default; any other ruleset is an experimental variation measured against it.
+A named set of game rules. A game is played under one ruleset for its whole life.
 _Avoid_: Mode or difficulty when referring to a ruleset
+
+**Original rules**:
+The ruleset that holds rules parity. Players choose it when starting a new game; games from before rule choice existed keep it.
+_Avoid_: Classic, which names a presentation mode
+
+**Enhanced rules**:
+The ruleset players get by default: the original rules plus every accepted rule change. It is released in versions, and a game keeps the version it started with.
+_Avoid_: Modern, which names a presentation mode
+
+**Experimental ruleset**:
+A ruleset that carries a single rule change, measured against the original rules before the change joins the Enhanced rules. Players never choose one.
 
 **Run**:
 One automated game played from a new game until dismissal or a fixed number of seasons, under one ruleset, difficulty level and strategy.

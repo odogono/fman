@@ -1,0 +1,7 @@
+# Enhanced rules by default; the original one choice away
+
+Players choose between two rulesets when starting a new game: Original rules and Enhanced rules. Enhanced is selected by default, including on a first visit. It gathers every accepted rule change into one ruleset, released in versions, and a game keeps the version it started with. This narrows ADR 0001 further than ADR 0008 did. The recreation still preserves the original game exactly, with rules parity under the Original rules, but a newcomer now meets the improved game first. The original experience is one choice away, not the default.
+
+Experimental rulesets (ADR 0007) remain how changes are built and measured: each holds a single change and is compared against the original. Players never see them. An accepted change joins Enhanced as a new Enhanced version, measured against the previous one with the gameplay baseline.
+
+We considered letting players pick from every named ruleset, and toggling rule changes on and off. Both put untested combinations or half-tuned rules in front of players, and a list of rulesets asks a newcomer to choose before they understand the game. Defaulting to the original would honour ADR 0001's first promise, but it would hide the improvements from most players. Freezing each game's Enhanced version means every released version must stay playable, which costs us code. The alternative was migrating saved games to new rules mid-game, and that would make their results meaningless.

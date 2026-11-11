@@ -65,8 +65,11 @@ fails, Save is disabled and the menu suggests Export.
 ## Implementation and verification
 
 Use Bun and TypeScript, with no new dependencies. Serialization and validation
-belong in `web/src/sim/save.ts`; the session owns save/continue/load transitions,
-and the view owns file reading and downloads. Save versions must increase when
+belong in `web/src/sim/save.ts`; the session owns save/continue/load transitions.
+The web app (`web/src/view/app.ts`) runs the game menu, save slots, autosave,
+export/import and the `keep` download behind adapters for the page, storage and
+downloads, so `web/src/view/app.test.ts` covers those flows with in-memory
+adapters; `web/src/view/browser.ts` holds the browser ones. Save versions must increase when
 their stored contract changes. Tests cover full round trips, edited names,
 league/cup/season state, attack carry, invalid files, atomic replacement,
 continuation/clear behaviour and equivalent subsequent play. Run `bun run check`

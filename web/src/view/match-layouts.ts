@@ -1,6 +1,5 @@
 import type { Club } from '../sim/catalogue';
-import { teamStrength, type MatchFixture } from '../sim/league';
-import type { Game } from '../sim/management';
+import { fixtureSides, teamStrength } from '../sim/league';
 import { flashPhase, type View } from '../sim/session';
 import { paintCupVictory } from './cup-victory';
 import type { Paint } from './grid';
@@ -24,17 +23,6 @@ export type MatchView = Extract<
       | 'table';
   }
 >;
-
-const sides = (game: Game, fixture: MatchFixture) => {
-  const club = game.clubs[game.club - 1]!;
-  const opponent = game.clubs[fixture.opponent - 1]!;
-  return {
-    away: fixture.home ? opponent : club,
-    club,
-    home: fixture.home ? club : opponent,
-    opponent
-  };
-};
 
 export const paintMatch = (view: MatchView, put: Paint) => {
   const game = view.game;
@@ -63,7 +51,7 @@ export const paintMatch = (view: MatchView, put: Paint) => {
   switch (view.screen) {
     case 'fixture': {
       const { fixture } = view;
-      const { away, home } = sides(game, fixture);
+      const { away, home } = fixtureSides(game, fixture);
       const opponentPosition =
         game.league[fixture.opponent - (game.division - 1) * 16 - 1]
           ?.position ?? 0;
@@ -110,7 +98,7 @@ export const paintMatch = (view: MatchView, put: Paint) => {
     }
     case 'team': {
       const { fixture } = view;
-      const { club, opponent } = sides(game, fixture);
+      const { club, opponent } = fixtureSides(game, fixture);
       const print = createPrintScreen();
       print.tab(10);
       print.club(club);
@@ -154,7 +142,7 @@ export const paintMatch = (view: MatchView, put: Paint) => {
       break;
     case 'highlights': {
       const { playback } = view;
-      const { away, home } = sides(game, view.fixture);
+      const { away, home } = fixtureSides(game, view.fixture);
       write(0, 0, 'MATCH HIGHLIGHTS');
       output.at(1, 0);
       score(playback.score, home, away);
@@ -165,7 +153,7 @@ export const paintMatch = (view: MatchView, put: Paint) => {
       break;
     }
     case 'result': {
-      const { away, home } = sides(game, view.fixture);
+      const { away, home } = fixtureSides(game, view.fixture);
       write(0, 0, '**** FINAL SCORE ****', { ink: 2, inverse: true });
       output.at(1, 0);
       score(view.score, home, away);

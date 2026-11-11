@@ -1,7 +1,8 @@
 import { framePeriod, spectrumFrameT } from './frame-clock';
 import type { Game } from './management';
 import type { PauseKeyboardState } from './pause-keyboard';
-import { saveLimit, saveVersion, savedGame } from './save';
+import { isRuleset, type Ruleset } from './ruleset';
+import { rulesetSaveVersion, saveLimit, saveVersion, savedGame } from './save';
 import { createSession, type Effect, type Session } from './session';
 
 /**
@@ -27,7 +28,7 @@ type Base =
       kind: 'menu';
       ulaFrames?: number;
     }
-  | { kind: 'title' };
+  | { kind: 'title'; ruleset: Ruleset };
 
 /**
  * How long a keypress stays down: a brief one comes up once the original
@@ -45,8 +46,14 @@ const record = (v: unknown): v is Record<string, unknown> =>
  * can be serialised and restored by replay. Whenever play reaches the
  * management menu the journal restarts from that game and frame counter.
  */
-export const createJournal = (base: Base = { kind: 'title' }) => {
-  const session = createSession();
+export const createJournal = (
+  base: Base = { kind: 'title', ruleset: 'original' }
+) => {
+  const session = createSession(
+    0,
+    0,
+    base.kind === 'title' ? base.ruleset : 'original'
+  );
   if (base.kind === 'menu') {
     session.resumeMenu(base.frames, base.game, base.ulaFrames, base.keyboard);
   }
@@ -224,9 +231,10 @@ const validInput = (v: unknown, version: number): v is JournalInput => {
 
 /**
  * Restores a web save: journals from version 4 resume the exact session,
- * letting go of any held keypress; a kept game (version 1, or version 6 with a
+ * letting go of any held keypress; a kept game (version 1, or 6 and up with a
  * frame counter) resumes at the reseed boundary before management. Games
- * stored before version 6 play the original ruleset. Versions 2 and 3 accept
+ * stored before version 6, and title-screen journals before version 7, play
+ * the original rules. Versions 2 and 3 accept
  * only an idle menu checkpoint, since their animation durations cannot replay
  * exactly.
  */
@@ -243,7 +251,8 @@ export const openSave = (data: string): Journal => {
   if (
     record(value) &&
     (value.version === 1 ||
-      (value.version === saveVersion && 'frames' in value))
+      ([rulesetSaveVersion, saveVersion].includes(value.version as number) &&
+        'frames' in value))
   ) {
     const saved = createSession();
     saved.load(data);
@@ -260,7 +269,9 @@ export const openSave = (data: string): Journal => {
   if (
     !record(value) ||
     value.format !== 'fman-web' ||
-    ![2, 3, 4, 5, saveVersion].includes(value.version as number) ||
+    ![2, 3, 4, 5, rulesetSaveVersion, saveVersion].includes(
+      value.version as number
+    ) ||
     Object.keys(value).length !== 4 ||
     !record(value.base) ||
     !Array.isArray(value.inputs) ||
@@ -282,8 +293,20 @@ export const openSave = (data: string): Journal => {
   const base = value.base;
   const game = savedGame(base.game, value.version as number);
   let start: Base;
-  if (base.kind === 'title' && Object.keys(base).length === 1) {
-    start = { kind: 'title' };
+  if (
+    base.kind === 'title' &&
+    (value.version as number) < saveVersion &&
+    Object.keys(base).length === 1
+  ) {
+    // Title-screen journals from before version 7 predate rule choice.
+    start = { kind: 'title', ruleset: 'original' };
+  } else if (
+    base.kind === 'title' &&
+    value.version === saveVersion &&
+    Object.keys(base).length === 2 &&
+    isRuleset(base.ruleset)
+  ) {
+    start = { kind: 'title', ruleset: base.ruleset };
   } else if (
     base.kind === 'menu' &&
     (Object.keys(base).length === 3 || Object.keys(base).length === 5) &&

@@ -12,10 +12,10 @@ import { createSession } from './session';
 const game = (level: number, ruleset: Ruleset, seed = 219) =>
   createNewGame({ club: 1, colour: 0, level, manager: 'alex', ruleset, seed });
 
-test('the original adds the level itself; even-difficulty climbs in shrinking steps to 4', () => {
+test('the original adds the level itself; Enhanced climbs in shrinking steps to 4', () => {
   const levels = [1, 2, 3, 4, 5, 6, 7];
   expect(levels.map(l => opponentBonus('original', l))).toEqual(levels);
-  expect(levels.map(l => opponentBonus('even-difficulty', l))).toEqual([
+  expect(levels.map(l => opponentBonus('enhanced-1', l))).toEqual([
     1, 2, 2.75, 3, 3.5, 3.75, 4
   ]);
 });
@@ -37,10 +37,10 @@ test('rulesets draw the same numbers and differ only in opponent strength', () =
   for (let seed = 0; seed < 200; seed++) {
     for (const level of [1, 4, 7]) {
       const original = prepareLeagueMatch(game(level, 'original', seed));
-      const even = prepareLeagueMatch(game(level, 'even-difficulty', seed));
+      const even = prepareLeagueMatch(game(level, 'enhanced-1', seed));
       expect(even.game.seed).toBe(original.game.seed);
       expect(even.opponent).toBe(original.opponent);
-      const gap = level - opponentBonus('even-difficulty', level);
+      const gap = level - opponentBonus('enhanced-1', level);
       even.opponentStrength.forEach((strength, i) => {
         const before = original.opponentStrength[i]!;
         expect(strength).toBeLessThanOrEqual(before);
@@ -57,7 +57,7 @@ test('rulesets draw the same numbers and differ only in opponent strength', () =
         scheduleCounter: 2
       });
       const cupOriginal = prepareCupMatch(cupGame('original'));
-      const cupEven = prepareCupMatch(cupGame('even-difficulty'));
+      const cupEven = prepareCupMatch(cupGame('enhanced-1'));
       expect(cupEven.game.seed).toBe(cupOriginal.game.seed);
       expect(cupEven.opponent).toBe(cupOriginal.opponent);
       expect(cupEven.home).toBe(cupOriginal.home);
@@ -78,27 +78,72 @@ const geniusStrength = (ruleset: Ruleset) => {
   return sum;
 };
 
-test('Genius under even-difficulty fields weaker opponents than the original', () => {
-  expect(geniusStrength('even-difficulty')).toBeLessThan(
-    geniusStrength('original')
-  );
+test('Genius under Enhanced rules fields weaker opponents than the original', () => {
+  expect(geniusStrength('enhanced-1')).toBeLessThan(geniusStrength('original'));
 });
 
 test("a session's ruleset applies to the games it starts", () => {
-  const session = createSession(2 ** 24 - 5, 0, 'even-difficulty');
+  const session = createSession(2 ** 24 - 5, 0, 'enhanced-1');
   session.advance(5);
   session.skipPause();
   for (const text of ['alex', '1', '1', '0']) {
     submitInput(session, text);
   }
-  expect(session.view.game!.ruleset).toBe('even-difficulty');
+  expect(session.view.game!.ruleset).toBe('enhanced-1');
+});
+
+const setUp = (session: ReturnType<typeof createSession>) => {
+  session.advance(400);
+  session.skipPause();
+  for (const text of ['alex', '1', '1', '0']) {
+    submitInput(session, text);
+  }
+};
+
+test("the original's NEW restarts under the rules of the game it clears", () => {
+  // The session would start Original games; the resumed game is Enhanced.
+  const session = createSession();
+  session.resumeMenu(99, game(3, 'enhanced-1'));
+  expect(session.ruleset).toBe('enhanced-1');
+  expect(session.saved()).toBe(true);
+  submitInput(session, 'n');
+  expect(session.view.screen).toBe('cleared');
+  expect(session.ruleset).toBe('enhanced-1');
+  expect(session.reload()).toBe(true);
+  setUp(session);
+  expect(session.view.game!.ruleset).toBe('enhanced-1');
+});
+
+test('a journal started at the title keeps the chosen rules through a save', () => {
+  const journal = createJournal({ kind: 'title', ruleset: 'enhanced-1' });
+  journal.advance(100);
+  const snapshot = JSON.parse(journal.snapshot());
+  expect(snapshot.version).toBe(7);
+  expect(snapshot.base).toEqual({ kind: 'title', ruleset: 'enhanced-1' });
+  const restored = openSave(journal.snapshot());
+  expect(restored.session.ruleset).toBe('enhanced-1');
+  setUp(restored.session);
+  expect(restored.session.view.game!.ruleset).toBe('enhanced-1');
+
+  // Before rule choice, a title-screen journal named no rules: Original.
+  for (const version of [4, 5, 6]) {
+    const older = { ...snapshot, base: { kind: 'title' }, version };
+    expect(openSave(JSON.stringify(older)).session.ruleset).toBe('original');
+  }
+  for (const invalid of [
+    { ...snapshot, base: { kind: 'title' } },
+    { ...snapshot, base: { kind: 'title', ruleset: 'harder' } },
+    { ...snapshot, version: 6 }
+  ]) {
+    expect(() => openSave(JSON.stringify(invalid))).toThrow(RangeError);
+  }
 });
 
 test('saves keep the ruleset, and saves from before rulesets play the original', () => {
-  const even = game(3, 'even-difficulty');
-  expect(decodeSave(encodeSave(even, 99)).game.ruleset).toBe('even-difficulty');
+  const even = game(3, 'enhanced-1');
+  expect(decodeSave(encodeSave(even, 99)).game.ruleset).toBe('enhanced-1');
   expect(openSave(encodeSave(even, 99)).session.view.game!.ruleset).toBe(
-    'even-difficulty'
+    'enhanced-1'
   );
 
   const kept = JSON.parse(encodeSave(even, 99));
@@ -119,7 +164,7 @@ test('saves keep the ruleset, and saves from before rulesets play the original',
   const journal = createJournal({ frames: 99, game: even, kind: 'menu' });
   const snapshot = JSON.parse(journal.snapshot());
   expect(openSave(journal.snapshot()).session.view.game!.ruleset).toBe(
-    'even-difficulty'
+    'enhanced-1'
   );
   const { ruleset: __, ...journalGame } = snapshot.base.game;
   const older = { ...snapshot, base: { ...snapshot.base, game: journalGame } };

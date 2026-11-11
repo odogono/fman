@@ -33,6 +33,6 @@ Balanced strategy, 200 runs per level, 10 seasons ([full baseline](baseline/even
 
 The step in mean position between levels is 0.8–1.2 places throughout, where the original's ranges from 1.1 to 2.9. Aggressive's dismissal rate rises from 1.5% at level 1 to 43.5% at level 7, against the original's 100%.
 
-## Choosing the ruleset
+## Where it went
 
-A session takes the ruleset for the games it starts (`createSession`'s third argument), and the game keeps it for its whole life, through autosaves and saved games ([save version 6](save-load.md)). Games saved before rulesets existed play the original. There is no way to choose a ruleset in the web game yet; the bots choose it with `bun run baseline --ruleset even-difficulty`.
+This change was measured as the experimental ruleset `even-difficulty`, then became the first version of the [Enhanced rules](enhanced-rules.md), `enhanced-1`, and the experimental name was retired ([#84](https://github.com/odogono/fman/issues/84)). This page and [its baseline](baseline/even-difficulty.md) stay as the record of how it was measured.

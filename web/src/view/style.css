@@ -182,6 +182,45 @@ main {
   color: #777;
   cursor: default;
 }
+.menu-detail {
+  margin: -8px 0 12px;
+  color: #a6a6a6;
+}
+/* A choice such as the rules: each option names itself, then what it means. */
+.menu-choice {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 4px;
+  padding: 0;
+  border: 0;
+}
+.menu-choice legend {
+  margin-bottom: 4px;
+  padding: 0;
+  color: #a6a6a6;
+}
+.game-menu .menu-choice label {
+  justify-content: flex-start;
+  padding: 8px 12px;
+  border: 1px solid #666;
+  background: #222;
+}
+.game-menu .menu-choice label:has(input:checked) {
+  border-color: #ddd;
+}
+.menu-choice input[type='radio'] {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+}
+.menu-choice span {
+  display: grid;
+}
+.menu-choice small {
+  color: #a6a6a6;
+  font-size: 14px;
+}
 .menu-status {
   min-height: 1.5em;
   margin: 12px 0 0;

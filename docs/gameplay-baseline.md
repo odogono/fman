@@ -1,6 +1,6 @@
 # Gameplay baseline
 
-[#57](https://github.com/odogono/fman/issues/57). The baseline shows how the game plays across many automated runs, so a rule change can be measured against it. It is a statistical profile, not an exact-replay check; the fidelity fixtures already do that. Experimental rules are named rulesets beside `original` ([ADR 0007](adr/0007-experimental-rules-as-rulesets.md)): [`even-difficulty`](even-difficulty.md) narrows the gap between difficulty levels, with its baseline in [baseline/even-difficulty.md](baseline/even-difficulty.md).
+[#57](https://github.com/odogono/fman/issues/57). The baseline shows how the game plays across many automated runs, so a rule change can be measured against it. It is a statistical profile, not an exact-replay check; the fidelity fixtures already do that. Rule changes are built as experimental rulesets beside `original` ([ADR 0007](adr/0007-experimental-rules-as-rulesets.md)), then join the [Enhanced rules](enhanced-rules.md) as a new version ([ADR 0009](adr/0009-enhanced-rules-by-default.md)). Each Enhanced version has its own baseline, such as [baseline/enhanced-1.md](baseline/enhanced-1.md), compared against the version before it with `bun run baseline:compare`. Retired experimental rulesets keep theirs, such as [baseline/even-difficulty.md](baseline/even-difficulty.md).
 
 The committed reference is [baseline/original.md](baseline/original.md), with the per-run values in `baseline/original.json`.
 

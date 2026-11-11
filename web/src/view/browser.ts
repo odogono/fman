@@ -68,6 +68,31 @@ const control = (item: MenuControl) => {
       label.append(`${item.label} `, select);
       return label;
     }
+    case 'choice': {
+      const group = document.createElement('fieldset');
+      group.className = 'menu-choice';
+      const legend = document.createElement('legend');
+      legend.textContent = item.label;
+      group.append(legend);
+      for (const choice of item.choices) {
+        const label = document.createElement('label');
+        const radio = document.createElement('input');
+        radio.type = 'radio';
+        radio.name = `menu-${item.label}`;
+        radio.value = choice.value;
+        radio.checked = choice.value === item.value;
+        radio.addEventListener('change', () => item.change(choice.value));
+        const text = document.createElement('span');
+        const name = document.createElement('strong');
+        name.textContent = choice.text;
+        const description = document.createElement('small');
+        description.textContent = choice.description;
+        text.append(name, description);
+        label.append(radio, text);
+        group.append(label);
+      }
+      return group;
+    }
   }
 };
 
@@ -334,10 +359,14 @@ export const createBrowserDom = (app: HTMLElement) => {
         input.focus({ preventScroll: true });
       }
     },
-    showMenu: ({ controls, status, title }) => {
+    showMenu: ({ controls, detail, status, title }) => {
       const heading = document.createElement('h2');
       heading.id = 'game-menu-title';
       heading.textContent = title;
+      const detailLine = document.createElement('p');
+      detailLine.className = 'menu-detail';
+      detailLine.textContent = detail ?? '';
+      detailLine.hidden = !detail;
       const list = document.createElement('div');
       list.className = 'menu-actions';
       list.append(...controls.map(control));
@@ -345,8 +374,12 @@ export const createBrowserDom = (app: HTMLElement) => {
       statusLine.className = 'menu-status';
       statusLine.setAttribute('role', 'status');
       statusLine.textContent = status;
-      menu.replaceChildren(heading, list, statusLine);
-      list.querySelector<HTMLElement>('button, input, select')?.focus();
+      menu.replaceChildren(heading, detailLine, list, statusLine);
+      // The chosen radio, so arrow keys move from it; otherwise the first control.
+      (
+        list.querySelector<HTMLElement>('input[type="radio"]:checked') ??
+        list.querySelector<HTMLElement>('button, input, select')
+      )?.focus();
     }
   };
 

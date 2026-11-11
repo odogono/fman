@@ -4,8 +4,10 @@ import { nameBytes } from './names';
 import { isRuleset } from './ruleset';
 
 export const saveLimit = 100_000;
+/** The version every save is written with. */
+export const saveVersion = 7;
 /** The first save version whose games name their ruleset. */
-export const saveVersion = 6;
+export const rulesetSaveVersion = 6;
 const invalid = () => new RangeError('Invalid Football Manager web save');
 const record = (v: unknown): v is Record<string, unknown> =>
   typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -136,7 +138,7 @@ export const validGame = (v: unknown): v is Game => {
  * predate rulesets, so their games play the original rules.
  */
 export const savedGame = (v: unknown, version: number): Game | undefined => {
-  if (version >= saveVersion) {
+  if (version >= rulesetSaveVersion) {
     return validGame(v) ? v : undefined;
   }
   if (!record(v) || 'ruleset' in v) {
@@ -160,12 +162,12 @@ export const decodeSave = (data: string): { frames: number; game: Game } => {
     !record(value) ||
     !keys(value, ['format', 'frames', 'game', 'version']) ||
     value.format !== 'fman-web' ||
-    (value.version !== 1 && value.version !== saveVersion) ||
+    ![1, rulesetSaveVersion, saveVersion].includes(value.version as number) ||
     !integer(value.frames, 0, framePeriod - 1)
   ) {
     throw invalid();
   }
-  const game = savedGame(value.game, value.version);
+  const game = savedGame(value.game, value.version as number);
   if (!game) {
     throw invalid();
   }

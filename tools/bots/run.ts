@@ -1,3 +1,4 @@
+import { pickedCount } from '../../web/src/sim/league';
 import type { Game } from '../../web/src/sim/management';
 import type { Ruleset } from '../../web/src/sim/ruleset';
 import { createSession, type View } from '../../web/src/sim/session';
@@ -65,13 +66,19 @@ export type SeasonRecord = LeagueTally & {
 export type RunRecord = Readonly<{
   end: 'dismissed' | 'season-limit';
   final: { cash: number; debt: number; division: number };
+  /** Owned players who became injured, from the pre-match draw or a refused sale. */
+  injuries: number;
   league: LeagueTally;
   level: number;
   matchdays: number;
+  /** League matches and cup legs played, replays included. */
+  matches: number;
   peakDebt: number;
   ruleset: Ruleset;
   seasons: readonly SeasonRecord[];
   seed: number;
+  /** Matches played with fewer than 11 picked. */
+  shortHanded: number;
   strategy: string;
 }>;
 
@@ -94,6 +101,20 @@ const emptyTally = (): LeagueTally => ({
   lost: 0,
   won: 0
 });
+/** Owned players (reserve or picked) in `before` who are injured in `after`. */
+const newInjuries = (before: Game, after: Game) => {
+  let count = 0;
+  for (const player of after.players) {
+    if (player.status !== 3) {
+      continue;
+    }
+    const was = before.players.find(p => p.id === player.id)?.status;
+    if (was === 1 || was === 2) {
+      count++;
+    }
+  }
+  return count;
+};
 const between = (rng: HarnessRng, [min, max]: readonly [number, number]) =>
   rng.int(min, max);
 
@@ -162,6 +183,9 @@ export const playRun = (config: RunConfig): RunRecord => {
   let seasonLeague = emptyTally();
   let peakDebt = 0;
   let matchdays = 0;
+  let matches = 0;
+  let shortHanded = 0;
+  let injuries = 0;
   let cupWon = false;
   let beforeSeason: Game | undefined;
   let lastGame: Game | undefined;
@@ -220,11 +244,18 @@ export const playRun = (config: RunConfig): RunRecord => {
   };
   const observe = (view: View) => {
     if (view.game) {
+      if (lastGame && lastGame !== view.game) {
+        injuries += newInjuries(lastGame, view.game);
+      }
       lastGame = view.game;
       peakDebt = Math.max(peakDebt, view.game.debt);
     }
     switch (view.screen) {
       case 'result': {
+        matches++;
+        if (pickedCount(view.game) < 11) {
+          shortHanded++;
+        }
         if (view.fixture.kind !== 'league') {
           break;
         }
@@ -290,13 +321,16 @@ export const playRun = (config: RunConfig): RunRecord => {
       debt: lastGame!.debt,
       division: lastGame!.division
     },
+    injuries,
     league,
     level: config.level,
     matchdays,
+    matches,
     peakDebt,
     ruleset: config.ruleset,
     seasons,
     seed: config.seed,
+    shortHanded,
     strategy: config.strategy.name
   });
 

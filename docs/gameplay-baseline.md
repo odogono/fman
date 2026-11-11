@@ -55,9 +55,13 @@ Total team strength is the sum of the five attributes the original compares, eac
 
 Each run records its end, its peak debt, its final cash, debt and division, and league W/D/L and goals. For each completed season it records division, position, points, W/D/L, goals, cup round reached and cup win, cash, debt, morale before the season's settlement, and whether the club was promoted or relegated.
 
-The summary reduces each run to these numbers: dismissed, seasons completed, best and final division, promotions, relegations, mean league position, league win rate, goals for and against per league match, cup wins, peak debt, and final cash minus debt. Rates and counts show the mean over runs. The others show the median and interquartile range.
+It also counts new injuries and short-handed matches. A new injury is an owned player becoming injured, whether from the pre-match draw or from turning down a sale offer; a player who stays injured through another draw is not counted again. A short-handed match is a league match or cup leg, replays included, played with fewer than 11 picked.
 
-`compare` matches cells by level and strategy. For each metric, it bootstraps a 95% interval for the change in the mean (2,000 resamples, seeded). It flags only changes whose interval excludes zero. With 13 metrics in 16 cells, a few false flags at 95% are expected even with no real change. Treat an isolated flag as a lead, not a result.
+The summary reduces each run to these numbers: dismissed, seasons completed, best and final division, promotions, relegations, mean league position, league win rate, goals for and against per league match, cup wins, peak debt, final cash minus debt, injuries per season (new injuries divided by seasons completed) and short-handed matches (their share of all matches played). Rates and counts show the mean over runs. The others show the median and interquartile range.
+
+Under `original`, each owned player who isn't already injured has a 1-in-20 chance of injury before every match, so a 12-player squad starts at about 0.6 new injuries a week. Passive, which keeps its 12 players, measures about 0.55 a week, since a player already injured can't be injured again; squads that buy more players see more injuries a season.
+
+`compare` matches cells by level and strategy. For each metric, it bootstraps a 95% interval for the change in the mean (2,000 resamples, seeded). It flags only changes whose interval excludes zero. With 15 metrics in 35 cells, 525 comparisons, about 26 false flags at 95% are expected even with no real change. Treat an isolated flag as a lead, not a result.
 
 Recovering was added for #74 to measure a grace period before dismissal: aggressive never sells or repays, so a grace period can help it only if gate money happens to clear its debt. Recovering shows what the rule offers a manager who acts on it. Adding it added rows to every baseline and left the existing ones unchanged.
 

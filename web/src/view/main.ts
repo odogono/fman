@@ -1,6 +1,6 @@
 import { createJournal, openSave, type Journal } from '../sim/journal';
 import { saveLimit } from '../sim/save';
-import type { View } from '../sim/session';
+import { flashPhase } from '../sim/session';
 import { createBeeper } from './beeper';
 import { createFrameSampler } from './frame-sampler';
 import { rasterText, rasterizeCells } from './glyphs';
@@ -82,15 +82,6 @@ const applyOptions = () => {
 };
 applyOptions();
 
-/** Changes whenever the tick must redraw without a change of screen. */
-const displayKey = (view: View) =>
-  view.screen === 'highlights'
-    ? `${view.playback.key}:${Math.floor((view.ulaFrames ?? view.frames) / 16) % 2}`
-    : (view.screen === 'cup-celebration' || view.screen === 'cup-result') &&
-        view.celebration !== undefined
-      ? `${view.paused}:${view.timingKey}:${view.celebration}:${Math.floor((view.ulaFrames ?? view.frames) / 16) % 2}`
-      : `${view.paused}:${view.timingKey ?? ''}:${Math.floor((view.ulaFrames ?? view.frames) / 16) % 2}`;
-
 const paintEntry = () => {
   const rgba = new Uint8ClampedArray(256 * 16 * 4);
   rasterText(rgba, 256, 0, 0, ' '.repeat(32));
@@ -114,10 +105,7 @@ const render = (clearInput = true) => {
   screen.height = display.lines.length * 8;
   screenContext.putImageData(
     new ImageData(
-      rasterizeCells(
-        display.cells,
-        Math.floor((view.ulaFrames ?? view.frames) / 16) % 2 === 1
-      ),
+      rasterizeCells(display.cells, flashPhase(view)),
       256,
       screen.height
     ),
@@ -149,7 +137,7 @@ const render = (clearInput = true) => {
       playback.score,
       game.clubs[(fixture.home ? game.club : fixture.opponent) - 1]!,
       game.clubs[(fixture.home ? fixture.opponent : game.club) - 1]!,
-      Math.floor((view.ulaFrames ?? view.frames) / 16) % 2 === 1
+      flashPhase(view)
     );
   }
   const text = display.lines.join('\n') + '\n' + display.prompt;
@@ -519,18 +507,15 @@ const syncSound = () => {
 const advanceTo = (now: number) => {
   const session = journal.session;
   const elapsed = sampleFrames(now);
-  const before = session.view;
-  const beforeKey = displayKey(before);
-  journal.advance(elapsed);
+  const before = session.view.screen;
+  const repaint = journal.advance(elapsed);
   syncSound();
-  const after = session.view;
-  if (before.screen !== after.screen) {
-    persist();
-  } else if (elapsed > 0 && now - lastPersist >= 1000) {
+  const changed = before !== session.view.screen;
+  if (changed || (elapsed > 0 && now - lastPersist >= 1000)) {
     persist();
   }
-  if (before.screen !== after.screen || beforeKey !== displayKey(after)) {
-    render(before.screen !== after.screen);
+  if (repaint) {
+    render(changed);
   }
 };
 const tick = (now: number) => {

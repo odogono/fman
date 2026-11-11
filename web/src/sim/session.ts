@@ -108,6 +108,25 @@ export type View = ScreenView & {
 
 export type Screen = ScreenView['screen'];
 
+const flashAt = (frames: number) => Math.floor(frames / 16) % 2 === 1;
+/** Whether a view's FLASH attributes show inverted; ULA time once a game exists. */
+export const flashPhase = (view: Pick<View, 'frames' | 'ulaFrames'>) =>
+  flashAt(view.ulaFrames ?? view.frames);
+
+/**
+ * A screen that plays out on its own before `next` takes over. `skip` is what
+ * a key press does during one of its timed pauses: end the screen there
+ * (title and messages), cut just that pause short (highlights), or nothing
+ * (the cup celebration has no pause).
+ */
+type TimedRun = {
+  next: Screen;
+  play: (tstates: number) => { missed: number; usedT: number };
+  skip: 'screen' | 'pause' | 'none';
+  skipPause: () => void;
+  timeline: TimedScreen | Playback;
+};
+
 export type Effect =
   | { type: 'copy' }
   | { data: string; type: 'save' }
@@ -140,7 +159,7 @@ const freshProgram = (frames = 0, seed = 0) => ({
   season: undefined as SeasonCompletion | undefined,
   selectionError: '',
   setupSeed: seed,
-  timed: undefined as TimedScreen | undefined,
+  timed: undefined as TimedRun | undefined,
   transfer: undefined as TransferOffer | undefined,
   transferText: '',
   ulaFrames: frames
@@ -175,7 +194,7 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
     if (
       !promptScreens.has(program.screen) ||
       screenPrintFault(screenView()) ||
-      (program.timed && !program.timed.done) ||
+      running() ||
       (program.screen === 'selection' &&
         program.game!.players.filter(player => player.status === 2).length > 11)
     ) {
@@ -196,7 +215,43 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
       phase
     );
   };
-  program.timed = titlePlayback(program.keyboard);
+  const screenRun = (
+    timeline: TimedScreen,
+    next: Screen,
+    skip: TimedRun['skip']
+  ): TimedRun => ({
+    next,
+    play: timeline.advanceWithinT,
+    skip,
+    skipPause: timeline.skipPause,
+    timeline
+  });
+  const highlightsRun = (matchday: Matchday): TimedRun => ({
+    next: 'result',
+    play: tstates => {
+      const played = matchday.advanceWithinT(tstates);
+      program.game = matchday.game;
+      return played;
+    },
+    skip: 'pause',
+    skipPause: () => {
+      matchday.skipPause();
+      program.game = matchday.game;
+    },
+    timeline: matchday.playback!
+  });
+  /** The running timed screen, if one has not finished. */
+  const running = () =>
+    program.timed && !program.timed.timeline.done ? program.timed : undefined;
+  const textProgress = () => {
+    const timeline = program.timed?.timeline;
+    return timeline && 'progress' in timeline ? timeline.progress : undefined;
+  };
+  program.timed = screenRun(
+    titlePlayback(program.keyboard),
+    'manager',
+    'screen'
+  );
   const showBills = () => {
     program.screen = isDismissed(program.game!) ? 'dismissal' : 'bills';
   };
@@ -212,12 +267,6 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
   const play = (step: (matchday: Matchday) => void) => {
     step(program.matchday!);
     program.game = program.matchday!.game;
-    if (
-      program.screen === 'highlights' &&
-      program.matchday!.stage === 'result'
-    ) {
-      program.screen = 'result';
-    }
   };
 
   const showMessage = (message: Message | string, next: Screen, frames = 0) => {
@@ -227,39 +276,62 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
     program.resume = next;
     program.timed =
       frames > 0
-        ? errorPlayback(
-            program.keyboard,
-            typeof message === 'string' ? message : '',
-            frames
+        ? screenRun(
+            errorPlayback(
+              program.keyboard,
+              typeof message === 'string' ? message : '',
+              frames
+            ),
+            next,
+            'screen'
           )
         : undefined;
   };
-  const finishTimed = () => {
-    if (program.timed?.done) {
-      program.screen = program.resume;
+  const startTimed = (screen: Screen, run: TimedRun) => {
+    program.screen = screen;
+    program.timed = run;
+  };
+  const finishTimed = (run: TimedRun) => {
+    if (run.timeline.done) {
+      program.screen = run.next;
+      promptSound(run.timeline.elapsedT % spectrumFrameT);
     }
   };
   const skipPause = () => {
-    if (program.screen === 'cup-celebration') {
+    const run = running();
+    if (!run || run.skip === 'none') {
       return;
     }
-    if (program.screen === 'highlights') {
-      play(m => m.skipPause());
-      if (program.matchday!.stage === 'result') {
-        promptSound(program.matchday!.playback!.elapsedT % spectrumFrameT);
-      }
-      return;
-    }
-    if (program.timed && !program.timed.done) {
-      const paused = program.timed.current?.kind === 'pause';
-      program.timed.skipPause();
-      if (paused) {
-        program.screen = program.resume;
-        program.timed = undefined;
-      }
-      return;
+    const paused = run.timeline.current?.kind === 'pause';
+    run.skipPause();
+    if (run.skip === 'pause') {
+      finishTimed(run);
+    } else if (paused) {
+      program.screen = run.next;
+      program.timed = undefined;
     }
   };
+  const flash = () =>
+    flashAt(
+      program.game && program.screen !== 'menu'
+        ? program.ulaFrames
+        : program.clock.frames
+    );
+  /** What a repaint depends on, besides the screen's data. */
+  const display = () => ({
+    flash: flash(),
+    index: program.timed?.timeline.index,
+    paused: paused(),
+    screen: program.screen,
+    timed: program.timed
+  });
+  const changed = (before: ReturnType<typeof display>) =>
+    before.screen !== program.screen ||
+    before.timed !== program.timed ||
+    before.index !== program.timed?.timeline.index ||
+    before.paused !== paused() ||
+    before.flash !== flash();
+  /** Runs the program for `frames`; returns whether the screen needs a repaint. */
   const advance = (frames: number) => {
     // Validate before changing either the playback or the ULA counter.
     if (
@@ -269,37 +341,20 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
     ) {
       throw new RangeError('Invalid frame advance');
     }
+    const before = display();
     program.ulaFrames =
       (program.ulaFrames + (frames % framePeriod)) % framePeriod;
     let left = frames * spectrumFrameT;
     let missed = 0;
     let phase = soundTimeT % spectrumFrameT;
-    const timeline =
-      program.screen === 'highlights'
-        ? program.matchday!.playback
-        : program.timed && !program.timed.done
-          ? program.timed
-          : undefined;
-    if (timeline && !(program.promptSound && !program.promptSound.done)) {
-      const played =
-        program.screen === 'highlights'
-          ? program.matchday!.advanceWithinT(left)
-          : timeline.advanceWithinT(left);
+    const run = running();
+    if (run && !(program.promptSound && !program.promptSound.done)) {
+      const played = run.play(left);
       missed += played.missed;
       soundTimeT += played.usedT;
       left -= played.usedT;
-      phase = timeline.elapsedT % spectrumFrameT;
-      if (program.screen === 'highlights') {
-        program.game = program.matchday!.game;
-        if (program.matchday!.stage === 'result') {
-          program.screen = 'result';
-        }
-      } else {
-        finishTimed();
-      }
-      if (timeline.done) {
-        promptSound(phase);
-      }
+      phase = run.timeline.elapsedT % spectrumFrameT;
+      finishTimed(run);
     }
     if (program.promptSound && !program.promptSound.done) {
       missed += program.promptSound.advanceT(left);
@@ -308,13 +363,13 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
     }
     soundTimeT += left;
     program.clock.advance(frames - missed);
+    return changed(before);
   };
 
   const accept = (text: string): Effect | undefined => {
     if (
       (program.promptSound && !program.promptSound.done) ||
-      (program.timed && !program.timed.done) ||
-      program.screen === 'highlights' ||
+      running() ||
       program.screen === 'cleared'
     ) {
       return;
@@ -442,7 +497,7 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
       case 'team':
         if (text === '99') {
           play(m => m.kickOff());
-          program.screen = 'highlights';
+          startTimed('highlights', highlightsRun(program.matchday!));
         } else {
           program.selectionError = '';
           program.screen = 'selection';
@@ -478,9 +533,10 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
         } else if (settled.kind === 'league') {
           program.screen = 'other-matches';
         } else if (settled.cupWon) {
-          program.screen = 'cup-celebration';
-          program.timed = cupPlayback(program.keyboard);
-          program.resume = 'cup-result';
+          startTimed(
+            'cup-celebration',
+            screenRun(cupPlayback(program.keyboard), 'cup-result', 'none')
+          );
         } else {
           program.screen = 'cup-result';
         }
@@ -737,11 +793,11 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
           celebration:
             settled?.kind === 'cup' && settled.cupWon
               ? screen === 'cup-celebration'
-                ? Math.ceil((program.timed?.progress.stars ?? 0) / 32)
+                ? Math.ceil((textProgress()?.stars ?? 0) / 32)
                 : 9
               : undefined,
           ...(screen === 'cup-celebration'
-            ? { celebrationProgress: program.timed!.progress }
+            ? { celebrationProgress: textProgress()! }
             : {}),
           game,
           screen
@@ -769,8 +825,7 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
   };
   const paused = () =>
     (program.promptSound !== undefined && !program.promptSound.done) ||
-    (program.timed !== undefined && !program.timed.done) ||
-    program.screen === 'highlights';
+    running() !== undefined;
   return {
     advance,
     load: (data: string) => {
@@ -785,9 +840,10 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
       if (program.screen !== 'cleared') {
         return false;
       }
-      program.screen = 'title';
-      program.timed = titlePlayback(program.keyboard);
-      program.resume = 'manager';
+      startTimed(
+        'title',
+        screenRun(titlePlayback(program.keyboard), 'manager', 'screen')
+      );
       return true;
     },
     /** Puts an already reseeded game at the management menu. */
@@ -815,14 +871,11 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
     setKey: (key: string) => program.keyboard.set(key),
     skipPause,
     get sounds(): readonly SoundEvent[] {
+      const run = running();
       const timeline =
-        program.screen === 'highlights'
-          ? program.matchday?.playback
-          : program.promptSound && !program.promptSound.done
-            ? program.promptSound
-            : program.timed && !program.timed.done
-              ? program.timed
-              : undefined;
+        program.promptSound && !program.promptSound.done
+          ? program.promptSound
+          : run?.timeline;
       if (!timeline) {
         return [];
       }
@@ -834,11 +887,8 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
         phaseT: sound.t,
         startT: soundTimeT + sound.t - timeline.elapsedT
       }));
-      if (
-        !prompt &&
-        (program.screen === 'highlights' ||
-          program.screen === 'cup-celebration')
-      ) {
+      // The beep the next screen's prompt sounds once the timed screen ends.
+      if (!prompt && promptScreens.has(run!.next)) {
         events.push({
           ...beepRegisters(0.2, 0),
           id: `${soundGeneration}:prompt`,
@@ -862,11 +912,11 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
       return {
         ...screen,
         ...(fault ? { printFault: fault } : {}),
-        ...(program.timed &&
+        ...(textProgress() &&
         ['title', 'message', 'cup-celebration'].includes(program.screen)
           ? {
-              printed: program.timed.progress.text,
-              timingKey: program.timed.index
+              printed: textProgress()!.text,
+              timingKey: program.timed!.timeline.index
             }
           : {}),
         ...(screen.game && screen.screen !== 'menu'

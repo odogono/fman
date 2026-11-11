@@ -13,6 +13,8 @@ export type JournalInput =
   | ['advance', number]
   | ['submit', string]
   | ['key', string]
+  | ['press', string]
+  | ['let-go']
   | ['skip']
   | ['saved']
   | ['reload'];
@@ -26,6 +28,12 @@ type Base =
       ulaFrames?: number;
     }
   | { kind: 'title' };
+
+/**
+ * How long a keypress stays down: a brief one comes up once the original
+ * has scanned it; a held one until `release` (ADR 0006).
+ */
+export type Hold = 'brief' | 'held';
 
 const maxInputs = 5000;
 const invalid = () => new RangeError('Invalid Football Manager web save');
@@ -44,9 +52,14 @@ export const createJournal = (base: Base = { kind: 'title' }) => {
   }
   let start = base;
   let inputs: JournalInput[] = [];
+  /** The key down is a brief keypress, still awaiting its scan. */
+  let brief = false;
+  const keyboard = () => session.timingState.keyboard;
+  // A checkpoint stores the key but not its hold, so none is taken while a
+  // brief keypress is down; its release, inside an advance, takes one.
   const checkpoint = () => {
     const view = session.view;
-    if (view.screen === 'menu' && !view.paused) {
+    if (view.screen === 'menu' && !view.paused && !brief) {
       start = {
         ...session.timingState,
         frames: view.frames,
@@ -60,26 +73,79 @@ export const createJournal = (base: Base = { kind: 'title' }) => {
     inputs.push(input);
     checkpoint();
   };
+  /** Lifts a brief keypress once the original has scanned it. */
+  const settle = () => {
+    const { key, scanned } = keyboard();
+    if (brief && (!key || key === scanned)) {
+      brief = false;
+      session.setKey('');
+    }
+  };
+  /** Sets a held key, or lifts it with `''`. */
+  const setKey = (key: string) => {
+    if (!brief && keyboard().key === key) {
+      return;
+    }
+    brief = false;
+    session.setKey(key);
+    log(['key', key]);
+  };
+  const press = (key: string, hold: Hold) => {
+    if (hold === 'held') {
+      setKey(key);
+      return;
+    }
+    brief = true;
+    session.setKey(key);
+    settle();
+    log(['press', key]);
+  };
+  const step = (frames: number) => {
+    const repaint = session.advance(frames);
+    settle();
+    const last = inputs.at(-1);
+    if (
+      last?.[0] === 'advance' &&
+      Number.isSafeInteger((last[1] + frames) * spectrumFrameT)
+    ) {
+      last[1] += frames;
+    } else {
+      inputs.push(['advance', frames]);
+    }
+    if (session.view.screen === 'menu' && !session.view.paused) {
+      checkpoint();
+    }
+    return repaint;
+  };
+  /** Turns a held keypress brief, as its key-up can no longer arrive. */
+  const letGo = () => {
+    if (brief || !keyboard().key) {
+      return;
+    }
+    brief = true;
+    settle();
+    log(['let-go']);
+  };
   return {
-    /** Returns whether the screen needs a repaint. */
+    /**
+     * Returns whether the screen needs a repaint. A brief keypress is
+     * stepped frame by frame until it comes up, so it lifts on its scan.
+     */
     advance: (frames: number) => {
-      if (frames <= 0) {
-        return false;
+      let repaint = false;
+      for (; brief && frames > 0; frames--) {
+        repaint = step(1) || repaint;
       }
-      const repaint = session.advance(frames);
-      const last = inputs.at(-1);
-      if (
-        last?.[0] === 'advance' &&
-        Number.isSafeInteger((last[1] + frames) * spectrumFrameT)
-      ) {
-        last[1] += frames;
-      } else {
-        inputs.push(['advance', frames]);
+      return frames > 0 ? step(frames) || repaint : repaint;
+    },
+    letGo,
+    /** A key goes down, replacing any key already down. */
+    press,
+    /** The key or finger lifted: lifts a held keypress only. */
+    release: () => {
+      if (!brief && keyboard().key) {
+        setKey('');
       }
-      if (session.view.screen === 'menu' && !session.view.paused) {
-        checkpoint();
-      }
-      return repaint;
     },
     reload: () => {
       const done = session.reload();
@@ -96,13 +162,6 @@ export const createJournal = (base: Base = { kind: 'title' }) => {
       return done;
     },
     session: session as Session,
-    setKey: (key: string) => {
-      if (session.timingState.keyboard.key === key) {
-        return;
-      }
-      session.setKey(key);
-      log(['key', key]);
-    },
     skipPause: () => {
       session.skipPause();
       log(['skip']);
@@ -112,9 +171,16 @@ export const createJournal = (base: Base = { kind: 'title' }) => {
         base: start,
         format: 'fman-web',
         inputs,
-        version: 4
+        version: 5
       }),
-    submit: (text: string): Effect | undefined => {
+    /**
+     * Submits an answer, pressing Enter as a keyboard does when no key is
+     * already down (ADR 0006); without `enter`, presses no key.
+     */
+    submit: (text: string, enter?: Hold): Effect | undefined => {
+      if (enter && !keyboard().key) {
+        press('Enter', enter);
+      }
       const effect = session.submit(text);
       log(['submit', text]);
       return effect;
@@ -123,7 +189,7 @@ export const createJournal = (base: Base = { kind: 'title' }) => {
 };
 export type Journal = ReturnType<typeof createJournal>;
 
-const validInput = (v: unknown): v is JournalInput => {
+const validInput = (v: unknown, version: number): v is JournalInput => {
   if (!Array.isArray(v) || typeof v[0] !== 'string') {
     return false;
   }
@@ -138,6 +204,15 @@ const validInput = (v: unknown): v is JournalInput => {
     case 'submit':
     case 'key':
       return v.length === 2 && typeof v[1] === 'string' && v[1].length <= 256;
+    case 'press':
+      return (
+        version >= 5 &&
+        v.length === 2 &&
+        typeof v[1] === 'string' &&
+        v[1].length <= 256
+      );
+    case 'let-go':
+      return version >= 5 && v.length === 1;
     case 'skip':
     case 'saved':
     case 'reload':
@@ -148,9 +223,10 @@ const validInput = (v: unknown): v is JournalInput => {
 };
 
 /**
- * Restores a web save: version 4 resumes the exact session; version 1
- * resumes at the reseed boundary before management. Versions 2 and 3 accept only
- * an idle menu checkpoint, since their animation durations cannot replay exactly.
+ * Restores a web save: versions 4 and 5 resume the exact session, letting
+ * go of any held keypress; version 1 resumes at the reseed boundary before
+ * management. Versions 2 and 3 accept only an idle menu checkpoint, since
+ * their animation durations cannot replay exactly.
  */
 export const openSave = (data: string): Journal => {
   if (data.length > saveLimit) {
@@ -178,12 +254,12 @@ export const openSave = (data: string): Journal => {
   if (
     !record(value) ||
     value.format !== 'fman-web' ||
-    (value.version !== 4 && value.version !== 3 && value.version !== 2) ||
+    ![2, 3, 4, 5].includes(value.version as number) ||
     Object.keys(value).length !== 4 ||
     !record(value.base) ||
     !Array.isArray(value.inputs) ||
     value.inputs.length > maxInputs ||
-    !value.inputs.every(validInput)
+    !value.inputs.every(input => validInput(input, value.version as number))
   ) {
     throw invalid();
   }
@@ -259,7 +335,13 @@ export const openSave = (data: string): Journal => {
           journal.skipPause();
           break;
         case 'key':
-          journal.setKey(input[1]);
+          journal.press(input[1], 'held');
+          break;
+        case 'press':
+          journal.press(input[1], 'brief');
+          break;
+        case 'let-go':
+          journal.letGo();
           break;
         case 'saved':
           journal.saved();
@@ -269,6 +351,8 @@ export const openSave = (data: string): Journal => {
           break;
       }
     }
+    // Keys and fingers held when the session was saved have since lifted.
+    journal.letGo();
     return journal;
   } catch {
     throw invalid();

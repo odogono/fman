@@ -7,12 +7,7 @@ import {
   type AmountAction,
   type AmountEntry
 } from './amount-entry';
-import {
-  answersFor,
-  printAccepted,
-  tapAnswer,
-  type OfferedAnswer
-} from './answers';
+import { answersFor, printAccepted, type OfferedAnswer } from './answers';
 import { barFor, type BarButton } from './context-bar';
 import { createFrameSampler } from './frame-sampler';
 import { makeScreen } from './screen';
@@ -154,10 +149,8 @@ export const createApp = ({
   let menuOpen = false;
   let menuView: MenuView = 'main';
   let pendingSlot = 0;
-  /** A finger is holding a key down: Enter after a tap, or a pause keypress. */
+  /** The held keypress is a finger's, so its lift releases it. */
   let touchHeld = false;
-  /** The frame at which a submit with no key down pressed Enter. */
-  let softEnterAt: number | undefined;
   /** The amount being entered; it starts afresh each time its prompt does. */
   let amountEntry: AmountEntry | undefined;
   const amountFor = (answers: readonly OfferedAnswer[]) => {
@@ -400,7 +393,7 @@ export const createApp = ({
   /** The original's `h`, sent from the menu once play resumes. */
   const printScreen = () => {
     closeMenu();
-    answer(() => submitPressingEnter('h'));
+    answer(() => journal.submit('h', 'brief'));
   };
   /** KEEP downloads the save; only then does the original ask whether to play on. */
   const keep = (data: string) => {
@@ -465,24 +458,17 @@ export const createApp = ({
     render();
     syncSound();
   };
-  /**
-   * Submits `text` with Enter down, as a keyboard does, when no key is
-   * already down (a soft keyboard or the menu sends none); Enter lifts once
-   * a frame passes.
-   */
-  const submitPressingEnter = (text: string) => {
-    if (!journal.session.timingState.keyboard.key) {
-      journal.setKey('Enter');
-      softEnterAt = journal.session.view.frames;
-    }
-    return journal.submit(text);
-  };
   const release = () => {
     if (!menuOpen) {
       advanceTo(clock.now());
     }
-    journal.setKey('');
+    journal.release();
     persist();
+  };
+  /** A key-up can no longer arrive, so a held keypress lifts by itself. */
+  const letGo = () => {
+    touchHeld = false;
+    journal.letGo();
   };
 
   render();
@@ -514,7 +500,8 @@ export const createApp = ({
       }
       let prevent = false;
       if (!event.repeat && !event.modified) {
-        journal.setKey(event.code);
+        touchHeld = false;
+        journal.press(event.code, 'held');
         if (journal.session.view.paused) {
           prevent = true;
           render();
@@ -570,12 +557,12 @@ export const createApp = ({
         return;
       }
       touchHeld = true;
-      journal.setKey('Space');
+      journal.press('Space', 'held');
       render();
       persist();
     },
     /** The command line's answer: typed, or sent from a soft keyboard. */
-    submit: (text: string) => answer(() => submitPressingEnter(text)),
+    submit: (text: string) => answer(() => journal.submit(text, 'brief')),
     /** A change to the amount being entered; it presses no key. */
     amount: (action: AmountAction) => {
       if (amountEntry && !menuOpen) {
@@ -604,25 +591,13 @@ export const createApp = ({
         if (!pressEnter) {
           return journal.submit(text);
         }
-        touchHeld = true;
-        return offered.kind === 'choice'
-          ? tapAnswer(journal, offered)
-          : tapAnswer(journal, offered, text);
+        touchHeld = !journal.session.timingState.keyboard.key;
+        return journal.submit(text, 'held');
       }),
     /** An animation frame at `now`. */
     tick: (now: number) => {
       if (!menuOpen && !dom.hidden) {
         advanceTo(now);
-        if (
-          softEnterAt !== undefined &&
-          journal.session.view.frames > softEnterAt
-        ) {
-          softEnterAt = undefined;
-          if (journal.session.timingState.keyboard.key === 'Enter') {
-            journal.setKey('');
-            persist();
-          }
-        }
       }
     },
     /** Text went into the command line. */
@@ -632,9 +607,15 @@ export const createApp = ({
         beeper.click();
       }
     },
+    /** The window lost focus, so no key-up will reach it. */
+    blurred: () => {
+      letGo();
+      persist();
+    },
     /** The page was hidden or shown again. */
     visibilityChanged: () => {
       if (dom.hidden) {
+        letGo();
         persistCurrent();
         beeper.reset();
       } else {

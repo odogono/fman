@@ -417,6 +417,7 @@ export const createBrowserDom = (app: HTMLElement) => {
     addEventListener('pointercancel', target.pointerUp);
     document.addEventListener('keyup', target.keyUp);
     addEventListener('pagehide', target.pageHide);
+    addEventListener('blur', target.blurred);
     document.addEventListener('visibilitychange', target.visibilityChanged);
   };
   return { connect, dom };

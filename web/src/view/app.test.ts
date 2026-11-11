@@ -33,6 +33,7 @@ const harness = ({
     filesChosen: 0,
     fit: false,
     focused: 0,
+    hidden: false,
     inputFocus: false,
     menu: undefined as Menu | undefined,
     menuOpen: false,
@@ -54,7 +55,9 @@ const harness = ({
     focusInput: () => {
       page.focused++;
     },
-    hidden: false,
+    get hidden() {
+      return page.hidden;
+    },
     notice: text => {
       page.notice = text;
     },
@@ -472,6 +475,52 @@ test('a soft keyboard submit presses Enter until a frame has passed', () => {
   run.app.submit('alex');
   expect(run.view().screen).toBe('clubs');
   expect(run.app.journal.session.timingState.keyboard.key).toBe('Enter');
+  run.wait(2);
+  expect(run.app.journal.session.timingState.keyboard.key).toBe('');
+});
+
+test('a finger lifted after a save loads changes nothing in the loaded game', async () => {
+  const run = harness({ coarsePointer: true });
+  run.toMenu();
+  run.settle();
+  run.app.tap('menu.status');
+  const saved = run.app.journal.snapshot();
+  await run.app.importSave(async () => saved);
+  expect(run.page.notice).toBe('Save file loaded.');
+  const loaded = run.app.journal.snapshot();
+  run.app.pointerUp();
+  expect(run.app.journal.snapshot()).toBe(loaded);
+});
+
+test('hiding the page lets go of a key whose key-up it will miss', () => {
+  const run = harness();
+  run.toMenu();
+  run.app.keyDown({
+    code: 'Space',
+    inputFocused: true,
+    key: ' ',
+    modified: false,
+    repeat: false
+  });
+  run.page.hidden = true;
+  run.app.visibilityChanged();
+  run.page.hidden = false;
+  run.app.visibilityChanged();
+  run.wait(2);
+  expect(run.app.journal.session.timingState.keyboard.key).toBe('');
+});
+
+test('a lost window focus lets go of a held key', () => {
+  const run = harness();
+  run.toMenu();
+  run.app.keyDown({
+    code: 'KeyA',
+    inputFocused: true,
+    key: 'a',
+    modified: false,
+    repeat: false
+  });
+  run.app.blurred();
   run.wait(2);
   expect(run.app.journal.session.timingState.keyboard.key).toBe('');
 });

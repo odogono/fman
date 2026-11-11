@@ -12,7 +12,7 @@ Design decisions for making the game playable without a keyboard, chiefly on pho
 
 ## Answer mapping
 
-A view-side layer (`web/src/view/answers.ts`) reads the session view and lists each prompt's **offered answers**. Both presentation modes render their touch controls from it and submit through its `tapAnswer`.
+A view-side layer (`web/src/view/answers.ts`) reads the session view and lists each prompt's **offered answers**. Both presentation modes render their touch controls from it and submit through the journal, which presses Enter for them.
 
 - **Valid answers** are every input a prompt handles differently from other input, including answers that end in one of the original's error messages. Tests use this full set.
 - **Offered answers** are a subset: the listed options on choice prompts; the numbers shown on screen for squad, team selection and the names lists; and free number entry where the original asks for an amount (borrow, repay, bid). Error-only answers on choice prompts, such as colour `3`, stay reachable from the keyboard.
@@ -20,7 +20,7 @@ A view-side layer (`web/src/view/answers.ts`) reads the session view and lists e
 - Where any input moves on, a tap submits an empty answer (plain Enter). Team selection never offers this, because an empty answer there means player 0.
 - The save question and the sale offer show plain Yes and No buttons. No submits `n` with no extra confirmation, as in the original.
 - Print (`h`) is not an offered answer. The game menu offers it as Print screen, enabled only where the original copies the screen; keyboard players can still type it.
-- Taps reproduce keypresses as well as answers ([ADR 0006](adr/0006-taps-reproduce-keypresses.md)). A tap that submits an answer presses Enter and holds it until the finger lifts; a long press held into the highlights can shorten their pauses, as a held key does. During a timed pause, a tap on the game area is a keypress for as long as the finger is down. At any other time a tap presses no key.
+- Taps reproduce keypresses as well as answers ([ADR 0006](adr/0006-taps-reproduce-keypresses.md)). A tap that submits an answer presses Enter and holds it until the finger lifts; a long press held into the highlights can shorten their pauses, as a held key does. During a timed pause, a tap on the game area is a keypress for as long as the finger is down. At any other time a tap presses no key. Enter from the soft keyboard or the game menu is a brief keypress: it comes up once the original has scanned it. A key or finger still down when the page is reloaded, hidden or loses focus also becomes brief, so it can't stay stuck down.
 
 Tests check, screen by screen, that each offered answer is valid and does what the original does. A journal test checks that a short game played by taps matches the same game typed at the same moments: same state, frames and RNG seed.
 
@@ -31,7 +31,7 @@ The original screen, scaled to fit, with a context bar of large buttons beneath 
 - **Touch controls** in Options: Auto (the default) shows the bar on any device with a touchscreen; On and Off force it. With the bar showing and Display size on Fit window, the screen scales fractionally to the page width.
 - Labels give a short wording and the original key, such as "Loan (l)". Numbered answers sit in a grid of number-only buttons; Continue, Kick off, Play, Yes, Done and Next page are full-width yellow; other choices alternate red and blue.
 - A button submits as its finger goes down and holds Enter until it lifts. While nothing is offered the bar keeps its height, empty.
-- Names show a "Type name" button that opens the soft keyboard; the keyboard's Go key submits, pressing Enter for at least a frame when the keyboard sends no Enter key of its own. While the bar shows, the command line is never focused on its own.
+- Names show a "Type name" button that opens the soft keyboard; the keyboard's Go key submits, pressing Enter until the original has scanned it when the keyboard sends no Enter key of its own. While the bar shows, the command line is never focused on its own.
 - Amounts (loan, repayment, bid) use touch entry: − and + by £1,000, chips +£10k, +£50k, +£100k and Max, and "Exact amount" for an on-screen keypad. Entry stays within what the original accepts: a loan up to the credit limit less the debt, a repayment up to the smaller of the debt and the cash, a bid up to the cash. A bid starts at the player's value; a loan or repayment at £0. Cancel (0) leaves a loan or repayment the original's way, and Pass (99) declines a bid. Typing on a keyboard can still reach the original's error messages.
 
 ![Classic mode](https://gist.githubusercontent.com/odogono/00dcc8e44efa42a79b1c8599d68c7496/raw/classic.jpg)

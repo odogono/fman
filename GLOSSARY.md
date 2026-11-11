@@ -86,8 +86,14 @@ _Avoid_: Command, action
 An answer a presentation mode puts within reach of a tap: the choices the original screen invites, free number entry where it asks for an amount, or free text entry where it asks for a name. Every offered answer is one the original accepts.
 
 **Keypress**:
-A key held down while the original waits or runs a timed pause, which can cut a pause short. It is not an answer.
+A key held down while the original waits or runs a timed pause, which can cut a pause short. It is not an answer. Only one key is down at a time; a new keypress replaces the last.
 _Avoid_: Answer or tap when referring to skipping a pause
+
+**Brief keypress**:
+A keypress that comes up by itself once the original has scanned it: Enter pressed by an answer from a soft keyboard or the game menu, or a held keypress whose key-up can no longer arrive.
+
+**Held keypress**:
+A keypress that stays down until its key or finger lifts: a physical key, a finger on the screen during a timed pause, or a finger on a context bar button. Resuming a session, or hiding the page, turns it into a brief keypress.
 
 **Presentation mode**:
 How the game is shown and controlled; every mode drives the same game with the same rules and outcomes.

@@ -15,7 +15,7 @@ bun run baseline:compare docs/baseline/original.json build/baseline/original.jso
 
 Options: `--ruleset`, `--levels`, `--strategies` (`all` or a comma list), `--runs`, `--seasons` (the season limit, default 10), `--seed` (harness seed, default 1), `--out` (default `build/baseline`) and `--workers` (default: every core). Raw runs always go to `build/baseline/<ruleset>-runs.jsonl`, which is gitignored.
 
-The default grid takes about 12 minutes on 10 cores: a 10-season run costs about 2 s of CPU, mostly frame-by-frame highlight and pause playback. All seven levels would take about 30 minutes, so the default stays at 1, 4 and 7.
+The default grid takes about 2 minutes on 10 cores, and a 10-season run costs about 0.3 s of CPU. For a quick check before a full run, `--runs 50` takes about 30 seconds. On the same rules, its intervals are about 1.5× wider: roughly ±2 points of league win rate and ±0.3 league places. All seven levels take about 4½ minutes.
 
 The output is deterministic. The same seed, options and code give byte-identical files, whatever the worker count. A PR that changes play under the `original` ruleset therefore changes `baseline/original.json` too, and refreshes it on purpose.
 

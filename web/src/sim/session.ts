@@ -281,13 +281,13 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
           ? program.timed
           : undefined;
     if (timeline && !(program.promptSound && !program.promptSound.done)) {
-      const amount = Math.min(left, timeline.remainingT);
-      missed +=
+      const played =
         program.screen === 'highlights'
-          ? program.matchday!.advanceT(amount)
-          : timeline.advanceT(amount);
-      soundTimeT += amount;
-      left -= amount;
+          ? program.matchday!.advanceWithinT(left)
+          : timeline.advanceWithinT(left);
+      missed += played.missed;
+      soundTimeT += played.usedT;
+      left -= played.usedT;
       phase = timeline.elapsedT % spectrumFrameT;
       if (program.screen === 'highlights') {
         program.game = program.matchday!.game;

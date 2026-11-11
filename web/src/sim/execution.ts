@@ -28,7 +28,20 @@ const measuredBudget = (from: string, to: string): Budget | undefined => {
   return measured;
 };
 
+// Budgets depend only on the edge, so each is resolved once.
+const resolved = new Map<string, Budget>();
+
 export const executionBudget = (from: string, to: string): Budget => {
+  const key = `${from}>${to}`;
+  let budget = resolved.get(key);
+  if (!budget) {
+    budget = resolveBudget(from, to);
+    resolved.set(key, budget);
+  }
+  return budget;
+};
+
+const resolveBudget = (from: string, to: string): Budget => {
   const measured = measuredBudget(from, to);
   if (measured) {
     return measured;

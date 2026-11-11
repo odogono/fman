@@ -37,6 +37,15 @@ for (const strategy of strategies) {
   });
 }
 
+test('a run counts its matches, injuries and short-handed matches', () => {
+  const run = short('passive');
+  // 15 league matches and at least one cup leg.
+  expect(run.matches).toBeGreaterThan(15);
+  expect(run.shortHanded).toBeLessThanOrEqual(run.matches);
+  // Twelve players with a 1-in-20 draw before each match.
+  expect(run.injuries).toBeGreaterThan(0);
+});
+
 test('a run is reproducible from its seed', () => {
   expect(short('balanced', 11)).toEqual(short('balanced', 11));
   expect(short('random', 11)).toEqual(short('random', 11));

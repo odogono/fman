@@ -101,6 +101,19 @@ export const metrics: readonly Metric[] = [
     key: 'finalNet',
     label: 'Final cash − debt (£)',
     value: run => run.final.cash - run.final.debt
+  },
+  {
+    format: 'mean',
+    key: 'injuries',
+    label: 'Injuries per season',
+    value: run =>
+      run.seasons.length ? run.injuries / run.seasons.length : undefined
+  },
+  {
+    format: 'rate',
+    key: 'shortHanded',
+    label: 'Short-handed matches',
+    value: run => (run.matches ? run.shortHanded / run.matches : undefined)
   }
 ];
 

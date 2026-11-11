@@ -21,6 +21,8 @@ Rates and means are over runs; other values are the median (interquartile range)
 | Cup wins                       | 0.01                         | 1.20                            | 5.70                            | 3.98                            |
 | Peak debt (£)                  | 250,186 (249,999–251,434)    | 0 (0–0)                         | 0 (0–0)                         | 1,000,000 (1,000,000–1,000,000) |
 | Final cash − debt (£)          | -250,163 (-251,313–-225,437) | 2,385,511 (1,732,918–2,832,306) | 1,807,574 (1,578,057–2,056,842) | 1,501,152 (1,304,814–1,702,366) |
+| Injuries per season            | 8.21                         | 10.70                           | 13.75                           | 15.68                           |
+| Short-handed matches           | 91.2%                        | 11.7%                           | 0.5%                            | 0.1%                            |
 
 ## Level 2
 
@@ -39,6 +41,8 @@ Rates and means are over runs; other values are the median (interquartile range)
 | Cup wins                       | 0                            | 0.24                          | 3.98                            | 2.25                            |
 | Peak debt (£)                  | 250,000 (249,998–250,860)    | 0 (0–0)                       | 0 (0–0)                         | 1,000,000 (1,000,000–1,000,000) |
 | Final cash − debt (£)          | -239,340 (-250,860–-218,031) | 1,115,787 (802,357–1,539,908) | 1,340,335 (1,112,284–1,632,699) | 850,010 (608,426–1,119,192)     |
+| Injuries per season            | 7.66                         | 9.95                          | 13.19                           | 14.74                           |
+| Short-handed matches           | 92.3%                        | 11.6%                         | 0.6%                            | 0.1%                            |
 
 ## Level 3
 
@@ -57,6 +61,8 @@ Rates and means are over runs; other values are the median (interquartile range)
 | Cup wins                       | 0                            | 0.04                      | 2.63                          | 0.83                        |
 | Peak debt (£)                  | 250,072 (249,998–251,169)    | 0 (0–0)                   | 0 (0–0)                       | 750,000 (687,500–1,000,000) |
 | Final cash − debt (£)          | -250,071 (-251,169–-224,532) | 734,181 (632,968–925,228) | 1,069,475 (799,807–1,308,717) | 355,787 (143,857–601,981)   |
+| Injuries per season            | 8.09                         | 9.63                      | 12.78                         | 13.95                       |
+| Short-handed matches           | 90.8%                        | 11.7%                     | 0.6%                          | 0.1%                        |
 
 ## Level 4
 
@@ -75,6 +81,8 @@ Rates and means are over runs; other values are the median (interquartile range)
 | Cup wins                       | 0                            | 0.04                      | 2.09                        | 0.69                        |
 | Peak debt (£)                  | 250,000 (249,998–250,942)    | 0 (0–0)                   | 0 (0–0)                     | 750,000 (500,000–1,000,000) |
 | Final cash − debt (£)          | -244,321 (-250,941–-221,120) | 612,759 (540,862–752,635) | 830,780 (571,434–1,070,481) | 192,015 (19,399–405,804)    |
+| Injuries per season            | 7.65                         | 9.51                      | 12.39                       | 13.79                       |
+| Short-handed matches           | 92.5%                        | 11.7%                     | 0.5%                        | 0.1%                        |
 
 ## Level 5
 
@@ -93,6 +101,8 @@ Rates and means are over runs; other values are the median (interquartile range)
 | Cup wins                       | 0                            | 0.01                      | 1.41                      | 0.34                      |
 | Peak debt (£)                  | 250,159 (249,998–250,931)    | 0 (0–0)                   | 0 (0–0)                   | 500,000 (500,000–750,000) |
 | Final cash − debt (£)          | -250,158 (-250,931–-222,344) | 516,819 (459,700–624,906) | 606,546 (357,083–834,892) | 26,345 (-82,564–190,760)  |
+| Injuries per season            | 7.94                         | 9.23                      | 12.19                     | 13.31                     |
+| Short-handed matches           | 92.1%                        | 11.5%                     | 0.5%                      | 0.1%                      |
 
 ## Level 6
 
@@ -111,6 +121,8 @@ Rates and means are over runs; other values are the median (interquartile range)
 | Cup wins                       | 0                            | 0                         | 0.82                      | 0.15                      |
 | Peak debt (£)                  | 250,000 (249,999–251,004)    | 0 (0–0)                   | 0 (0–0)                   | 500,000 (439,291–750,000) |
 | Final cash − debt (£)          | -243,475 (-251,003–-220,494) | 487,272 (407,891–565,374) | 441,341 (287,946–639,454) | -25,869 (-117,675–81,744) |
+| Injuries per season            | 7.24                         | 9.26                      | 11.83                     | 12.99                     |
+| Short-handed matches           | 92.4%                        | 11.9%                     | 0.6%                      | 0.1%                      |
 
 ## Level 7
 
@@ -129,3 +141,5 @@ Rates and means are over runs; other values are the median (interquartile range)
 | Cup wins                       | 0                            | 0                         | 0.53                      | 0.07                        |
 | Peak debt (£)                  | 250,190 (249,998–251,283)    | 0 (0–0)                   | 0 (0–0)                   | 500,000 (250,613–500,000)   |
 | Final cash − debt (£)          | -250,190 (-251,283–-225,382) | 428,668 (367,375–490,279) | 266,891 (154,052–422,301) | -125,471 (-217,893–-40,900) |
+| Injuries per season            | 7.81                         | 9.19                      | 11.52                     | 12.88                       |
+| Short-handed matches           | 91.2%                        | 11.8%                     | 0.6%                      | 0.1%                        |

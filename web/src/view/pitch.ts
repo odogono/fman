@@ -1,7 +1,7 @@
 import type { Club } from '../sim/catalogue';
 import type { Attack, SpriteDraw } from '../sim/highlights';
 import { rasterText, rasterizeCells } from './glyphs';
-import type { Cell } from './management-layouts';
+import type { Cell } from './grid';
 import { createPrintScreen } from './print-screen';
 import { sprites } from './sprites';
 

@@ -1,5 +1,5 @@
 import type { NameEditor } from '../sim/name-editor';
-import type { Paint } from './management-layouts';
+import type { Paint } from './grid';
 import { createPrintScreen } from './print-screen';
 
 export const paintNames = (editor: NameEditor, put: Paint) => {

@@ -1,5 +1,5 @@
 import atlas from './assets/spectrum-glyphs.json';
-import type { Cell, Style } from './management-layouts';
+import type { Cell, Style } from './grid';
 
 const glyphs: Readonly<Record<string, readonly number[]>> = atlas.glyphs;
 export const blockCharacters = ' ▝▘▀▗▐▚▜▖▞▌▛▄▟▙█';

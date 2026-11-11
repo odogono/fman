@@ -1,6 +1,7 @@
 import { expect, test } from 'bun:test';
 
 import {
+  cupRoundName,
   prepareCupMatch,
   prepareReplay,
   refreshPlayers,
@@ -10,6 +11,15 @@ import cases from './fixtures/first-cups.json';
 import { simulateHighlights } from './highlights';
 import { teamStrength } from './league';
 import { createNewGame, type Game, type Player } from './management';
+
+test('cup rounds are numbered until the semi-final and final', () => {
+  expect([1, 6, 7, 8].map(cupRoundName)).toEqual([
+    '1',
+    '6',
+    'Semi-Final',
+    'Final'
+  ]);
+});
 
 for (const reference of cases) {
   test(`original first cup round from seed ${reference.seed}, including replays`, () => {

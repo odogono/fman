@@ -1,9 +1,16 @@
 import { beepRegisters, beeperT, type SoundEvent } from './beeper';
+import { cupRoundName } from './cup';
 import { createFrameClock, framePeriod, spectrumFrameT } from './frame-clock';
-import { seasonOver, type MatchCompletion, type MatchFixture } from './league';
+import {
+  pickedCount,
+  seasonOver,
+  type MatchCompletion,
+  type MatchFixture
+} from './league';
 import {
   borrow,
   createNewGame,
+  creditLimit,
   isDismissed,
   makeSaleOffer,
   repay,
@@ -56,7 +63,6 @@ export type ScreenView =
       | 'save-question'
       | 'menu'
       | 'status'
-      | 'squad'
       | 'borrow'
       | 'repay'
       | 'replay'
@@ -64,10 +70,26 @@ export type ScreenView =
       | 'season-table',
       { game: Game }
     >
+  | { game: Game; pickedCount: number; screen: 'squad' }
   | { game: Game; nameEditor: NameEditor; screen: 'names' }
-  | Each<'bills' | 'dismissal', { bills: Bills; game: Game }>
-  | Each<'fixture' | 'team', { fixture: MatchFixture; game: Game }>
-  | { error: string; fixture: MatchFixture; game: Game; screen: 'selection' }
+  | { bills: Bills; game: Game; screen: 'bills' }
+  /** `creditLimit` is the debt the club went over. */
+  | { bills: Bills; creditLimit: number; game: Game; screen: 'dismissal' }
+  /** A cup fixture names its round, as `cupRoundName` does; a league fixture has none. */
+  | {
+      fixture: MatchFixture;
+      game: Game;
+      roundName: string | undefined;
+      screen: 'fixture';
+    }
+  | { fixture: MatchFixture; game: Game; pickedCount: number; screen: 'team' }
+  | {
+      error: string;
+      fixture: MatchFixture;
+      game: Game;
+      pickedCount: number;
+      screen: 'selection';
+    }
   | {
       fixture: MatchFixture;
       game: Game;
@@ -195,8 +217,7 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
       !promptScreens.has(program.screen) ||
       screenPrintFault(screenView()) ||
       running() ||
-      (program.screen === 'selection' &&
-        program.game!.players.filter(player => player.status === 2).length > 11)
+      (program.screen === 'selection' && pickedCount(program.game!) > 11)
     ) {
       return;
     }
@@ -507,11 +528,7 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
         if (number === undefined) {
           break;
         }
-        if (
-          number === 99 &&
-          program.game!.players.filter(player => player.status === 2).length <=
-            11
-        ) {
+        if (number === 99 && pickedCount(program.game!) <= 11) {
           program.screen = 'team';
           break;
         }
@@ -744,7 +761,6 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
       case 'save-question':
       case 'menu':
       case 'status':
-      case 'squad':
       case 'borrow':
       case 'repay':
       case 'replay':
@@ -753,24 +769,39 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
         return { game, screen };
       case 'names':
         return { game, nameEditor: program.nameEditor!, screen };
+      case 'squad':
+        return { game, pickedCount: pickedCount(game), screen };
       case 'bills':
-      case 'dismissal':
+      case 'dismissal': {
+        const bills =
+          settled!.kind === 'cup' ? settled!.bills : settled!.completion.bills!;
+        return screen === 'bills'
+          ? { bills, game, screen }
+          : { bills, creditLimit: creditLimit(game), game, screen };
+      }
+      case 'fixture': {
+        const { fixture } = matchday!;
         return {
-          bills:
-            settled!.kind === 'cup'
-              ? settled!.bills
-              : settled!.completion.bills!,
+          fixture,
           game,
+          roundName:
+            fixture.kind === 'cup' ? cupRoundName(game.cupRound) : undefined,
           screen
         };
-      case 'fixture':
+      }
       case 'team':
-        return { fixture: matchday!.fixture, game, screen };
+        return {
+          fixture: matchday!.fixture,
+          game,
+          pickedCount: pickedCount(game),
+          screen
+        };
       case 'selection':
         return {
           error: program.selectionError,
           fixture: matchday!.fixture,
           game,
+          pickedCount: pickedCount(game),
           screen
         };
       case 'highlights':

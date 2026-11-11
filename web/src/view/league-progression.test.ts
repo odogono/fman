@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test';
 
-import { prepareLeagueMatch } from '../sim/league';
+import { pickedCount, prepareLeagueMatch } from '../sim/league';
 import { createNewGame } from '../sim/management';
 import { makeScreen } from './screen';
 
@@ -30,6 +30,7 @@ test('an away league fixture shows the home club and its rank first', () => {
     frames: 0,
     game: fixture.game,
     paused: false,
+    roundName: undefined,
     screen: 'fixture'
   });
   expect(display.lines[2]).toContain('Bury       v Arsenal   ');
@@ -40,6 +41,7 @@ test('an away league fixture shows the home club and its rank first', () => {
     frames: 0,
     game: fixture.game,
     paused: false,
+    pickedCount: pickedCount(fixture.game),
     screen: 'team'
   });
   expect(team.lines[0]!.slice(10, 17)).toBe('Arsenal');

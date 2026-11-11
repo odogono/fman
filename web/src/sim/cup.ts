@@ -12,6 +12,10 @@ const gate = (game: Game, opponent: number, home: boolean) =>
         ? game.homeGate
         : (5 - (Math.floor((opponent - 1) / 16) + 1)) * 10_000;
 
+/** How the original names a cup round: by number until the last two. */
+export const cupRoundName = (round: number) =>
+  round === 8 ? 'Final' : round === 7 ? 'Semi-Final' : String(round);
+
 export const prepareCupMatch = (game: Game): MatchFixture => {
   if (nextFixture(game) !== 'cup' || game.cupRound >= 8) {
     throw new RangeError('No cup round is scheduled');

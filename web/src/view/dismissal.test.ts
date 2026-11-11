@@ -3,6 +3,7 @@ import { expect, test } from 'bun:test';
 import observations from '../sim/fixtures/dismissal.json';
 import {
   createNewGame,
+  creditLimit,
   isDismissed,
   payWeeklyBills,
   type Player
@@ -30,15 +31,19 @@ for (const observation of observations) {
       })),
       previousNet: 50_000
     });
-    const view = {
+    const shown = {
       bills: paid.bills,
       frames: 0,
       game: paid.game,
-      paused: false,
-      screen: isDismissed(paid.game)
-        ? ('dismissal' as const)
-        : ('bills' as const)
+      paused: false
     };
+    const view = isDismissed(paid.game)
+      ? {
+          ...shown,
+          creditLimit: creditLimit(paid.game),
+          screen: 'dismissal' as const
+        }
+      : { ...shown, screen: 'bills' as const };
     expect(makeScreen(view).lines.map(line => line.trimEnd())).toEqual(
       observation.dismissalScreen.slice(0, 22)
     );

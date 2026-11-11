@@ -149,8 +149,10 @@ export const payWeeklyBills = (game: Game) => {
   };
 };
 
-export const isDismissed = (game: Game) =>
-  game.debt > 250_000 * (5 - game.division);
+/** The most a club may owe: the loan limit, and the debt beyond which the manager is dismissed. */
+export const creditLimit = (game: Game) => 250_000 * (5 - game.division);
+
+export const isDismissed = (game: Game) => game.debt > creditLimit(game);
 
 const validateAmount = (amount: number) => {
   if (!isIntegerIn(amount, 0, Number.MAX_SAFE_INTEGER)) {
@@ -160,10 +162,8 @@ const validateAmount = (amount: number) => {
 
 export const borrow = (game: Game, amount: number): Game => {
   validateAmount(amount);
-  if (game.debt + amount > 250_000 * (5 - game.division)) {
-    throw new RangeError(
-      `Sorry, your credit limit is £ ${250_000 * (5 - game.division)}`
-    );
+  if (game.debt + amount > creditLimit(game)) {
+    throw new RangeError(`Sorry, your credit limit is £ ${creditLimit(game)}`);
   }
   return { ...game, cash: game.cash + amount, debt: game.debt + amount };
 };

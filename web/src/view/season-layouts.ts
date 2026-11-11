@@ -1,7 +1,7 @@
 import { decodeName } from '../sim/names';
 import type { View } from '../sim/session';
+import type { Paint } from './grid';
 import { paintLeagueTable } from './league-table';
-import type { Paint } from './management-layouts';
 import { createPrintScreen } from './print-screen';
 
 export const paintSeason = (

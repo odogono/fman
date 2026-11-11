@@ -2,7 +2,7 @@ import type { Club } from '../sim/catalogue';
 import { decodeName, encodeClubName, nameBytes } from '../sim/names';
 import { PrintError, createPrintDecoder } from '../sim/spectrum-print';
 import { blockCharacters, glyphMask, spectrumCharacter } from './glyphs';
-import type { Cell, Paint, Style } from './management-layouts';
+import type { Cell, Paint, Style } from './grid';
 import { sprites } from './sprites';
 
 const blank = (): Cell => ({

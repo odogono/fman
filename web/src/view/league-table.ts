@@ -1,5 +1,5 @@
 import type { Game } from '../sim/management';
-import type { Paint } from './management-layouts';
+import type { Paint } from './grid';
 import { createPrintScreen } from './print-screen';
 
 export const paintLeagueTable = (

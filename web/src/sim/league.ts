@@ -18,12 +18,16 @@ export const teamStrength = (game: Game): number[] => {
   return result.map(clamp);
 };
 
+/** How many players are in the picked team. */
+export const pickedCount = (game: Game) =>
+  game.players.filter(player => player.status === 2).length;
+
 export const togglePickedPlayer = (game: Game, id: number): Game => {
   const player = game.players[id - 1];
   if (!player) {
     throw new RangeError('PLAYER NO. OUT OF RANGE');
   }
-  const removing = game.players.filter(p => p.status === 2).length > 11;
+  const removing = pickedCount(game) > 11;
   if (removing && player.status !== 2) {
     throw new RangeError('PLAYER NOT IN TEAM');
   }

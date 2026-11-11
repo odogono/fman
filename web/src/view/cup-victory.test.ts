@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test';
 
-import { prepareCupMatch } from '../sim/cup';
+import { cupRoundName, prepareCupMatch } from '../sim/cup';
 import { createNewGame } from '../sim/management';
 import { makeScreen } from './screen';
 
@@ -23,6 +23,7 @@ test('the final names its round and the trophy keeps nine star rows and flashing
     frames: 0,
     game: fixture.game,
     paused: false,
+    roundName: cupRoundName(fixture.game.cupRound),
     screen: 'fixture' as const
   };
   expect(makeScreen(view).lines[0]).toContain('Round Final');

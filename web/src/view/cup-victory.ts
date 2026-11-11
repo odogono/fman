@@ -1,4 +1,4 @@
-import type { Paint } from './management-layouts';
+import type { Paint } from './grid';
 
 const trophy = [
   '            ██████              ',

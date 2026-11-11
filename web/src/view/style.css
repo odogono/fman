@@ -225,3 +225,60 @@ main {
 #pitch[hidden] {
   display: none;
 }
+
+/* Classic mode's context bar: the current prompt's offered answers. */
+:root.fit {
+  --pixel: min(3px, calc((100vw - 24px) / 288));
+}
+.context-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  width: calc(36 * var(--cell));
+  max-width: 100%;
+  margin-top: 12px;
+}
+.context-bar[hidden] {
+  display: none;
+}
+.context-bar button {
+  grid-column: span 2;
+  min-height: 48px;
+  padding: 8px;
+  border: 2px solid transparent;
+  color: var(--bright-7);
+  /* The game's own font at twice its 8px cell, crisp and the same on every button. */
+  font:
+    16px/24px Spectrum,
+    monospace;
+  font-synthesis: none;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+.context-bar .wide {
+  grid-column: 1 / -1;
+}
+.context-bar .number {
+  grid-column: span 1;
+  background: var(--normal-0);
+  border-color: var(--normal-7);
+}
+.context-bar .red {
+  background: var(--bright-2);
+}
+.context-bar .blue {
+  background: var(--normal-1);
+}
+.context-bar .primary {
+  min-height: 56px;
+  background: var(--bright-6);
+  border-color: var(--normal-0);
+  color: var(--normal-0);
+}
+.context-bar button:focus-visible {
+  outline: 3px solid var(--bright-7);
+  outline-offset: 2px;
+}

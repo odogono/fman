@@ -26,7 +26,12 @@ Tests check, screen by screen, that each offered answer is valid and does what t
 
 ## Classic mode
 
-The original screen, scaled to fit, with a context bar of large buttons beneath it offering the current prompt's valid answers.
+The original screen, scaled to fit, with a context bar of large buttons beneath it offering the current prompt's offered answers.
+
+- **Touch controls** in Options: Auto (the default) shows the bar on any device with a touchscreen; On and Off force it. With the bar showing and Display size on Fit window, the screen scales fractionally to the page width.
+- Labels give a short wording and the original key, such as "Loan (l)". Numbered answers sit in a grid of number-only buttons; Continue, Kick off, Play, Yes, Done and Next page are full-width yellow; other choices alternate red and blue.
+- A button submits as its finger goes down and holds Enter until it lifts. While nothing is offered the bar keeps its height, empty.
+- Names and amounts show a "Type" button that opens the soft keyboard; the keyboard's Go key submits, pressing Enter for at least a frame when the keyboard sends no Enter key of its own. #46 replaces the amount button. While the bar shows, the command line is never focused on its own.
 
 ![Classic mode](https://gist.githubusercontent.com/odogono/00dcc8e44efa42a79b1c8599d68c7496/raw/classic.jpg)
 

@@ -51,6 +51,17 @@ _Avoid_: Replay when referring to highlights; a cup replay is another match
 **Gate receipts**:
 The income credited to the managed club for a match, including a cup replay.
 
+**Credit limit**:
+The most the managed club may owe, set by its division. Borrowing beyond it is refused.
+
+**Dismissal**:
+The end of the manager's game when the club owes more than its credit limit: at once under the Original rules, or once a grace period runs out under the Enhanced rules.
+_Avoid_: Sacking, game over
+
+**Grace period**:
+The weeks a club over its credit limit has to get back under it before the manager is dismissed.
+_Avoid_: Crisis, warning
+
 **Home gate**:
 The current gate-receipt value used for the managed club's home fixtures.
 _Avoid_: Attendance when referring to this monetary value

@@ -45,7 +45,7 @@ A PR whose title is `feat`, `fix` or `perf`, or marks a breaking change, adds a 
 
 ## Releasing
 
-Versions are `0.x.y` until `1.0.0`: minor versions for milestones, patch versions for fixes in between. To release:
+Versions follow semantic versioning from `1.0.0`: minor versions for milestones, patch versions for fixes in between, and a major version only for a breaking change. To release:
 
 1. On a branch, run `bun run changelog:release 0.1.0`. It writes `releases/changelog/0.1.0.md`, updates the index, deletes the fragments and bumps `package.json`.
 2. Merge it as `chore(repo): Release 0.1.0`.

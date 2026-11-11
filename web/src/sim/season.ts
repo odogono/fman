@@ -2,6 +2,7 @@ import type { Club } from './catalogue';
 import type { Game } from './management';
 import { movementPrintReport } from './name-print-fault';
 import { createRng } from './rng';
+import { lastingSkill } from './ruleset';
 
 export type ClubMovement = Readonly<{
   club: Club;
@@ -96,8 +97,14 @@ export const completeSeason = (game: Game) => {
   const division = Math.floor((club - 1) / 16) + 1;
   const factor = 5 - division;
   const rng = createRng(game.seed);
+  const lasting = lastingSkill(game.ruleset);
   const players = game.players.map(p => {
-    const skill = rng.int(1, 5);
+    // Skill drift draws one number, as the reroll does, so every later draw
+    // is the same under both rules.
+    const skill =
+      lasting && p.status > 0
+        ? Math.min(5, Math.max(1, p.skill + rng.int(-1, 1)))
+        : rng.int(1, 5);
     const energy = rng.int(1, 20);
     return { ...p, energy, skill, value: skill * 5000 * factor };
   });

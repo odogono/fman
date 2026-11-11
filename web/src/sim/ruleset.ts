@@ -5,8 +5,14 @@
  * with, so every released version stays playable. An experimental ruleset
  * carries one change alone while it is measured against the original, and is
  * retired once the change joins Enhanced (`even-difficulty`, `grace-period`).
+ * `lasting-skill` (#72) is being measured.
  */
-export const rulesets = ['original', 'enhanced-1', 'enhanced-2'] as const;
+export const rulesets = [
+  'original',
+  'enhanced-1',
+  'enhanced-2',
+  'lasting-skill'
+] as const;
 export type Ruleset = (typeof rulesets)[number];
 
 /** The Enhanced version every new Enhanced game starts with. */
@@ -18,11 +24,24 @@ export const isRuleset = (value: unknown): value is Ruleset =>
 /** The rule changes each ruleset makes to the original. */
 const changes: Record<
   Ruleset,
-  { gracePeriod: boolean; smoothDifficulty: boolean }
+  { gracePeriod: boolean; lastingSkill: boolean; smoothDifficulty: boolean }
 > = {
-  'enhanced-1': { gracePeriod: false, smoothDifficulty: true },
-  'enhanced-2': { gracePeriod: true, smoothDifficulty: true },
-  original: { gracePeriod: false, smoothDifficulty: false }
+  'enhanced-1': {
+    gracePeriod: false,
+    lastingSkill: false,
+    smoothDifficulty: true
+  },
+  'enhanced-2': {
+    gracePeriod: true,
+    lastingSkill: false,
+    smoothDifficulty: true
+  },
+  'lasting-skill': {
+    gracePeriod: false,
+    lastingSkill: true,
+    smoothDifficulty: false
+  },
+  original: { gracePeriod: false, lastingSkill: false, smoothDifficulty: false }
 };
 
 /**
@@ -49,3 +68,10 @@ export const opponentBonus = (ruleset: Ruleset, level: number) =>
  */
 export const gracePeriodWeeks = (ruleset: Ruleset) =>
   changes[ruleset].gracePeriod ? 4 : undefined;
+
+/**
+ * Whether owned players keep their skill at the season end, moving by skill
+ * drift of −1, 0 or +1 within 1–5, instead of rerolling it as the original
+ * does (#72, measured as `lasting-skill`). Unowned players still reroll.
+ */
+export const lastingSkill = (ruleset: Ruleset) => changes[ruleset].lastingSkill;

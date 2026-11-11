@@ -22,7 +22,7 @@ export const rulesOf = (ruleset: Ruleset): Rules =>
 export const rulesChoices = [
   {
     description:
-      'Present-day clubs and players in their own colours, a smoother difficulty curve, and a few weeks to clear debts before dismissal',
+      'Present-day clubs and players in their own colours, players who keep their skill between seasons, a smoother difficulty curve, and a few weeks to clear debts before dismissal',
     name: 'Enhanced',
     rules: 'enhanced'
   },

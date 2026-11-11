@@ -291,8 +291,9 @@ main {
   place-items: center;
   min-height: 48px;
   color: var(--bright-7);
+  /* 16px keeps the widest amount, £1,000,000, inside its two columns. */
   font:
-    24px/24px Spectrum,
+    16px/24px Spectrum,
     monospace;
   font-synthesis: none;
 }

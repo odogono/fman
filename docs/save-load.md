@@ -66,7 +66,9 @@ at the title screen, before any game exists, so replay sets up a new game under
 the rules the player chose; earlier title-screen journals play the original.
 `keep` files from version 7 hold the same as version 6. Version 8 adds a running
 [grace period](grace-period.md)'s weeks left to the stored game; earlier games
-have none running.
+have none running. Version 9 adds [present-day clubs](present-day-clubs.md)'
+kits and name papers, and leaves out the chosen colour of games whose clubs
+wear their own kits.
 Fractional browser phase is not stored; restoring starts a fresh phase and
 does not simulate time spent with the page closed.
 

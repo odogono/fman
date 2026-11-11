@@ -1,5 +1,13 @@
+import {
+  clubs,
+  playerNames,
+  presentDayClubs,
+  presentDayPlayerNames
+} from './catalogue';
+
 /**
- * Named sets of game rules (ADR 0007, ADR 0009). `original` holds rules
+ * Named sets of game rules (ADR 0007, ADR 0009), each with the clubs and
+ * players a new game starts with (ADR 0011). `original` holds rules
  * parity. Enhanced rules are released in versions (`enhanced-1`, …): each
  * gathers the accepted rule changes, and a game keeps the version it started
  * with, so every released version stays playable. An experimental ruleset
@@ -11,12 +19,13 @@ export const rulesets = [
   'original',
   'enhanced-1',
   'enhanced-2',
+  'enhanced-3',
   'lasting-skill'
 ] as const;
 export type Ruleset = (typeof rulesets)[number];
 
 /** The Enhanced version every new Enhanced game starts with. */
-export const latestEnhanced = 'enhanced-2' satisfies Ruleset;
+export const latestEnhanced = 'enhanced-3' satisfies Ruleset;
 
 export const isRuleset = (value: unknown): value is Ruleset =>
   rulesets.includes(value as Ruleset);
@@ -24,25 +33,58 @@ export const isRuleset = (value: unknown): value is Ruleset =>
 /** The rule changes each ruleset makes to the original. */
 const changes: Record<
   Ruleset,
-  { gracePeriod: boolean; lastingSkill: boolean; smoothDifficulty: boolean }
+  {
+    gracePeriod: boolean;
+    lastingSkill: boolean;
+    presentDay: boolean;
+    smoothDifficulty: boolean;
+  }
 > = {
   'enhanced-1': {
     gracePeriod: false,
     lastingSkill: false,
+    presentDay: false,
     smoothDifficulty: true
   },
   'enhanced-2': {
     gracePeriod: true,
     lastingSkill: false,
+    presentDay: false,
+    smoothDifficulty: true
+  },
+  'enhanced-3': {
+    gracePeriod: true,
+    lastingSkill: false,
+    presentDay: true,
     smoothDifficulty: true
   },
   'lasting-skill': {
     gracePeriod: false,
     lastingSkill: true,
+    presentDay: false,
     smoothDifficulty: false
   },
-  original: { gracePeriod: false, lastingSkill: false, smoothDifficulty: false }
+  original: {
+    gracePeriod: false,
+    lastingSkill: false,
+    presentDay: false,
+    smoothDifficulty: false
+  }
 };
+
+/**
+ * Whether the ruleset starts with the present-day clubs and players (#91),
+ * whose clubs wear their own kits, so a new game asks no colour question.
+ */
+export const presentDay = (ruleset: Ruleset) => changes[ruleset].presentDay;
+
+/** The clubs a new game starts with, in their original slot order. */
+export const startingClubs = (ruleset: Ruleset) =>
+  presentDay(ruleset) ? presentDayClubs : clubs;
+
+/** The players a new game starts with: defence, midfield, then attack. */
+export const startingPlayerNames = (ruleset: Ruleset): readonly string[] =>
+  presentDay(ruleset) ? presentDayPlayerNames : playerNames;
 
 /**
  * The smoother difficulty curve (#73, measured as `even-difficulty`) narrows

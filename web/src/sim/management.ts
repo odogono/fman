@@ -1,8 +1,15 @@
-import { clubs, playerNames, type Club } from './catalogue';
+import type { Club } from './catalogue';
 import { emptyAttackCarry, type AttackCarry } from './highlights';
 import { add, divide, floor, fromNumber, multiply, toNumber } from './numeric';
 import { createRng } from './rng';
-import { gracePeriodWeeks, isRuleset, type Ruleset } from './ruleset';
+import {
+  gracePeriodWeeks,
+  isRuleset,
+  presentDay,
+  startingClubs,
+  startingPlayerNames,
+  type Ruleset
+} from './ruleset';
 
 export type Player = Readonly<{
   energy: number;
@@ -25,7 +32,8 @@ export type Game = Readonly<{
   cash: number;
   club: number;
   clubs: readonly Club[];
-  colour: number;
+  /** The kit chosen at the start, 0 or 7; absent when clubs wear their own. */
+  colour?: number;
   cupFinished: boolean;
   cupRound: number;
   debt: number;
@@ -58,7 +66,8 @@ const isIntegerIn = (value: number, min: number, max: number) =>
 
 export const createNewGame = (options: {
   club: number;
-  colour: number;
+  /** Required unless the ruleset's clubs wear their own kits. */
+  colour?: number;
   level: number;
   manager: string;
   ruleset?: Ruleset;
@@ -70,7 +79,9 @@ export const createNewGame = (options: {
     options.manager.length > 20 ||
     !isIntegerIn(options.club, 1, 64) ||
     !isIntegerIn(options.level, 1, 7) ||
-    ![0, 7].includes(options.colour)
+    (presentDay(ruleset)
+      ? options.colour !== undefined
+      : options.colour === undefined || ![0, 7].includes(options.colour))
   ) {
     throw new RangeError('Invalid game setup');
   }
@@ -84,7 +95,7 @@ export const createNewGame = (options: {
     statuses[index] = picked === 11 ? 1 : 2;
     picked++;
   }
-  const players = playerNames.map((name, index): Player => {
+  const players = startingPlayerNames(ruleset).map((name, index): Player => {
     const skill = rng.int(1, 5);
     const energy = rng.int(1, 20);
     return {
@@ -96,7 +107,7 @@ export const createNewGame = (options: {
       value: 5000 * skill
     };
   });
-  const orderedClubs = [...clubs];
+  const orderedClubs = [...startingClubs(ruleset)];
   [orderedClubs[63], orderedClubs[options.club - 1]] = [
     orderedClubs[options.club - 1]!,
     orderedClubs[63]!
@@ -106,7 +117,7 @@ export const createNewGame = (options: {
     cash: 100_000,
     club: 64,
     clubs: orderedClubs,
-    colour: options.colour,
+    ...(options.colour === undefined ? {} : { colour: options.colour }),
     cupFinished: false,
     cupRound: 0,
     debt: 0,

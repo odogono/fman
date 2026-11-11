@@ -1,4 +1,4 @@
-import { levels } from '../sim/catalogue';
+import { coloursText, levels } from '../sim/catalogue';
 import type { Game, Player } from '../sim/management';
 import type { Paint } from './grid';
 import { createPrintScreen } from './print-screen';
@@ -7,7 +7,7 @@ export const paintStatus = (game: Game, put: Paint) => {
   const print = createPrintScreen(game.leagueMatches > 0);
   print.club(game.clubs[game.club - 1]!);
   print.comma();
-  print.text(`Colours = ${game.colour === 0 ? 'Black' : 'White'}`);
+  print.text(coloursText(game.colour, game.clubs[game.club - 1]!));
   print.newline();
   print.newline();
   print.text(`Manager : ${game.manager}`);

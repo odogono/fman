@@ -32,11 +32,32 @@ export type MatchSettlement =
     }
   | { completion: MatchCompletion; kind: 'league' };
 
-/** The managed club's ink is its colour at home and the opposite colour away. */
-export const matchInks = (game: Game, home: boolean) => ({
-  away: home ? 7 - game.colour : game.colour,
-  home: home ? game.colour : 7 - game.colour
-});
+/**
+ * The inks the two sides wear in the highlights. With a chosen colour, the
+ * managed club wears it at home and the opposite colour away. Clubs with
+ * their own kits wear their home kits, unless the away side's would clash:
+ * then it changes (#91). Highlights tell the sides apart by ink, so they
+ * must never share one.
+ */
+export const matchInks = (
+  game: Game,
+  fixture: Pick<MatchFixture, 'home' | 'opponent'>
+) => {
+  const { home } = fixture;
+  if (game.colour !== undefined) {
+    return {
+      away: home ? 7 - game.colour : game.colour,
+      home: home ? game.colour : 7 - game.colour
+    };
+  }
+  const club = game.clubs[game.club - 1]!.kit!;
+  const opponent = game.clubs[fixture.opponent - 1]!.kit!;
+  const [homeKit, awayKit] = home ? [club, opponent] : [opponent, club];
+  return {
+    away: awayKit.home === homeKit.home ? awayKit.change : awayKit.home,
+    home: homeKit.home
+  };
+};
 
 /**
  * One League match or Cup round, from picking the fixture to settling it.
@@ -104,12 +125,12 @@ export const createMatchday = (initial: Game, keyboard?: PauseKeyboard) => {
       return highlights;
     },
     get inks() {
-      return matchInks(game, fixture.home);
+      return matchInks(game, fixture);
     },
     /** Plays the highlights for the picked team. */
     kickOff: () => {
       expect('team');
-      const inks = matchInks(game, fixture.home);
+      const inks = matchInks(game, fixture);
       highlights = simulateHighlights({
         awayInk: inks.away,
         carry: game.attackCarry,

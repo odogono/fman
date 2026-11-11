@@ -1,11 +1,16 @@
 import { framePeriod, validateFrames } from './frame-clock';
 import type { Game } from './management';
 import { nameBytes } from './names';
-import { gracePeriodWeeks, isRuleset } from './ruleset';
+import {
+  gracePeriodWeeks,
+  isRuleset,
+  presentDay,
+  type Ruleset
+} from './ruleset';
 
 export const saveLimit = 100_000;
 /** The version every save is written with. */
-export const saveVersion = 8;
+export const saveVersion = 9;
 /** The first save version whose games name their ruleset. */
 export const rulesetSaveVersion = 6;
 /** The first save version whose title-screen journals name their ruleset. */
@@ -48,6 +53,13 @@ const position = (v: unknown) =>
   keys(v, ['x', 'y']) &&
   integer(v.x, -256, 256) &&
   integer(v.y, -256, 256);
+
+/** Two inks the highlights can tell from the grass and from each other. */
+const kit = (v: unknown) =>
+  record(v) &&
+  keys(v, ['change', 'home']) &&
+  [v.change, v.home].every(ink => integer(ink, 0, 7) && ink !== 6) &&
+  v.change !== v.home;
 
 export const validGame = (v: unknown): v is Game => {
   if (!record(v)) {
@@ -93,7 +105,9 @@ export const validGame = (v: unknown): v is Game => {
     integer(v.division, 1, 4) &&
     Math.ceil(v.club / 16) === v.division &&
     integer(v.level, 1, 7) &&
-    (v.colour === 0 || v.colour === 7) &&
+    (presentDay(v.ruleset)
+      ? v.colour === undefined
+      : v.colour === 0 || v.colour === 7) &&
     typeof v.manager === 'string' &&
     v.manager.length <= 20 &&
     integer(v.seed, 0, 65_535) &&
@@ -108,9 +122,13 @@ export const validGame = (v: unknown): v is Game => {
       64,
       c =>
         record(c) &&
-        keys(c, ['ink', 'name', 'width']) &&
+        keys(c, ['ink', 'kit', 'name', 'paper', 'width']) &&
         text(c.name, c.ink === null ? 12 : 10) &&
         (c.ink === null || integer(c.ink, 0, 7)) &&
+        (c.paper === undefined || integer(c.paper, 0, 7)) &&
+        (presentDay(v.ruleset as Ruleset)
+          ? kit(c.kit)
+          : c.kit === undefined && c.paper === undefined) &&
         (c.width === undefined ||
           c.width === 8 ||
           c.width === 10 ||

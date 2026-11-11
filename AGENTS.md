@@ -4,7 +4,7 @@
 
 - `web/src/sim`: the headless, deterministic simulation (no DOM, seeded RNG only)
 - `web/src/view`: rendering and input
-- `tools/`: repo tooling (`tools/commits/`: commit and changelog checks; `tools/zx/`: runs the original game, see its README)
+- `tools/`: repo tooling (`tools/commits/`: commit and changelog checks; `tools/zx/`: runs the original game, see its README; `tools/bots/`: the automated gameplay baseline, see `docs/gameplay-baseline.md`)
 - `docs/`: how each feature matches the original; index in `docs/README.md`. Building a feature: `docs/agents/feature-loop.md`
 
 Run the app with `bun run dev`; build it with `bun run build`. Reviews apply `CODING_STANDARDS.md`.

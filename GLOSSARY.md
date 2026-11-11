@@ -31,6 +31,10 @@ The managed club's confidence, affected by match and cup results.
 **Team strength**:
 The five attributes used to compare clubs for a match: Energy, Morale, Defence, Midfield and Attack.
 
+**Difficulty level**:
+The manager's chosen level, from Beginner (1) to Genius (7), which strengthens every opponent the managed club meets.
+_Avoid_: Skill when referring to the level; skill belongs to players
+
 **League match**:
 A fixture contributing goals and points to the current division's league table.
 
@@ -94,3 +98,15 @@ The presentation mode that reproduces the original Spectrum screens, scaled to f
 **Modern mode**:
 The presentation mode with screens redesigned for phones, where choices are made by tapping rather than typing.
 _Avoid_: Mobile mode, since both modes are meant to work on mobile
+
+**Ruleset**:
+A named set of game rules. The original ruleset reproduces the Spectrum game exactly and is the default; any other ruleset is an experimental variation measured against it.
+_Avoid_: Mode or difficulty when referring to a ruleset
+
+**Run**:
+One automated game played from a new game until dismissal or a fixed number of seasons, under one ruleset, difficulty level and strategy.
+_Avoid_: Campaign or game when referring to an automated run
+
+**Strategy**:
+A fixed way of managing a club in a run: how it picks the team, buys, sells, borrows and repays. A strategy gives only offered answers and keeps the difficulty level unchanged.
+_Avoid_: Tactics or level when referring to a strategy

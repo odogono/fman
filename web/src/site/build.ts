@@ -34,6 +34,14 @@ const files = async (dir: string): Promise<string[]> =>
     .map(entry => relative(dir, join(entry.parentPath, entry.name)))
     .sort();
 
+/** The commit being built, shown beside the version; empty outside git. */
+const commit = () => {
+  const git = Bun.spawnSync(['git', 'rev-parse', '--short', 'HEAD'], {
+    cwd: web
+  });
+  return git.success ? git.stdout.toString().trim() : '';
+};
+
 const check = (output: Bun.BuildOutput) => {
   if (!output.success) {
     throw new AggregateError(output.logs, 'Build failed');
@@ -55,6 +63,7 @@ export const buildSite = async ({
   await rm(outdir, { force: true, recursive: true });
   check(
     await Bun.build({
+      define: { FMAN_COMMIT: JSON.stringify(commit()) },
       entrypoints: [join(web, 'index.html')],
       minify: true,
       outdir,

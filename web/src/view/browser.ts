@@ -1,3 +1,4 @@
+import { version } from '../../../package.json';
 import { fixtureSides } from '../sim/league';
 import { flashPhase } from '../sim/session';
 import {
@@ -12,6 +13,11 @@ import type { App, Dom, MenuControl } from './app';
 import type { BarButton } from './context-bar';
 import { rasterText, rasterizeCells } from './glyphs';
 import { paintAttack } from './pitch';
+
+// The commit the site build stamps in; `bun run dev` leaves it undefined.
+declare const FMAN_COMMIT: string | undefined;
+const commit = typeof FMAN_COMMIT === 'string' ? FMAN_COMMIT : '';
+const versionLabel = commit ? `v${version} · ${commit}` : `v${version}`;
 
 /** Offers `data` as a file download; throws when the browser refuses. */
 export const downloadFile = (name: string, data: string) => {
@@ -161,6 +167,7 @@ export const createBrowserDom = (app: HTMLElement) => {
   <pre id="transcript" class="sr-only" aria-live="polite" aria-atomic="true"></pre>
   <p class="build-note">Play league and cup matches, edit names and manage your club.<br />Play resumes where you left it. Press Esc or the menu button to save, load or start again.</p>
   <p id="notice" class="notice" role="status"></p>
+  <p class="version">${versionLabel}</p>
   <dialog id="game-menu" class="game-menu" aria-labelledby="game-menu-title"></dialog>
   <input id="load-save" type="file" accept=".json,.fman.json" hidden />
 `;

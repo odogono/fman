@@ -2,6 +2,7 @@ import { clubs, playerNames, type Club } from './catalogue';
 import { emptyAttackCarry, type AttackCarry } from './highlights';
 import { add, divide, floor, fromNumber, multiply, toNumber } from './numeric';
 import { createRng } from './rng';
+import { isRuleset, type Ruleset } from './ruleset';
 
 export type Player = Readonly<{
   energy: number;
@@ -41,6 +42,7 @@ export type Game = Readonly<{
   previousNet: number;
   rating: number;
   ratingTotal: number;
+  ruleset: Ruleset;
   scheduleCounter: number;
   seasons: number;
   seed: number;
@@ -54,9 +56,12 @@ export const createNewGame = (options: {
   colour: number;
   level: number;
   manager: string;
+  ruleset?: Ruleset;
   seed: number;
 }): Game => {
+  const ruleset = options.ruleset ?? 'original';
   if (
+    !isRuleset(ruleset) ||
     options.manager.length > 20 ||
     !isIntegerIn(options.club, 1, 64) ||
     !isIntegerIn(options.level, 1, 7) ||
@@ -118,6 +123,7 @@ export const createNewGame = (options: {
     previousNet: 0,
     rating: 0,
     ratingTotal: 0,
+    ruleset,
     scheduleCounter: 1,
     seasons: 0,
     seed: rng.seed

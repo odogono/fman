@@ -1,6 +1,6 @@
 # Gameplay baseline
 
-[#57](https://github.com/odogono/fman/issues/57). The baseline shows how the game plays across many automated runs, so a rule change can be measured against it. It is a statistical profile, not an exact-replay check; the fidelity fixtures already do that. Experimental rules will be named rulesets beside `original` ([ADR 0007](adr/0007-experimental-rules-as-rulesets.md)); for now `original` is the only one.
+[#57](https://github.com/odogono/fman/issues/57). The baseline shows how the game plays across many automated runs, so a rule change can be measured against it. It is a statistical profile, not an exact-replay check; the fidelity fixtures already do that. Experimental rules are named rulesets beside `original` ([ADR 0007](adr/0007-experimental-rules-as-rulesets.md)): [`even-difficulty`](even-difficulty.md) narrows the gap between difficulty levels, with its baseline in [baseline/even-difficulty.md](baseline/even-difficulty.md).
 
 The committed reference is [baseline/original.md](baseline/original.md), with the per-run values in `baseline/original.json`.
 

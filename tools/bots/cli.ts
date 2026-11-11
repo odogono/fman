@@ -102,9 +102,7 @@ const baseline = async (args: string[]) => {
     strict: true
   });
   if (!rulesets.includes(values.ruleset as Ruleset)) {
-    throw new RangeError(
-      `Unknown ruleset ${values.ruleset}; only ${rulesets.join(', ')} exists`
-    );
+    throw new RangeError(`Unknown ruleset ${values.ruleset}; known: `);
   }
   const ruleset = values.ruleset as Ruleset;
   const levels = list(values.levels).map(l => integer('levels', l, 1, 7));

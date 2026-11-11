@@ -2,6 +2,7 @@ import { payWeeklyBills, type Game } from './management';
 import { scorePrintReport, tablePrintReport } from './name-print-fault';
 import { add, divide, floor, fromNumber, multiply, toNumber } from './numeric';
 import { createRng } from './rng';
+import { opponentBonus } from './ruleset';
 
 const clamp = (value: number) => Math.max(1, Math.min(20, value));
 export const teamStrength = (game: Game): number[] => {
@@ -84,7 +85,14 @@ export const prepareLeagueMatch = (game: Game) => {
   const opponentStrength = Array.from({ length: 5 }, () =>
     clamp(
       toNumber(
-        floor(add(fromNumber(rng.int(1, 14) + game.level), pointsPerMatch))
+        floor(
+          add(
+            fromNumber(
+              rng.int(1, 14) + opponentBonus(game.ruleset, game.level)
+            ),
+            pointsPerMatch
+          )
+        )
       )
     )
   );

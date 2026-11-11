@@ -26,6 +26,9 @@ const setup = () => {
   return journal;
 };
 
+const withoutRuleset = ({ ruleset: _, ...game }: Record<string, unknown>) =>
+  game;
+
 const toHighlights = (journal: ReturnType<typeof createJournal>) => {
   submitInput(journal, '99');
   submitInput(journal, '');
@@ -116,7 +119,7 @@ test('invalid snapshots are rejected', () => {
       base: { kind: 'title' },
       format: 'fman-web',
       inputs: [],
-      version: 6
+      version: 7
     })
   ]) {
     expect(() => openSave(data)).toThrow(RangeError);
@@ -127,13 +130,17 @@ test('version-2 migration accepts only the original idle menu checkpoint', () =>
   const data = JSON.parse(setup().snapshot());
   const legacy = {
     ...data,
-    base: { frames: data.base.frames, game: data.base.game, kind: 'menu' },
+    base: {
+      frames: data.base.frames,
+      game: withoutRuleset(data.base.game),
+      kind: 'menu'
+    },
     version: 2
   };
   const restored = openSave(JSON.stringify(legacy));
   expect(restored.session.view.game).toEqual(data.base.game);
   expect(restored.session.view.frames).toBe(data.base.frames);
-  expect(JSON.parse(restored.snapshot()).version).toBe(5);
+  expect(JSON.parse(restored.snapshot()).version).toBe(6);
   for (const invalid of [
     { ...legacy, inputs: [['advance', 1]] },
     { ...legacy, base: { kind: 'title' } },
@@ -282,7 +289,7 @@ test('version-4 saves replay their logged keypresses unchanged', () => {
   const restored = openSave(JSON.stringify(data));
   expect(keyboard(restored)).toEqual(keyboard(live));
   expect(state(restored)).toBe(state(live));
-  expect(JSON.parse(restored.snapshot()).version).toBe(5);
+  expect(JSON.parse(restored.snapshot()).version).toBe(6);
   for (const input of [['press', 'Enter'], ['let-go']]) {
     expect(() =>
       openSave(JSON.stringify({ ...data, inputs: [...data.inputs, input] }))

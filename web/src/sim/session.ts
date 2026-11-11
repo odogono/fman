@@ -24,6 +24,7 @@ import { screenPrintFault } from './name-print-fault';
 import { createPauseKeyboard, type PauseKeyboardState } from './pause-keyboard';
 import type { Playback } from './playback';
 import { createRng } from './rng';
+import type { Ruleset } from './ruleset';
 import { decodeSave, encodeSave } from './save';
 import { completeSeason, type SeasonCompletion } from './season';
 import {
@@ -187,7 +188,12 @@ const freshProgram = (frames = 0, seed = 0) => ({
   ulaFrames: frames
 });
 
-export const createSession = (initialFrames = 0, initialSeed = 0) => {
+/** `ruleset` applies to every new game the session starts; a loaded game keeps its own. */
+export const createSession = (
+  initialFrames = 0,
+  initialSeed = 0,
+  ruleset: Ruleset = 'original'
+) => {
   let program = freshProgram(initialFrames, initialSeed);
   let soundTimeT = 0;
   let soundGeneration = 0;
@@ -453,6 +459,7 @@ export const createSession = (initialFrames = 0, initialSeed = 0) => {
           colour: number,
           level: program.level,
           manager: program.manager,
+          ruleset,
           seed: program.setupSeed
         });
         enterMenu();

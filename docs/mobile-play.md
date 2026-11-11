@@ -60,5 +60,5 @@ Style is "paper & ink": light grey paper, black text with red and blue ink rows,
 
 - Phone portrait first; wider screens show the same layout centred, or the two-pane desktop layout.
 - An installable PWA that plays offline.
-- The existing **autosave**, **save slots** and **game menu** ([ADR 0004](adr/0004-resume-exact-session.md)) carry over; mobile adds only touch-sized controls for them. With touch controls showing, the Menu button sits full-width below the context bar, and every menu control, slots included, is at least 44px tall.
+- The existing **autosave**, **save slots** and **game menu** ([ADR 0004](adr/0004-resume-exact-session.md)) carry over; mobile adds only touch-sized controls for them. A bar above the screen holds the menu button, an icon at the top left, and the name of the screen on show; during the highlights it names the clubs playing, home club first. Every menu control, slots included, is at least 44px tall.
 - The first tap unlocks sound; a mute toggle in Settings remembers the choice.

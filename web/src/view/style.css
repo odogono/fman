@@ -40,7 +40,8 @@ body {
 main {
   display: grid;
   justify-items: center;
-  align-content: center;
+  /* From the top, so the menu button and title hold still between screens. */
+  align-content: start;
   min-height: 100vh;
   padding: 24px 12px;
 }
@@ -90,17 +91,34 @@ main {
 main {
   position: relative;
 }
-.menu-button {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-}
-/* With touch controls, Menu follows the context bar, within a thumb's reach. */
-:root.touch .menu-button {
-  position: static;
+/* The menu button and the name of the screen, above the screen. */
+.top-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   width: calc(36 * var(--cell));
   max-width: 100%;
-  margin-top: 8px;
+  margin-bottom: 12px;
+}
+.menu-button {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+}
+.top-bar .menu-button {
+  padding: 0;
+}
+.screen-title {
+  margin: 0;
+  color: var(--bright-7);
+  /* The game's font at twice its 8px cell, as on the context bar. */
+  font:
+    16px/24px Spectrum,
+    monospace;
+  font-synthesis: none;
+  /* Two long club names wrap onto a second line. */
+  overflow-wrap: anywhere;
 }
 /* Every menu control is a tap target of at least 44px. */
 .menu-button,
@@ -234,7 +252,7 @@ main {
   }
   .build-note,
   .notice,
-  .menu-button,
+  .top-bar,
   .game-menu {
     display: none;
   }

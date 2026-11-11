@@ -16,6 +16,7 @@ import {
 import { barFor, type BarButton } from './context-bar';
 import { createFrameSampler } from './frame-sampler';
 import { makeScreen } from './screen';
+import { screenTitle } from './screen-title';
 import { slotCount, type AppStorage, type Options } from './storage';
 
 export type Display = ReturnType<typeof makeScreen>;
@@ -44,10 +45,7 @@ export type Menu = {
 
 /** The page: it paints what the app gives it and reports what the player does. */
 export type Dom = {
-  /**
-   * `touch`: the context bar shows, so the screen fits the page width and
-   * the Menu button sits below the bar, within reach of a thumb.
-   */
+  /** `touch`: the context bar shows, so the screen fits the page width. */
   applyOptions: (options: Options, touch: boolean) => void;
   /** Opens the file picker; a chosen file arrives through `importSave`. */
   chooseFile: () => void;
@@ -66,6 +64,8 @@ export type Dom = {
     clearInput: boolean;
     display: Display;
     focus: boolean;
+    /** The name of the screen on show, for the title above it. */
+    title: string;
     view: View;
   }) => void;
   showMenu: (menu: Menu) => void;
@@ -207,6 +207,7 @@ export const createApp = ({
       clearInput,
       display,
       focus: !display.paused && !menuOpen && !bar,
+      title: screenTitle(view),
       view
     });
   };

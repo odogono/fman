@@ -38,7 +38,8 @@ const harness = ({
     menuOpen: false,
     notice: '',
     printed: 0,
-    rendered: 0
+    rendered: 0,
+    title: ''
   };
   const dom: Dom = {
     applyOptions: (options, fit) => {
@@ -60,8 +61,9 @@ const harness = ({
     openMenu: () => {
       page.menuOpen = true;
     },
-    render: ({ amount, bar, focus }) => {
+    render: ({ amount, bar, focus, title }) => {
       page.amount = amount;
+      page.title = title;
       page.bar = bar;
       page.inputFocus = focus;
       page.rendered++;
@@ -338,8 +340,10 @@ test('the game menu prints the screen where the original takes h', () => {
   run.press('Resume');
 
   run.toMenu();
+  expect(run.page.title).toBe('Main menu');
   run.tap('Score (s)');
   run.settle();
+  expect(run.page.title).toBe('Club status');
   const before = run.app.journal.session.view;
   run.app.openMenu();
   run.press('Print screen');

@@ -144,6 +144,12 @@ const barButton = (event: Event) =>
 export const createBrowserDom = (app: HTMLElement) => {
   app.innerHTML = `
   <h1 class="sr-only">Football Manager</h1>
+  <header class="top-bar">
+    <button id="menu-button" class="menu-button" type="button" aria-haspopup="dialog" aria-label="Game menu" title="Game menu">
+      <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-width="2.5" stroke-linecap="square" /></svg>
+    </button>
+    <p id="screen-title" class="screen-title"></p>
+  </header>
   <section class="machine" aria-label="ZX Spectrum Football Manager">
     <canvas id="screen" width="256" height="176" aria-hidden="true"></canvas><canvas id="pitch" width="256" height="176" aria-hidden="true" hidden></canvas>
     <form id="entry" autocomplete="off">
@@ -153,8 +159,7 @@ export const createBrowserDom = (app: HTMLElement) => {
   </section>
   <div id="context-bar" class="context-bar" aria-label="Answers" hidden></div>
   <pre id="transcript" class="sr-only" aria-live="polite" aria-atomic="true"></pre>
-  <button id="menu-button" class="menu-button" type="button" aria-haspopup="dialog">Menu</button>
-  <p class="build-note">Play league and cup matches, edit names and manage your club.<br />Play resumes where you left it. Press Esc or Menu to save, load or start again.</p>
+  <p class="build-note">Play league and cup matches, edit names and manage your club.<br />Play resumes where you left it. Press Esc or the menu button to save, load or start again.</p>
   <p id="notice" class="notice" role="status"></p>
   <dialog id="game-menu" class="game-menu" aria-labelledby="game-menu-title"></dialog>
   <input id="load-save" type="file" accept=".json,.fman.json" hidden />
@@ -173,6 +178,7 @@ export const createBrowserDom = (app: HTMLElement) => {
   const menuButton = find<HTMLButtonElement>('#menu-button');
   const menu = find<HTMLDialogElement>('#game-menu');
   const loadInput = find<HTMLInputElement>('#load-save');
+  const screenTitle = find<HTMLElement>('#screen-title');
   const pitch = find<HTMLCanvasElement>('#pitch');
   const pitchContext = pitch.getContext('2d')!;
   const machine = find<HTMLElement>('.machine');
@@ -234,7 +240,6 @@ export const createBrowserDom = (app: HTMLElement) => {
 
   const dom: Dom = {
     applyOptions: (options, touch) => {
-      document.documentElement.classList.toggle('touch', touch);
       document.documentElement.classList.toggle(
         'fit',
         touch && options.scale === 'auto'
@@ -266,8 +271,17 @@ export const createBrowserDom = (app: HTMLElement) => {
       notice.textContent = text;
     },
     openMenu: () => menu.showModal(),
-    render: ({ amount, bar: buttons, clearInput, display, focus, view }) => {
+    render: ({
+      amount,
+      bar: buttons,
+      clearInput,
+      display,
+      focus,
+      title,
+      view
+    }) => {
       paintBar(buttons, amount);
+      screenTitle.textContent = title;
       screen.height = display.lines.length * 8;
       screenContext.putImageData(
         new ImageData(

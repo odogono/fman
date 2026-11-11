@@ -19,13 +19,13 @@ const labels: Record<string, string> = {
   'colours.white': 'White (7)',
   'manager.name': 'Type name',
   'menu.borrow': 'Loan (l)',
-  'menu.change': 'Names (change)',
+  'menu.change': 'Names',
   'menu.keep': 'Save (keep)',
   'menu.level': 'Level',
   'menu.play': 'Continue (99)',
-  'menu.repay': 'Pay off (p)',
-  'menu.squad': 'Sell/list players (a)',
-  'menu.status': 'Score etc (s)',
+  'menu.repay': 'Repay (p)',
+  'menu.squad': 'Squad (a)',
+  'menu.status': 'Score (s)',
   'names.name': 'Type name',
   'names.next-page': 'Next page (99)',
   'repay.amount': 'Type amount',
@@ -34,7 +34,7 @@ const labels: Record<string, string> = {
   'team.change': 'Change team',
   'team.kick-off': 'Kick off (99)',
   'transfer.bid': 'Type bid',
-  'transfer.decline': 'No bid (99)'
+  'transfer.decline': 'Pass (99)'
 };
 
 const primary = new Set([

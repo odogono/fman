@@ -164,7 +164,12 @@ export const createBrowserDom = (app: HTMLElement) => {
     chooseFile: () => loadInput.click(),
     closeMenu: () => menu.close(),
     get coarsePointer() {
-      return matchMedia('(pointer: coarse)').matches;
+      // Any touchscreen, not only a main touch pointer: some phones and
+      // tablets report a fine main pointer (desktop mode, a trackpad).
+      return (
+        matchMedia('(any-pointer: coarse)').matches ||
+        navigator.maxTouchPoints > 0
+      );
     },
     focusInput: () => input.focus({ preventScroll: true }),
     get hidden() {

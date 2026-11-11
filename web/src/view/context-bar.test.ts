@@ -37,8 +37,8 @@ test('menu choices alternate red and blue in pairs', () => {
       choice('menu.play', '99')
     ])
   ).toEqual([
-    'Score etc (s):red',
-    'Sell/list players (a):blue',
+    'Score (s):red',
+    'Squad (a):blue',
     'Loan (l):red:wide',
     'Continue (99):primary:wide'
   ]);
@@ -50,7 +50,7 @@ test('typed answers open the keyboard from a labelled button', () => {
       { id: 'transfer.bid', kind: 'amount' },
       choice('transfer.decline', '99')
     ])
-  ).toEqual(['Type bid:red', 'No bid (99):blue']);
+  ).toEqual(['Type bid:red', 'Pass (99):blue']);
   expect(shown([{ id: 'names.name', kind: 'text' }])).toEqual([
     'Type name:red:wide'
   ]);

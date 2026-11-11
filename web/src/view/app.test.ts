@@ -373,16 +373,16 @@ test('the bar offers the menu answers and a tap submits one', () => {
   run.toMenu();
   run.settle();
   expect(run.labels()).toEqual([
-    'Score etc (s)',
-    'Sell/list players (a)',
+    'Score (s)',
+    'Squad (a)',
     'Loan (l)',
-    'Pay off (p)',
+    'Repay (p)',
     'Level',
-    'Names (change)',
+    'Names',
     'Save (keep)',
     'Continue (99)'
   ]);
-  run.tap('Score etc (s)');
+  run.tap('Score (s)');
   expect(run.view().screen).toBe('status');
   run.tap('Continue');
   run.tap('Continue (99)');

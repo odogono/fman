@@ -38,7 +38,7 @@ export type Dom = {
   /** Opens the file picker; a chosen file arrives through `importSave`. */
   chooseFile: () => void;
   closeMenu: () => void;
-  /** The page's main pointer is coarse, as on a phone or tablet. */
+  /** The page has a touchscreen, as on a phone or tablet. */
   readonly coarsePointer: boolean;
   focusInput: () => void;
   readonly hidden: boolean;

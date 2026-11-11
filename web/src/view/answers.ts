@@ -1,6 +1,5 @@
-import type { Journal } from '../sim/journal';
 import { creditLimit, type Game } from '../sim/management';
-import type { Effect, View } from '../sim/session';
+import type { View } from '../sim/session';
 
 /** An offered answer whose text is fixed; a continue is an empty one. */
 export type ChoiceAnswer = Readonly<{
@@ -185,27 +184,3 @@ export const answersFor = (view: View): readonly OfferedAnswer[] => {
 export const printAccepted = (view: View) =>
   !['manager', 'names', 'save-question'].includes(view.screen) &&
   answersFor(view).length > 0;
-
-/**
- * Submits an offered answer the way a keyboard does: Enter goes down and the
- * answer is submitted (ADR 0006). Enter stays down while the finger does; on
- * release, advance to the moment and call `journal.setKey('')`, as a key-up
- * does. Amount and text answers take the entered text.
- */
-export function tapAnswer(
-  journal: Journal,
-  answer: ChoiceAnswer
-): Effect | undefined;
-export function tapAnswer(
-  journal: Journal,
-  answer: AmountAnswer | TextAnswer,
-  text: string
-): Effect | undefined;
-export function tapAnswer(
-  journal: Journal,
-  answer: OfferedAnswer,
-  text?: string
-) {
-  journal.setKey('Enter');
-  return journal.submit(answer.kind === 'choice' ? answer.text : (text ?? ''));
-}

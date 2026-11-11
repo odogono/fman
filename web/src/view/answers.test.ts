@@ -10,12 +10,7 @@ import {
 } from '../sim/session';
 import { viewOn } from '../sim/view-on';
 import { finishPrompt, submitInput } from '../test/input';
-import {
-  answersFor,
-  printAccepted,
-  tapAnswer,
-  type OfferedAnswer
-} from './answers';
+import { answersFor, printAccepted, type OfferedAnswer } from './answers';
 import { barFor } from './context-bar';
 
 /** A short description of where an answer led, to compare with the table. */
@@ -147,17 +142,14 @@ const shown = (view: View) => {
 
 /** Taps an answer; an amount goes in at its largest, or at `amount`. */
 const tap = (journal: Journal, answer: OfferedAnswer, amount?: number) => {
-  const effect =
+  const text =
     answer.kind === 'choice'
-      ? tapAnswer(journal, answer)
-      : tapAnswer(
-          journal,
-          answer,
-          answer.kind === 'amount'
-            ? String(amount ?? answer.max)
-            : sampleText[answer.id]!
-        );
-  journal.setKey('');
+      ? answer.text
+      : answer.kind === 'amount'
+        ? String(amount ?? answer.max)
+        : sampleText[answer.id]!;
+  const effect = journal.submit(text, 'held');
+  journal.release();
   finishPrompt(journal);
   return outcome(journal.session.view, effect);
 };
@@ -422,17 +414,18 @@ const holdFrames = 5;
  */
 const typeAnswer = (journal: Journal, text: string, hold = holdFrames) => {
   for (const char of text) {
-    journal.setKey(
-      /\d/.test(char) ? `Digit${char}` : `Key${char.toUpperCase()}`
+    journal.press(
+      /\d/.test(char) ? `Digit${char}` : `Key${char.toUpperCase()}`,
+      'held'
     );
     journal.advance(2);
-    journal.setKey('');
+    journal.release();
     journal.advance(2);
   }
-  journal.setKey('Enter');
+  journal.press('Enter', 'held');
   journal.submit(text);
   journal.advance(hold);
-  journal.setKey('');
+  journal.release();
 };
 
 /** Taps an offered answer after the same typing time, holding the finger as long. */
@@ -448,13 +441,9 @@ const tapAt = (
   }
   const sent = offered.kind === 'choice' ? offered.text : text!;
   journal.advance(sent.length * 4);
-  if (offered.kind === 'choice') {
-    tapAnswer(journal, offered);
-  } else {
-    tapAnswer(journal, offered, sent);
-  }
+  journal.submit(sent, 'held');
   journal.advance(hold);
-  journal.setKey('');
+  journal.release();
   return sent;
 };
 
@@ -474,9 +463,9 @@ test('a game played by taps matches the same game typed at the same moments', ()
     expect(tapped.session.view.screen).toBe('highlights');
     both(j => {
       j.advance(200);
-      j.setKey('Space');
+      j.press('Space', 'held');
       j.advance(3);
-      j.setKey('');
+      j.release();
       j.advance(1_000_000);
     });
   };

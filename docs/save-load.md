@@ -42,13 +42,17 @@ timed pauses and highlight playback consume elapsed frames additively.
 Restoring replays those inputs, so a reload lands on the same screen and
 highlight frame, with the same RNG. The autosave is written after every
 input and screen change, at most once a second during animation, and when
-the page is hidden. Exports and save slots use this format (version 4).
+the page is hidden. Exports and save slots use this format (version 5).
 `keep` still writes the original version-1 contract.
 
 The [measured pacing change](highlight-pacing.md#saves-and-reproduction) bumps
 the journal version because old frame counts would replay different animation
 states. [Measured beeper playback](beeper-playback.md) advances the journal to
-version 4, including prompts in progress. Version 4 restores the raw seed and timing/keyboard state. Version 1
+version 4, including prompts in progress. Version 4 restores the raw seed and timing/keyboard state. Version 5
+also logs how long each keypress stays down, so a keypress that comes up by
+itself replays exactly; a key held when the session was saved comes up once
+the original has scanned it ([ADR 0006](adr/0006-taps-reproduce-keypresses.md)).
+Version-4 journals still replay unchanged. Version 1
 still imports through the reseed boundary. Version 2 imports only an idle
 original three-field menu checkpoint with no subsequent inputs; active version-2
 journals are rejected. Version-3 journals likewise import only idle menu checkpoints.

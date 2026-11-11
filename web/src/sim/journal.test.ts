@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test';
 
-import { submitInput } from '../test/input';
-import { createJournal, openSave } from './journal';
+import { finishPrompt, submitInput } from '../test/input';
+import { createJournal, openSave, type Journal } from './journal';
 import { encodeSave } from './save';
 
 const state = (journal: ReturnType<typeof createJournal>) => {
@@ -116,7 +116,7 @@ test('invalid snapshots are rejected', () => {
       base: { kind: 'title' },
       format: 'fman-web',
       inputs: [],
-      version: 5
+      version: 6
     })
   ]) {
     expect(() => openSave(data)).toThrow(RangeError);
@@ -133,7 +133,7 @@ test('version-2 migration accepts only the original idle menu checkpoint', () =>
   const restored = openSave(JSON.stringify(legacy));
   expect(restored.session.view.game).toEqual(data.base.game);
   expect(restored.session.view.frames).toBe(data.base.frames);
-  expect(JSON.parse(restored.snapshot()).version).toBe(4);
+  expect(JSON.parse(restored.snapshot()).version).toBe(5);
   for (const invalid of [
     { ...legacy, inputs: [['advance', 1]] },
     { ...legacy, base: { kind: 'title' } },
@@ -164,5 +164,128 @@ test('menu checkpoints reject extra fields and incomplete or invalid keyboard st
     expect(() => openSave(JSON.stringify({ ...data, base: invalid }))).toThrow(
       RangeError
     );
+  }
+});
+
+const keyboard = (journal: Journal) => journal.session.timingState.keyboard;
+
+/** A new game at the name prompt, its beep finished. */
+const atNameEntry = () => {
+  const journal = createJournal();
+  journal.advance(137);
+  journal.skipPause();
+  finishPrompt(journal);
+  return journal;
+};
+
+test('a brief keypress comes up once the original has scanned it', () => {
+  const whole = atNameEntry();
+  const frameByFrame = atNameEntry();
+  const byHand = atNameEntry();
+  whole.submit('alex', 'brief');
+  frameByFrame.submit('alex', 'brief');
+  byHand.press('Enter', 'held');
+  byHand.submit('alex');
+  expect(keyboard(whole).key).toBe('Enter');
+  whole.advance(60);
+  for (let i = 0; i < 60; i++) {
+    frameByFrame.advance(1);
+  }
+  let frames = 0;
+  while (keyboard(byHand).scanned !== 'Enter') {
+    byHand.advance(1);
+    frames++;
+  }
+  byHand.release();
+  byHand.advance(60 - frames);
+  expect(keyboard(whole).key).toBe('');
+  expect(keyboard(whole)).toEqual(keyboard(byHand));
+  expect(keyboard(frameByFrame)).toEqual(keyboard(byHand));
+  expect(state(whole)).toBe(state(byHand));
+});
+
+test('a reload just after a soft keyboard answer does not leave Enter down', () => {
+  const live = atNameEntry();
+  live.submit('alex', 'brief');
+  const restored = openSave(live.snapshot());
+  expect(keyboard(restored).key).toBe('Enter');
+  live.advance(60);
+  restored.advance(60);
+  expect(keyboard(restored).key).toBe('');
+  expect(keyboard(restored)).toEqual(keyboard(live));
+  expect(state(restored)).toBe(state(live));
+});
+
+test('a resume lets go of a held keypress, and saving again replays the same', () => {
+  const live = createJournal();
+  live.press('Space', 'held');
+  const resumed = openSave(live.snapshot());
+  expect(keyboard(resumed).key).toBe('Space');
+  resumed.advance(40);
+  expect(keyboard(resumed).key).toBe('');
+  live.advance(40);
+  expect(keyboard(live).key).toBe('Space');
+  const again = openSave(resumed.snapshot());
+  expect(keyboard(again)).toEqual(keyboard(resumed));
+  expect(state(again)).toBe(state(resumed));
+});
+
+test('letting go mid-session is replayed from the save', () => {
+  const live = atNameEntry();
+  live.press('Enter', 'held');
+  live.submit('alex');
+  live.letGo();
+  live.advance(30);
+  const restored = openSave(live.snapshot());
+  expect(keyboard(restored)).toEqual(keyboard(live));
+  expect(state(restored)).toBe(state(live));
+});
+
+test('a release lifts only a held keypress', () => {
+  const journal = atNameEntry();
+  journal.submit('alex', 'brief');
+  journal.release();
+  expect(keyboard(journal).key).toBe('Enter');
+  journal.press('Space', 'held');
+  journal.release();
+  expect(keyboard(journal).key).toBe('');
+});
+
+test('an answer presses Enter only when no key is already down', () => {
+  const journal = atNameEntry();
+  journal.press('NumpadEnter', 'held');
+  journal.submit('alex', 'held');
+  expect(keyboard(journal).key).toBe('NumpadEnter');
+});
+
+test('a brief keypress at the menu replays from the checkpoint before it', () => {
+  const live = setup();
+  live.press('KeyS', 'brief');
+  expect(JSON.parse(live.snapshot()).inputs).toEqual([['press', 'KeyS']]);
+  const restored = openSave(live.snapshot());
+  live.advance(10);
+  restored.advance(10);
+  expect(keyboard(live).key).toBe('');
+  expect(keyboard(restored)).toEqual(keyboard(live));
+  expect(JSON.parse(live.snapshot()).inputs).toEqual([]);
+});
+
+test('version-4 saves replay their logged keypresses unchanged', () => {
+  const live = atNameEntry();
+  live.press('Enter', 'held');
+  live.submit('alex');
+  live.advance(3);
+  live.release();
+  live.advance(20);
+  const data = { ...JSON.parse(live.snapshot()), version: 4 };
+  expect(data.inputs).toContainEqual(['key', 'Enter']);
+  const restored = openSave(JSON.stringify(data));
+  expect(keyboard(restored)).toEqual(keyboard(live));
+  expect(state(restored)).toBe(state(live));
+  expect(JSON.parse(restored.snapshot()).version).toBe(5);
+  for (const input of [['press', 'Enter'], ['let-go']]) {
+    expect(() =>
+      openSave(JSON.stringify({ ...data, inputs: [...data.inputs, input] }))
+    ).toThrow(RangeError);
   }
 });

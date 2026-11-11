@@ -414,7 +414,7 @@ test('chunking, held keys, lost interrupts and mid-animation save replay agree',
     for (const text of ['99', '', '99']) {
       journal.submit(text);
     }
-    journal.setKey('Space');
+    journal.press('Space', 'held');
   }
   single.advance(300);
   for (let frame = 0; frame < 300; frame++) {
@@ -422,10 +422,12 @@ test('chunking, held keys, lost interrupts and mid-animation save replay agree',
   }
   expect(chunked.session.view.frames).toBe(single.session.view.frames);
   expect(chunked.session.timingState).toEqual(single.session.timingState);
+  // A resumed save lets go of the held key, as the others now do.
   const saved = openSave(single.snapshot());
+  single.letGo();
+  chunked.letGo();
   expect(saved.session.timingState).toEqual(single.session.timingState);
   for (const journal of [single, chunked, saved]) {
-    journal.setKey('');
     journal.advance(5000);
   }
   expect(JSON.stringify(saved.session.view)).toBe(

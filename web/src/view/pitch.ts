@@ -1,36 +1,10 @@
 import type { Club } from '../sim/catalogue';
 import type { Attack, SpriteDraw } from '../sim/highlights';
-import { clubInk, clubText } from '../sim/names';
-import { rasterText } from './glyphs';
+import { rasterText, rasterizeCells } from './glyphs';
+import type { Cell } from './management-layouts';
+import { createPrintScreen } from './print-screen';
+import { sprites } from './sprites';
 
-// BASIC DATA 261: fifteen 8×8 UDGs, transcribed for the recreated view.
-const sprites = [
-  [24, 88, 126, 26, 120, 72, 206, 2],
-  [48, 48, 24, 60, 28, 56, 48, 40],
-  [24, 24, 30, 58, 24, 42, 36, 32],
-  [24, 24, 24, 28, 60, 24, 28, 8],
-  [24, 24, 60, 90, 90, 60, 36, 102],
-  [0, 0, 0, 0, 0, 0, 3, 3],
-  [24, 26, 126, 88, 30, 18, 115, 64],
-  [12, 12, 24, 60, 56, 28, 12, 20],
-  [24, 24, 120, 92, 24, 84, 36, 4],
-  [24, 24, 24, 56, 60, 24, 56, 8],
-  [0, 0, 0, 0, 0, 0, 192, 192],
-  [24, 24, 61, 90, 56, 28, 20, 36],
-  [24, 24, 188, 90, 28, 56, 40, 36],
-  [12, 12, 60, 91, 152, 62, 64, 192],
-  [48, 48, 60, 218, 25, 124, 2, 3]
-];
-const colours = [
-  [0, 0, 0],
-  [0, 0, 255],
-  [255, 0, 0],
-  [255, 0, 255],
-  [0, 255, 0],
-  [0, 255, 255],
-  [255, 255, 0],
-  [255, 255, 255]
-];
 type Line = readonly [number, number];
 const pitch = (right: boolean, progress = Infinity) => {
   // The last BASIC DRAW contains the eight arc chords.
@@ -164,10 +138,7 @@ const pitch = (right: boolean, progress = Infinity) => {
 };
 const pitches = { left: pitch(false), right: pitch(true) };
 
-export const rasterizeAttack = (
-  attack: Attack,
-  index: number
-): Uint8ClampedArray<ArrayBuffer> => {
+const attackCells = (attack: Attack, index: number): Cell[] => {
   const progress = attack.frames
     .slice(0, index + 1)
     .findLast(frame => frame.pitch !== undefined)?.pitch;
@@ -193,24 +164,29 @@ export const rasterizeAttack = (
       draw(sprite);
     }
   }
-  const rgba = new Uint8ClampedArray(256 * 176 * 4);
-  for (let y = 0; y < 176; y++) {
-    for (let x = 0; x < 256; x++) {
-      const colour =
-        colours[
-          bits[y * 256 + x]
-            ? inks[Math.floor(y / 8) * 32 + Math.floor(x / 8)]!
-            : 4
-        ]!;
-      const offset = (y * 256 + x) * 4;
-      rgba[offset] = colour[0]!;
-      rgba[offset + 1] = colour[1]!;
-      rgba[offset + 2] = colour[2]!;
-      rgba[offset + 3] = 255;
-    }
-  }
-  return rgba;
+  return Array.from({ length: 704 }, (_, i) => {
+    const row = Math.floor(i / 32),
+      column = i % 32;
+    const pixels = Array.from({ length: 8 }, (_, y) => {
+      let byte = 0;
+      for (let x = 0; x < 8; x++) {
+        byte |= bits[(row * 8 + y) * 256 + column * 8 + x]! << (7 - x);
+      }
+      return byte;
+    });
+    return {
+      bright: true,
+      ink: inks[i]!,
+      inverse: false,
+      paper: 4,
+      pixels,
+      text: ' '
+    };
+  });
 };
+
+export const rasterizeAttack = (attack: Attack, index: number) =>
+  rasterizeCells(attackCells(attack, index));
 
 const banner =
   '****█    ██  ███  ██ ████ █*********█ ██▄█ ██ █ ██ █ ████ █*********█ █▄ █ ██ █ ▄▄ █ ████▄█*********█    ██  ██ ██ █    █ █*****';
@@ -219,9 +195,11 @@ export const rasterizeHighlight = (
   index: number,
   score: readonly number[],
   home: Club,
-  away: Club
+  away: Club,
+  flashPhase = false
 ) => {
-  const rgba = rasterizeAttack(attack, index);
+  const initial = attackCells(attack, index);
+  const rgba = rasterizeCells(initial);
   const outcome = attack.frames
     .slice(0, index + 1)
     .find(frame => frame.kind === 'goal' || frame.kind === 'miss');
@@ -237,36 +215,34 @@ export const rasterizeHighlight = (
     rasterText(rgba, 256, 80, 8, 'NO GOAL!'.slice(0, shown), { bright: true });
     return rgba;
   }
-  for (let i = 0; i < Math.min(banner.length, shown); i++) {
-    rasterText(rgba, 256, (i % 32) * 8, Math.floor(i / 32) * 8, banner[i]!, {
-      bright: true,
-      ink: 6,
-      paper: 2
-    });
-  }
+  const print = createPrintScreen(true, {
+    cells: initial,
+    permanent: { bright: true, ink: 6, paper: 4 }
+  });
+  print.text(banner.slice(0, shown), { ink: 6, paper: 2 });
+
   const scoreShown =
     attack.frames
       .slice(0, index + 1)
       .findLast(frame => frame.scoreChars !== undefined)?.scoreChars ??
     Infinity;
   if (scoreShown === 0) {
-    return rgba;
+    return rasterizeCells(print.cells, flashPhase);
   }
-  const homeStyle = { bright: true, ink: clubInk(home) };
-  const awayStyle = { bright: true, ink: clubInk(away, clubInk(home)) };
-  // TAB and comma spaces, and both numbers, inherit the preceding name's INK.
-  const homeText = `${clubText(home).padEnd(12)}${score[0]}`.padEnd(16);
-  const awayText = `${clubText(away).padEnd(12)}${score[1]}`;
-  rasterText(rgba, 256, 0, 32, homeText.slice(0, scoreShown), homeStyle);
-  rasterText(
-    rgba,
-    256,
-    128,
-    32,
-    awayText.slice(0, Math.max(0, scoreShown - homeText.length)),
-    awayStyle
-  );
-  return rgba;
+  const names = createPrintScreen(true, {
+    cells: print.cells,
+    limit: scoreShown,
+    permanent: { bright: true }
+  });
+  names.at(4, 0);
+  names.club(home);
+  names.tab(12);
+  names.text(String(score[0]));
+  names.comma();
+  names.club(away);
+  names.tab(28);
+  names.text(String(score[1]));
+  return rasterizeCells(names.cells, flashPhase);
 };
 
 export const paintAttack = (
@@ -275,11 +251,12 @@ export const paintAttack = (
   index: number,
   score: readonly number[],
   home: Club,
-  away: Club
+  away: Club,
+  flashPhase = false
 ) =>
   context.putImageData(
     new ImageData(
-      rasterizeHighlight(attack, index, score, home, away),
+      rasterizeHighlight(attack, index, score, home, away, flashPhase),
       256,
       176
     ),

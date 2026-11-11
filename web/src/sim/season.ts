@@ -1,5 +1,6 @@
 import type { Club } from './catalogue';
 import type { Game } from './management';
+import { movementPrintReport } from './name-print-fault';
 import { createRng } from './rng';
 
 export type ClubMovement = Readonly<{
@@ -19,6 +20,23 @@ export const completeSeason = (game: Game) => {
   const clubs = [...game.clubs];
   let club = game.club;
   const movements: ClubMovement[] = [];
+  const seasons = game.seasons + 1;
+  const ratingTotal =
+    game.ratingTotal + 17 - finalPosition + game.cupRound * 2 * game.division;
+  const interrupted = (printFault: string) => ({
+    bonus,
+    finalPosition,
+    game: {
+      ...game,
+      cash: game.cash + bonus,
+      club,
+      clubs,
+      ratingTotal,
+      seasons
+    },
+    movements,
+    printFault
+  });
   const swap = (
     slot: number,
     target: number,
@@ -30,6 +48,10 @@ export const completeSeason = (game: Game) => {
       kind,
       to: Math.floor((target - 1) / 16) + 1
     });
+    const printFault = movementPrintReport(clubs[slot - 1]!, kind);
+    if (printFault) {
+      return printFault;
+    }
     [clubs[slot - 1], clubs[target - 1]] = [
       clubs[target - 1]!,
       clubs[slot - 1]!
@@ -41,7 +63,10 @@ export const completeSeason = (game: Game) => {
   for (let i = 1; i <= 16; i++) {
     const rank = game.league[i - 1]!.position;
     if (rank <= 3 && game.division > 1) {
-      swap(offset + i, offset - rank, 'promoted');
+      const printFault = swap(offset + i, offset - rank, 'promoted');
+      if (printFault) {
+        return interrupted(printFault);
+      }
     } else if (rank === 1 && game.division === 1) {
       movements.push({
         club: clubs[offset + i - 1]!,
@@ -49,9 +74,23 @@ export const completeSeason = (game: Game) => {
         kind: 'champions',
         to: 1
       });
+      const printFault = movementPrintReport(
+        clubs[offset + i - 1]!,
+        'champions'
+      );
+      if (printFault) {
+        return interrupted(printFault);
+      }
     }
     if (rank >= 14 && game.division < 4) {
-      swap(offset + i, game.division * 16 + 17 - rank, 'relegated');
+      const printFault = swap(
+        offset + i,
+        game.division * 16 + 17 - rank,
+        'relegated'
+      );
+      if (printFault) {
+        return interrupted(printFault);
+      }
     }
   }
   const division = Math.floor((club - 1) / 16) + 1;
@@ -62,9 +101,6 @@ export const completeSeason = (game: Game) => {
     const energy = rng.int(1, 20);
     return { ...p, energy, skill, value: skill * 5000 * factor };
   });
-  const seasons = game.seasons + 1;
-  const ratingTotal =
-    game.ratingTotal + 17 - finalPosition + game.cupRound * 2 * game.division;
   return {
     bonus,
     finalPosition,
@@ -94,7 +130,8 @@ export const completeSeason = (game: Game) => {
       seasons,
       seed: rng.seed
     },
-    movements
+    movements,
+    printFault: undefined
   };
 };
 export type SeasonCompletion = ReturnType<typeof completeSeason>;

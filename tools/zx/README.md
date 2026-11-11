@@ -24,6 +24,7 @@ Each writes `build/zx/<name>.json`; format it with Prettier and compare it to it
 | `capture-later-cups.ts`               | `24-fresh-menu.z80`                               | `later-cups.json`         |
 | `capture-league.ts`                   | `24-fresh-menu.z80`                               | `league-progression.json` |
 | `capture-names.ts`                    | `24-fresh-menu.z80`                               | `names.json`              |
+| `capture-name-print.ts`               | `24-fresh-menu.z80` and `10-bills.z80`            | `name-print.json`         |
 | `capture-name-layouts.ts`             | `24-fresh-menu.z80` and `10-bills.z80`            | `name-layouts.json`       |
 | `capture-transfers.ts`                | `10-bills.z80`                                    | transfer fixtures         |
 | `capture-seasons.ts`                  | `10-bills.z80`                                    | `seasons.json`            |

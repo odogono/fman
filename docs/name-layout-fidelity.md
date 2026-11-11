@@ -60,9 +60,10 @@ errors occurred.
 ## Limits
 
 This is a PRINT cursor for the covered layouts, not a complete Spectrum
-terminal or BASIC interpreter. Arbitrary embedded control/graphics sequences,
-the Spectrum keyboard editor and cursor, prompt sounds, exact execution
-pacing remain outside these assertions. The separate [glyph raster verification](glyph-raster-fidelity.md) establishes printable/block masks and ordinary cell colours, inverse and brightness, without claiming complete name-screen pixel parity. The separate
+terminal or BASIC interpreter. Embedded control/graphics sequences now have a separate
+[bounded PRINT capture](name-print-fidelity.md). The Spectrum keyboard editor
+and cursor, prompt sounds and exact execution pacing remain outside these
+layout assertions. The separate [glyph raster verification](glyph-raster-fidelity.md) establishes printable/block masks and ordinary cell colours, inverse and brightness, without claiming complete name-screen pixel parity. The separate
 [pitch verification](pitch-rendering.md) now establishes pitch and captured
 pre-outcome sprite pixels.
 The bottom ROM INPUT area is represented by the browser form, rather than

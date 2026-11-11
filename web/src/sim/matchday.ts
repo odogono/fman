@@ -25,7 +25,11 @@ import {
 export type MatchdayStage =
   'fixture' | 'team' | 'highlights' | 'result' | 'replay' | 'settled';
 export type MatchSettlement =
-  | { bills: MatchCompletion['bills']; cupWon: boolean; kind: 'cup' }
+  | {
+      bills: NonNullable<MatchCompletion['bills']>;
+      cupWon: boolean;
+      kind: 'cup';
+    }
   | { completion: MatchCompletion; kind: 'league' };
 
 /** The managed club's ink is its colour at home and the opposite colour away. */

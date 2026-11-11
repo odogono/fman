@@ -90,6 +90,9 @@ for (const reference of cases) {
         fixture,
         highlights.score
       );
+      if (!completion.bills) {
+        throw new Error(completion.printFault);
+      }
       game = completion.game;
       const end = expected.completed;
       expect(game.cash).toBe(end.m);

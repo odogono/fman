@@ -85,11 +85,11 @@ applyOptions();
 /** Changes whenever the tick must redraw without a change of screen. */
 const displayKey = (view: View) =>
   view.screen === 'highlights'
-    ? view.playback.key
+    ? `${view.playback.key}:${Math.floor((view.ulaFrames ?? view.frames) / 16) % 2}`
     : (view.screen === 'cup-celebration' || view.screen === 'cup-result') &&
         view.celebration !== undefined
       ? `${view.paused}:${view.timingKey}:${view.celebration}:${Math.floor((view.ulaFrames ?? view.frames) / 16) % 2}`
-      : `${view.paused}:${view.timingKey ?? ''}`;
+      : `${view.paused}:${view.timingKey ?? ''}:${Math.floor((view.ulaFrames ?? view.frames) / 16) % 2}`;
 
 const paintEntry = () => {
   const rgba = new Uint8ClampedArray(256 * 16 * 4);
@@ -113,7 +113,14 @@ const render = (clearInput = true) => {
   const display = makeScreen(view);
   screen.height = display.lines.length * 8;
   screenContext.putImageData(
-    new ImageData(rasterizeCells(display.cells), 256, screen.height),
+    new ImageData(
+      rasterizeCells(
+        display.cells,
+        Math.floor((view.ulaFrames ?? view.frames) / 16) % 2 === 1
+      ),
+      256,
+      screen.height
+    ),
     0,
     0
   );
@@ -127,9 +134,11 @@ const render = (clearInput = true) => {
   if (view.screen === 'cleared') {
     notice.textContent = 'Game cleared. Open the menu to start a new game.';
   }
-  if (view.screen === 'names' && view.nameEditor.phase === 'fault') {
-    notice.textContent =
-      'Name editing stopped. Open the menu to start a new game.';
+  if (
+    view.printFault ||
+    (view.screen === 'names' && view.nameEditor.phase === 'fault')
+  ) {
+    notice.textContent = 'Printing stopped. Open the menu to start a new game.';
   }
   if (view.screen === 'highlights' && current) {
     const { fixture, game, playback } = view;
@@ -139,7 +148,8 @@ const render = (clearInput = true) => {
       current.index,
       playback.score,
       game.clubs[(fixture.home ? game.club : fixture.opponent) - 1]!,
-      game.clubs[(fixture.home ? fixture.opponent : game.club) - 1]!
+      game.clubs[(fixture.home ? fixture.opponent : game.club) - 1]!,
+      Math.floor((view.ulaFrames ?? view.frames) / 16) % 2 === 1
     );
   }
   const text = display.lines.join('\n') + '\n' + display.prompt;

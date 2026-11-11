@@ -1,4 +1,4 @@
-import { clubInk, clubText } from '../sim/names';
+import { decodeName } from '../sim/names';
 import type { View } from '../sim/session';
 import { paintLeagueTable } from './league-table';
 import type { Paint } from './management-layouts';
@@ -20,7 +20,7 @@ export const paintSeason = (
       break;
     case 'season-summary': {
       const season = view.season;
-      const print = createPrintScreen();
+      const print = createPrintScreen(true);
       const bonusStyle = { ink: 4, inverse: true };
       print.text('League Success Bonus Money =', bonusStyle);
       print.comma(bonusStyle);
@@ -34,18 +34,20 @@ export const paintSeason = (
             : movement.kind === 'relegated'
               ? ' are relegated' + '+'.repeat(40)
               : ' are League Champions' + '*'.repeat(33);
-        print.text(clubText(movement.club), { ink: clubInk(movement.club) });
+        print.club(movement.club);
         if (movement.kind !== 'champions') {
-          print.text(' ', { ink: clubInk(movement.club) });
+          print.text(' ');
         }
-        print.text(movement.kind === 'champions' ? text : text.slice(1), {
-          ink:
-            movement.kind === 'promoted'
-              ? 1
-              : movement.kind === 'relegated'
-                ? 3
-                : 2
-        });
+        const ink =
+          movement.kind === 'promoted'
+            ? 1
+            : movement.kind === 'relegated'
+              ? 3
+              : 2;
+        // These inline INK bytes can finish a truncated AT in the name.
+        print.name(decodeName([16, ink]));
+        print.text(movement.kind === 'champions' ? text : text.slice(1));
+        print.name(decodeName([16, 0]));
         print.newline();
       }
       print.text('****New Season****', { ink: 1, inverse: true });
@@ -56,6 +58,8 @@ export const paintSeason = (
       break;
     }
   }
-  put(21, 24, '(h=copy)');
+  if (!view.printFault) {
+    put(21, 24, '(h=copy)');
+  }
   return { label: 'Continue', numeric: false, prompt: 'Hit ENTER to continue' };
 };

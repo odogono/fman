@@ -3,14 +3,19 @@ import {
   NameRuntimeError,
   clubInk,
   clubText,
+  encodeClubName,
+  nameBytes,
   renameClub,
   renamePlayer
 } from './names';
+import { PrintError, createPrintDecoder } from './spectrum-print';
 
 export type NameOutput = Readonly<{
   ink: number;
+  rows?: number;
   text: string;
   type:
+    | 'input-reserve'
     | 'selected'
     | 'renamed'
     | 'error'
@@ -18,6 +23,46 @@ export type NameOutput = Readonly<{
     | 'retry-name'
     | 'retry-more';
 }>;
+
+// A raw AT in the INPUT buffer can grow the ROM lower area before the
+// accepted name is PRINTed. Keep that upper-screen displacement in the transcript.
+const inputRows = (text: string) => {
+  let row = 1,
+    column = 0,
+    maximum = 1;
+  const decoder = createPrintDecoder(command => {
+    if (command.type === 'at') {
+      row = command.row;
+      column = command.column;
+    }
+    if (command.type === 'newline') {
+      row++;
+      column = 0;
+    }
+    if (command.type === 'glyph') {
+      if (column === 32) {
+        row++;
+        column = 0;
+      }
+      column++;
+    }
+    if (command.type === 'tab') {
+      if (column > command.column) {
+        row++;
+      }
+      column = command.column;
+    }
+    maximum = Math.max(maximum, row);
+  });
+  try {
+    decoder.string(nameBytes(text));
+  } catch (error) {
+    if (!(error instanceof PrintError)) {
+      throw error;
+    }
+  }
+  return Math.min(22, maximum);
+};
 
 const yes = (text: string) => ['y', 'Y', 'yes', 'YES'].includes(text);
 
@@ -45,6 +90,28 @@ export const createNameEditor = (initial: Game) => {
     selectedId = 0;
     error = '';
     previousName = '';
+  };
+  const checkList = () => {
+    const decoder = createPrintDecoder(() => {});
+    const size = kind === 'club' ? 16 : 8;
+    try {
+      for (let i = (page - 1) * size + 1; i <= page * size; i++) {
+        decoder.string([
+          ...nameBytes(String(i)),
+          6,
+          ...(kind === 'club'
+            ? encodeClubName(game.clubs[i - 1]!)
+            : nameBytes(game.players[i - 1]!.name.padEnd(8))),
+          13
+        ]);
+      }
+    } catch (error_) {
+      if (!(error_ instanceof PrintError)) {
+        throw error_;
+      }
+      phase = 'fault';
+      error = `${error_.message}, ${kind === 'club' ? 9440 : 9535}:2`;
+    }
   };
   const submit = (text: string): { type: 'copy' } | undefined => {
     if (done || phase === 'fault') {
@@ -109,6 +176,10 @@ export const createNameEditor = (initial: Game) => {
           break;
         }
         try {
+          const rows = inputRows(text);
+          if (rows > 3) {
+            output.push({ ink: 0, rows, text: '', type: 'input-reserve' });
+          }
           game =
             kind === 'club'
               ? renameClub(game, selectedId, text)
@@ -121,10 +192,16 @@ export const createNameEditor = (initial: Game) => {
                 : game.players[selectedId - 1]!.name.padEnd(8),
             type: 'renamed'
           });
+          const decoder = createPrintDecoder(() => {});
+          decoder.string(nameBytes(output.at(-1)!.text));
+          decoder.byte(13);
           phase = 'more';
           error = '';
         } catch (error_) {
-          if (error_ instanceof NameRuntimeError) {
+          if (error_ instanceof PrintError) {
+            phase = 'fault';
+            error = `${error_.message}, ${kind === 'club' ? 9478 : 9575}:2`;
+          } else if (error_ instanceof NameRuntimeError) {
             phase = 'fault';
             error = error_.message;
           } else if (error_ instanceof RangeError) {
@@ -145,6 +222,9 @@ export const createNameEditor = (initial: Game) => {
           nextKind();
         }
         break;
+    }
+    if (phase === 'list') {
+      checkList();
     }
   };
   return {

@@ -26,6 +26,9 @@ for (const reference of cases) {
       reference.score
     );
     const expected = reference.completed;
+    if (!completed.bills) {
+      throw new Error(completed.printFault);
+    }
     expect(completed.game.cash).toBe(expected.cash);
     expect(completed.game.debt).toBe(expected.debt);
     expect(completed.game.morale).toBe(expected.morale);

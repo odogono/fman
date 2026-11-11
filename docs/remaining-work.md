@@ -66,8 +66,10 @@ shortened pauses. Complete session timing remains outside these bounded comparis
 
 [Glyph raster verification](glyph-raster-fidelity.md) establishes the printable
 and block repertoire, ordinary cell colours/inverse/brightness and captured
-highlight overlay cells. Full-screen, editor and control-stream parity remain
-separate requirements.
+highlight overlay cells. The [name PRINT capture](name-print-fidelity.md) adds
+bounded controls, tokens, runtime UDGs and malformed-sequence reports. Full-screen
+and editor parity remain separate requirements; the PRINT doc records its
+pagination limit.
 
 Management, league/cup/season progression, dismissal/NEW, name editing, web
 saving/loading, captured name scrolling/wrapping and pitch/pre-outcome sprite

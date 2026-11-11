@@ -3,7 +3,13 @@ import { expect, test } from 'bun:test';
 import { submitInput } from '../test/input';
 import { prepareCupMatch } from './cup';
 import { createNewGame } from './management';
-import { renameClub, renamePlayer } from './names';
+import {
+  decodeName,
+  encodeClubName,
+  encodePlayerName,
+  renameClub,
+  renamePlayer
+} from './names';
 import { decodeSave, encodeSave } from './save';
 import { completeSeason } from './season';
 import { createSession } from './session';
@@ -197,4 +203,18 @@ test('save validation rejects unknown nested data and malformed carry or player 
     change(value);
     expect(() => decodeSave(JSON.stringify(value))).toThrow();
   }
+});
+
+test('web saves preserve full-width control parameters, graphics and token bytes', () => {
+  const club = [16, 2, 65, 17, 8, 19, 8, 18, 1, 143, 96, 127];
+  const player = [65, 8, 21, 1, 144, 164, 165, 255];
+  const edited = renamePlayer(
+    renameClub(fresh(), 64, decodeName(club)),
+    1,
+    decodeName(player)
+  );
+  const loaded = decodeSave(encodeSave(edited, 300));
+  expect(loaded.game).toEqual(edited);
+  expect(encodeClubName(loaded.game.clubs[63]!)).toEqual(club);
+  expect(encodePlayerName(loaded.game.players[0]!.name)).toEqual(player);
 });

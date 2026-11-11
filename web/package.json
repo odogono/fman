@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "bun --hot ./index.html",
-    "build": "bun build ./index.html --outdir dist --minify --public-path ${FMAN_BASE:-/}",
-    "typecheck": "tsc -p src/sim && tsc -p src/view && tsc -p tsconfig.test.json",
+    "build": "bun src/site/build.ts",
+    "typecheck": "tsc -p src/sim && tsc -p src/view && tsc -p src/offline && tsc -p src/site && tsc -p tsconfig.test.json",
     "test": "bun test src"
   },
   "devDependencies": {

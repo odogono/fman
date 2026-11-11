@@ -25,3 +25,16 @@ const tick = (now: number) => {
   requestAnimationFrame(tick);
 };
 requestAnimationFrame(tick);
+
+// The installable build links a manifest, with the offline service worker
+// beside it; `bun run dev` has neither.
+const manifest = document.querySelector<HTMLLinkElement>(
+  'link[rel="manifest"]'
+);
+if (manifest && 'serviceWorker' in navigator) {
+  addEventListener('load', () => {
+    navigator.serviceWorker
+      .register(new URL('sw.js', manifest.href))
+      .catch(() => {});
+  });
+}

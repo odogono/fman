@@ -25,6 +25,10 @@ A player's football ability, contributing to the strength of their playing categ
 A player's readiness to play, reduced by playing and restored by resting.
 _Avoid_: Skill when referring to readiness
 
+**Skill drift**:
+The small change in an owned player's skill at the season end, in place of the original's reroll.
+_Avoid_: Training or growth, which suggest a change the manager causes
+
 **Morale**:
 The managed club's confidence, affected by match and cup results.
 
@@ -43,6 +47,10 @@ A stage of the F.A. Cup in which the managed club progresses or is eliminated, w
 
 **Matchday**:
 One League match or Cup round, from picking the fixture through highlights and any cup replays to settling it.
+
+**Season end**:
+The step after the last league match and cup round where clubs are promoted and relegated, the bonus is paid and players' skill and energy are set for the new season.
+_Avoid_: Reset, which suggests everything starts fresh
 
 **Highlights**:
 The displayed attacking sequences that determine a match's goals.

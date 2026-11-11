@@ -1,6 +1,8 @@
 import { expect, test } from 'bun:test';
 
 import { spectrumClockHz, spectrumFrameT } from '../sim/frame-clock';
+import { creditLimit } from '../sim/management';
+import type { AmountEntry } from './amount-entry';
 import { createApp, type Dom, type Menu, type MenuControl } from './app';
 import type { BarButton } from './context-bar';
 import { createStorage, type Options } from './storage';
@@ -24,6 +26,7 @@ const harness = ({
     stored.set('fman:autosave', autosave);
   }
   const page = {
+    amount: undefined as AmountEntry | undefined,
     applied: [] as Options[],
     bar: undefined as readonly BarButton[] | undefined,
     downloads: [] as { data: string; name: string }[],
@@ -57,7 +60,8 @@ const harness = ({
     openMenu: () => {
       page.menuOpen = true;
     },
-    render: ({ bar, focus }) => {
+    render: ({ amount, bar, focus }) => {
+      page.amount = amount;
       page.bar = bar;
       page.inputFocus = focus;
       page.rendered++;
@@ -458,4 +462,43 @@ test('a physical Enter keeps its own press through a submit', () => {
   run.app.submit('alex');
   run.wait(2);
   expect(run.app.journal.session.timingState.keyboard.key).toBe('NumpadEnter');
+});
+
+test('a loan is entered with the stepper, chips and keypad, then taken', () => {
+  const run = harness({ coarsePointer: true });
+  run.toMenu();
+  run.tap('Loan (l)');
+  run.settle();
+  expect(run.labels()).toEqual(['Cancel (0)', 'Take loan']);
+  const limit = creditLimit(run.view().game!) - run.view().game!.debt;
+  expect(run.page.amount).toMatchObject({ max: limit, value: 0 });
+
+  run.app.amount({ delta: 1000, type: 'step' });
+  run.app.amount({ delta: 50_000, type: 'step' });
+  expect(run.page.amount?.value).toBe(51_000);
+  run.app.amount({ type: 'max' });
+  expect(run.page.amount?.value).toBe(limit);
+  run.app.amount({ type: 'keypad' });
+  for (const digit of [7, 5, 0, 0]) {
+    run.app.amount({ digit, type: 'digit' });
+  }
+  expect(run.page.amount?.typing).toBe('7500');
+  expect(run.app.journal.session.timingState.keyboard.key).toBe('');
+
+  const debt = run.view().game!.debt;
+  run.tap('Take loan');
+  expect(run.view().screen).toBe('message');
+  expect(run.view().game!.debt).toBe(debt + 7500);
+  expect(run.page.amount).toBeUndefined();
+});
+
+test('Cancel leaves a loan the original way, by borrowing nothing', () => {
+  const run = harness({ coarsePointer: true });
+  run.toMenu();
+  const debt = run.view().game!.debt;
+  run.tap('Loan (l)');
+  run.app.amount({ delta: 10_000, type: 'step' });
+  run.tap('Cancel (0)');
+  expect(run.view().screen).toBe('message');
+  expect(run.view().game!.debt).toBe(debt);
 });

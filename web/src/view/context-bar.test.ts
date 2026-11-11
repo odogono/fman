@@ -44,13 +44,19 @@ test('menu choices alternate red and blue in pairs', () => {
   ]);
 });
 
-test('typed answers open the keyboard from a labelled button', () => {
+test('an amount submits beside its way out; a name opens the keyboard', () => {
   expect(
     shown([
-      { id: 'transfer.bid', kind: 'amount' },
+      { id: 'transfer.bid', kind: 'amount', max: 9000, min: 0, start: 5000 },
       choice('transfer.decline', '99')
     ])
-  ).toEqual(['Type bid:red', 'Pass (99):blue']);
+  ).toEqual(['Pass (99):red', 'Place bid:primary']);
+  expect(
+    shown([
+      { id: 'borrow.amount', kind: 'amount', max: 9000, min: 0, start: 0 },
+      choice('borrow.cancel', '0')
+    ])
+  ).toEqual(['Cancel (0):red', 'Take loan:primary']);
   expect(shown([{ id: 'names.name', kind: 'text' }])).toEqual([
     'Type name:red:wide'
   ]);

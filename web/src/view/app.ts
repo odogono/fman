@@ -1,7 +1,13 @@
 import type { SoundEvent } from '../sim/beeper';
 import { createJournal, openSave, type Journal } from '../sim/journal';
 import type { Effect, View } from '../sim/session';
-import { answersFor, tapAnswer } from './answers';
+import {
+  changeAmount,
+  startAmount,
+  type AmountAction,
+  type AmountEntry
+} from './amount-entry';
+import { answersFor, tapAnswer, type OfferedAnswer } from './answers';
 import { barFor, type BarButton } from './context-bar';
 import { createFrameSampler } from './frame-sampler';
 import { makeScreen } from './screen';
@@ -45,6 +51,8 @@ export type Dom = {
   notice: (text: string) => void;
   openMenu: () => void;
   render: (screen: {
+    /** The amount being entered on an amount prompt, while the bar shows. */
+    amount: AmountEntry | undefined;
     /** The context bar's buttons, or `undefined` when the bar is hidden. */
     bar: readonly BarButton[] | undefined;
     clearInput: boolean;
@@ -142,6 +150,17 @@ export const createApp = ({
   let touchHeld = false;
   /** The frame at which a soft keyboard's submit pressed Enter. */
   let softEnterAt: number | undefined;
+  /** The amount being entered; it starts afresh each time its prompt does. */
+  let amountEntry: AmountEntry | undefined;
+  const amountFor = (answers: readonly OfferedAnswer[]) => {
+    const offered = answers.find(a => a.kind === 'amount');
+    if (offered?.kind !== 'amount') {
+      amountEntry = undefined;
+    } else if (amountEntry?.id !== offered.id) {
+      amountEntry = startAmount(offered);
+    }
+    return amountEntry;
+  };
 
   const barShown = () =>
     options.touch === 'on' || (options.touch === 'auto' && dom.coarsePointer);
@@ -173,8 +192,10 @@ export const createApp = ({
       dom.notice('Printing stopped. Open the menu to start a new game.');
     }
     const bar = barShown();
+    const answers = answersFor(view);
     dom.render({
-      bar: bar ? barFor(answersFor(view)) : undefined,
+      amount: bar ? amountFor(answers) : undefined,
+      bar: bar ? barFor(answers) : undefined,
       clearInput,
       display,
       focus: !display.paused && !menuOpen && !bar,
@@ -533,21 +554,38 @@ export const createApp = ({
         }
         return journal.submit(text);
       }),
+    /** A change to the amount being entered; it presses no key. */
+    amount: (action: AmountAction) => {
+      if (amountEntry && !menuOpen) {
+        amountEntry = changeAmount(amountEntry, action);
+        render(false);
+      }
+    },
     /**
      * A context bar button. A finger presses Enter and holds it until it
-     * lifts; a keyboard activation already holds its own key.
+     * lifts; a keyboard activation already holds its own key. An amount's
+     * button submits the amount entered, closing the keypad first.
      */
     tap: (id: string, pressEnter = true) =>
       answer(() => {
-        const offered = answersFor(journal.session.view).find(a => a.id === id);
-        if (offered?.kind !== 'choice') {
+        const answers = answersFor(journal.session.view);
+        const offered = answers.find(a => a.id === id);
+        const entry = amountFor(answers);
+        let text: string;
+        if (offered?.kind === 'choice') {
+          text = offered.text;
+        } else if (offered?.kind === 'amount' && entry) {
+          text = String(changeAmount(entry, { type: 'done' }).value);
+        } else {
           return;
         }
         if (!pressEnter) {
-          return journal.submit(offered.text);
+          return journal.submit(text);
         }
         touchHeld = true;
-        return tapAnswer(journal, offered);
+        return offered.kind === 'choice'
+          ? tapAnswer(journal, offered)
+          : tapAnswer(journal, offered, text);
       }),
     /** An animation frame at `now`. */
     tick: (now: number) => {

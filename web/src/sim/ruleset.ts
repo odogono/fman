@@ -12,21 +12,20 @@ import {
  * gathers the accepted rule changes, and a game keeps the version it started
  * with, so every released version stays playable. An experimental ruleset
  * carries one change alone while it is measured against the original, and is
- * retired once the change joins Enhanced (`even-difficulty`, `grace-period`).
- * `lasting-skill` (#72) and `steep-difficulty` (#90) are being measured.
+ * retired once the change joins Enhanced (`even-difficulty`, `grace-period`,
+ * `lasting-skill`, `steep-difficulty`).
  */
 export const rulesets = [
   'original',
   'enhanced-1',
   'enhanced-2',
   'enhanced-3',
-  'lasting-skill',
-  'steep-difficulty'
+  'enhanced-4'
 ] as const;
 export type Ruleset = (typeof rulesets)[number];
 
 /** The Enhanced version every new Enhanced game starts with. */
-export const latestEnhanced = 'enhanced-3' satisfies Ruleset;
+export const latestEnhanced = 'enhanced-4' satisfies Ruleset;
 
 export const isRuleset = (value: unknown): value is Ruleset =>
   rulesets.includes(value as Ruleset);
@@ -62,22 +61,16 @@ const changes: Record<
     lastingSkill: false,
     presentDay: true
   },
-  'lasting-skill': {
-    difficulty: 'original',
-    gracePeriod: false,
+  'enhanced-4': {
+    difficulty: 'steep',
+    gracePeriod: true,
     lastingSkill: true,
-    presentDay: false
+    presentDay: true
   },
   original: {
     difficulty: 'original',
     gracePeriod: false,
     lastingSkill: false,
-    presentDay: false
-  },
-  'steep-difficulty': {
-    difficulty: 'steep',
-    gracePeriod: false,
-    lastingSkill: true,
     presentDay: false
   }
 };

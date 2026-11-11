@@ -20,13 +20,12 @@ test('the original adds the level itself; Enhanced climbs in shrinking steps to 
   ]);
 });
 
-test('the steep curve for lasting skill climbs to 5.5, and only it keeps skill', () => {
+test('Enhanced from version 4 climbs in steeper steps to 5.5', () => {
   const levels = [1, 2, 3, 4, 5, 6, 7];
-  expect(levels.map(l => opponentBonus('steep-difficulty', l))).toEqual([
+  expect(levels.map(l => opponentBonus('enhanced-4', l))).toEqual([
     1, 3, 3.75, 4.25, 4.75, 5, 5.5
   ]);
-  expect(levels.map(l => opponentBonus('lasting-skill', l))).toEqual(levels);
-  expect(lastingSkill('steep-difficulty')).toBe(true);
+  expect(lastingSkill('enhanced-4')).toBe(true);
 });
 
 test('a new game plays the original ruleset unless told otherwise', () => {

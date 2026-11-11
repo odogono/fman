@@ -1,6 +1,6 @@
 # Lasting skill ruleset
 
-[#72](https://github.com/odogono/fman/issues/72). `lasting-skill` is an experimental ruleset ([ADR 0007](adr/0007-experimental-rules-as-rulesets.md)): owned players keep their skill from one season to the next, with a small skill drift, instead of rerolling it. It is being measured against `original` and has not joined the [Enhanced rules](enhanced-rules.md).
+[#72](https://github.com/odogono/fman/issues/72). Under the Enhanced rules from version 4, owned players keep their skill from one season to the next, with a small skill drift, instead of rerolling it. The change was measured as the experimental ruleset `lasting-skill` ([ADR 0007](adr/0007-experimental-rules-as-rulesets.md)), then became part of [`enhanced-4`](enhanced-rules.md).
 
 ## The problem in the original
 
@@ -8,7 +8,7 @@ At the season end every player's skill is rerolled as `R(5)` and energy as `R(20
 
 ## The rule
 
-At the season end, under `lasting-skill`:
+At the season end, under `enhanced-4` (and `lasting-skill` before it):
 
 - Each **owned player** (picked, reserve or injured) keeps their skill with **skill drift**: −1, 0 or +1 with equal chance, kept within 1–5. Skill 5 stays 5 two times in three and drops to 4 otherwise; skill 1 mirrors that. Clamping at both ends pulls skill back toward the middle over time, so no downward lean is needed.
 - Each **unowned player** in the pool still rerolls skill as `R(5)`, so the transfer market stays fresh. A player sold before the season end rerolls.
@@ -53,6 +53,6 @@ Aggressive gains little. It fills its squad early with borrowed money and never 
 
 Passive gets slightly worse at every level (0.5 to 0.8 league places lower at levels 1–3, and fewer promotions). That isn't the rule pushing skill down. In 150 level-1 runs, the harness's start-of-game timing dealt passive's squad an average skill of 2.75, though a new game averages 3.0 over every seed. The original rerolls that away after one season; under lasting skill the weak squad keeps its skill and drifts back up only slowly (2.79 in season 2, 2.93 in season 10). A player who never buys keeps the squad they were dealt.
 
-## Before joining Enhanced
+## Joining Enhanced
 
-Balanced at level 5 goes from rarely promoted to almost always reaching Division 1. The [smoother difficulty curve](even-difficulty.md) in Enhanced also helps a balanced club at high levels, so the two changes together may make the upper levels too easy. The `enhanced-3` baseline, compared against `enhanced-2`, should be checked for that.
+Lasting skill on top of the [smoother difficulty curve](even-difficulty.md) made the upper levels too easy: balanced at Genius won 63.8% of league matches and usually finished in Division 1. So `enhanced-4` pairs it with a [steeper difficulty curve](steep-difficulty.md), which brings Genius back to where `enhanced-2` puts balanced play.

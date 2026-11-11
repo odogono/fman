@@ -25,6 +25,12 @@ A player's football ability, contributing to the strength of their playing categ
 A player's readiness to play, reduced by playing and restored by resting.
 _Avoid_: Skill when referring to readiness
 
+**Injury**:
+A player's spell out of the picked team, drawn before each match. In the original it lasts one week; under lasting injuries it is likelier for a tired player and lasts up to three.
+
+**Weeks out**:
+How many more matches an injured player misses under lasting injuries, shown on the squad screen in place of `i`.
+
 **Skill drift**:
 The small change in an owned player's skill at the season end, in place of the original's reroll.
 _Avoid_: Training or growth, which suggest a change the manager causes

@@ -5,12 +5,13 @@ import {
   gracePeriodWeeks,
   isRuleset,
   presentDay,
+  tiringInjuries,
   type Ruleset
 } from './ruleset';
 
 export const saveLimit = 100_000;
 /** The version every save is written with. */
-export const saveVersion = 9;
+export const saveVersion = 10;
 /** The first save version whose games name their ruleset. */
 export const rulesetSaveVersion = 6;
 /** The first save version whose title-screen journals name their ruleset. */
@@ -139,8 +140,20 @@ export const validGame = (v: unknown): v is Game => {
       24,
       (p, i) =>
         record(p) &&
-        keys(p, ['energy', 'id', 'name', 'skill', 'status', 'value']) &&
+        keys(p, [
+          'energy',
+          'id',
+          'name',
+          'skill',
+          'status',
+          'value',
+          'weeksOut'
+        ]) &&
         p.id === i + 1 &&
+        (p.weeksOut === undefined ||
+          (tiringInjuries(v.ruleset as Ruleset) &&
+            p.status === 3 &&
+            integer(p.weeksOut, 1, 3))) &&
         text(p.name, 8) &&
         integer(p.status, 0, 3) &&
         integer(p.skill, 0, 100) &&
@@ -170,6 +183,15 @@ export const validGame = (v: unknown): v is Game => {
 export const savedGame = (v: unknown, version: number): Game | undefined => {
   // Grace periods (#74) arrived in version 8.
   if (version < 8 && record(v) && 'graceWeeks' in v) {
+    return undefined;
+  }
+  // Weeks out (#98) arrived in version 10.
+  if (
+    version < 10 &&
+    record(v) &&
+    Array.isArray(v.players) &&
+    v.players.some(p => record(p) && 'weeksOut' in p)
+  ) {
     return undefined;
   }
   if (version >= rulesetSaveVersion) {

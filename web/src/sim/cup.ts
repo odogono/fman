@@ -1,7 +1,7 @@
 import { nextFixture, type MatchFixture } from './league';
 import { payWeeklyBills, type Game, type Player } from './management';
 import { createRng } from './rng';
-import { opponentBonus } from './ruleset';
+import { opponentBonus, tiringInjuries } from './ruleset';
 
 const clamp = (n: number) => Math.max(1, Math.min(20, n));
 const gate = (game: Game, opponent: number, home: boolean) =>
@@ -58,10 +58,40 @@ export const prepareReplay = (
   home: !fixture.home
 });
 
+/**
+ * How many of the 20 rolls injure a player of this energy under lasting
+ * injuries (#98): 1, 1, 2 or 3 for energy 16–20, 11–15, 6–10 and 1–5, so a
+ * fit player keeps the original's 1 in 20 and a tired one runs up to 3 in 20.
+ * Tuned against the gameplay baseline.
+ */
+export const injuryBand = (energy: number) =>
+  energy > 10 ? 1 : energy > 5 ? 2 : 3;
+
+/**
+ * One week of lasting injuries (#98) for an owned player, given the
+ * original's injury roll. A picked player tires and a reserve recovers as in
+ * the original, but an injured player recovers no energy: the injury counts
+ * down and heals to the reserves. Otherwise a roll in the top `band` of 20
+ * injures, for as many weeks as it lands into the band (1–3).
+ */
+const lastingRefresh = (p: Player, energy: number, roll: number): Player => {
+  if (p.status === 3) {
+    const { weeksOut = 1, ...rest } = p;
+    return weeksOut > 1
+      ? { ...rest, weeksOut: weeksOut - 1 }
+      : { ...rest, status: 1 };
+  }
+  const threshold = 20 - injuryBand(energy);
+  return roll > threshold
+    ? { ...p, energy, status: 3, weeksOut: roll - threshold }
+    : { ...p, energy };
+};
+
 export const refreshPlayers = (game: Game): Game => {
   if (game.leagueMatches === 1 && game.cupRound === 0) {
     return game;
   }
+  const lasting = tiringInjuries(game.ruleset);
   const rng = createRng(game.seed);
   const players = game.players.map((p): Player => {
     const energy = clamp(
@@ -69,7 +99,11 @@ export const refreshPlayers = (game: Game): Game => {
         (p.status === 1 || p.status === 3 ? 10 : p.status === 2 ? -1 : 0)
     );
     // The OR expression evaluates R(20) even for unowned pool players.
-    const injured = rng.int(1, 20) === 20;
+    const roll = rng.int(1, 20);
+    if (lasting && p.status !== 0) {
+      return lastingRefresh(p, energy, roll);
+    }
+    const injured = roll === 20;
     return {
       ...p,
       energy,

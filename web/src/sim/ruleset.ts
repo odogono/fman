@@ -13,19 +13,20 @@ import {
  * with, so every released version stays playable. An experimental ruleset
  * carries one change alone while it is measured against the original, and is
  * retired once the change joins Enhanced (`even-difficulty`, `grace-period`,
- * `lasting-skill`, `steep-difficulty`).
+ * `lasting-skill`, `steep-difficulty`, `tiring-injuries`).
  */
 export const rulesets = [
   'original',
   'enhanced-1',
   'enhanced-2',
   'enhanced-3',
-  'enhanced-4'
+  'enhanced-4',
+  'enhanced-5'
 ] as const;
 export type Ruleset = (typeof rulesets)[number];
 
 /** The Enhanced version every new Enhanced game starts with. */
-export const latestEnhanced = 'enhanced-4' satisfies Ruleset;
+export const latestEnhanced = 'enhanced-5' satisfies Ruleset;
 
 export const isRuleset = (value: unknown): value is Ruleset =>
   rulesets.includes(value as Ruleset);
@@ -41,37 +42,50 @@ const changes: Record<
     gracePeriod: boolean;
     lastingSkill: boolean;
     presentDay: boolean;
+    tiringInjuries: boolean;
   }
 > = {
   'enhanced-1': {
     difficulty: 'smooth',
     gracePeriod: false,
     lastingSkill: false,
-    presentDay: false
+    presentDay: false,
+    tiringInjuries: false
   },
   'enhanced-2': {
     difficulty: 'smooth',
     gracePeriod: true,
     lastingSkill: false,
-    presentDay: false
+    presentDay: false,
+    tiringInjuries: false
   },
   'enhanced-3': {
     difficulty: 'smooth',
     gracePeriod: true,
     lastingSkill: false,
-    presentDay: true
+    presentDay: true,
+    tiringInjuries: false
   },
   'enhanced-4': {
     difficulty: 'steep',
     gracePeriod: true,
     lastingSkill: true,
-    presentDay: true
+    presentDay: true,
+    tiringInjuries: false
+  },
+  'enhanced-5': {
+    difficulty: 'steep',
+    gracePeriod: true,
+    lastingSkill: true,
+    presentDay: true,
+    tiringInjuries: true
   },
   original: {
     difficulty: 'original',
     gracePeriod: false,
     lastingSkill: false,
-    presentDay: false
+    presentDay: false,
+    tiringInjuries: false
   }
 };
 
@@ -138,3 +152,12 @@ export const gracePeriodWeeks = (ruleset: Ruleset) =>
  * does (#72, measured as `lasting-skill`). Unowned players still reroll.
  */
 export const lastingSkill = (ruleset: Ruleset) => changes[ruleset].lastingSkill;
+
+/**
+ * Whether injuries depend on energy and last up to three weeks, without
+ * energy recovery, healing at the season end (#98, measured as
+ * `tiring-injuries`). The original injures any owned player 1 time in 20 for
+ * one week, and an injured player recovers energy as a reserve does.
+ */
+export const tiringInjuries = (ruleset: Ruleset) =>
+  changes[ruleset].tiringInjuries;

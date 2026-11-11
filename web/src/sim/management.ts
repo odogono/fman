@@ -8,6 +8,7 @@ import {
   presentDay,
   startingClubs,
   startingPlayerNames,
+  tiringInjuries,
   type Ruleset
 } from './ruleset';
 
@@ -18,6 +19,11 @@ export type Player = Readonly<{
   skill: number;
   status: 0 | 1 | 2 | 3;
   value: number;
+  /**
+   * Weeks an injured player has left out, 1–3, under tiring injuries (#98);
+   * absent otherwise. An injured player without it has one week left.
+   */
+  weeksOut?: number;
 }>;
 
 export type LeagueRecord = Readonly<{
@@ -274,7 +280,9 @@ export const respondToSale = (
     cash: game.cash + (accepted ? offer.amount : 0),
     players: game.players.map(player =>
       player.id === offer.playerId
-        ? { ...player, status: accepted ? 0 : injured ? 3 : player.status }
+        ? injured && tiringInjuries(game.ruleset)
+          ? { ...player, status: 3, weeksOut: 1 }
+          : { ...player, status: accepted ? 0 : injured ? 3 : player.status }
         : player
     ),
     seed: rng.seed

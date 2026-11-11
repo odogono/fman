@@ -68,7 +68,9 @@ the rules the player chose; earlier title-screen journals play the original.
 [grace period](grace-period.md)'s weeks left to the stored game; earlier games
 have none running. Version 9 adds [present-day clubs](present-day-clubs.md)'
 kits and name papers, and leaves out the chosen colour of games whose clubs
-wear their own kits.
+wear their own kits. Version 10 adds the weeks an injured player has left
+under [tiring injuries](tiring-injuries.md); an injured player without them has
+one week left, as every injury in an earlier game does.
 Fractional browser phase is not stored; restoring starts a fresh phase and
 does not simulate time spent with the page closed.
 

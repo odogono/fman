@@ -2,7 +2,7 @@ import type { Club } from './catalogue';
 import type { Game } from './management';
 import { movementPrintReport } from './name-print-fault';
 import { createRng } from './rng';
-import { lastingSkill } from './ruleset';
+import { lastingSkill, tiringInjuries } from './ruleset';
 
 export type ClubMovement = Readonly<{
   club: Club;
@@ -98,6 +98,8 @@ export const completeSeason = (game: Game) => {
   const factor = 5 - division;
   const rng = createRng(game.seed);
   const lasting = lastingSkill(game.ruleset);
+  // Under tiring injuries (#98) every injury heals at the season end.
+  const healing = tiringInjuries(game.ruleset);
   const players = game.players.map(p => {
     // Skill drift draws one number, as the reroll does, so every later draw
     // is the same under both rules.
@@ -106,7 +108,12 @@ export const completeSeason = (game: Game) => {
         ? Math.min(5, Math.max(1, p.skill + rng.int(-1, 1)))
         : rng.int(1, 5);
     const energy = rng.int(1, 20);
-    return { ...p, energy, skill, value: skill * 5000 * factor };
+    const next = { ...p, energy, skill, value: skill * 5000 * factor };
+    if (healing && p.status === 3) {
+      const { weeksOut: _, ...healed } = next;
+      return { ...healed, status: 1 as const };
+    }
+    return next;
   });
   return {
     bonus,

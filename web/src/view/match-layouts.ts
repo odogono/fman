@@ -1,7 +1,7 @@
 import type { Club } from '../sim/catalogue';
 import { teamStrength, type MatchFixture } from '../sim/league';
 import type { Game } from '../sim/management';
-import type { View } from '../sim/session';
+import { flashPhase, type View } from '../sim/session';
 import { paintCupVictory } from './cup-victory';
 import { paintLeagueTable } from './league-table';
 import { paintSquad, type Paint } from './management-layouts';
@@ -185,7 +185,7 @@ export const paintMatch = (view: MatchView, put: Paint) => {
         paintCupVictory(
           write,
           view.celebration,
-          Math.floor((view.ulaFrames ?? view.frames) / 16) % 2 === 1,
+          flashPhase(view),
           view.celebrationProgress
         );
         if (view.screen === 'cup-result') {

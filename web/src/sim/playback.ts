@@ -47,6 +47,9 @@ export const createPlayback = (
     get endT() {
       return timeline.endT;
     },
+    get index() {
+      return timeline.index;
+    },
     get key() {
       return String(timeline.index);
     },

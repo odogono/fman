@@ -61,11 +61,12 @@ export const createJournal = (base: Base = { kind: 'title' }) => {
     checkpoint();
   };
   return {
+    /** Returns whether the screen needs a repaint. */
     advance: (frames: number) => {
       if (frames <= 0) {
-        return;
+        return false;
       }
-      session.advance(frames);
+      const repaint = session.advance(frames);
       const last = inputs.at(-1);
       if (
         last?.[0] === 'advance' &&
@@ -78,6 +79,7 @@ export const createJournal = (base: Base = { kind: 'title' }) => {
       if (session.view.screen === 'menu' && !session.view.paused) {
         checkpoint();
       }
+      return repaint;
     },
     reload: () => {
       const done = session.reload();

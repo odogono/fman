@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test';
 
 import { submitInput } from '../test/input';
-import { createSession } from './session';
+import { createSession, flashPhase } from './session';
 import { viewOn } from './view-on';
 
 const setup = () => {
@@ -43,6 +43,31 @@ test('title timing, manager limit and club paging follow the original setup', ()
   expect(session.view.screen).toBe('menu');
   expect(session.view.game?.clubs[63]?.name).toBe('Blackburn');
   expect(session.view.game?.level).toBe(7);
+});
+
+test('advance reports a repaint whenever printing, pausing, the screen or FLASH changes', () => {
+  const session = createSession();
+  const shown = () => {
+    const view = session.view;
+    return `${view.screen}:${view.paused}:${view.printed}:${flashPhase(view)}`;
+  };
+  let repaints = 0;
+  for (let frame = 0; frame < 340; frame++) {
+    const before = shown();
+    const repaint = session.advance(1);
+    if (shown() !== before) {
+      expect(repaint).toBe(true);
+    }
+    repaints += Number(repaint);
+  }
+  expect(session.view.screen).toBe('manager');
+  // Printing the title repaints far more often than FLASH alone would.
+  expect(repaints).toBeGreaterThan(340 / 16 + 1);
+  let idle = 0;
+  for (let frame = 0; frame < 32; frame++) {
+    idle += Number(session.advance(1));
+  }
+  expect(idle).toBe(2);
 });
 
 test('line input requires Enter and preserves the original command cases', () => {

@@ -331,6 +331,29 @@ test('h prints the screen', () => {
   expect(run.page.printed).toBe(1);
 });
 
+test('the game menu prints the screen where the original takes h', () => {
+  const run = harness({ coarsePointer: true });
+  run.app.openMenu();
+  expect(run.control('Print screen')).toMatchObject({ disabled: true });
+  run.press('Resume');
+
+  run.toMenu();
+  run.tap('Score (s)');
+  run.settle();
+  const before = run.app.journal.session.view;
+  run.app.openMenu();
+  run.press('Print screen');
+  expect(run.page.menuOpen).toBe(false);
+  expect(run.page.printed).toBe(1);
+  expect(run.view().screen).toBe('status');
+  expect(run.view().game).toEqual(before.game);
+  // Enter goes down for the answer, as a typed h presses it, and lifts a
+  // frame after the replayed prompt beep.
+  expect(run.app.journal.session.timingState.keyboard.key).toBe('Enter');
+  run.wait(200);
+  expect(run.app.journal.session.timingState.keyboard.key).toBe('');
+});
+
 const escape = {
   code: 'Escape',
   inputFocused: true,

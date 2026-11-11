@@ -233,10 +233,11 @@ export const createBrowserDom = (app: HTMLElement) => {
   input.addEventListener('input', paintEntry);
 
   const dom: Dom = {
-    applyOptions: (options, fit) => {
+    applyOptions: (options, touch) => {
+      document.documentElement.classList.toggle('touch', touch);
       document.documentElement.classList.toggle(
         'fit',
-        fit && options.scale === 'auto'
+        touch && options.scale === 'auto'
       );
       if (options.scale === 'auto') {
         document.documentElement.style.removeProperty('--pixel');

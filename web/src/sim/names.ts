@@ -40,10 +40,25 @@ export const clubText = (club: Club) =>
 export const encodeClubName = (club: Club) =>
   club.ink === null
     ? nameBytes(clubText(club))
-    : [
-        ...(club.width === 8 ? [16, club.ink, 16, club.ink] : [16, club.ink]),
-        ...nameBytes(clubText(club))
-      ];
+    : club.paper !== undefined
+      ? // A name on its own paper hands what follows back to the screen's
+        // colours (INK 8 and PAPER 8 leave each cell's own), so a white name
+        // on black doesn't turn the rest of the line white on black.
+        [
+          17,
+          club.paper,
+          16,
+          club.ink,
+          ...nameBytes(clubText(club)),
+          17,
+          8,
+          16,
+          8
+        ]
+      : [
+          ...(club.width === 8 ? [16, club.ink, 16, club.ink] : [16, club.ink]),
+          ...nameBytes(clubText(club))
+        ];
 export const encodePlayerName = (name: string) => nameBytes(name.padEnd(8));
 
 export class NameRuntimeError extends Error {
@@ -81,8 +96,12 @@ export const renameClub = (game: Game, id: number, text: string): Game => {
   if (bytes.length > (start === 2 ? 12 : 10)) {
     throw new RangeError('TEAM NAME TOO LONG- max 10 chars');
   }
+  // A renamed club keeps its kit; its name colour is the editor's, as in the
+  // original, so any paper goes.
+  const kit = game.clubs[id - 1]!.kit;
   const club = {
     ink,
+    ...(kit ? { kit } : {}),
     name: decodeName(bytes.slice(start)).replace(/ +$/, ''),
     width: ink === null ? 12 : 10
   };

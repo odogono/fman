@@ -12,10 +12,13 @@ A game keeps its rules for good: through the autosave, save slots, save files an
 
 Enhanced rules are released in versions, stored as `enhanced-1`, `enhanced-2` and so on, and shown to players only as Enhanced. A new Enhanced game starts with the latest version, and a game keeps the version it started with, so every released version stays playable.
 
-| Version      | Changes from the original                                          | Measured as                                                          |
-| ------------ | ------------------------------------------------------------------ | -------------------------------------------------------------------- |
-| `enhanced-1` | [Smoother difficulty curve](even-difficulty.md)                    | `even-difficulty` ([#73](https://github.com/odogono/fman/issues/73)) |
-| `enhanced-2` | Version 1, plus a [grace period before dismissal](grace-period.md) | `grace-period` ([#74](https://github.com/odogono/fman/issues/74))    |
+| Version      | Changes from the original                                             | Measured as                                                             |
+| ------------ | --------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `enhanced-1` | [Smoother difficulty curve](even-difficulty.md)                       | `even-difficulty` ([#73](https://github.com/odogono/fman/issues/73))    |
+| `enhanced-2` | Version 1, plus a [grace period before dismissal](grace-period.md)    | `grace-period` ([#74](https://github.com/odogono/fman/issues/74))       |
+| `enhanced-3` | Version 2, plus [present-day clubs and players](present-day-clubs.md) | Against `enhanced-2` ([#91](https://github.com/odogono/fman/issues/91)) |
+
+Starting clubs and players are part of a ruleset too ([ADR 0011](adr/0011-rulesets-carry-starting-clubs-and-players.md)). A change that leaves every rule alone, as `enhanced-3`'s, needs no experimental ruleset: its baseline must match the previous version's.
 
 A rule change is built as an experimental ruleset holding that change alone and measured against `original` with the [gameplay baseline](gameplay-baseline.md). Once accepted, it joins Enhanced as a new version, with its own committed baseline (`docs/baseline/enhanced-<n>.*`) compared against the previous version's, and the experimental ruleset is retired. The New game description of Enhanced names what the latest version changes.
 

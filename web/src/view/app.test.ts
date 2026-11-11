@@ -142,8 +142,12 @@ const harness = ({
     found.action();
   };
   const toMenu = () => {
-    for (const text of ['alex', '1', '1', '0']) {
+    for (const text of ['alex', '1', '1']) {
       type(text);
+    }
+    // Enhanced games' clubs wear their own kits: no colour question.
+    if (view().screen === 'colours') {
+      type('0');
     }
     settle();
     expect(view().screen).toBe('menu');

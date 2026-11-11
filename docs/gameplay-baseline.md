@@ -25,7 +25,7 @@ The output is deterministic. The same seed, options and code give byte-identical
 
 A run (`tools/bots/run.ts`) plays the headless session from `createSession`, starting at the title screen. It uses the same calls the browser makes: `setKey` for each key down and up, `submit` for each answer, and `advance` for elapsed frames. It does not call rule functions directly. This means fixture order, bills, cup replays, season ends, dismissal and every frame-based reseed happen just as they do in real play.
 
-Every run picks club 1 and black kit at the chosen difficulty level. It ends at dismissal or once the season limit is reached. A bot gives only offered answers. If the game rejects an answer (an error message, a selection error, or no change at all) or play stops moving, the run throws.
+Every run picks club 1 and, where the game asks, black kit at the chosen difficulty level. It ends at dismissal or once the season limit is reached. A bot gives only offered answers. If the game rejects an answer (an error message, a selection error, or no change at all) or play stops moving, the run throws.
 
 **Timing.** The game's luck comes from when the manager answers (ADR 0003), so every bot uses the same timing model, drawn from the run's own seed:
 

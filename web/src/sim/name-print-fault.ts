@@ -1,4 +1,4 @@
-import type { Club } from './catalogue';
+import { coloursText, type Club } from './catalogue';
 import type { Game } from './management';
 import { encodeClubName, nameBytes } from './names';
 import type { ScreenView } from './session';
@@ -110,7 +110,7 @@ export const screenPrintFault = (view: ScreenView): string | undefined => {
         [
           ...club(game.club),
           6,
-          ...text(`Colours = ${game.colour === 0 ? 'Black' : 'White'}`),
+          ...text(coloursText(game.colour, game.clubs[game.club - 1]!)),
           13
         ],
         3002

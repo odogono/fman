@@ -1,4 +1,5 @@
 import { beepRegisters, beeperT, type SoundEvent } from './beeper';
+import type { Club } from './catalogue';
 import { cupRoundName } from './cup';
 import { createFrameClock, framePeriod, spectrumFrameT } from './frame-clock';
 import {
@@ -24,7 +25,7 @@ import { screenPrintFault } from './name-print-fault';
 import { createPauseKeyboard, type PauseKeyboardState } from './pause-keyboard';
 import type { Playback } from './playback';
 import { createRng } from './rng';
-import type { Ruleset } from './ruleset';
+import { presentDay, startingClubs, type Ruleset } from './ruleset';
 import { decodeSave, encodeSave } from './save';
 import { completeSeason, type SeasonCompletion } from './season';
 import {
@@ -56,7 +57,12 @@ type Each<S extends string, D> = S extends unknown ? D & { screen: S } : never;
 /** Each screen with the data it shows. Screens before a game exists have no `game`. */
 export type ScreenView =
   | Each<'title' | 'cleared' | 'manager' | 'colours', { game?: undefined }>
-  | { game?: undefined; page: number; screen: 'clubs' }
+  | {
+      clubs: readonly Club[];
+      game?: undefined;
+      page: number;
+      screen: 'clubs';
+    }
   | { changing: false; game?: undefined; screen: 'level' }
   | { changing: true; game: Game; screen: 'level' }
   | { game?: Game; message: Message; screen: 'message' }
@@ -454,6 +460,16 @@ export const createSession = (
           if (program.changingLevel) {
             program.game = { ...program.game!, level: program.level };
             showMessage({ kind: 'skill-level', level: program.level }, 'menu');
+          } else if (presentDay(ruleset)) {
+            // Clubs wear their own kits: no colour to choose (#91).
+            program.game = createNewGame({
+              club: program.club,
+              level: program.level,
+              manager: program.manager,
+              ruleset,
+              seed: program.setupSeed
+            });
+            enterMenu();
           } else {
             program.screen = 'colours';
           }
@@ -751,7 +767,7 @@ export const createSession = (
     if (!game) {
       switch (screen) {
         case 'clubs':
-          return { page: program.page, screen };
+          return { clubs: startingClubs(ruleset), page: program.page, screen };
         case 'level':
           return { changing: false, screen };
         case 'message':

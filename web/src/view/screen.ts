@@ -1,4 +1,4 @@
-import { clubs, levels } from '../sim/catalogue';
+import { levels } from '../sim/catalogue';
 import type { Game } from '../sim/management';
 import { screenPrintFault } from '../sim/name-print-fault';
 import { clubInk } from '../sim/names';
@@ -118,9 +118,17 @@ export const makeScreen = (view: View) => {
       });
       put(1, 0, 'NUMBER          NAME', { ink: 1 });
       const offset = (view.page - 1) * 16;
-      clubs.slice(offset, offset + 16).forEach((club, index) => {
+      view.clubs.slice(offset, offset + 16).forEach((club, index) => {
         put(index + 2, 0, String(offset + index + 1));
-        put(index + 2, 16, club.name, { ink: clubInk(club) });
+        put(
+          index + 2,
+          16,
+          club.paper === undefined ? club.name : club.name.padEnd(10),
+          {
+            ink: clubInk(club),
+            ...(club.paper === undefined ? {} : { paper: club.paper })
+          }
+        );
       });
       put(
         18,

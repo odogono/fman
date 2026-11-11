@@ -131,15 +131,33 @@ The original ruleset giving the same game state, numbers and random draws as the
 Screens, input editing, sound and timing matching the original. Unlike rules parity, it is kept where already achieved but not required.
 
 **Ruleset**:
-A named set of game rules. A game is played under one ruleset for its whole life.
+A named set of game rules, together with the starting clubs and players a new game begins with. A game is played under one ruleset for its whole life.
 _Avoid_: Mode or difficulty when referring to a ruleset
 
+**Starting clubs and players**:
+The 64 clubs and 24 players a new game begins with, before any renaming. The original clubs and players are the 1982 set; the present-day clubs and players are a fixed later season.
+_Avoid_: Teams, roster
+
+**Name colour**:
+The colours a club's name is printed in on the management screens.
+_Avoid_: Kit when referring to how a name is printed
+
+**Kit**:
+The colour a club's players wear in the highlights. Two sides in a match never wear the same kit.
+_Avoid_: Name colour when referring to the pitch
+
+**Home kit**:
+The kit a club wears unless it clashes with its opponent's home kit while playing away.
+
+**Change kit**:
+The kit an away club wears when its home kit would clash with the home side's.
+
 **Original rules**:
-The ruleset that holds rules parity. Players choose it when starting a new game; games from before rule choice existed keep it.
+The ruleset that holds rules parity, starting from the original clubs and players. Players choose it when starting a new game; games from before rule choice existed keep it.
 _Avoid_: Classic, which names a presentation mode
 
 **Enhanced rules**:
-The ruleset players get by default: the original rules plus every accepted rule change. It is released in versions, and a game keeps the version it started with.
+The ruleset players get by default: the original rules plus every accepted rule change, and the present-day clubs and players since its third version. It is released in versions, and a game keeps the version it started with.
 _Avoid_: Modern, which names a presentation mode
 
 **Experimental ruleset**:

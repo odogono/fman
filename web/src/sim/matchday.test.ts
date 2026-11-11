@@ -65,17 +65,19 @@ test('a drawn cup tie replays with swapped grounds, continuing the seed and carr
   const replay = matchday!.fixture;
   expect(replay.home).toBe(!first.home);
   expect(replay.opponent).toBe(first.opponent);
-  expect(matchday!.inks).toEqual(matchInks(matchday!.game, !first.home));
+  expect(matchday!.inks).toEqual(matchInks(matchday!.game, replay));
   expect(matchday!.highlights).toBeUndefined();
   expect(matchday!.game.seed).toBe(firstLeg.seed);
   expect(matchday!.game.attackCarry).toBe(firstLeg.carry);
   expect(matchday!.game.cupRound).toBe(1);
 });
 
+const at = (home: boolean) => ({ home, opponent: 1 });
+
 test('the managed club keeps its colour at home and takes the opposite away', () => {
-  expect(matchInks(fresh(0), true)).toEqual({ away: 7, home: 0 });
-  expect(matchInks(fresh(0), false)).toEqual({ away: 0, home: 7 });
-  expect(matchInks(fresh(7), true)).toEqual({ away: 0, home: 7 });
+  expect(matchInks(fresh(0), at(true))).toEqual({ away: 7, home: 0 });
+  expect(matchInks(fresh(0), at(false))).toEqual({ away: 0, home: 7 });
+  expect(matchInks(fresh(7), at(true))).toEqual({ away: 0, home: 7 });
 });
 
 test('no matchday is offered once the season is over', () => {

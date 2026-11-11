@@ -23,11 +23,12 @@ Start with [original-game-analysis.md](original-game-analysis.md): it maps the o
 - [name-layout-fidelity.md](name-layout-fidelity.md): name scrolling and wrapping
 - [save-load.md](save-load.md): web save files
 
-Rulesets ([ADR-0007](adr/0007-experimental-rules-as-rulesets.md), [ADR-0009](adr/0009-enhanced-rules-by-default.md)):
+Rulesets ([ADR-0007](adr/0007-experimental-rules-as-rulesets.md), [ADR-0009](adr/0009-enhanced-rules-by-default.md), [ADR-0011](adr/0011-rulesets-carry-starting-clubs-and-players.md)):
 
 - [enhanced-rules.md](enhanced-rules.md): choosing Original or Enhanced rules, and Enhanced versions
 - [even-difficulty.md](even-difficulty.md): a gentler step between difficulty levels (Enhanced version 1)
 - [grace-period.md](grace-period.md): weeks to clear a debt over the credit limit before dismissal (Enhanced version 2)
+- [present-day-clubs.md](present-day-clubs.md): 2026/27 clubs and players in their own colours (Enhanced version 3)
 - [lasting-skill.md](lasting-skill.md): owned players keep their skill between seasons, with skill drift (experimental, being measured)
 
 Gameplay baseline: [gameplay-baseline.md](gameplay-baseline.md): automated runs by strategy and difficulty level, and how to compare rulesets against [the original's baseline](baseline/original.md).

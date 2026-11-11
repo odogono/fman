@@ -12,7 +12,7 @@ Design decisions for making the game playable without a keyboard, chiefly on pho
 
 ## Answer mapping
 
-A view-side layer reads the session view and lists each prompt's **offered answers**. Both presentation modes render their touch controls from it (#41). It is built after the line editor (#29) and long-input parsing (#31) land, since both change what prompts accept.
+A view-side layer reads the session view and lists each prompt's **offered answers**. Both presentation modes render their touch controls from it (#41).
 
 - **Valid answers** are every input a prompt handles differently from other input, including answers that end in one of the original's error messages. Tests use this full set.
 - **Offered answers** are a subset: the listed options on choice prompts; the numbers shown on screen for squad, team selection and the names lists; and free number entry where the original asks for an amount (borrow, repay, bid). Error-only answers on choice prompts, such as colour `3`, stay reachable from the keyboard.

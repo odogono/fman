@@ -87,6 +87,13 @@ export const createMatchday = (initial: Game, keyboard?: PauseKeyboard) => {
       finishPlayback();
       return missed;
     },
+    /** Plays highlights for up to `t` but not past their end. */
+    advanceWithinT: (t: number) => {
+      expect('highlights');
+      const played = playback!.advanceWithinT(t);
+      finishPlayback();
+      return played;
+    },
     get fixture() {
       return fixture;
     },

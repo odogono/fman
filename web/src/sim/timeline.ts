@@ -52,7 +52,12 @@ export const createTimeline = <T extends Event>(
     enter();
   };
   enter();
-  const advanceT = (tstates: number) => {
+  /**
+   * Plays up to `tstates`, stopping when the last event ends. Interrupts
+   * that can change nothing (BEEPER spans, or an idle keyboard outside a
+   * pending PAUSE exit) are crossed in one step rather than one by one.
+   */
+  const play = (tstates: number) => {
     if (!Number.isSafeInteger(tstates) || tstates < 0) {
       throw new RangeError('Invalid playback duration');
     }
@@ -67,6 +72,25 @@ export const createTimeline = <T extends Event>(
         break;
       }
       const frame = current()!;
+      const pauseExit = frame.kind === 'pause' && keyboard?.pending;
+      if (
+        !pauseExit &&
+        (frame.interrupts === false || !keyboard || keyboard.idle)
+      ) {
+        const amount = Math.min(left, remaining);
+        if (frame.interrupts === false) {
+          missed +=
+            Math.floor((elapsedT + amount) / spectrumFrameT) -
+            Math.floor(elapsedT / spectrumFrameT);
+        }
+        elapsedT += amount;
+        remaining -= amount;
+        left -= amount;
+        if (remaining === 0) {
+          next();
+        }
+        continue;
+      }
       const toInterrupt = spectrumFrameT - (elapsedT % spectrumFrameT);
       const amount = Math.min(left, remaining, toInterrupt);
       elapsedT += amount;
@@ -87,6 +111,12 @@ export const createTimeline = <T extends Event>(
         next();
       }
     }
+    return { missed, usedT: tstates - left };
+  };
+  /** Plays up to `tstates`; time past the end idles the keyboard. */
+  const advanceT = (tstates: number) => {
+    const { missed, usedT } = play(tstates);
+    const left = tstates - usedT;
     if (left > 0) {
       keyboard?.advance(
         Math.floor((elapsedT + left) / spectrumFrameT) -
@@ -147,6 +177,8 @@ export const createTimeline = <T extends Event>(
   return {
     advance: (frames: number) => advanceT(frames * spectrumFrameT),
     advanceT,
+    /** Plays up to `tstates` but no further than the end, returning the time used. */
+    advanceWithinT: play,
     get current() {
       return current();
     },

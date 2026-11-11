@@ -44,5 +44,35 @@ export const beeperSignal = (hl: number, de: number, startT: number) => {
   }
   return { durationT: edges.at(-1)! + 57, edges, starts };
 };
-export const beeperT = (hl: number, de: number, startT: number) =>
-  beeperSignal(hl, de, startT).durationT;
+
+const durations = new Map<string, number>();
+const maxCachedDurations = 65_536;
+
+/**
+ * The BEEPER call's length in T-states: `beeperSignal(...).durationT`
+ * without recording each edge. Contention depends only on the start's
+ * phase within the frame, so durations are cached by tone and phase.
+ */
+export const beeperT = (hl: number, de: number, startT: number) => {
+  const phase = ((startT % spectrumFrameT) + spectrumFrameT) % spectrumFrameT;
+  const key = `${hl}:${de}:${phase}`;
+  const cached = durations.get(key);
+  if (cached !== undefined) {
+    return cached;
+  }
+  let t = phase + 221 - 16 * (hl % 4) + contention(phase + 85);
+  let last = 0;
+  for (let edge = 0; edge < 2 * (de + 1); edge++) {
+    const delay = contention(t + 8);
+    last = t + 11 + delay - phase;
+    if (edge < 2 * de + 1) {
+      t += 4 * hl + 118 + delay;
+    }
+  }
+  const durationT = last + 57;
+  if (durations.size >= maxCachedDurations) {
+    durations.clear();
+  }
+  durations.set(key, durationT);
+  return durationT;
+};

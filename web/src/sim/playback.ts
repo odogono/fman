@@ -34,6 +34,7 @@ export const createPlayback = (
   return {
     advance: timeline.advance,
     advanceT: timeline.advanceT,
+    advanceWithinT: timeline.advanceWithinT,
     get current() {
       return timeline.current;
     },

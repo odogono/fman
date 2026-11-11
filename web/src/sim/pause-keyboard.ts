@@ -38,6 +38,10 @@ export const createPauseKeyboard = (initial?: PauseKeyboardState) => {
     clear: () => {
       pending = false;
     },
+    /** No key is down or awaiting its first scan, so a scan changes nothing. */
+    get idle() {
+      return !key && !scanned;
+    },
     get pending() {
       return pending;
     },

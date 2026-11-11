@@ -1,0 +1,5 @@
+# Enhanced rules speak on the original screens
+
+When an Enhanced rule needs to tell the player something the original never says, such as how many weeks of a grace period remain, it adds a message to the reproduced Spectrum screen where that rule applies. The message is written in the original's style and capitals, and fits the screen's existing layout. Under the Original rules the screens stay exactly as the original draws them, and no Enhanced message ever appears.
+
+A rule the player can't see isn't fair, and the moment it matters is the original screen where it takes effect: the bills screen, at the point where the original would have dismissed the manager. ADR 0008 makes presentation parity best effort, which allows this, and ADR 0009 keeps exact presentation one choice away. The alternative was to keep every reproduced screen untouched and show Enhanced messages in a web overlay, as the rules choice does. That would separate the message from the moment it explains, and Classic mode's players would see play and explanation in two places.

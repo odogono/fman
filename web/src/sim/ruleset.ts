@@ -13,14 +13,15 @@ import {
  * with, so every released version stays playable. An experimental ruleset
  * carries one change alone while it is measured against the original, and is
  * retired once the change joins Enhanced (`even-difficulty`, `grace-period`).
- * `lasting-skill` (#72) is being measured.
+ * `lasting-skill` (#72) and `steep-difficulty` (#90) are being measured.
  */
 export const rulesets = [
   'original',
   'enhanced-1',
   'enhanced-2',
   'enhanced-3',
-  'lasting-skill'
+  'lasting-skill',
+  'steep-difficulty'
 ] as const;
 export type Ruleset = (typeof rulesets)[number];
 
@@ -30,45 +31,54 @@ export const latestEnhanced = 'enhanced-3' satisfies Ruleset;
 export const isRuleset = (value: unknown): value is Ruleset =>
   rulesets.includes(value as Ruleset);
 
+/** The difficulty curves: what each level adds to an opponent's strength. */
+type Difficulty = 'original' | 'smooth' | 'steep';
+
 /** The rule changes each ruleset makes to the original. */
 const changes: Record<
   Ruleset,
   {
+    difficulty: Difficulty;
     gracePeriod: boolean;
     lastingSkill: boolean;
     presentDay: boolean;
-    smoothDifficulty: boolean;
   }
 > = {
   'enhanced-1': {
+    difficulty: 'smooth',
     gracePeriod: false,
     lastingSkill: false,
-    presentDay: false,
-    smoothDifficulty: true
+    presentDay: false
   },
   'enhanced-2': {
+    difficulty: 'smooth',
     gracePeriod: true,
     lastingSkill: false,
-    presentDay: false,
-    smoothDifficulty: true
+    presentDay: false
   },
   'enhanced-3': {
+    difficulty: 'smooth',
     gracePeriod: true,
     lastingSkill: false,
-    presentDay: true,
-    smoothDifficulty: true
+    presentDay: true
   },
   'lasting-skill': {
+    difficulty: 'original',
     gracePeriod: false,
     lastingSkill: true,
-    presentDay: false,
-    smoothDifficulty: false
+    presentDay: false
   },
   original: {
+    difficulty: 'original',
     gracePeriod: false,
     lastingSkill: false,
-    presentDay: false,
-    smoothDifficulty: false
+    presentDay: false
+  },
+  'steep-difficulty': {
+    difficulty: 'steep',
+    gracePeriod: false,
+    lastingSkill: true,
+    presentDay: false
   }
 };
 
@@ -97,11 +107,29 @@ export const startingPlayerNames = (ruleset: Ruleset): readonly string[] =>
 const smoothDifficultyBonus = [1, 2, 2.75, 3, 3.5, 3.75, 4] as const;
 
 /**
+ * The difficulty curve for lasting skill (#90, measured as
+ * `steep-difficulty`). A squad that keeps its skill wins far more under the
+ * smooth curve, so the steps are steeper: tuned against the gameplay baseline
+ * so that balanced play loses about the same ground at every level and Genius
+ * plays about as the smooth curve's Genius does without lasting skill.
+ */
+const steepDifficultyBonus = [1, 3, 3.75, 4.25, 4.75, 5, 5.5] as const;
+
+const difficultyBonus = {
+  smooth: smoothDifficultyBonus,
+  steep: steepDifficultyBonus
+} as const;
+
+/**
  * What the difficulty level adds to each of an opponent's five strength
  * attributes before the sum is floored and clamped to 1–20.
  */
-export const opponentBonus = (ruleset: Ruleset, level: number) =>
-  changes[ruleset].smoothDifficulty ? smoothDifficultyBonus[level - 1]! : level;
+export const opponentBonus = (ruleset: Ruleset, level: number) => {
+  const { difficulty } = changes[ruleset];
+  return difficulty === 'original'
+    ? level
+    : difficultyBonus[difficulty][level - 1]!;
+};
 
 /**
  * How many weeks of bills a club over its credit limit has to get back under

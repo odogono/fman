@@ -9,6 +9,7 @@
 //       by hand.
 import {
   existsSync,
+  mkdirSync,
   readFileSync,
   readdirSync,
   rmSync,
@@ -95,8 +96,9 @@ export const renderIndex = (
   return `${lines.join('\n')}\n`;
 };
 
+// Before the first release there is no releases directory.
 const readReleases = (): { date: string; version: string }[] =>
-  readdirSync(RELEASES)
+  (existsSync(RELEASES) ? readdirSync(RELEASES) : [])
     .map(name => name.replace(/\.md$/, ''))
     .filter(version => VERSION.test(version))
     .map(version => {
@@ -163,6 +165,7 @@ if (import.meta.main) {
     process.exit(1);
   }
   const date = new Date().toISOString().slice(0, 10);
+  mkdirSync(RELEASES, { recursive: true });
   writeFileSync(file, renderRelease(version, date, previous, fragments));
   writeFileSync(
     join(RELEASES, 'README.md'),

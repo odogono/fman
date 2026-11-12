@@ -2,7 +2,7 @@ import { expect, test } from 'bun:test';
 
 import { createJournal, type Journal } from '../sim/journal';
 import type { Moment } from '../sim/moments';
-import type { Ruleset } from '../sim/ruleset';
+import { presentDay, type Ruleset } from '../sim/ruleset';
 import { createTicker, tickerLeadIn } from '../sim/ticker';
 import { submitInput } from '../test/input';
 import { paintMatch, type MatchView } from './match-layouts';
@@ -13,7 +13,8 @@ const kickedOff = (ruleset: Ruleset) => {
   const journal = createJournal({ kind: 'title', ruleset });
   journal.advance(137);
   journal.skipPause();
-  for (const text of ['alex', '1', '1', '0', '99', '', '99']) {
+  const colour = presentDay(ruleset) ? [] : ['0'];
+  for (const text of ['alex', '1', '1', ...colour, '99', '', '99']) {
     submitInput(journal, text);
   }
   expect(journal.session.view.screen).toBe('highlights');
@@ -41,7 +42,7 @@ const rows = (view: MatchView) => {
   return { screen: screen.map(r => r.trimEnd()), styles };
 };
 
-const journal = kickedOff('moment-highlights');
+const journal = kickedOff('enhanced-7');
 const view = tickerView(journal);
 const { fixture, game } = view;
 const opponent = game.clubs[fixture.opponent - 1]!.name.trim().toUpperCase();

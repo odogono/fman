@@ -73,11 +73,12 @@ export type ScreenView =
       | 'status'
       | 'borrow'
       | 'repay'
-      | 'replay'
       | 'end-season'
       | 'season-table',
       { game: Game }
     >
+  /** Asks for a cup replay of `fixture`, the drawn tie. */
+  | { fixture: MatchFixture; game: Game; screen: 'replay' }
   | { game: Game; pickedCount: number; screen: 'squad' }
   | { game: Game; nameEditor: NameEditor; screen: 'names' }
   | { bills: Bills; game: Game; screen: 'bills' }
@@ -806,10 +807,11 @@ export const createSession = (
       case 'status':
       case 'borrow':
       case 'repay':
-      case 'replay':
       case 'end-season':
       case 'season-table':
         return { game, screen };
+      case 'replay':
+        return { fixture: matchday!.fixture, game, screen };
       case 'names':
         return { game, nameEditor: program.nameEditor!, screen };
       case 'squad':

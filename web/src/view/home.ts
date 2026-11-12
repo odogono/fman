@@ -1,6 +1,6 @@
 import { levels, type Club } from '../sim/catalogue';
 import { cupRoundName } from '../sim/cup';
-import { previewFixture } from '../sim/league';
+import { previewFixture, type MatchFixture } from '../sim/league';
 import type { Game } from '../sim/management';
 import { clubInk } from '../sim/names';
 import type { View } from '../sim/session';
@@ -26,9 +26,15 @@ export type Home = Readonly<{
   club: ClubName;
   debt: number;
   division: number;
-  /** Absent once the season's matches are all played. */
+  /**
+   * The match being played or, between matches, the next one. Absent once
+   * the season's matches are all played.
+   */
   fixture?: Readonly<{
-    /** The opponent and venue of a league match; a cup draw is not shown. */
+    /**
+     * The opponent and venue. A cup round's draw shows only once its
+     * matchday has drawn it.
+     */
     away?: ClubName;
     home?: ClubName;
     title: string;
@@ -57,30 +63,52 @@ const choices = [
   ['menu.keep', 'Save game']
 ] as const;
 
-const fixtureFor = (game: Game): Home['fixture'] => {
+const cupTitle = (round: number) => {
+  const name = cupRoundName(round);
+  return `F.A. Cup – ${/^\d/.test(name) ? `Round ${name}` : name}`;
+};
+
+const sides = (game: Game, opponent: number, home: boolean) => {
+  const club = clubName(game.clubs[game.club - 1]!);
+  const other = clubName(game.clubs[opponent - 1]!);
+  return home ? { away: other, home: club } : { away: club, home: other };
+};
+
+const leagueTitle = (game: Game) => `League match – Division ${game.division}`;
+
+/**
+ * A matchday prepares its fixture as it starts, which moves the schedule on:
+ * the game then previews the match after it. So while one is in progress
+ * the Home screen shows the matchday's own fixture.
+ */
+const fixtureFor = (game: Game, current?: MatchFixture): Home['fixture'] => {
+  if (current) {
+    return {
+      ...sides(game, current.opponent, current.home),
+      title:
+        current.kind === 'cup' ? cupTitle(game.cupRound) : leagueTitle(game)
+    };
+  }
   const preview = previewFixture(game);
   if (!preview) {
     return undefined;
   }
   if (preview.kind === 'cup') {
-    const round = cupRoundName(preview.round);
-    return {
-      title: `F.A. Cup – ${/^\d/.test(round) ? `Round ${round}` : round}`
-    };
+    return { title: cupTitle(preview.round) };
   }
-  const club = clubName(game.clubs[game.club - 1]!);
-  const opponent = clubName(game.clubs[preview.opponent - 1]!);
   return {
-    away: preview.home ? opponent : club,
-    home: preview.home ? club : opponent,
-    title: `League match – Division ${game.division}`
+    ...sides(game, preview.opponent, preview.home),
+    title: leagueTitle(game)
   };
 };
 
 export const homeFor = (view: View & { game: Game }): Home => {
   const { game } = view;
   const offered = new Set(answersFor(view).map(answer => answer.id));
-  const fixture = fixtureFor(game);
+  const fixture = fixtureFor(
+    game,
+    'fixture' in view ? view.fixture : undefined
+  );
   return {
     cash: game.cash,
     choices: [

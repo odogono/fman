@@ -11,10 +11,9 @@ const weakest = [1, 1, 1, 1, 1];
 const fresh = (seed = 0): Game =>
   createNewGame({
     club: 1,
-    colour: 0,
     level: 1,
     manager: 'alex',
-    ruleset: 'moment-highlights',
+    ruleset: 'enhanced-7',
     seed
   });
 

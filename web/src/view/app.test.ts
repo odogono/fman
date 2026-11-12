@@ -683,15 +683,15 @@ test('save slots show each game’s rules; slots from before rule choice are Ori
   expect(labels[1]).toContain('old game, Original rules');
 });
 
-/** A moment-highlights game at the management menu, as an autosave. */
+/** An enhanced-7 game, with moment highlights, at the management menu, as an autosave. */
 const momentHighlightsSave = () => {
   const journal = createJournal({
     kind: 'title',
-    ruleset: 'moment-highlights'
+    ruleset: 'enhanced-7'
   });
   journal.advance(137);
   journal.skipPause();
-  for (const text of ['alex', '1', '1', '0']) {
+  for (const text of ['alex', '1', '1']) {
     submitInput(journal, text);
   }
   return journal.snapshot();

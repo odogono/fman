@@ -1,6 +1,6 @@
 # Moment highlights ruleset
 
-[#107](https://github.com/odogono/fman/issues/107). An experimental ruleset, `moment-highlights`, that decides each match as a list of moments in place of the original's attacking sequences ([ADR 0007](adr/0007-experimental-rules-as-rulesets.md)). It is the first step of the [highlights engine](highlights-engine.md) exploration, shown as a [ticker](#the-ticker) ([#108](https://github.com/odogono/fman/issues/108)). It isn't offered in New game.
+[#107](https://github.com/odogono/fman/issues/107). Under the Enhanced rules from version 7, each match is decided as a list of moments in place of the original's attacking sequences, and shown as a [ticker](#the-ticker) ([#108](https://github.com/odogono/fman/issues/108)). It is the first step of the [highlights engine](highlights-engine.md) exploration. The change was measured as the experimental ruleset `moment-highlights` ([ADR 0007](adr/0007-experimental-rules-as-rulesets.md)), then became part of [`enhanced-7`](enhanced-rules.md) ([#109](https://github.com/odogono/fman/issues/109)).
 
 ## The problem in the original
 
@@ -8,13 +8,13 @@ The original's highlights don't decorate a result; they make it ([original-game-
 
 ## The rule
 
-Under `moment-highlights`, kicking off decides the match at once ([`moments.ts`](../web/src/sim/moments.ts)):
+Under `enhanced-7` (and `moment-highlights` before it), kicking off decides the match at once ([`moments.ts`](../web/src/sim/moments.ts)):
 
 - **Chances.** Each side gets the original's tests. For each of the five team strengths, the managed club and then its opponent win two chances when `R(100) + 5 × difference ≥ 75`. If no goal has come from them, home and then away get one more chance each. So a side gets as many chances as the original gives it attacks.
 - **Moments.** Every chance becomes one **moment**, drawn in this order:
   1. **Outcome**: one `R(100)`. A goal on 55 or less, a save on 56–77, a near miss above that. Like the original's collision checks, it ignores the strengths.
   2. **Minute**: `R(90)`.
-  3. **Player**, for the managed club only. One of the picked players, weighted by skill × 1 for defence, 2 for midfield and 4 for attack. The moment names the player who shot, whatever its outcome. Opponents have no players, so their moments name only the club. With no picked players, the managed club's moments name no one either.
+  3. **Player**, for the managed club only. One of the picked players, weighted by skill × 1 for defence, 2 for midfield and 4 for attack. The moment names the player who shot, whatever its outcome. Opponents' moments name only the club, even under `enhanced-7`, where every club owns a [squad](club-squads.md). With no picked players, the managed club's moments name no one either.
 - **The list** is sorted by minute. Moments in the same minute keep the order they were drawn in.
 - **The score** is the number of goal moments. A drawn cup tie is replayed as now. There is no extra time and there are no penalties.
 

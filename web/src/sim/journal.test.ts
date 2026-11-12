@@ -2,7 +2,7 @@ import { expect, test } from 'bun:test';
 
 import { finishPrompt, submitInput } from '../test/input';
 import { createJournal, openSave, type Journal } from './journal';
-import type { Ruleset } from './ruleset';
+import { presentDay, type Ruleset } from './ruleset';
 import { encodeSave, saveVersion } from './save';
 import { tickerLeadIn, tickerPause } from './ticker';
 
@@ -26,7 +26,10 @@ const setup = (ruleset: Ruleset = 'original') => {
   submitInput(journal, 'alex');
   submitInput(journal, '1');
   submitInput(journal, '1');
-  submitInput(journal, '0');
+  // Clubs in their own kits ask no colour question.
+  if (!presentDay(ruleset)) {
+    submitInput(journal, '0');
+  }
   return journal;
 };
 
@@ -315,7 +318,7 @@ const tickerOf = (journal: Journal) => {
 };
 
 test('moment highlights show the ticker, then the result', () => {
-  const journal = setup('moment-highlights');
+  const journal = setup('enhanced-7');
   toHighlights(journal);
   expect(tickerOf(journal).shown).toEqual([]);
   journal.advance(tickerLeadIn + tickerPause);
@@ -327,7 +330,7 @@ test('moment highlights show the ticker, then the result', () => {
 });
 
 test('a snapshot mid-ticker resumes at the same moment', () => {
-  const journal = setup('moment-highlights');
+  const journal = setup('enhanced-7');
   toHighlights(journal);
   journal.advance(tickerPause + 30);
   const restored = openSave(journal.snapshot());
@@ -346,7 +349,7 @@ test('a snapshot mid-ticker resumes at the same moment', () => {
 });
 
 test('skipping the ticker is kept in the journal', () => {
-  const journal = setup('moment-highlights');
+  const journal = setup('enhanced-7');
   toHighlights(journal);
   journal.advance(10);
   journal.skipPause();

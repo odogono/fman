@@ -11,9 +11,10 @@ import {
  * parity. Enhanced rules are released in versions (`enhanced-1`, …): each
  * gathers the accepted rule changes, and a game keeps the version it started
  * with, so every released version stays playable. An experimental ruleset
- * carries one change alone while it is measured against the original
- * (`moment-highlights`), and is retired once the change joins Enhanced (`even-difficulty`, `grace-period`,
- * `lasting-skill`, `steep-difficulty`, `tiring-injuries`, `club-squads`).
+ * carries one change alone while it is measured against the original, and
+ * is retired once the change joins Enhanced (`even-difficulty`,
+ * `grace-period`, `lasting-skill`, `steep-difficulty`, `tiring-injuries`,
+ * `club-squads`, `moment-highlights`).
  */
 export const rulesets = [
   'original',
@@ -23,12 +24,12 @@ export const rulesets = [
   'enhanced-4',
   'enhanced-5',
   'enhanced-6',
-  'moment-highlights'
+  'enhanced-7'
 ] as const;
 export type Ruleset = (typeof rulesets)[number];
 
 /** The Enhanced version every new Enhanced game starts with. */
-export const latestEnhanced = 'enhanced-6' satisfies Ruleset;
+export const latestEnhanced = 'enhanced-7' satisfies Ruleset;
 
 export const isRuleset = (value: unknown): value is Ruleset =>
   rulesets.includes(value as Ruleset);
@@ -103,14 +104,14 @@ const changes: Record<
     presentDay: true,
     tiringInjuries: true
   },
-  'moment-highlights': {
-    clubSquads: false,
-    difficulty: 'original',
-    gracePeriod: false,
-    lastingSkill: false,
+  'enhanced-7': {
+    clubSquads: true,
+    difficulty: 'steep',
+    gracePeriod: true,
+    lastingSkill: true,
     momentHighlights: true,
-    presentDay: false,
-    tiringInjuries: false
+    presentDay: true,
+    tiringInjuries: true
   },
   original: {
     clubSquads: false,
@@ -200,7 +201,8 @@ export const tiringInjuries = (ruleset: Ruleset) =>
  * Whether a match is decided as a list of moments (goals, saves and near
  * misses) drawn from the team strengths, in place of the original's
  * attacking sequences and their collision checks (#107, measured as
- * `moment-highlights`). No highlights are shown.
+ * `moment-highlights`, then part of `enhanced-7`). The ticker shows the
+ * moments in place of the pitch.
  */
 export const momentHighlights = (ruleset: Ruleset) =>
   changes[ruleset].momentHighlights;

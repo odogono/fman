@@ -1,6 +1,6 @@
 # Club squads ruleset
 
-[#113](https://github.com/odogono/fman/issues/113), [ADR 0012](adr/0012-every-club-owns-a-squad-of-invented-players.md). Every present-day club owns a squad of invented players, and the players who belong to no club are free agents. It is measured as the experimental ruleset `club-squads`, which is `enhanced-5` with club squads ([ADR 0007](adr/0007-experimental-rules-as-rulesets.md)). The club list and the season-end changes need present-day clubs and lasting skill, so the measurement builds on `enhanced-5` rather than on `original`, as [steep difficulty](steep-difficulty.md) built on lasting skill.
+[#113](https://github.com/odogono/fman/issues/113), [ADR 0012](adr/0012-every-club-owns-a-squad-of-invented-players.md). Under the Enhanced rules from version 6, every present-day club owns a squad of invented players, and the players who belong to no club are free agents. The change was measured as the experimental ruleset `club-squads`, which was `enhanced-5` with club squads ([ADR 0007](adr/0007-experimental-rules-as-rulesets.md)), then became [`enhanced-6`](enhanced-rules.md). The club list and the season-end changes need present-day clubs and lasting skill, so the measurement builds on `enhanced-5` rather than on `original`, as [steep difficulty](steep-difficulty.md) built on lasting skill.
 
 This version is groundwork. Squads don't change how matches play: opponent strength, the highlights and other clubs' results are as before.
 
@@ -32,6 +32,12 @@ So the NO. column, every prompt and error message, and the bots' answers stay as
   3. The original's draws over the 24 places, with lasting skill as in `enhanced-5`.
   4. Players in other clubs' squads drift as the managed club's do, and the other free agents reroll.
 - Other clubs' players are never injured, and their energy isn't kept.
+
+## On screen
+
+- The squad and transfer screens tag each player by his position: `D█`, `M█` and `A█` as before, and `G█` for a goalkeeper, in defence's ink.
+- The name editor renames the 64 clubs and the 24 places. Its player pages are titled `Players 1-8`, `Players 9-16` and `Players 17-24`, since positions no longer follow the numbers. Other clubs' players can't be renamed.
+- **Clubs**, in the game menu, lists any club's squad by name and position, without skill. It opens on the managed club. Free agents aren't listed, so the weekly offer is still a surprise.
 
 ## Random draws
 

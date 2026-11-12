@@ -12,8 +12,8 @@ import {
  * gathers the accepted rule changes, and a game keeps the version it started
  * with, so every released version stays playable. An experimental ruleset
  * carries one change alone while it is measured against the original
- * (`moment-highlights`, `club-squads`), and is retired once the change joins Enhanced (`even-difficulty`, `grace-period`,
- * `lasting-skill`, `steep-difficulty`, `tiring-injuries`).
+ * (`moment-highlights`), and is retired once the change joins Enhanced (`even-difficulty`, `grace-period`,
+ * `lasting-skill`, `steep-difficulty`, `tiring-injuries`, `club-squads`).
  */
 export const rulesets = [
   'original',
@@ -22,13 +22,13 @@ export const rulesets = [
   'enhanced-3',
   'enhanced-4',
   'enhanced-5',
-  'moment-highlights',
-  'club-squads'
+  'enhanced-6',
+  'moment-highlights'
 ] as const;
 export type Ruleset = (typeof rulesets)[number];
 
 /** The Enhanced version every new Enhanced game starts with. */
-export const latestEnhanced = 'enhanced-5' satisfies Ruleset;
+export const latestEnhanced = 'enhanced-6' satisfies Ruleset;
 
 export const isRuleset = (value: unknown): value is Ruleset =>
   rulesets.includes(value as Ruleset);
@@ -49,15 +49,6 @@ const changes: Record<
     tiringInjuries: boolean;
   }
 > = {
-  'club-squads': {
-    clubSquads: true,
-    difficulty: 'steep',
-    gracePeriod: true,
-    lastingSkill: true,
-    momentHighlights: false,
-    presentDay: true,
-    tiringInjuries: true
-  },
   'enhanced-1': {
     clubSquads: false,
     difficulty: 'smooth',
@@ -96,6 +87,15 @@ const changes: Record<
   },
   'enhanced-5': {
     clubSquads: false,
+    difficulty: 'steep',
+    gracePeriod: true,
+    lastingSkill: true,
+    momentHighlights: false,
+    presentDay: true,
+    tiringInjuries: true
+  },
+  'enhanced-6': {
+    clubSquads: true,
     difficulty: 'steep',
     gracePeriod: true,
     lastingSkill: true,
@@ -209,6 +209,6 @@ export const momentHighlights = (ruleset: Ruleset) =>
  * Whether every present-day club owns a squad of invented players, with the
  * managed club's squad and the transfer list in the original's 24 numbered
  * places, and transfer offers drawn from free agents (#113, measured as
- * `club-squads` on top of `enhanced-5`). Squads don't change how matches play.
+ * `club-squads` on top of `enhanced-5`, then part of `enhanced-6`). Squads don't change how matches play.
  */
 export const clubSquads = (ruleset: Ruleset) => changes[ruleset].clubSquads;

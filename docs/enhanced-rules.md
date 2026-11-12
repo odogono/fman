@@ -19,6 +19,7 @@ Enhanced rules are released in versions, stored as `enhanced-1`, `enhanced-2` an
 | `enhanced-3` | Version 2, plus [present-day clubs and players](present-day-clubs.md)                                                               | Against `enhanced-2` ([#91](https://github.com/odogono/fman/issues/91))                                                                        |
 | `enhanced-4` | Version 3, plus [skill that lasts between seasons](lasting-skill.md) and a [steeper difficulty curve](steep-difficulty.md) to match | `lasting-skill` ([#72](https://github.com/odogono/fman/issues/72)), then `steep-difficulty` ([#90](https://github.com/odogono/fman/issues/90)) |
 | `enhanced-5` | Version 4, plus [injuries that depend on energy and last](tiring-injuries.md)                                                       | `tiring-injuries` ([#98](https://github.com/odogono/fman/issues/98))                                                                           |
+| `enhanced-6` | Version 5, plus [a squad of invented players for every club](club-squads.md), with transfers from free agents                       | `club-squads` ([#113](https://github.com/odogono/fman/issues/113))                                                                             |
 
 Starting clubs and players are part of a ruleset too ([ADR 0011](adr/0011-rulesets-carry-starting-clubs-and-players.md)). A change that leaves every rule alone, as `enhanced-3`'s, needs no experimental ruleset: its baseline must match the previous version's.
 

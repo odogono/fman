@@ -22,7 +22,7 @@ export const rulesOf = (ruleset: Ruleset): Rules =>
 export const rulesChoices = [
   {
     description:
-      'Present-day clubs and players in their own colours, players who keep their skill between seasons, tired players more likely to be injured and out for up to three weeks, a smoother difficulty curve, and a few weeks to clear debts before dismissal',
+      'Present-day clubs in their own colours, each with a squad of its own, players who keep their skill between seasons, tired players more likely to be injured and out for up to three weeks, a smoother difficulty curve, and a few weeks to clear debts before dismissal',
     name: 'Enhanced',
     rules: 'enhanced'
   },

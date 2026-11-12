@@ -1,6 +1,6 @@
 # Present-day clubs and players
 
-[#91](https://github.com/odogono/fman/issues/91), [ADR 0011](adr/0011-rulesets-carry-starting-clubs-and-players.md). Under the Enhanced rules from version 3, a new game starts with the 2026/27 clubs and the England squad of November 2026 instead of the original's 1982 set, and every club plays in its own colours. The Original rules, `enhanced-1` and `enhanced-2` keep the 1982 clubs and players, and a game keeps whatever names it already has.
+[#91](https://github.com/odogono/fman/issues/91), [ADR 0011](adr/0011-rulesets-carry-starting-clubs-and-players.md). Under the Enhanced rules from version 3, a new game starts with the 2026/27 clubs and the England squad of November 2026 instead of the original's 1982 set, and every club plays in its own colours. The Original rules, `enhanced-1` and `enhanced-2` keep the 1982 clubs and players, and a game keeps whatever names it already has. From version 6 the England squad is replaced by [club squads](club-squads.md) of invented players.
 
 ## The clubs
 

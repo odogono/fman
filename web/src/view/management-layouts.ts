@@ -67,7 +67,10 @@ export const printPlayer = (
 ) => {
   const category = playerCategory(player);
   print.reset({ ink: category });
-  print.text(['D█', 'M█', 'A█'][category]!, { inverse: true });
+  // A goalkeeper (#113) is tagged on his own, in defence's ink.
+  print.text(player.position === 'GK' ? 'G█' : ['D█', 'M█', 'A█'][category]!, {
+    inverse: true
+  });
   print.text('', { inverse: false });
   print.name(player.name.padEnd(8));
   print.text(` ${player.id}`);

@@ -221,9 +221,14 @@ export const savedGame = (v: unknown, version: number): Game | undefined => {
   ) {
     return undefined;
   }
-  // Club squads (#113) arrived in version 11; their ruleset rejects any
-  // earlier save, since it was never written without them.
-  if (version < 11 && record(v) && v.ruleset === 'club-squads') {
+  // Club squads (#113) arrived in version 11; a ruleset with them rejects
+  // any earlier save, since none was written without them.
+  if (
+    version < 11 &&
+    record(v) &&
+    isRuleset(v.ruleset) &&
+    clubSquads(v.ruleset)
+  ) {
     return undefined;
   }
   if (version >= rulesetSaveVersion) {

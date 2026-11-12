@@ -784,3 +784,50 @@ test('reopening the page mid-ticker resumes at the same moment', () => {
     view.screen === 'highlights' && 'ticker' in view && view.ticker.shown
   ).toEqual(shown);
 });
+
+/** An enhanced-6 game, whose clubs all own squads (#113), at the management menu. */
+const clubSquadsSave = () => {
+  const journal = createJournal({ kind: 'title', ruleset: 'enhanced-6' });
+  journal.advance(137);
+  journal.skipPause();
+  for (const text of ['alex', '1', '1']) {
+    submitInput(journal, text);
+  }
+  return journal.snapshot();
+};
+
+test('under club squads the game menu lists every club’s squad, without skill', () => {
+  const run = harness({ autosave: clubSquadsSave() });
+  run.app.openMenu();
+  run.press('Clubs');
+  expect(run.page.menu?.title).toBe('Clubs');
+  const club = run.control('Club');
+  const squad = () => {
+    const control = run.control('Squad');
+    if (control.kind !== 'list') {
+      throw new Error('Unexpected squad control');
+    }
+    return control.items;
+  };
+  if (club.kind !== 'select') {
+    throw new Error('Unexpected club control');
+  }
+  // It opens on the managed club, whose squad is its owned players.
+  expect(club.value).toBe('64');
+  expect(squad()).toHaveLength(12);
+  club.change('1');
+  expect(run.control('Club')).toMatchObject({ value: '1' });
+  expect(squad()).toHaveLength(12);
+  expect(squad()[0]).toEndWith(', Goalkeeper');
+  expect(squad().join()).not.toMatch(/\d/);
+  run.press('Back');
+  expect(run.page.menu?.title).toBe('Game menu');
+});
+
+test('under the Original rules the game menu has no clubs page', () => {
+  const run = harness({ options: JSON.stringify({ rules: 'original' }) });
+  run.toMenu();
+  expect(run.app.journal.session.ruleset).toBe('original');
+  run.app.openMenu();
+  expect(run.page.menu!.controls.map(c => c.label)).not.toContain('Clubs');
+});

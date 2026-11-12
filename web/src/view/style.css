@@ -221,6 +221,15 @@ main {
   color: #a6a6a6;
   font-size: 14px;
 }
+/* A list to read, such as a club's squad on the clubs page. */
+.menu-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  columns: 2;
+  column-gap: 16px;
+  font-size: 14px;
+}
 .menu-status {
   min-height: 1.5em;
   margin: 12px 0 0;

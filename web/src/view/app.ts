@@ -1,6 +1,9 @@
 import type { SoundEvent } from '../sim/beeper';
 import { createJournal, openSave, type Journal } from '../sim/journal';
+import type { Game } from '../sim/management';
+import { clubSquads } from '../sim/ruleset';
 import type { Effect, View } from '../sim/session';
+import { positions } from '../sim/squads';
 import {
   changeAmount,
   startAmount,
@@ -40,6 +43,8 @@ export type MenuControl =
       label: string;
       value: string;
     }
+  /** Lines to read, such as a club's squad. */
+  | { items: readonly string[]; kind: 'list'; label: string }
   /** One of a few choices, each with a line saying what it means. */
   | {
       change: (value: string) => void;
@@ -132,7 +137,7 @@ const editingKeys = [
   'End'
 ];
 
-type MenuView = 'main' | 'save' | 'load' | 'options' | 'new-game';
+type MenuView = 'main' | 'save' | 'load' | 'options' | 'new-game' | 'clubs';
 
 const button = (
   label: string,
@@ -144,6 +149,29 @@ const button = (
  * The web app around one journal: autosave, the game menu and its save
  * slots, save files, options, sound sync and the player's input.
  */
+const positionNames = {
+  DF: 'Defender',
+  FW: 'Attacker',
+  GK: 'Goalkeeper',
+  MF: 'Midfielder'
+} as const;
+
+/**
+ * A club's squad as the clubs page lists it, goalkeeper first. The managed
+ * club's squad is the owned players in its places.
+ */
+const squadLines = (game: Game, slot: number) => {
+  const squad =
+    slot === game.club
+      ? game.players.filter(p => p.status > 0)
+      : (game.clubs[slot - 1]!.squad ?? []);
+  return [...squad]
+    .sort(
+      (a, b) => positions.indexOf(a.position!) - positions.indexOf(b.position!)
+    )
+    .map(p => `${p.name}, ${positionNames[p.position!]}`);
+};
+
 export const createApp = ({
   beeper,
   clock,
@@ -173,6 +201,8 @@ export const createApp = ({
   let sampleFrames = createFrameSampler(clock.now());
   let menuOpen = false;
   let menuView: MenuView = 'main';
+  /** The club whose squad the clubs page shows, by slot. */
+  let shownClub = 1;
   let pendingSlot = 0;
   /** The rules picked in the New game step, until it starts a game. */
   let chosenRules = options.rules;
@@ -290,6 +320,11 @@ export const createApp = ({
     dom.notice(message);
     closeMenu();
   };
+  /** Whether the game in play has a squad for every club (#113). */
+  const squadsShown = () => {
+    const { game } = journal.session.view;
+    return game !== undefined && clubSquads(game.ruleset);
+  };
   const showMenu = (view: MenuView, status = '') => {
     menuView = view;
     let title: string;
@@ -312,6 +347,14 @@ export const createApp = ({
             chosenRules = options.rules;
             showMenu('new-game');
           }),
+          ...(squadsShown()
+            ? [
+                button('Clubs', () => {
+                  shownClub = journal.session.view.game!.club;
+                  showMenu('clubs');
+                })
+              ]
+            : []),
           button('Export save file', exportSave),
           button('Import save file', dom.chooseFile),
           button('Options', () => showMenu('options'))
@@ -368,6 +411,33 @@ export const createApp = ({
           button('Back', () => showMenu('main'))
         );
         break;
+      case 'clubs': {
+        title = 'Clubs';
+        const game = journal.session.view.game!;
+        detail = 'Names and positions, without skill.';
+        controls.push(
+          {
+            change: value => {
+              shownClub = Number(value);
+              showMenu('clubs');
+            },
+            choices: game.clubs.map((club, i) => [
+              String(i + 1),
+              `${club.name.trim()} (Division ${Math.floor(i / 16) + 1})`
+            ]),
+            kind: 'select',
+            label: 'Club',
+            value: String(shownClub)
+          },
+          {
+            items: squadLines(game, shownClub),
+            kind: 'list',
+            label: 'Squad'
+          },
+          button('Back', () => showMenu('main'))
+        );
+        break;
+      }
       case 'options':
         title = 'Options';
         controls.push(

@@ -1,4 +1,5 @@
 import type { NameEditor } from '../sim/name-editor';
+import { clubSquads } from '../sim/ruleset';
 import type { Paint } from './grid';
 import { createPrintScreen } from './print-screen';
 
@@ -17,7 +18,10 @@ export const paintNames = (editor: NameEditor, put: Paint) => {
     print.text(
       club
         ? `Division ${editor.page}`
-        : ['Defence', 'Midfield', 'Attack'][editor.page - 1]!
+        : clubSquads(editor.listGame.ruleset)
+          ? // Under club squads (#113) positions no longer follow the numbers.
+            `Players ${editor.page * 8 - 7}-${editor.page * 8}`
+          : ['Defence', 'Midfield', 'Attack'][editor.page - 1]!
     );
     print.newline();
     print.text('NUMBER', { ink: 1 });

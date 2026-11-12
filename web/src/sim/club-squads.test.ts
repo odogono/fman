@@ -13,11 +13,11 @@ import { decodeSave, encodeSave, saveLimit, savedGame } from './save';
 import { completeSeason } from './season';
 import { playerCategory } from './squads';
 
-// Club squads (#113, ADR 0012), measured as `club-squads`: `enhanced-5` with
-// every club owning a squad and the managed club's squad and transfer list in
-// the original's 24 numbered places.
+// Club squads (#113, ADR 0012), measured as `club-squads` and now part of
+// `enhanced-6`: `enhanced-5` with every club owning a squad, and the managed
+// club's squad and transfer list in the original's 24 numbered places.
 
-const start = (seed: number, ruleset: 'club-squads' | 'enhanced-5') =>
+const start = (seed: number, ruleset: 'enhanced-6' | 'enhanced-5') =>
   createNewGame({ club: 5, level: 3, manager: 'Test', ruleset, seed });
 
 /** The same game as `enhanced-5` would hold it, without squads. */
@@ -47,7 +47,7 @@ const allNames = (game: Game) => [
 
 test('a new game makes the same RND draws as enhanced-5', () => {
   for (const seed of [0, 1, 777, 40_000, 65_535]) {
-    const squads = start(seed, 'club-squads');
+    const squads = start(seed, 'enhanced-6');
     const plain = start(seed, 'enhanced-5');
     expect(squads.seed).toBe(plain.seed);
     expect(numbers(squads)).toEqual(numbers(plain));
@@ -55,7 +55,7 @@ test('a new game makes the same RND draws as enhanced-5', () => {
 });
 
 test("the managed club's squad is its own 12, and free agents fill the other places", () => {
-  const game = start(777, 'club-squads');
+  const game = start(777, 'enhanced-6');
   const club = game.clubs[game.club - 1]!;
   expect(club.squad).toBeUndefined();
   const own = data.squads[club.name as keyof typeof data.squads];
@@ -77,14 +77,14 @@ test("the managed club's squad is its own 12, and free agents fill the other pla
 test('the reserve can be any of the squad, not always the same position', () => {
   const reserves = new Set<string>();
   for (let seed = 0; seed < 200; seed++) {
-    const game = start(seed, 'club-squads');
+    const game = start(seed, 'enhanced-6');
     reserves.add(game.players.find(p => p.status === 1)!.position!);
   }
   expect(reserves).toEqual(new Set(['GK', 'DF', 'MF', 'FW']));
 });
 
 test('team strength counts a player by his position, and a goalkeeper as a defender', () => {
-  const game = start(777, 'club-squads');
+  const game = start(777, 'enhanced-6');
   const picked = game.players.filter(p => p.status === 2);
   const sum = (category: number) =>
     picked
@@ -116,7 +116,7 @@ const sell = (game: Game, buyerId: number) => {
 };
 
 test('a sold player joins the buying club, and a free agent takes his place', () => {
-  const game = start(777, 'club-squads');
+  const game = start(777, 'enhanced-6');
   const { player, sold } = sell(game, 3);
   const plain = withoutSquads(game);
   expect(sold.seed).toBe(respondToSale(plain, offerFor(plain, 3), true).seed);
@@ -136,7 +136,7 @@ test('a sold player joins the buying club, and a free agent takes his place', ()
 });
 
 test('a player sold to the managed club itself stays in his place as a listed free agent', () => {
-  const game = start(777, 'club-squads');
+  const game = start(777, 'enhanced-6');
   const { player, sold } = sell(game, game.club);
   expect(sold.players[player.id - 1]).toEqual({ ...player, status: 0 });
   expect(sold.clubs).toEqual(game.clubs);
@@ -152,7 +152,7 @@ const seasonOver = (game: Game): Game => ({
 });
 
 test('the season end makes the same RND draws as enhanced-5', () => {
-  const game = seasonOver(start(777, 'club-squads'));
+  const game = seasonOver(start(777, 'enhanced-6'));
   const squads = completeSeason(game).game;
   const plain = completeSeason(withoutSquads(game)).game;
   expect(squads.seed).toBe(plain.seed);
@@ -160,7 +160,7 @@ test('the season end makes the same RND draws as enhanced-5', () => {
 });
 
 test('at the season end clubs release their newest signings back to twelve', () => {
-  const { player, sold } = sell(start(777, 'club-squads'), 3);
+  const { player, sold } = sell(start(777, 'enhanced-6'), 3);
   const next = completeSeason(seasonOver(sold)).game;
   expect(next.clubs[2]!.squad).toHaveLength(12);
   expect(next.clubs[2]!.squad!.map(p => p.name)).not.toContain(player.name);
@@ -172,7 +172,7 @@ const listed = (game: Game) =>
   game.players.filter(p => p.status === 0).map(p => p.name);
 
 test('at the season end the transfer list is drawn again from the free agents', () => {
-  const game = start(777, 'club-squads');
+  const game = start(777, 'enhanced-6');
   const next = completeSeason(seasonOver(game)).game;
   expect(listed(next)).toHaveLength(listed(game).length);
   expect(listed(next)).not.toEqual(listed(game));
@@ -184,7 +184,7 @@ test('at the season end the transfer list is drawn again from the free agents', 
 });
 
 test("other clubs' players drift under lasting skill", () => {
-  const game = start(777, 'club-squads');
+  const game = start(777, 'enhanced-6');
   const next = completeSeason(seasonOver(game)).game;
   // Promotion and relegation move clubs between slots, squads and all.
   const byName = new Map(next.clubs.map(club => [club.name, club]));
@@ -198,13 +198,13 @@ test("other clubs' players drift under lasting skill", () => {
 });
 
 test('a renamed club keeps its squad', () => {
-  const game = start(777, 'club-squads');
+  const game = start(777, 'enhanced-6');
   const renamed = renameClub(game, 3, 'Rovers');
   expect(renamed.clubs[2]!.squad).toEqual(game.clubs[2]!.squad!);
 });
 
 test('a club-squads game saves and loads within the save limit', () => {
-  const { sold } = sell(start(777, 'club-squads'), 3);
+  const { sold } = sell(start(777, 'enhanced-6'), 3);
   const data = encodeSave(sold, 0);
   expect(data.length).toBeLessThan(saveLimit / 3);
   expect(decodeSave(data).game).toEqual(sold);
@@ -212,7 +212,7 @@ test('a club-squads game saves and loads within the save limit', () => {
 });
 
 test('saves reject squads under a ruleset without them', () => {
-  const game = start(777, 'club-squads');
+  const game = start(777, 'enhanced-6');
   expect(savedGame({ ...game, ruleset: 'enhanced-5' }, 11)).toBeUndefined();
   expect(savedGame(withoutSquads(game), 11)).toEqual(withoutSquads(game));
 });

@@ -69,6 +69,17 @@ const control = (item: MenuControl) => {
       label.append(`${item.label} `, select);
       return label;
     }
+    case 'list': {
+      const list = document.createElement('ul');
+      list.className = 'menu-list';
+      list.setAttribute('aria-label', item.label);
+      for (const text of item.items) {
+        const entry = document.createElement('li');
+        entry.textContent = text;
+        list.append(entry);
+      }
+      return list;
+    }
     case 'choice': {
       const group = document.createElement('fieldset');
       group.className = 'menu-choice';

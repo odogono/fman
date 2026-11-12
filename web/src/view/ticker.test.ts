@@ -74,6 +74,34 @@ test('without a named player, the club is named', () => {
   expect(line!.name).toBe(club);
 });
 
+test("an opponent's moment names the player from its squad", () => {
+  const { squad } = game.clubs[fixture.opponent - 1]!;
+  const lines = tickerLines(game, fixture, [
+    { kind: 'goal', minute: 34, side: 'opponent', squadPlayer: 3 },
+    { kind: 'save', minute: 50, side: 'opponent', squadPlayer: 0 }
+  ]).map(tickerText);
+  expect(lines).toEqual([
+    `50' SAVED: ${squad![0]!.name.toUpperCase()}`,
+    `34' GOAL! ${squad![3]!.name.toUpperCase()} ${fixture.home ? '0-1' : '1-0'}`
+  ]);
+});
+
+test('a match under club squads names its opponent’s players', () => {
+  const watched = kickedOff('enhanced-7');
+  watched.advance(tickerLeadIn);
+  watched.skipPause();
+  const { ticker } = tickerView(watched);
+  const names = new Set(
+    game.clubs[fixture.opponent - 1]!.squad!.map(p => p.name.toUpperCase())
+  );
+  const lines = tickerLines(game, fixture, ticker.shown).toReversed();
+  const named = lines.filter((_, i) => ticker.shown[i]!.side === 'opponent');
+  expect(named.length).toBeGreaterThan(0);
+  for (const line of named) {
+    expect(names.has(line.name)).toBe(true);
+  }
+});
+
 test('a long name is cut to fit, keeping the minute and score', () => {
   const long = {
     ...game,

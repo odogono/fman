@@ -961,6 +961,42 @@ test('a cup round shows only the round on the Home screen, not the draw', () => 
   expect(run.page.home?.fixture).toEqual({ title: 'F.A. Cup – Round 1' });
 });
 
+test('during a match the Home screen shows that match, not the one after it', () => {
+  const run = harness({ options: modernOptions });
+  run.toMenu();
+  const seen: string[] = [];
+  for (let matches = 0; !seen.includes('cup'); matches++) {
+    expect(matches).toBeLessThan(10);
+    run.settle();
+    run.app.tap('menu.play');
+    run.app.pointerUp();
+    for (let i = 0; run.view().screen !== 'menu'; i++) {
+      expect(i).toBeLessThan(40);
+      run.settle();
+      const view = run.view();
+      if ('fixture' in view) {
+        const { fixture, game } = view;
+        const shown = run.page.home!.fixture!;
+        const opponent = game.clubs[fixture.opponent - 1]!.name.trim();
+        expect((fixture.home ? shown.away : shown.home)?.name).toBe(opponent);
+        expect(
+          shown.title.startsWith(fixture.kind === 'cup' ? 'F.A. Cup' : 'League')
+        ).toBe(true);
+        if (view.screen === 'fixture') {
+          seen.push(fixture.kind);
+        }
+      }
+      const offered = run.page.bar!;
+      const next =
+        offered.find(b => b.answer.id === 'team.kick-off') ??
+        offered.find(b => b.answer.id.endsWith('.continue')) ??
+        offered.find(b => b.answer.id === 'transfer.decline') ??
+        offered.find(b => b.answer.id === 'sale.no');
+      run.tap(next!.label);
+    }
+  }
+});
+
 test('Modern mode takes no typed answers, only names', () => {
   const run = harness({ options: modernOptions });
   run.settle();

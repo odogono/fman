@@ -1,7 +1,7 @@
 import { coloursText, levels } from '../sim/catalogue';
 import type { Game, Player } from '../sim/management';
 import { tiringInjuries } from '../sim/ruleset';
-import { playerCategory } from '../sim/squads';
+import { inSquadOrder, playerCategory } from '../sim/squads';
 import type { Paint } from './grid';
 import { createPrintScreen } from './print-screen';
 
@@ -121,7 +121,7 @@ export const paintSquad = (
   print.newline();
   print.text('  NAME   NO. SKILL ENERGY VALUE', { bright: true, paper: 6 });
   print.newline();
-  const players = game.players.filter(player => player.status > 0);
+  const players = inSquadOrder(game.players.filter(p => p.status > 0));
   players.forEach(player => printPlayer(player, print, weeksOut));
   print.text('PLAYERS PICKED', { inverse: true });
   print.text(`=${picked}`, { inverse: false });

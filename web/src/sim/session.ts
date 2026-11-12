@@ -28,6 +28,7 @@ import { createRng } from './rng';
 import { presentDay, startingClubs, type Ruleset } from './ruleset';
 import { decodeSave, encodeSave } from './save';
 import { completeSeason, type SeasonCompletion } from './season';
+import type { Ticker } from './ticker';
 import {
   cupPlayback,
   errorPlayback,
@@ -106,6 +107,13 @@ export type ScreenView =
   | {
       fixture: MatchFixture;
       game: Game;
+      screen: 'highlights';
+      /** Under moment highlights, the ticker in place of the pitch. */
+      ticker: Ticker;
+    }
+  | {
+      fixture: MatchFixture;
+      game: Game;
       score: readonly number[];
       screen: 'result';
     }
@@ -146,14 +154,15 @@ export const flashPhase = (view: Pick<View, 'frames' | 'ulaFrames'>) =>
  * A screen that plays out on its own before `next` takes over. `skip` is what
  * a key press does during one of its timed pauses: end the screen there
  * (title and messages), cut just that pause short (highlights), or nothing
- * (the cup celebration has no pause).
+ * (the cup celebration has no pause). The ticker's Skip (#108) comes through
+ * `skipPause` too, and ends every moment's pause at once.
  */
 type TimedRun = {
   next: Screen;
   play: (tstates: number) => { missed: number; usedT: number };
   skip: 'screen' | 'pause' | 'none';
   skipPause: () => void;
-  timeline: TimedScreen | Playback;
+  timeline: TimedScreen | Playback | Ticker;
 };
 
 export type Effect =
@@ -285,7 +294,7 @@ export const createSession = (
       matchday.skipPause();
       program.game = matchday.game;
     },
-    timeline: matchday.playback!
+    timeline: matchday.playback ?? matchday.ticker!
   });
   /** The running timed screen, if one has not finished. */
   const running = () =>
@@ -552,12 +561,7 @@ export const createSession = (
       case 'team':
         if (text === '99') {
           play(m => m.kickOff());
-          if (program.matchday!.stage === 'result') {
-            // Moment highlights (#107) decide the match with nothing to watch.
-            program.screen = 'result';
-          } else {
-            startTimed('highlights', highlightsRun(program.matchday!));
-          }
+          startTimed('highlights', highlightsRun(program.matchday!));
         } else {
           program.selectionError = '';
           program.screen = 'selection';
@@ -844,12 +848,19 @@ export const createSession = (
           screen
         };
       case 'highlights':
-        return {
-          fixture: matchday!.fixture,
-          game,
-          playback: matchday!.playback!,
-          screen
-        };
+        return matchday!.ticker
+          ? {
+              fixture: matchday!.fixture,
+              game,
+              screen,
+              ticker: matchday!.ticker
+            }
+          : {
+              fixture: matchday!.fixture,
+              game,
+              playback: matchday!.playback!,
+              screen
+            };
       case 'result':
         return {
           fixture: matchday!.fixture,

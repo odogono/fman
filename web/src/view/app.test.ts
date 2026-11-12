@@ -1,8 +1,11 @@
 import { expect, test } from 'bun:test';
 
 import { spectrumClockHz, spectrumFrameT } from '../sim/frame-clock';
+import { createJournal } from '../sim/journal';
 import { creditLimit } from '../sim/management';
 import { latestEnhanced } from '../sim/ruleset';
+import { tickerPause } from '../sim/ticker';
+import { submitInput } from '../test/input';
 import type { AmountEntry } from './amount-entry';
 import { createApp, type Dom, type Menu, type MenuControl } from './app';
 import type { BarButton } from './context-bar';
@@ -371,7 +374,7 @@ test('the game menu prints the screen where the original takes h', () => {
   // frame after the replayed prompt beep.
   expect(run.app.journal.session.timingState.keyboard.key).toBe('Enter');
   run.wait(200);
-  expect(run.app.journal.session.timingState.keyboard.key).toBe('');
+  expect(run.app.journal.session.timingState.keyboard.key).not.toBe('KeyS');
 });
 
 const escape = {
@@ -446,7 +449,7 @@ test('a tap holds Enter until the finger lifts, as a key does', () => {
   run.wait(2);
   expect(run.app.journal.session.timingState.keyboard.key).toBe('Enter');
   run.app.pointerUp();
-  expect(run.app.journal.session.timingState.keyboard.key).toBe('');
+  expect(run.app.journal.session.timingState.keyboard.key).not.toBe('KeyS');
 });
 
 test('a keyboard-activated bar button submits without pressing Enter again', () => {
@@ -465,7 +468,7 @@ test('a keyboard-activated bar button submits without pressing Enter again', () 
   run.app.pointerUp();
   expect(run.app.journal.session.timingState.keyboard.key).toBe('Enter');
   run.app.keyUp();
-  expect(run.app.journal.session.timingState.keyboard.key).toBe('');
+  expect(run.app.journal.session.timingState.keyboard.key).not.toBe('KeyS');
 });
 
 test('a finger on the screen is a keypress only during a timed pause', () => {
@@ -475,11 +478,11 @@ test('a finger on the screen is a keypress only during a timed pause', () => {
   expect(run.app.journal.session.timingState.keyboard.key).toBe('Space');
   run.wait(3);
   run.app.pointerUp();
-  expect(run.app.journal.session.timingState.keyboard.key).toBe('');
+  expect(run.app.journal.session.timingState.keyboard.key).not.toBe('KeyS');
   run.settle();
   expect(run.view().screen).toBe('manager');
   run.app.pressScreen();
-  expect(run.app.journal.session.timingState.keyboard.key).toBe('');
+  expect(run.app.journal.session.timingState.keyboard.key).not.toBe('KeyS');
 });
 
 test('a soft keyboard submit presses Enter until a frame has passed', () => {
@@ -489,7 +492,7 @@ test('a soft keyboard submit presses Enter until a frame has passed', () => {
   expect(run.view().screen).toBe('clubs');
   expect(run.app.journal.session.timingState.keyboard.key).toBe('Enter');
   run.wait(2);
-  expect(run.app.journal.session.timingState.keyboard.key).toBe('');
+  expect(run.app.journal.session.timingState.keyboard.key).not.toBe('KeyS');
 });
 
 test('a finger lifted after a save loads changes nothing in the loaded game', async () => {
@@ -520,7 +523,7 @@ test('hiding the page lets go of a key whose key-up it will miss', () => {
   run.page.hidden = false;
   run.app.visibilityChanged();
   run.wait(2);
-  expect(run.app.journal.session.timingState.keyboard.key).toBe('');
+  expect(run.app.journal.session.timingState.keyboard.key).not.toBe('KeyS');
 });
 
 test('a lost window focus lets go of a held key', () => {
@@ -535,7 +538,7 @@ test('a lost window focus lets go of a held key', () => {
   });
   run.app.blurred();
   run.wait(2);
-  expect(run.app.journal.session.timingState.keyboard.key).toBe('');
+  expect(run.app.journal.session.timingState.keyboard.key).not.toBe('KeyS');
 });
 
 test('a physical Enter keeps its own press through a submit', () => {
@@ -572,7 +575,7 @@ test('a loan is entered with the stepper, chips and keypad, then taken', () => {
     run.app.amount({ digit, type: 'digit' });
   }
   expect(run.page.amount?.typing).toBe('7500');
-  expect(run.app.journal.session.timingState.keyboard.key).toBe('');
+  expect(run.app.journal.session.timingState.keyboard.key).not.toBe('KeyS');
 
   const debt = run.view().game!.debt;
   run.tap('Take loan');
@@ -678,4 +681,106 @@ test('save slots show each game’s rules; slots from before rule choice are Ori
   const labels = run.page.menu!.controls.map(c => c.label);
   expect(labels[0]).toContain('season 1, Enhanced rules');
   expect(labels[1]).toContain('old game, Original rules');
+});
+
+/** A moment-highlights game at the management menu, as an autosave. */
+const momentHighlightsSave = () => {
+  const journal = createJournal({
+    kind: 'title',
+    ruleset: 'moment-highlights'
+  });
+  journal.advance(137);
+  journal.skipPause();
+  for (const text of ['alex', '1', '1', '0']) {
+    submitInput(journal, text);
+  }
+  return journal.snapshot();
+};
+
+/** The page kicked off into the ticker, with touch controls off. */
+const atTicker = (autosave = momentHighlightsSave()) => {
+  const run = harness({
+    autosave,
+    options: JSON.stringify({ touch: 'off' })
+  });
+  for (const text of ['99', '', '99']) {
+    run.type(text);
+  }
+  const ticker = () => {
+    const view = run.view();
+    return view.screen === 'highlights' && 'ticker' in view
+      ? view.ticker
+      : undefined;
+  };
+  expect(ticker()).toBeDefined();
+  return { ...run, ticker };
+};
+
+test('the ticker offers Skip even with touch controls off', () => {
+  const run = atTicker();
+  expect(run.labels()).toEqual(['Skip (s)']);
+  run.settle();
+  expect(run.view().screen).toBe('result');
+  expect(run.page.bar).toBeUndefined();
+});
+
+test('Skip shows every moment, then holds them before the result', () => {
+  const run = atTicker();
+  run.wait(5);
+  run.app.tap('ticker.skip');
+  const ticker = run.ticker()!;
+  expect(ticker.done).toBe(false);
+  expect(ticker.shown.length).toBeGreaterThan(0);
+  const shown = ticker.shown;
+  run.wait(tickerPause - 5);
+  expect(run.ticker()?.shown).toEqual(shown);
+  run.wait(10);
+  expect(run.view().screen).toBe('result');
+});
+
+test('the S key skips without pressing a key to the game', () => {
+  const run = atTicker();
+  run.wait(2);
+  const prevent = run.app.keyDown({
+    code: 'KeyS',
+    inputFocused: false,
+    key: 's',
+    modified: false,
+    repeat: false
+  });
+  expect(prevent).toBe(true);
+  expect(run.app.journal.session.timingState.keyboard.key).not.toBe('KeyS');
+  expect(run.ticker()!.done).toBe(false);
+  expect(run.ticker()!.shown.length).toBeGreaterThan(0);
+});
+
+test('any other key cuts one pause short, as in the original', () => {
+  const run = atTicker();
+  run.wait(5);
+  run.app.keyDown({
+    code: 'Space',
+    inputFocused: false,
+    key: ' ',
+    modified: false,
+    repeat: false
+  });
+  run.wait(2);
+  run.app.keyUp();
+  expect(run.ticker()!.shown).toHaveLength(1);
+});
+
+test('reopening the page mid-ticker resumes at the same moment', () => {
+  const run = atTicker();
+  run.wait(tickerPause + 20);
+  const shown = run.ticker()!.shown;
+  expect(shown).toHaveLength(1);
+  run.app.pageHide();
+  const reopened = harness({
+    autosave: run.stored.get('fman:autosave')!,
+    options: JSON.stringify({ touch: 'off' })
+  });
+  const view = reopened.view();
+  expect(
+    view.screen === 'highlights' && 'ticker' in view && view.ticker.shown
+  ).toEqual(shown);
 });

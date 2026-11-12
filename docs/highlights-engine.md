@@ -62,7 +62,7 @@ Phone: the whole pitch upright with an "all events" drawer, and the camera zoome
 
 1. **The engine.** Produces moments from the team strengths and the picked players, headless in [`web/src/sim`](../web/src/sim) and tested, with no view yet. Measured as the experimental ruleset [`moment-highlights`](moment-highlights.md).
 2. **Balance.** The bots in `tools/bots/` play whole seasons on the new engine ([gameplay-baseline.md](gameplay-baseline.md)). Tune how often each moment happens until scores, tables and cup runs sit close to [the original's baseline](baseline/original.md), then give it its Enhanced version.
-3. **The ticker.** A teletext-style list of moments, shipped in both presentation modes. Text fits the reproduced Spectrum screen with little change ([ADR 0010](adr/0010-enhanced-rules-speak-on-the-original-screens.md)), so this is the point where players get the new engine.
+3. **The ticker.** A teletext-style list of moments, shipped in both presentation modes ([built for Classic mode](moment-highlights.md#the-ticker)). Text fits the reproduced Spectrum screen with little change ([ADR 0010](adr/0010-enhanced-rules-speak-on-the-original-screens.md)), so this is the point where players get the new engine.
 4. **The sprite view.** Modern mode only. Each moment plays as a scripted clip of a few seconds: build-up, the moment itself, the reaction. Nothing simulates the whole match underneath. The ticker stays as the summary shown when the manager skips.
 
 ## Open questions

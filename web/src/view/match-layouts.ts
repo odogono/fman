@@ -6,6 +6,10 @@ import type { Paint } from './grid';
 import { paintLeagueTable } from './league-table';
 import { paintSquad } from './management-layouts';
 import { createPrintScreen } from './print-screen';
+import { tickerLines } from './ticker-layout';
+
+/** The ticker's lines below the score: rows 3 to 21. */
+const tickerRows = 19;
 
 export type MatchView = Extract<
   View,
@@ -141,10 +145,28 @@ export const paintMatch = (view: MatchView, put: Paint) => {
       numeric = true;
       break;
     case 'highlights': {
-      const { playback } = view;
       const { away, home } = fixtureSides(game, view.fixture);
       write(0, 0, 'MATCH HIGHLIGHTS');
       output.at(1, 0);
+      if ('ticker' in view) {
+        score(view.ticker.score, home, away);
+        // Newest on top; the oldest lines leave the bottom for good.
+        tickerLines(game, view.fixture, view.ticker.shown)
+          .slice(0, tickerRows)
+          .forEach((line, i) => {
+            write(3 + i, 0, `${line.minute} `);
+            output.text(
+              line.word,
+              line.kind === 'goal' ? { ink: 2, inverse: true } : {}
+            );
+            output.reset();
+            output.text(
+              ` ${line.name}${line.score === undefined ? '' : ` ${line.score}`}`
+            );
+          });
+        break;
+      }
+      const { playback } = view;
       score(playback.score, home, away);
       const current = playback.current;
       if (current && current.index >= current.attack.frames.length - 2) {

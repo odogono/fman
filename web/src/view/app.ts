@@ -8,7 +8,7 @@ import {
   type AmountEntry
 } from './amount-entry';
 import { answersFor, printAccepted, type OfferedAnswer } from './answers';
-import { barFor, type BarButton } from './context-bar';
+import { barFor, tickerBar, type BarButton } from './context-bar';
 import { createFrameSampler } from './frame-sampler';
 import {
   isRules,
@@ -192,6 +192,13 @@ export const createApp = ({
 
   const barShown = () =>
     options.touch === 'on' || (options.touch === 'auto' && dom.coarsePointer);
+  /** The moment-highlights ticker (#108) is still showing its moments. */
+  const tickerRunning = () => {
+    const view = journal.session.view;
+    return (
+      view.screen === 'highlights' && 'ticker' in view && !view.ticker.done
+    );
+  };
   const persist = () => {
     lastPersist = clock.now();
     storageWorks = storage.writeAutosave(journal.snapshot());
@@ -221,9 +228,10 @@ export const createApp = ({
     }
     const bar = barShown();
     const answers = answersFor(view);
+    const ticking = tickerRunning();
     dom.render({
       amount: bar ? amountFor(answers) : undefined,
-      bar: bar ? barFor(answers) : undefined,
+      bar: ticking ? tickerBar : bar ? barFor(answers) : undefined,
       clearInput,
       display,
       focus: !display.paused && !menuOpen && !bar,
@@ -484,6 +492,22 @@ export const createApp = ({
   const unlockSound = () => {
     void beeper.unlock()?.then(syncSound);
   };
+  /**
+   * Skip on the ticker (#108): ends its remaining pauses at once. It presses
+   * no key, which would also end the final hold.
+   */
+  const skip = () => {
+    if (menuOpen) {
+      return;
+    }
+    advanceTo(clock.now());
+    if (!tickerRunning()) {
+      return;
+    }
+    journal.skipPause();
+    render();
+    persist();
+  };
   /** Submits at the current moment, unless input waits; then shows the result. */
   const answer = (send: () => Effect | undefined) => {
     void beeper.unlock();
@@ -548,6 +572,15 @@ export const createApp = ({
       }
       unlockSound();
       advanceTo(clock.now());
+      if (
+        event.code === 'KeyS' &&
+        !event.modified &&
+        !event.repeat &&
+        tickerRunning()
+      ) {
+        skip();
+        return true;
+      }
       if (
         !journal.session.view.paused &&
         event.inputFocused &&
@@ -632,7 +665,11 @@ export const createApp = ({
      * lifts; a keyboard activation already holds its own key. An amount's
      * button submits the amount entered, closing the keypad first.
      */
-    tap: (id: string, pressEnter = true) =>
+    tap: (id: string, pressEnter = true) => {
+      if (id === tickerBar[0]!.answer.id) {
+        skip();
+        return;
+      }
       answer(() => {
         const answers = answersFor(journal.session.view);
         const offered = answers.find(a => a.id === id);
@@ -650,7 +687,8 @@ export const createApp = ({
         }
         touchHeld = !journal.session.timingState.keyboard.key;
         return journal.submit(text, 'held');
-      }),
+      });
+    },
     /** An animation frame at `now`. */
     tick: (now: number) => {
       if (!menuOpen && !dom.hidden) {

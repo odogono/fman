@@ -682,8 +682,12 @@ button.pick-row {
   user-select: none;
   -webkit-user-select: none;
 }
-button.pick-row:hover {
+/* A row that takes a tap is tinted, so it stands out without hover. */
+button.pick-row {
   background: var(--bright-7);
+}
+button.pick-row:hover {
+  background: #fff8b0;
 }
 button.pick-row:focus-visible {
   outline: 3px solid var(--normal-0);

@@ -11,12 +11,23 @@ A football club that occupies a place in one of the four divisions and may be ma
 The person managing one club through successive league and F.A. Cup campaigns.
 
 **Squad**:
-The players currently owned by the managed club, including picked players, reserves and injured players.
-_Avoid_: Team when referring to all owned players
+The players a club currently owns. The managed club's squad includes its picked players, reserves and injured players; under the Original rules only the managed club has one.
+_Avoid_: Team when referring to all owned players, roster
 
 **Picked team**:
 The players selected from the squad to take part in the next match.
 _Avoid_: Squad when referring only to selected players
+
+**Position**:
+Where a player plays: goalkeeper, defence, midfield or attack. A goalkeeper counts as a defender. The Original rules have no goalkeeper position.
+
+**Free agent**:
+A player who belongs to no club's squad. Transfer offers are drawn from the free agents, and clubs release their surplus players to them at the season end.
+_Avoid_: Unemployed, pool
+
+**Transfer list**:
+The free agents who can be offered to the manager, numbered alongside the managed club's squad in the places that squad doesn't fill.
+_Avoid_: Market when referring to these players; the market is the weekly offer
 
 **Skill**:
 A player's football ability, contributing to the strength of their playing category.
@@ -32,7 +43,7 @@ A player's spell out of the picked team, drawn before each match. In the origina
 How many more matches an injured player misses under lasting injuries, shown on the squad screen in place of `i`.
 
 **Skill drift**:
-The small change in an owned player's skill at the season end, in place of the original's reroll.
+The small change in the skill of a player in a squad at the season end, in place of the original's reroll. Free agents still reroll.
 _Avoid_: Training or growth, which suggest a change the manager causes
 
 **Morale**:

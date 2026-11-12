@@ -4,22 +4,22 @@ Design decisions for making the game playable without a keyboard, chiefly on pho
 
 ## Principles
 
-- Two **presentation modes**, Classic and Modern, drive one unchanged sim. Players can switch mid-game from Settings.
+- Two **presentation modes**, Classic and Modern, drive one unchanged sim. Players can switch mid-game from Presentation in the game menu's Options. The choice is remembered, and Classic is the default until Modern mode's pick team and highlights screens exist.
 - Every tap submits an answer the original `INPUT` prompt accepts ([ADR 0005](adr/0005-touch-input-submits-original-answers.md)). Nothing becomes reachable that the original would not allow at that moment.
 - Modern mode keeps the original pacing and RNG behaviour. Tap to skip works wherever the original accepts "any key". A faster pace would be a later option, explicitly marked as not faithful.
-- Desktop keyboard entry keeps working in both modes.
-- Free text (club and player names) uses the native soft keyboard; routine play needs no typing.
+- Classic mode keeps typed entry. Modern mode takes answers only from its own controls, on every device. A held key still counts as a keypress during timed pauses, and Tab, Enter and Space still move between Modern mode's buttons and press them.
+- Free text (club and player names) is typed into a text field, from the soft keyboard or a physical one; routine play needs no typing.
 
 ## Answer mapping
 
 A view-side layer (`web/src/view/answers.ts`) reads the session view and lists each prompt's **offered answers**. Both presentation modes render their touch controls from it and submit through the journal, which presses Enter for them.
 
 - **Valid answers** are every input a prompt handles differently from other input, including answers that end in one of the original's error messages. Tests use this full set.
-- **Offered answers** are a subset: the listed options on choice prompts; the numbers shown on screen for squad, team selection and the names lists; and free number entry where the original asks for an amount (borrow, repay, bid). Error-only answers on choice prompts, such as colour `3`, stay reachable from the keyboard.
+- **Offered answers** are a subset: the listed options on choice prompts; the numbers shown on screen for squad, team selection and the names lists; and free number entry where the original asks for an amount (borrow, repay, bid). Error-only answers on choice prompts, such as colour `3`, stay reachable from the keyboard in Classic mode only.
 - Each offered answer has a stable id and its answer text (for example `menu.status` → `s`). Each mode writes its own label.
 - Where any input moves on, a tap submits an empty answer (plain Enter). Team selection never offers this, because an empty answer there means player 0.
 - The save question and the sale offer show plain Yes and No buttons. No submits `n` with no extra confirmation, as in the original.
-- Print (`h`) is not an offered answer. The game menu offers it as Print screen, enabled only where the original copies the screen; keyboard players can still type it.
+- Print (`h`) is not an offered answer. The game menu offers it as Print screen, enabled only where the original copies the screen and a Spectrum screen is on show, so not on Modern mode's own screens; Classic mode's keyboard players can still type it.
 - Taps reproduce keypresses as well as answers ([ADR 0006](adr/0006-taps-reproduce-keypresses.md)). A tap that submits an answer presses Enter and holds it until the finger lifts; a long press held into the highlights can shorten their pauses, as a held key does. During a timed pause, a tap on the game area is a keypress for as long as the finger is down. At any other time a tap presses no key. Enter from the soft keyboard or the game menu is a brief keypress: it comes up once the original has scanned it. A key or finger still down when the page is reloaded, hidden or loses focus also becomes brief, so it can't stay stuck down.
 
 Tests check, screen by screen, that each offered answer is valid and does what the original does. A journal test checks that a short game played by taps matches the same game typed at the same moments: same state, frames and RNG seed.
@@ -38,7 +38,7 @@ The original screen, scaled to fit, with a context bar of large buttons beneath 
 
 ## Modern mode
 
-Style is "paper & ink": light grey paper, black text with red and blue ink rows, the yellow highlight bar as the primary action, black and blue inverse-video bars. The Spectrum pixel font is used for headings; body labels and numbers use a readable sans-serif. Flat colour only. Tap targets are at least 44px and controls carry screen-reader labels.
+Style is "paper & ink": light grey paper, black text with red and blue ink rows, the yellow highlight bar as the primary action, black and blue inverse-video bars. The Spectrum pixel font is used for headings; body labels and numbers use a readable sans-serif. Flat colour only. Tap targets are at least 44px and controls carry screen-reader labels. Modern screens are HTML rendered from the session view, not drawn on the canvas. A screen Modern mode has no design for shows the Classic screen and its context bar inside the Modern frame, so every prompt stays playable.
 
 | Home                                                                                              | Pick team                                                                                                   | Highlights                                                                                                    |
 | ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
@@ -48,11 +48,15 @@ Style is "paper & ink": light grey paper, black text with red and blue ink rows,
 | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
 | ![Transfer bid](https://gist.githubusercontent.com/odogono/00dcc8e44efa42a79b1c8599d68c7496/raw/transfer-bid.jpg) | ![Loan](https://gist.githubusercontent.com/odogono/00dcc8e44efa42a79b1c8599d68c7496/raw/loan.jpg) | ![Status](https://gist.githubusercontent.com/odogono/00dcc8e44efa42a79b1c8599d68c7496/raw/status.jpg) |
 
-- **Home**: club summary, next fixture with "Play next match" (the original's `99`), and the original menu actions as rows. Drop the stacked title banners seen in some mockups.
+- **Home screen**: replaces the menu prompt.
+  - Club summary: the club name in its name colour, manager, division, league position ("—" before the first league match), cash, loan, morale and difficulty level by name.
+  - Next fixture: a league match names its opponent, which nothing can change. A cup round names only the round, such as "F.A. Cup – Round 5": the draw follows a seed that is redrawn each time play returns to the menu, so showing the opponent would let players save until they get an easy one.
+  - "Play next match" (`99`) as the yellow primary action, then the other seven choices in the original's order and wording, ink alternating red and blue, without their keys. "Save game" (`keep`) leads to the save question.
+  - Drop the stacked title banners seen in some mockups.
 - **Pick team**: grouped by Defence, Midfield and Attack. Keep the original markers: a `p` block in magenta for picked and an `i` block in green for injured, the legend "p = picked to play, i = injured", a yellow column-header row, and D/M/A blocks and row ink by category (Defence black, Midfield blue, Attack red; the mockup wrongly shows every block black).
 - **Highlights**: the original pitch rendering, unchanged and scaled to width. A scoreboard sits above it and the team-strength numbers in two columns below it, as on the original comparison screen.
-- **Amounts** (bids, loans, repayments): a stepper with preset chips, plus a numeric keypad for exact values.
-- **Desktop**: two panes, the home menu on the left and the selected screen on the right.
+- **Amounts** (bids, loans, repayments): a stepper with preset chips, plus a numeric keypad for exact values. The exact amount field also takes digits from a physical keyboard and keeps within the offered range.
+- **Desktop**: two panes when the window is at least 900px wide and wider than tall; otherwise the phone layout, centred at up to about 480px. The left pane always holds the club summary, next fixture and menu choices, enabled only while the menu prompt waits, since the original accepts them nowhere else. The right pane shows the screen on show, or Status while the menu waits. The mode switch is not in the header, as the mockup shows, but in the game menu's Options.
 
 ![Desktop](https://gist.githubusercontent.com/odogono/00dcc8e44efa42a79b1c8599d68c7496/raw/desktop.jpg)
 

@@ -121,7 +121,7 @@ A named place in the browser holding one saved game.
 
 **Game menu**:
 The web overlay, outside the reproduced Spectrum screen, from which the player resumes, saves, loads, starts a new game or changes options. Play is frozen while it is open.
-_Avoid_: Pause when referring to the game menu; a pause is the original's timed wait
+_Avoid_: Pause when referring to the game menu, since a pause is the original's timed wait; Settings when referring to its options
 
 **Prompt**:
 A point where the original waits for the manager to type a line and press Enter.
@@ -152,6 +152,13 @@ The presentation mode that reproduces the original Spectrum screens, scaled to f
 **Modern mode**:
 The presentation mode with screens redesigned for phones, where choices are made by tapping rather than typing.
 _Avoid_: Mobile mode, since both modes are meant to work on mobile
+
+**Home screen**:
+Modern mode's form of the original's management menu: the club summary, the next fixture and the menu's choices.
+_Avoid_: Home or dashboard, since home already names the home club, gate and kit
+
+**Next fixture**:
+The league match or cup round the managed club plays next, as shown before it is started.
 
 **Rules parity**:
 The original ruleset giving the same game state, numbers and random draws as the Spectrum game for the same answers, including the original's rule bugs.

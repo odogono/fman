@@ -12,6 +12,7 @@ import {
 import type { App, Dom, MenuControl } from './app';
 import type { BarButton } from './context-bar';
 import { rasterText, rasterizeCells } from './glyphs';
+import type { ClubName, Home } from './home';
 import { paintAttack } from './pitch';
 import { tickerLines, tickerText } from './ticker-layout';
 
@@ -179,9 +180,93 @@ const amountPanel = (entry: AmountEntry) => {
   ];
 };
 
-/** The context bar button an event came from, if any. */
+/** The context bar or Home screen button an event came from, if any. */
 const barButton = (event: Event) =>
-  (event.target as Element).closest<HTMLButtonElement>('#context-bar button');
+  (event.target as Element).closest<HTMLButtonElement>(
+    '#context-bar button, #home button'
+  );
+
+const pounds = (value: number) => `£${value.toLocaleString('en-GB')}`;
+
+/** A club's name in its name colour, on paper unless it is the screen's white. */
+const clubLabel = (club: ClubName) => {
+  const name = document.createElement('span');
+  name.className = 'club-name';
+  name.textContent = club.name;
+  name.style.color = `var(--normal-${club.ink})`;
+  if (club.paper !== 7) {
+    name.style.background = `var(--normal-${club.paper})`;
+  }
+  return name;
+};
+
+/** Modern mode's Home screen: summary, next fixture and the menu's choices. */
+const paintHome = (pane: HTMLElement, home: Home) => {
+  const summary = document.createElement('section');
+  summary.className = 'home-summary';
+  summary.setAttribute('aria-label', 'Club summary');
+  const heading = document.createElement('h2');
+  heading.append(clubLabel(home.club));
+  const manager = document.createElement('p');
+  manager.textContent = `Manager: ${home.manager}`;
+  const division = document.createElement('p');
+  division.className = 'home-division';
+  division.textContent = `Division ${home.division}`;
+  const facts = document.createElement('dl');
+  for (const [term, value] of [
+    ['League position', home.leaguePosition ?? '—'],
+    ['Cash', pounds(home.cash)],
+    ['Loan', pounds(home.debt)],
+    ['Morale', home.morale],
+    ['Level', home.level]
+  ] as const) {
+    const row = document.createElement('div');
+    const dt = document.createElement('dt');
+    dt.textContent = term;
+    const dd = document.createElement('dd');
+    dd.textContent = String(value);
+    row.append(dt, dd);
+    facts.append(row);
+  }
+  summary.append(heading, manager, division, facts);
+
+  const parts: HTMLElement[] = [summary];
+  if (home.fixture) {
+    const fixture = document.createElement('section');
+    fixture.className = 'home-fixture';
+    fixture.setAttribute('aria-label', 'Next fixture');
+    const title = document.createElement('h3');
+    title.textContent = home.fixture.title;
+    fixture.append(title);
+    if (home.fixture.home && home.fixture.away) {
+      const sides = document.createElement('p');
+      sides.append(
+        clubLabel(home.fixture.home),
+        ' v ',
+        clubLabel(home.fixture.away)
+      );
+      fixture.append(sides);
+    }
+    parts.push(fixture);
+  }
+  const choices = document.createElement('nav');
+  choices.className = 'home-choices';
+  choices.setAttribute('aria-label', 'Main menu');
+  choices.append(
+    ...home.choices.map(choice => {
+      const element = document.createElement('button');
+      element.type = 'button';
+      element.textContent = choice.label;
+      element.className = choice.tone;
+      element.disabled = !choice.enabled;
+      element.dataset.id = choice.id;
+      element.dataset.kind = 'choice';
+      return element;
+    })
+  );
+  parts.push(choices);
+  pane.replaceChildren(...parts);
+};
 
 /** Builds the page inside `app` and returns the app's view of it. */
 export const createBrowserDom = (app: HTMLElement) => {
@@ -193,6 +278,7 @@ export const createBrowserDom = (app: HTMLElement) => {
     </button>
     <p id="screen-title" class="screen-title"></p>
   </header>
+  <div id="home" class="home" hidden></div>
   <section class="machine" aria-label="ZX Spectrum Football Manager">
     <canvas id="screen" width="256" height="176" aria-hidden="true"></canvas><canvas id="pitch" width="256" height="176" aria-hidden="true" hidden></canvas>
     <form id="entry" autocomplete="off">
@@ -229,7 +315,9 @@ export const createBrowserDom = (app: HTMLElement) => {
   const pitchContext = pitch.getContext('2d')!;
   const machine = find<HTMLElement>('.machine');
   const bar = find<HTMLElement>('#context-bar');
+  const homePane = find<HTMLElement>('#home');
   let barKey = '';
+  let homeKey = '';
 
   const paintBar = (
     buttons: readonly BarButton[] | undefined,
@@ -287,6 +375,10 @@ export const createBrowserDom = (app: HTMLElement) => {
   const dom: Dom = {
     applyOptions: (options, touch) => {
       document.documentElement.classList.toggle(
+        'modern',
+        options.presentation === 'modern'
+      );
+      document.documentElement.classList.toggle(
         'fit',
         touch && options.scale === 'auto'
       );
@@ -319,14 +411,28 @@ export const createBrowserDom = (app: HTMLElement) => {
     openMenu: () => menu.showModal(),
     render: ({
       amount,
+      atHome,
       bar: buttons,
       clearInput,
       display,
       focus,
+      home,
       title,
+      typing,
       view
     }) => {
       paintBar(buttons, amount);
+      homePane.hidden = !home;
+      const key = JSON.stringify(home);
+      if (home && key !== homeKey) {
+        paintHome(homePane, home);
+      }
+      homeKey = key;
+      document.documentElement.classList.toggle('at-home', atHome);
+      input.readOnly = !typing;
+      if (!typing && document.activeElement === input) {
+        input.blur();
+      }
       screenTitle.textContent = title;
       screen.height = display.lines.length * 8;
       screenContext.putImageData(
@@ -455,14 +561,27 @@ export const createBrowserDom = (app: HTMLElement) => {
       )
     );
     document.addEventListener('pointerdown', target.pointerDown);
-    bar.addEventListener('pointerdown', event => {
+    const pressed = (event: Event) => {
       const button = barButton(event);
-      if (!button?.dataset.id || button.dataset.kind === 'text') {
+      if (
+        !button?.dataset.id ||
+        button.disabled ||
+        button.dataset.kind === 'text'
+      ) {
         return;
       }
       // Submit on the way down, as a key does; keep focus off the button.
       event.preventDefault();
       target.tap(button.dataset.id!);
+    };
+    bar.addEventListener('pointerdown', pressed);
+    homePane.addEventListener('pointerdown', pressed);
+    homePane.addEventListener('click', event => {
+      const button = barButton(event);
+      // Activated from the keyboard, whose own key is already down.
+      if (button?.dataset.id && event.detail === 0) {
+        target.tap(button.dataset.id, false);
+      }
     });
     bar.addEventListener('click', event => {
       const button = barButton(event);

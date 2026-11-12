@@ -17,8 +17,9 @@ For a change to see in the real app (layout, touch controls, the game menu, the 
 | `#transcript`                   | The screen's text, as a screen reader hears it.                                                          |
 | `#menu-button`, `#game-menu`    | The game menu dialog; its controls are `#game-menu button`, matched by text.                             |
 | `#context-bar`                  | Classic mode's touch answers.                                                                            |
+| `#home`                         | Modern mode's Home screen; its choices are `#home button[data-id]`.                                      |
 
-Storage keys (`web/src/view/storage.ts`): `fman:options` holds `{ rules, scale, sound, touch }`, `fman:autosave` the session the page resumes on load, `fman:slot:<n>` the save slots. Set options, then `location.reload()`; `sound: false` keeps prompts quiet, and `touch: 'on'` forces the context bar.
+Storage keys (`web/src/view/storage.ts`): `fman:options` holds `{ presentation, rules, scale, sound, touch }`, `fman:autosave` the session the page resumes on load, `fman:slot:<n>` the save slots. Set options, then `location.reload()`; `sound: false` keeps prompts quiet, and `touch: 'on'` forces the context bar, and `presentation: 'modern'` turns on Modern mode.
 
 ## Pitfalls
 

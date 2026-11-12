@@ -18,6 +18,10 @@ _Avoid_: Team when referring to all owned players, roster
 The players selected from the squad to take part in the next match.
 _Avoid_: Squad when referring only to selected players
 
+**Reserve**:
+A squad player who is neither picked nor injured, and so can be added to the picked team.
+_Avoid_: Substitute, since the original has no substitutions
+
 **Position**:
 Where a player plays: goalkeeper, defence, midfield or attack. A goalkeeper counts as a defender. The Original rules have no goalkeeper position.
 

@@ -552,7 +552,12 @@ export const createSession = (
       case 'team':
         if (text === '99') {
           play(m => m.kickOff());
-          startTimed('highlights', highlightsRun(program.matchday!));
+          if (program.matchday!.stage === 'result') {
+            // Moment highlights (#107) decide the match with nothing to watch.
+            program.screen = 'result';
+          } else {
+            startTimed('highlights', highlightsRun(program.matchday!));
+          }
         } else {
           program.selectionError = '';
           program.screen = 'selection';
@@ -849,7 +854,7 @@ export const createSession = (
         return {
           fixture: matchday!.fixture,
           game,
-          score: matchday!.highlights!.score,
+          score: matchday!.score!,
           screen
         };
       case 'cup-celebration':

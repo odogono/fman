@@ -32,6 +32,7 @@ Rulesets ([ADR-0007](adr/0007-experimental-rules-as-rulesets.md), [ADR-0009](adr
 - [lasting-skill.md](lasting-skill.md): owned players keep their skill between seasons, with skill drift (Enhanced version 4)
 - [steep-difficulty.md](steep-difficulty.md): a steeper difficulty curve for lasting skill (Enhanced version 4)
 - [tiring-injuries.md](tiring-injuries.md): tired players are likelier to be injured, for up to three weeks (Enhanced version 5)
+- [moment-highlights.md](moment-highlights.md): a match decided as a list of goals, saves and near misses, with no highlights shown (experimental)
 
 Gameplay baseline: [gameplay-baseline.md](gameplay-baseline.md): automated runs by strategy and difficulty level, and how to compare rulesets against [the original's baseline](baseline/original.md).
 

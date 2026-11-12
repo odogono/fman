@@ -11,8 +11,8 @@ import {
  * parity. Enhanced rules are released in versions (`enhanced-1`, …): each
  * gathers the accepted rule changes, and a game keeps the version it started
  * with, so every released version stays playable. An experimental ruleset
- * carries one change alone while it is measured against the original, and is
- * retired once the change joins Enhanced (`even-difficulty`, `grace-period`,
+ * carries one change alone while it is measured against the original
+ * (`moment-highlights`), and is retired once the change joins Enhanced (`even-difficulty`, `grace-period`,
  * `lasting-skill`, `steep-difficulty`, `tiring-injuries`).
  */
 export const rulesets = [
@@ -21,7 +21,8 @@ export const rulesets = [
   'enhanced-2',
   'enhanced-3',
   'enhanced-4',
-  'enhanced-5'
+  'enhanced-5',
+  'moment-highlights'
 ] as const;
 export type Ruleset = (typeof rulesets)[number];
 
@@ -41,6 +42,7 @@ const changes: Record<
     difficulty: Difficulty;
     gracePeriod: boolean;
     lastingSkill: boolean;
+    momentHighlights: boolean;
     presentDay: boolean;
     tiringInjuries: boolean;
   }
@@ -49,6 +51,7 @@ const changes: Record<
     difficulty: 'smooth',
     gracePeriod: false,
     lastingSkill: false,
+    momentHighlights: false,
     presentDay: false,
     tiringInjuries: false
   },
@@ -56,6 +59,7 @@ const changes: Record<
     difficulty: 'smooth',
     gracePeriod: true,
     lastingSkill: false,
+    momentHighlights: false,
     presentDay: false,
     tiringInjuries: false
   },
@@ -63,6 +67,7 @@ const changes: Record<
     difficulty: 'smooth',
     gracePeriod: true,
     lastingSkill: false,
+    momentHighlights: false,
     presentDay: true,
     tiringInjuries: false
   },
@@ -70,6 +75,7 @@ const changes: Record<
     difficulty: 'steep',
     gracePeriod: true,
     lastingSkill: true,
+    momentHighlights: false,
     presentDay: true,
     tiringInjuries: false
   },
@@ -77,13 +83,23 @@ const changes: Record<
     difficulty: 'steep',
     gracePeriod: true,
     lastingSkill: true,
+    momentHighlights: false,
     presentDay: true,
     tiringInjuries: true
+  },
+  'moment-highlights': {
+    difficulty: 'original',
+    gracePeriod: false,
+    lastingSkill: false,
+    momentHighlights: true,
+    presentDay: false,
+    tiringInjuries: false
   },
   original: {
     difficulty: 'original',
     gracePeriod: false,
     lastingSkill: false,
+    momentHighlights: false,
     presentDay: false,
     tiringInjuries: false
   }
@@ -161,3 +177,12 @@ export const lastingSkill = (ruleset: Ruleset) => changes[ruleset].lastingSkill;
  */
 export const tiringInjuries = (ruleset: Ruleset) =>
   changes[ruleset].tiringInjuries;
+
+/**
+ * Whether a match is decided as a list of moments (goals, saves and near
+ * misses) drawn from the team strengths, in place of the original's
+ * attacking sequences and their collision checks (#107, measured as
+ * `moment-highlights`). No highlights are shown.
+ */
+export const momentHighlights = (ruleset: Ruleset) =>
+  changes[ruleset].momentHighlights;

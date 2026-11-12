@@ -15,12 +15,14 @@ import {
   type MatchFixture
 } from './league';
 import type { Game } from './management';
+import { decideMoments, type MomentResult } from './moments';
 import type { PauseKeyboard } from './pause-keyboard';
 import {
   createPlayback,
   type HighlightResult,
   type Playback
 } from './playback';
+import { momentHighlights } from './ruleset';
 
 export type MatchdayStage =
   'fixture' | 'team' | 'highlights' | 'result' | 'replay' | 'settled';
@@ -75,6 +77,7 @@ export const createMatchday = (initial: Game, keyboard?: PauseKeyboard) => {
   let game = fixture.game;
   let stage: MatchdayStage = 'fixture';
   let highlights: HighlightResult | undefined;
+  let moments: MomentResult | undefined;
   let playback: Playback | undefined;
   let settlement: MatchSettlement | undefined;
   const expect = (expected: MatchdayStage) => {
@@ -127,9 +130,24 @@ export const createMatchday = (initial: Game, keyboard?: PauseKeyboard) => {
     get inks() {
       return matchInks(game, fixture);
     },
-    /** Plays the highlights for the picked team. */
+    /**
+     * Plays the highlights for the picked team. Under moment highlights
+     * (#107) the moments decide the match at once, with nothing to watch.
+     */
     kickOff: () => {
       expect('team');
+      if (momentHighlights(game.ruleset)) {
+        moments = decideMoments({
+          home: fixture.home,
+          opponent: fixture.opponentStrength,
+          players: game.players,
+          seed: game.seed,
+          strength: teamStrength(game)
+        });
+        game = { ...game, seed: moments.seed };
+        stage = 'result';
+        return;
+      }
       const inks = matchInks(game, fixture);
       highlights = simulateHighlights({
         awayInk: inks.away,
@@ -142,6 +160,10 @@ export const createMatchday = (initial: Game, keyboard?: PauseKeyboard) => {
       });
       playback = createPlayback(highlights, keyboard);
       stage = 'highlights';
+    },
+    /** The moments that decided the match, under moment highlights. */
+    get moments() {
+      return moments;
     },
     /** Adds or removes a player from the picked team. */
     pick: (id: number) => {
@@ -162,13 +184,14 @@ export const createMatchday = (initial: Game, keyboard?: PauseKeyboard) => {
       expect('replay');
       fixture = prepareReplay(game, fixture);
       highlights = undefined;
+      moments = undefined;
       playback = undefined;
       stage = 'fixture';
     },
     /** Credits receipts and settles the league match or cup leg. */
     settle: () => {
       expect('result');
-      const score = highlights!.score;
+      const score = (moments ?? highlights)!.score;
       if (fixture.kind === 'cup') {
         const result = settleCupLeg(game, fixture, score);
         game = result.game;
@@ -187,6 +210,10 @@ export const createMatchday = (initial: Game, keyboard?: PauseKeyboard) => {
         settlement = { completion, kind: 'league' };
       }
       stage = 'settled';
+    },
+    /** The final score, home first, once the match is decided. */
+    get score() {
+      return (moments ?? highlights)?.score;
     },
     get settlement() {
       return settlement;

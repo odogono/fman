@@ -59,8 +59,16 @@ The step after the last league match and cup round where clubs are promoted and 
 _Avoid_: Reset, which suggests everything starts fresh
 
 **Highlights**:
-The displayed attacking sequences that determine a match's goals.
+What decides a match's goals. In the original, these are displayed attacking sequences; other rulesets may decide a match as a list of moments instead.
 _Avoid_: Replay when referring to highlights; a cup replay is another match
+
+**Chance**:
+One opportunity for a side to score in a match, won through a team-strength test.
+_Avoid_: Attack when not referring to the original's displayed sequence
+
+**Moment**:
+One decisive event in a match: a goal, a save or a near miss, at a minute, for the side that made the chance. A moment for the managed club names the player who shot.
+_Avoid_: Event, highlight
 
 **Gate receipts**:
 The income credited to the managed club for a match, including a cup replay.

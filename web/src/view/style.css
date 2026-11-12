@@ -415,3 +415,178 @@ main {
   opacity: 0.35;
   cursor: default;
 }
+
+/* Modern mode (#43): paper & ink, Home screen, two panes on wide windows. */
+:root.modern {
+  --paper: #e4e4e4;
+  --modern-width: min(100vw, 480px);
+  color-scheme: light;
+}
+:root.modern.fit {
+  --pixel: min(3px, calc((var(--modern-width) - 24px) / 288));
+}
+:root.modern body {
+  background: var(--paper);
+  color: var(--normal-0);
+}
+:root.modern .screen-title {
+  color: var(--normal-0);
+}
+:root.modern .top-bar .menu-button {
+  border-color: var(--normal-0);
+  background: var(--normal-1);
+  color: var(--bright-7);
+}
+:root.modern .build-note,
+:root.modern .notice,
+:root.modern .version {
+  color: #444;
+}
+.home[hidden] {
+  display: none;
+}
+.home {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+  width: 100%;
+  max-width: 480px;
+  font:
+    16px/1.4 system-ui,
+    sans-serif;
+}
+.home h2,
+.home h3 {
+  margin: 0;
+  font-family: Spectrum, monospace;
+  font-weight: normal;
+  font-synthesis: none;
+}
+.home h2 {
+  font-size: 24px;
+  line-height: 32px;
+}
+.home-summary p {
+  margin: 4px 0 0;
+}
+.home-division {
+  color: var(--normal-1);
+  font-weight: 600;
+}
+.home-summary dl {
+  display: grid;
+  gap: 2px;
+  margin: 8px 0 0;
+}
+.home-summary dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+.home-summary dt,
+.home-summary dd {
+  margin: 0;
+}
+.home-summary dd {
+  font-variant-numeric: tabular-nums;
+}
+.club-name {
+  padding: 0 2px;
+}
+.home-fixture {
+  padding: 12px 0;
+  border-block: 1px solid var(--normal-0);
+  text-align: center;
+}
+.home-fixture h3 {
+  padding: 4px 8px;
+  background: var(--normal-0);
+  color: var(--bright-7);
+  font-size: 16px;
+  line-height: 24px;
+}
+.home-fixture p {
+  margin: 8px 0 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+.home-choices {
+  display: grid;
+  gap: 8px;
+}
+.home-choices button {
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 2px solid var(--normal-0);
+  color: var(--bright-7);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.home-choices .red {
+  background: var(--bright-2);
+}
+.home-choices .blue {
+  background: var(--normal-1);
+}
+.home-choices .primary {
+  min-height: 56px;
+  margin-bottom: 8px;
+  background: var(--bright-6);
+  color: var(--normal-0);
+  font-size: 22px;
+  font-weight: 700;
+  text-align: center;
+}
+.home-choices button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.home-choices button:focus-visible {
+  outline: 3px solid var(--normal-0);
+  outline-offset: 2px;
+}
+/* On a phone the Home screen stands in for the menu prompt. */
+:root.modern.at-home .machine,
+:root.modern.at-home .context-bar {
+  display: none;
+}
+:root.modern:not(.at-home) .home {
+  display: none;
+}
+@media (min-width: 900px) and (min-aspect-ratio: 1) {
+  :root.modern,
+  :root.modern.fit {
+    --pixel: min(3px, calc((100vw - 360px - 72px) / 288));
+  }
+  :root.modern main:has(#home:not([hidden])) {
+    grid-template-columns: 360px auto;
+    column-gap: 36px;
+    justify-content: center;
+    align-items: start;
+  }
+  :root.modern main:has(#home:not([hidden])) > * {
+    grid-column: 1 / -1;
+  }
+  :root.modern main:has(#home:not([hidden])) .top-bar {
+    width: 100%;
+  }
+  :root.modern main:has(#home:not([hidden])) .home {
+    display: grid;
+    grid-column: 1;
+    grid-row: 2 / span 2;
+  }
+  :root.modern main:has(#home:not([hidden])) .machine,
+  :root.modern main:has(#home:not([hidden])) .context-bar {
+    grid-column: 2;
+  }
+  :root.modern main:has(#home:not([hidden])) .context-bar {
+    align-self: start;
+  }
+  :root.modern.at-home .machine {
+    display: block;
+  }
+}

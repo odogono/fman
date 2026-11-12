@@ -9,6 +9,7 @@ import { submitInput } from '../test/input';
 import type { AmountEntry } from './amount-entry';
 import { createApp, type Dom, type Menu, type MenuControl } from './app';
 import type { BarButton } from './context-bar';
+import type { Home } from './home';
 import { createStorage, type Options } from './storage';
 
 const frameMs = (1000 * spectrumFrameT) / spectrumClockHz;
@@ -38,19 +39,22 @@ const harness = ({
   const page = {
     amount: undefined as AmountEntry | undefined,
     applied: [] as Options[],
+    atHome: false,
     bar: undefined as readonly BarButton[] | undefined,
     downloads: [] as { data: string; name: string }[],
     filesChosen: 0,
     fit: false,
     focused: 0,
     hidden: false,
+    home: undefined as Home | undefined,
     inputFocus: false,
     menu: undefined as Menu | undefined,
     menuOpen: false,
     notice: '',
     printed: 0,
     rendered: 0,
-    title: ''
+    title: '',
+    typing: true
   };
   const dom: Dom = {
     applyOptions: (options, fit) => {
@@ -74,8 +78,11 @@ const harness = ({
     openMenu: () => {
       page.menuOpen = true;
     },
-    render: ({ amount, bar, focus, title }) => {
+    render: ({ amount, atHome, bar, focus, home, title, typing }) => {
       page.amount = amount;
+      page.atHome = atHome;
+      page.home = home;
+      page.typing = typing;
       page.title = title;
       page.bar = bar;
       page.inputFocus = focus;
@@ -144,13 +151,23 @@ const harness = ({
     }
     found.action();
   };
-  const toMenu = () => {
-    for (const text of ['alex', '1', '1']) {
-      type(text);
+  /** Answers by typing, or in Modern mode by tapping the offered answer. */
+  const give = (id: string, text: string) => {
+    settle();
+    if (page.typing) {
+      app.submit(text);
+    } else {
+      app.tap(id);
+      app.pointerUp();
     }
+  };
+  const toMenu = () => {
+    type('alex');
+    give('clubs.club.1', '1');
+    give('level.1', '1');
     // Enhanced games' clubs wear their own kits: no colour question.
     if (view().screen === 'colours') {
-      type('0');
+      give('colours.black', '0');
     }
     settle();
     expect(view().screen).toBe('menu');
@@ -330,12 +347,14 @@ test('options are stored and applied to sound and the page', () => {
   size.change('2');
   expect(run.beeper.muted).toBe(true);
   expect(run.page.applied.at(-1)).toEqual({
+    presentation: 'classic',
     rules: 'enhanced',
     scale: 2,
     sound: false,
     touch: 'auto'
   });
   expect(JSON.parse(run.stored.get('fman:options')!)).toEqual({
+    presentation: 'classic',
     rules: 'enhanced',
     scale: 2,
     sound: false,
@@ -830,4 +849,162 @@ test('under the Original rules the game menu has no clubs page', () => {
   expect(run.app.journal.session.ruleset).toBe('original');
   run.app.openMenu();
   expect(run.page.menu!.controls.map(c => c.label)).not.toContain('Clubs');
+});
+
+const modernOptions = JSON.stringify({ presentation: 'modern' });
+/** A key going down and up, as the page reports it. */
+const key = (run: ReturnType<typeof harness>, name: string, code = name) => {
+  const prevented = run.app.keyDown({
+    code,
+    inputFocused: false,
+    key: name,
+    modified: false,
+    repeat: false
+  });
+  run.app.keyUp();
+  return prevented;
+};
+
+test('the Presentation option switches modes mid-game, and is remembered', () => {
+  const run = harness();
+  run.toMenu();
+  expect(run.page.home).toBeUndefined();
+  run.app.openMenu();
+  run.press('Options');
+  const presentation = run.control('Presentation');
+  if (presentation.kind !== 'select') {
+    throw new Error('Unexpected presentation control');
+  }
+  expect(presentation.value).toBe('classic');
+  presentation.change('modern');
+  run.app.menuClosed();
+  expect(run.page.atHome).toBe(true);
+  expect(run.page.home?.manager).toBe('alex');
+  expect(JSON.parse(run.stored.get('fman:options')!)).toMatchObject({
+    presentation: 'modern'
+  });
+  const reopened = harness({ options: run.stored.get('fman:options')! });
+  expect(reopened.page.applied.at(-1)?.presentation).toBe('modern');
+});
+
+test('the Home screen sums up the club and offers the menu in the original order', () => {
+  const run = harness({ options: modernOptions });
+  run.toMenu();
+  const home = run.page.home!;
+  const game = run.view().game!;
+  expect(home).toMatchObject({
+    cash: game.cash,
+    debt: game.debt,
+    division: game.division,
+    level: 'Beginner',
+    manager: 'alex',
+    morale: game.morale
+  });
+  // No league position before the first league match.
+  expect(home.leaguePosition).toBeUndefined();
+  expect(home.fixture?.title).toBe(`League match – Division ${game.division}`);
+  expect(home.fixture?.home?.name).toBe(game.clubs[game.club - 1]!.name.trim());
+  expect(home.choices.map(c => [c.label, c.tone, c.enabled])).toEqual([
+    ['Play next match', 'primary', true],
+    ['Sell or list your players', 'red', true],
+    ['Print score etc', 'blue', true],
+    ['Obtain a loan', 'red', true],
+    ['Pay off loan', 'blue', true],
+    ['Change your skill level', 'red', true],
+    ['Change team or player names', 'blue', true],
+    ['Save game', 'red', true]
+  ]);
+  // The Home screen stands in for the menu's bar.
+  expect(run.page.bar).toBeUndefined();
+});
+
+test('Home screen choices submit the menu answers, and wait for the menu prompt', () => {
+  const run = harness({ options: modernOptions });
+  run.toMenu();
+  run.app.tap('menu.status');
+  run.wait(3);
+  run.app.pointerUp();
+  run.settle();
+  expect(run.view().screen).toBe('status');
+  expect(run.page.atHome).toBe(false);
+  expect(run.page.home?.choices.every(c => !c.enabled)).toBe(true);
+  // Away from the menu prompt a choice submits nothing.
+  run.app.tap('menu.borrow');
+  run.app.pointerUp();
+  expect(run.view().screen).toBe('status');
+  // Screens without a Modern design show the bar, without the original's keys.
+  expect(run.labels()).toEqual(['Continue']);
+  run.tap('Continue');
+  run.settle();
+  expect(run.page.atHome).toBe(true);
+  run.app.tap('menu.play');
+  run.app.pointerUp();
+  expect(run.view().screen).toBe('fixture');
+});
+
+test('a cup round shows only the round on the Home screen, not the draw', () => {
+  const run = harness({ options: modernOptions });
+  run.toMenu();
+  run.app.tap('menu.play');
+  run.app.pointerUp();
+  for (let i = 0; run.view().screen !== 'menu'; i++) {
+    expect(i).toBeLessThan(40);
+    run.settle();
+    const offered = run.page.bar!;
+    const next =
+      offered.find(b => b.answer.id === 'team.kick-off') ??
+      offered.find(b => b.answer.id.endsWith('.continue')) ??
+      offered.find(b => b.answer.id === 'transfer.decline') ??
+      offered.find(b => b.answer.id === 'sale.no');
+    run.tap(next!.label);
+  }
+  expect(run.page.home?.fixture).toEqual({ title: 'F.A. Cup – Round 1' });
+});
+
+test('Modern mode takes no typed answers, only names', () => {
+  const run = harness({ options: modernOptions });
+  run.settle();
+  // The manager's name is asked for, so it is typed.
+  expect(run.page.typing).toBe(true);
+  expect(run.page.inputFocus).toBe(false);
+  run.toMenu();
+  expect(run.page.typing).toBe(false);
+  run.app.submit('s');
+  expect(run.view().screen).toBe('menu');
+  // Print screen copies Spectrum screens, not the Home screen.
+  run.app.openMenu();
+  expect(run.control('Print screen')).toMatchObject({ disabled: true });
+});
+
+test('Modern mode takes an exact amount from a physical keyboard', () => {
+  const run = harness({ options: modernOptions });
+  run.toMenu();
+  run.app.tap('menu.borrow');
+  run.app.pointerUp();
+  run.settle();
+  run.app.amount({ type: 'keypad' });
+  for (const digit of '1200') {
+    expect(key(run, digit, `Digit${digit}`)).toBe(true);
+  }
+  key(run, 'Backspace');
+  expect(run.page.amount?.typing).toBe('120');
+  key(run, 'Enter');
+  expect(run.page.amount).toMatchObject({ typing: undefined, value: 120 });
+  expect(run.view().screen).toBe('borrow');
+});
+
+test('in Modern mode a held key still cuts a timed pause short', () => {
+  const run = harness({ options: modernOptions });
+  run.toMenu();
+  run.app.tap('menu.status');
+  run.app.pointerUp();
+  expect(run.view().paused).toBe(true);
+  run.app.keyDown({
+    code: 'KeyX',
+    inputFocused: false,
+    key: 'x',
+    modified: false,
+    repeat: false
+  });
+  expect(run.app.journal.session.timingState.keyboard.key).toBe('KeyX');
 });

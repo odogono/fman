@@ -70,14 +70,45 @@ export const nextFixture = (game: Game) => {
   return game.leagueMatches >= 15 ? 'season' : 'league';
 };
 
+/** The club the next league match is against: the division's next in turn. */
+const leagueOpponent = (game: Game) => {
+  const offset = (game.division - 1) * 16;
+  const turn = offset + game.leagueMatches + 1;
+  return turn === game.club ? offset + 16 : turn;
+};
+
+/**
+ * The next fixture as the Home screen shows it, drawing nothing. A league
+ * match names its opponent and venue, which nothing before kick-off can
+ * change. A cup round names only the round: its draw follows a seed that is
+ * redrawn each time play returns to the menu.
+ */
+export type FixturePreview =
+  | { home: boolean; kind: 'league'; opponent: number }
+  | { kind: 'cup'; round: number };
+
+export const previewFixture = (game: Game): FixturePreview | undefined => {
+  switch (nextFixture(game)) {
+    case 'season':
+      return undefined;
+    case 'cup':
+      return { kind: 'cup', round: game.cupRound + 1 };
+    case 'league':
+      return {
+        home: !game.leagueHome,
+        kind: 'league',
+        opponent: leagueOpponent(game)
+      };
+  }
+};
+
 export const prepareLeagueMatch = (game: Game) => {
   if (nextFixture(game) !== 'league') {
     throw new RangeError('The next fixture is not an available league match');
   }
   const offset = (game.division - 1) * 16;
   const leagueMatches = game.leagueMatches + 1;
-  const opponent =
-    offset + leagueMatches === game.club ? offset + 16 : offset + leagueMatches;
+  const opponent = leagueOpponent(game);
   const rng = createRng(game.seed);
   const pointsPerMatch = divide(
     fromNumber(game.league[opponent - offset - 1]!.points),

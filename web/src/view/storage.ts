@@ -14,7 +14,10 @@ export type SlotEntry = {
   rules?: Rules;
   savedAt: string;
 };
+/** The presentation mode: the original screens, or screens redesigned for phones. */
+export type Presentation = 'classic' | 'modern';
 export type Options = {
+  presentation: Presentation;
   /** The rules last chosen for a new game, pre-selected next time (ADR 0009). */
   rules: Rules;
   scale: 'auto' | 1 | 2 | 3;
@@ -23,6 +26,7 @@ export type Options = {
   touch: 'auto' | 'on' | 'off';
 };
 export const defaultOptions: Options = {
+  presentation: 'classic',
   rules: defaultRules,
   scale: 'auto',
   sound: true,
@@ -54,6 +58,7 @@ export const createStorage = (backend: () => StorageBackend) => {
       try {
         const value = JSON.parse(read(optionsKey) ?? 'null');
         return {
+          presentation: value?.presentation === 'modern' ? 'modern' : 'classic',
           rules: isRules(value?.rules) ? value.rules : defaultRules,
           scale: [1, 2, 3].includes(value?.scale) ? value.scale : 'auto',
           sound: value?.sound !== false,

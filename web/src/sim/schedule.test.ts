@@ -1,6 +1,7 @@
 import { expect, test } from 'bun:test';
 
-import { nextFixture, prepareLeagueMatch } from './league';
+import { prepareCupMatch } from './cup';
+import { nextFixture, prepareLeagueMatch, previewFixture } from './league';
 import { createNewGame } from './management';
 
 const fresh = () =>
@@ -35,4 +36,32 @@ test('league play stops before a sixteenth match or a season rollover', () => {
   };
   expect(nextFixture(ended)).toBe('season');
   expect(() => prepareLeagueMatch(ended)).toThrow();
+});
+
+test('the fixture preview names what the next match starts, drawing nothing', () => {
+  for (const club of [1, 2, 16, 40]) {
+    let game = {
+      ...createNewGame({ club, colour: 0, level: 1, manager: 'alex', seed: 7 }),
+      division: Math.ceil(club / 16)
+    };
+    for (let week = 0; nextFixture(game) !== 'season'; week++) {
+      const preview = previewFixture(game);
+      if (nextFixture(game) === 'league') {
+        const fixture = prepareLeagueMatch(game);
+        expect(preview).toEqual({
+          home: fixture.home,
+          kind: 'league',
+          opponent: fixture.opponent
+        });
+        game = fixture.game;
+      } else {
+        const fixture = prepareCupMatch(game);
+        expect(preview).toEqual({ kind: 'cup', round: fixture.game.cupRound });
+        // Knocked out after three rounds, so the league runs to its end.
+        game = { ...fixture.game, cupFinished: fixture.game.cupRound >= 3 };
+      }
+      expect(week).toBeLessThan(30);
+    }
+    expect(previewFixture(game)).toBeUndefined();
+  }
 });

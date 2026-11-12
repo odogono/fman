@@ -13,6 +13,7 @@ import {
 import { answersFor, printAccepted, type OfferedAnswer } from './answers';
 import { barFor, tickerBar, type BarButton } from './context-bar';
 import { createFrameSampler } from './frame-sampler';
+import { homeFor, type Home } from './home';
 import {
   isRules,
   rulesChoices,
@@ -67,7 +68,10 @@ export type Menu = {
 
 /** The page: it paints what the app gives it and reports what the player does. */
 export type Dom = {
-  /** `touch`: the context bar shows, so the screen fits the page width. */
+  /**
+   * `touch`: the context bar shows, so the screen fits the page width.
+   * `options.presentation` picks Classic or Modern mode's page.
+   */
   applyOptions: (options: Options, touch: boolean) => void;
   /** Opens the file picker; a chosen file arrives through `importSave`. */
   chooseFile: () => void;
@@ -81,13 +85,24 @@ export type Dom = {
   render: (screen: {
     /** The amount being entered on an amount prompt, while the bar shows. */
     amount: AmountEntry | undefined;
+    atHome: boolean;
     /** The context bar's buttons, or `undefined` when the bar is hidden. */
     bar: readonly BarButton[] | undefined;
     clearInput: boolean;
     display: Display;
     focus: boolean;
+    /**
+     * Modern mode's Home screen, while a game is in play. `atHome`: the
+     * menu prompt waits, so the Home screen stands in for it.
+     */
+    home: Home | undefined;
     /** The name of the screen on show, for the title above it. */
     title: string;
+    /**
+     * The command line takes typing: always in Classic mode, and in Modern
+     * mode only where a name is asked for.
+     */
+    typing: boolean;
     view: View;
   }) => void;
   showMenu: (menu: Menu) => void;
@@ -136,6 +151,23 @@ const editingKeys = [
   'Home',
   'End'
 ];
+
+/** A physical key on Modern mode's exact amount keypad. */
+const amountKey = (key: string): AmountAction | undefined =>
+  /^\d$/.test(key)
+    ? { digit: Number(key), type: 'digit' }
+    : key === 'Backspace'
+      ? { type: 'back' }
+      : key === 'Enter'
+        ? { type: 'done' }
+        : undefined;
+
+/** Modern mode's labels: the original's keys can't be typed there. */
+const withoutKeys = (buttons: readonly BarButton[]) =>
+  buttons.map(button => ({
+    ...button,
+    label: button.label.replace(/ \([^)]*\)$/, '')
+  }));
 
 type MenuView = 'main' | 'save' | 'load' | 'options' | 'new-game' | 'clubs';
 
@@ -220,8 +252,17 @@ export const createApp = ({
     return amountEntry;
   };
 
+  const modern = () => options.presentation === 'modern';
+  /** Modern mode always shows the bar on the screens it has no design for. */
   const barShown = () =>
-    options.touch === 'on' || (options.touch === 'auto' && dom.coarsePointer);
+    modern() ||
+    options.touch === 'on' ||
+    (options.touch === 'auto' && dom.coarsePointer);
+  /** Modern mode's Home screen stands in for the menu prompt. */
+  const atHome = () => modern() && journal.session.view.screen === 'menu';
+  /** Modern mode takes typing only where a name is asked for. */
+  const typingTaken = () =>
+    !modern() || answersFor(journal.session.view).some(a => a.kind === 'text');
   /** The moment-highlights ticker (#108) is still showing its moments. */
   const tickerRunning = () => {
     const view = journal.session.view;
@@ -246,7 +287,12 @@ export const createApp = ({
 
   const render = (clearInput = true) => {
     const view = journal.session.view;
-    const display = makeScreen(view);
+    const home = atHome();
+    // Beside the Home screen, two panes show Status while the menu waits.
+    const display =
+      home && view.screen === 'menu'
+        ? { ...makeScreen({ ...view, screen: 'status' }), prompt: '' }
+        : makeScreen(view);
     if (view.screen === 'cleared') {
       dom.notice('Game cleared. Open the menu to start a new game.');
     }
@@ -256,16 +302,23 @@ export const createApp = ({
     ) {
       dom.notice('Printing stopped. Open the menu to start a new game.');
     }
-    const bar = barShown();
+    const bar = barShown() && !home;
     const answers = answersFor(view);
     const ticking = tickerRunning();
+    const buttons = ticking ? tickerBar : bar ? barFor(answers) : undefined;
     dom.render({
       amount: bar ? amountFor(answers) : undefined,
-      bar: ticking ? tickerBar : bar ? barFor(answers) : undefined,
+      atHome: home,
+      bar: buttons && modern() ? withoutKeys(buttons) : buttons,
       clearInput,
       display,
-      focus: !display.paused && !menuOpen && !bar,
+      focus: !display.paused && !menuOpen && !barShown(),
+      home:
+        modern() && view.game
+          ? homeFor({ ...view, game: view.game })
+          : undefined,
       title: screenTitle(view),
+      typing: typingTaken(),
       view
     });
   };
@@ -339,7 +392,8 @@ export const createApp = ({
           button(
             'Print screen',
             printScreen,
-            !printAccepted(journal.session.view)
+            // Modern mode's own screens are not the Spectrum's to copy.
+            !printAccepted(journal.session.view) || atHome()
           ),
           button('Save', () => showMenu('save'), !storageWorks),
           button('Load', () => showMenu('load')),
@@ -462,6 +516,20 @@ export const createApp = ({
             kind: 'select',
             label: 'Display size',
             value: String(options.scale)
+          },
+          {
+            change: value =>
+              setOptions({
+                ...options,
+                presentation: value === 'modern' ? 'modern' : 'classic'
+              }),
+            choices: [
+              ['classic', 'Classic'],
+              ['modern', 'Modern']
+            ],
+            kind: 'select',
+            label: 'Presentation',
+            value: options.presentation
           },
           {
             change: value =>
@@ -622,6 +690,14 @@ export const createApp = ({
     journal.letGo();
   };
 
+  /** A change to the amount being entered; it presses no key. */
+  const amount = (action: AmountAction) => {
+    if (amountEntry && !menuOpen) {
+      amountEntry = changeAmount(amountEntry, action);
+      render(false);
+    }
+  };
+
   render();
   return {
     /** Shows the page's current journal, for tests and tools. */
@@ -642,7 +718,15 @@ export const createApp = ({
       }
       unlockSound();
       advanceTo(clock.now());
+      if (modern() && amountEntry?.typing !== undefined && !event.modified) {
+        const action = amountKey(event.key);
+        if (action) {
+          amount(action);
+          return true;
+        }
+      }
       if (
+        !modern() &&
         event.code === 'KeyS' &&
         !event.modified &&
         !event.repeat &&
@@ -721,13 +805,14 @@ export const createApp = ({
       render();
       persist();
     },
-    /** The command line's answer: typed, or sent from a soft keyboard. */
-    submit: (text: string) => answer(() => journal.submit(text, 'brief')),
-    /** A change to the amount being entered; it presses no key. */
-    amount: (action: AmountAction) => {
-      if (amountEntry && !menuOpen) {
-        amountEntry = changeAmount(amountEntry, action);
-        render(false);
+    /**
+     * The command line's answer: typed, or sent from a soft keyboard. Modern
+     * mode takes one only where a name is asked for.
+     */
+    amount,
+    submit: (text: string) => {
+      if (typingTaken()) {
+        answer(() => journal.submit(text, 'brief'));
       }
     },
     /**

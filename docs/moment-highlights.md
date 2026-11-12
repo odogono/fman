@@ -1,6 +1,6 @@
 # Moment highlights ruleset
 
-[#107](https://github.com/odogono/fman/issues/107). An experimental ruleset, `moment-highlights`, that decides each match as a list of moments in place of the original's attacking sequences ([ADR 0007](adr/0007-experimental-rules-as-rulesets.md)). It is the first step of the [highlights engine](highlights-engine.md) exploration: the engine alone, with no view. It isn't offered in New game.
+[#107](https://github.com/odogono/fman/issues/107). An experimental ruleset, `moment-highlights`, that decides each match as a list of moments in place of the original's attacking sequences ([ADR 0007](adr/0007-experimental-rules-as-rulesets.md)). It is the first step of the [highlights engine](highlights-engine.md) exploration, shown as a [ticker](#the-ticker) ([#108](https://github.com/odogono/fman/issues/108)). It isn't offered in New game.
 
 ## The problem in the original
 
@@ -20,7 +20,20 @@ Under `moment-highlights`, kicking off decides the match at once ([`moments.ts`]
 
 Injuries, tackles and build-up play are not moments. Injuries are still drawn before team selection, as in the original.
 
-No highlights are shown: the match goes straight from team selection to the result. The attack positions the original carries from one match to the next don't change. The engine uses the game's seeded random numbers, but it can't draw as many of them as the original's attacks do, so every later draw in the same week differs. The next management menu reseeds from the frame counter, as now; skipping the highlights changes how many frames have passed by then. `Game` gains no field, so saves are unchanged.
+The match is decided at kick-off, then the [ticker](#the-ticker) shows it. The attack positions the original carries from one match to the next don't change. The engine uses the game's seeded random numbers, but it can't draw as many of them as the original's attacks do, so every later draw in the same week differs. The next management menu reseeds from the frame counter, as now; how long the ticker runs, and any key that cuts it short, change how many frames have passed by then. `Game` gains no field, so saves are unchanged.
+
+## The ticker
+
+In place of the pitch, the highlights screen lists the moments one at a time in minute order ([`ticker.ts`](../web/src/sim/ticker.ts), [`ticker-layout.ts`](../web/src/view/ticker-layout.ts)). It follows the ruleset, not the presentation mode: original-rules games show the original pitch in either mode.
+
+- **Pace.** After a one-frame clear, the 0-0 header shows for one pause, then each moment appears and holds for one pause of 75 frames (1.5 s). A final hold of one more pause keeps the full list on screen before the result screen, which is unchanged. The sim runs the pauses, so resuming a saved session mid-ticker returns to the same moment ([ADR 0004](adr/0004-resume-exact-session.md)).
+- **Keys.** Each pause follows the original's PAUSE: a fresh key or tap ends it, and a held key repeats, so holding one runs through the list ([ADR 0006](adr/0006-taps-reproduce-keypresses.md)). The clear forgets the Enter that kicked off, as CLS does.
+- **Skip.** A Skip button in the context bar, shown during the ticker even with touch controls off, or the S key, ends every remaining moment's pause at once but keeps the final hold. It presses no key, so it can't also end the hold.
+- **Lines.** Each line opens with the minute and the kind (`GOAL!`, `SAVED:`, `POST!`), then names the player who shot, or the club for an opponent or when no player is named. A goal ends with the score after it, home first. The score under the title counts up as goals appear.
+- **Classic mode.** `MATCH HIGHLIGHTS` and the original's score line head the screen. Lines are capitals in 32 columns, newest on top from row 3; past row 21 the oldest drop off for good. A name too long for its line is cut, keeping the minute and score. `GOAL!` is red inverse video. Screen readers hear each new line alone.
+- **Modern mode** isn't built yet; its highlights screen ([#45](https://github.com/odogono/fman/issues/45)) will show the ticker in its paper-and-ink style.
+
+The ticker adds frames before the next reseed, so later draws differ from the [baseline](baseline/moment-highlights.md), which was measured with no ticker. That shifts results only as any change in pace does.
 
 ## How the numbers were chosen
 

@@ -81,6 +81,10 @@ _Avoid_: Attack when not referring to the original's displayed sequence
 One decisive event in a match: a goal, a save or a near miss, at a minute, for the side that made the chance. A moment for the managed club names the player who shot.
 _Avoid_: Event, highlight
 
+**Ticker**:
+The list of a match's moments, shown one at a time in minute order as the match is played. Original-rules matches have no ticker; their highlights are shown on the pitch.
+_Avoid_: Feed, commentary
+
 **Gate receipts**:
 The income credited to the managed club for a match, including a cup replay.
 

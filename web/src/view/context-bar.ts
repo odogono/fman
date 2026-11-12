@@ -1,16 +1,32 @@
 import type { OfferedAnswer } from './answers';
 
 /**
+ * The ticker's Skip (#108). It answers no prompt: it ends the ticker's
+ * remaining pauses, so it lives in the bar beside the answers.
+ */
+export type SkipControl = Readonly<{ id: 'ticker.skip'; kind: 'skip' }>;
+
+/**
  * One button in Classic mode's context bar. `number` buttons sit in a grid;
  * `primary` is the yellow action; a `text` answer's button opens the soft
  * keyboard, and an `amount` answer's button submits the entered amount.
  */
 export type BarButton = Readonly<{
-  answer: OfferedAnswer;
+  answer: OfferedAnswer | SkipControl;
   label: string;
   tone: 'primary' | 'red' | 'blue' | 'number';
   wide: boolean;
 }>;
+
+/** The bar while the ticker runs, shown even with touch controls off. */
+export const tickerBar: readonly BarButton[] = [
+  {
+    answer: { id: 'ticker.skip', kind: 'skip' },
+    label: 'Skip (s)',
+    tone: 'primary',
+    wide: true
+  }
+];
 
 const labels: Record<string, string> = {
   'borrow.amount': 'Take loan',

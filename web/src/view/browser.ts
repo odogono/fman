@@ -13,6 +13,7 @@ import type { App, Dom, MenuControl } from './app';
 import type { BarButton } from './context-bar';
 import { rasterText, rasterizeCells } from './glyphs';
 import { paintAttack } from './pitch';
+import { tickerLines, tickerText } from './ticker-layout';
 
 // The commit the site build stamps in; `bun run dev` leaves it undefined.
 declare const FMAN_COMMIT: string | undefined;
@@ -190,6 +191,7 @@ export const createBrowserDom = (app: HTMLElement) => {
   </section>
   <div id="context-bar" class="context-bar" aria-label="Answers" hidden></div>
   <pre id="transcript" class="sr-only" aria-live="polite" aria-atomic="true"></pre>
+  <p id="ticker-live" class="sr-only" aria-live="polite"></p>
   <p class="build-note">Play league and cup matches, edit names and manage your club.<br />Play resumes where you left it. Press Esc or the menu button to save, load or start again.</p>
   <p id="notice" class="notice" role="status"></p>
   <p class="version">${versionLabel}</p>
@@ -206,6 +208,7 @@ export const createBrowserDom = (app: HTMLElement) => {
   const input = find<HTMLInputElement>('#command');
   const prompt = find<HTMLElement>('#prompt');
   const transcript = find<HTMLElement>('#transcript');
+  const tickerLive = find<HTMLElement>('#ticker-live');
   const notice = find<HTMLElement>('#notice');
   const menuButton = find<HTMLButtonElement>('#menu-button');
   const menu = find<HTMLDialogElement>('#game-menu');
@@ -325,13 +328,15 @@ export const createBrowserDom = (app: HTMLElement) => {
         0
       );
       const current =
-        view.screen === 'highlights' ? view.playback.current : undefined;
+        view.screen === 'highlights' && 'playback' in view
+          ? view.playback.current
+          : undefined;
       const playing = Boolean(current && !current.frame.intro);
       pitch.hidden = !playing;
       screen.hidden = playing;
       screen.classList.toggle('cleared', view.screen === 'cleared');
       screen.classList.toggle('full-screen', display.lines.length === 24);
-      if (view.screen === 'highlights' && current) {
+      if (view.screen === 'highlights' && 'playback' in view && current) {
         const { away, home } = fixtureSides(view.game, view.fixture);
         paintAttack(
           pitchContext,
@@ -342,6 +347,17 @@ export const createBrowserDom = (app: HTMLElement) => {
           away,
           flashPhase(view)
         );
+      }
+      // The ticker announces each new line alone (#108), not the whole screen.
+      const ticker = view.screen === 'highlights' && 'ticker' in view;
+      transcript.setAttribute('aria-live', ticker ? 'off' : 'polite');
+      const newest =
+        view.screen === 'highlights' && 'ticker' in view
+          ? tickerLines(view.game, view.fixture, view.ticker.shown)[0]
+          : undefined;
+      const said = newest ? tickerText(newest) : '';
+      if (tickerLive.textContent !== said) {
+        tickerLive.textContent = said;
       }
       const text = display.lines.join('\n') + '\n' + display.prompt;
       if (transcript.textContent !== text) {

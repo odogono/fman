@@ -203,7 +203,11 @@ export const screenPrintFault = (view: ScreenView): string | undefined => {
       return score(
         view.fixture.home ? game.club : view.fixture.opponent,
         view.fixture.home ? view.fixture.opponent : game.club,
-        view.screen === 'result' ? view.score : view.playback.score,
+        view.screen === 'result'
+          ? view.score
+          : 'ticker' in view
+            ? view.ticker.score
+            : view.playback.score,
         1090
       );
     case 'other-matches':

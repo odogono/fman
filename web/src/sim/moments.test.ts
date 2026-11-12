@@ -159,13 +159,23 @@ const cupKickOff = (seed: number) => {
   const matchday = createMatchday(game)!;
   matchday.refresh();
   matchday.kickOff();
+  matchday.advance(1_000_000);
   return matchday;
 };
 
-test('a match goes straight from team selection to the result', () => {
+test('the ticker shows the moments, then the result follows', () => {
+  const game: Game = { ...fresh(), scheduleCounter: 2, seed: 1 };
+  const watching = createMatchday(game)!;
+  watching.refresh();
+  watching.kickOff();
+  // Decided at kick-off: the ticker only shows the moments (#108).
+  expect(watching.stage).toBe('highlights');
+  expect(watching.score).toEqual(watching.moments!.score);
+  expect(watching.ticker!.shown).toEqual([]);
   const matchday = cupKickOff(1);
   expect(matchday.fixture.kind).toBe('cup');
   expect(matchday.stage).toBe('result');
+  expect(matchday.ticker!.shown).toEqual(matchday.moments!.moments);
   expect(matchday.playback).toBeUndefined();
   expect(matchday.highlights).toBeUndefined();
   expect(matchday.score).toEqual(matchday.moments!.score);

@@ -2,7 +2,9 @@ import { expect, test } from 'bun:test';
 
 import { finishPrompt, submitInput } from '../test/input';
 import { createJournal, openSave, type Journal } from './journal';
+import type { Ruleset } from './ruleset';
 import { encodeSave, saveVersion } from './save';
+import { tickerLeadIn, tickerPause } from './ticker';
 
 const state = (journal: ReturnType<typeof createJournal>) => {
   const view = journal.session.view;
@@ -10,13 +12,15 @@ const state = (journal: ReturnType<typeof createJournal>) => {
     ...view,
     playback:
       view.screen === 'highlights'
-        ? [view.playback.key, view.playback.score]
+        ? 'ticker' in view
+          ? [view.ticker.key, view.ticker.score, view.ticker.shown]
+          : [view.playback.key, view.playback.score]
         : undefined
   });
 };
 
-const setup = () => {
-  const journal = createJournal();
+const setup = (ruleset: Ruleset = 'original') => {
+  const journal = createJournal({ kind: 'title', ruleset });
   journal.advance(137);
   journal.skipPause();
   submitInput(journal, 'alex');
@@ -299,4 +303,60 @@ test('version-4 saves replay their logged keypresses unchanged', () => {
       openSave(JSON.stringify({ ...data, inputs: [...data.inputs, input] }))
     ).toThrow(RangeError);
   }
+});
+
+/** The ticker on screen, under moment highlights (#108). */
+const tickerOf = (journal: Journal) => {
+  const view = journal.session.view;
+  if (view.screen !== 'highlights' || !('ticker' in view)) {
+    throw new Error(`No ticker on ${view.screen}`);
+  }
+  return view.ticker;
+};
+
+test('moment highlights show the ticker, then the result', () => {
+  const journal = setup('moment-highlights');
+  toHighlights(journal);
+  expect(tickerOf(journal).shown).toEqual([]);
+  journal.advance(tickerLeadIn + tickerPause);
+  expect(tickerOf(journal).shown).toHaveLength(1);
+  for (let i = 0; i < 40 && journal.session.view.screen === 'highlights'; i++) {
+    journal.advance(tickerPause);
+  }
+  expect(journal.session.view.screen).toBe('result');
+});
+
+test('a snapshot mid-ticker resumes at the same moment', () => {
+  const journal = setup('moment-highlights');
+  toHighlights(journal);
+  journal.advance(tickerPause + 30);
+  const restored = openSave(journal.snapshot());
+  expect(tickerOf(restored).shown).toEqual(tickerOf(journal).shown);
+  expect(state(restored)).toBe(state(journal));
+  for (
+    let i = 0;
+    i < 200 && journal.session.view.screen === 'highlights';
+    i++
+  ) {
+    journal.advance(7);
+    restored.advance(7);
+    expect(state(restored)).toBe(state(journal));
+  }
+  expect(restored.session.view.screen).toBe('result');
+});
+
+test('skipping the ticker is kept in the journal', () => {
+  const journal = setup('moment-highlights');
+  toHighlights(journal);
+  journal.advance(10);
+  journal.skipPause();
+  const ticker = tickerOf(journal);
+  expect(ticker.done).toBe(false);
+  const restored = openSave(journal.snapshot());
+  expect(state(restored)).toBe(state(journal));
+  expect(tickerOf(restored).shown.length).toBeGreaterThan(0);
+  journal.advance(tickerPause);
+  restored.advance(tickerPause);
+  expect(journal.session.view.screen).toBe('result');
+  expect(state(restored)).toBe(state(journal));
 });

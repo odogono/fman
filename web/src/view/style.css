@@ -590,3 +590,7 @@ main {
     display: block;
   }
 }
+/* On paper, the amount being entered is printed in ink. */
+:root.modern .context-bar .amount {
+  color: var(--normal-0);
+}

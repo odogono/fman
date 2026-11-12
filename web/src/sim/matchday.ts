@@ -145,12 +145,16 @@ export const createMatchday = (initial: Game, keyboard?: PauseKeyboard) => {
     kickOff: () => {
       expect('team');
       if (momentHighlights(game.ruleset)) {
+        const { squad } = game.clubs[fixture.opponent - 1]!;
         moments = decideMoments({
           home: fixture.home,
           opponent: fixture.opponentStrength,
           players: game.players,
           seed: game.seed,
-          strength: teamStrength(game)
+          strength: teamStrength(game),
+          ...(squad && game.squadSeed !== undefined
+            ? { opponentSquad: squad, squadSeed: game.squadSeed }
+            : {})
         });
         game = { ...game, seed: moments.seed };
         ticker = createTicker(moments, fixture.home, keyboard);

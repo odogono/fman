@@ -33,7 +33,11 @@ const named = (game: Game, fixture: MatchFixture, moment: Moment) => {
     }
   }
   const club = moment.side === 'club' ? game.club : fixture.opponent;
-  return game.clubs[club - 1]!.name;
+  const { name, squad } = game.clubs[club - 1]!;
+  if (moment.side === 'opponent' && moment.squadPlayer !== undefined) {
+    return squad?.[moment.squadPlayer]?.name ?? name;
+  }
+  return name;
 };
 
 /**

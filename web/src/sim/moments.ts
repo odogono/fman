@@ -1,17 +1,19 @@
 import type { Player } from './management';
 import { createRng, type Rng } from './rng';
-import { playerCategory } from './squads';
+import { playerCategory, positionCategory, type SquadPlayer } from './squads';
 
 /**
  * One decisive event in a match (#107): a goal, a save or a near miss, at a
- * minute, for the side that made the chance. A moment for the managed club
- * names the picked player who shot; opponents have no players to name.
+ * minute, for the side that made the chance. It names the player who shot:
+ * for the managed club the picked player's place (`player`), and for an
+ * opponent with a squad (#124) the player's index in it (`squadPlayer`).
  */
 export type Moment = Readonly<{
   kind: 'goal' | 'near-miss' | 'save';
   minute: number;
   player?: number;
   side: 'club' | 'opponent';
+  squadPlayer?: number;
 }>;
 
 /**
@@ -26,10 +28,8 @@ const saveRoll = 77;
 /** How much more often each playing category is named: defence to attack. */
 const categoryWeight = [1, 2, 4] as const;
 
-/** A picked player, weighted by skill and leaning towards attackers. */
-const pickShooter = (rng: Rng, players: readonly Player[]) => {
-  const picked = players.filter(p => p.status === 2);
-  const weights = picked.map(p => p.skill * categoryWeight[playerCategory(p)]!);
+/** An index into `weights`, drawn in proportion to them. */
+const weighted = (rng: Rng, weights: readonly number[]) => {
   const total = weights.reduce((sum, w) => sum + w, 0);
   if (total === 0) {
     return undefined;
@@ -38,11 +38,31 @@ const pickShooter = (rng: Rng, players: readonly Player[]) => {
   for (const [i, weight] of weights.entries()) {
     roll -= weight;
     if (roll <= 0) {
-      return picked[i]!.id;
+      return i;
     }
   }
   return undefined;
 };
+
+/** A picked player, weighted by skill and leaning towards attackers. */
+const pickShooter = (rng: Rng, players: readonly Player[]) => {
+  const picked = players.filter(p => p.status === 2);
+  const i = weighted(
+    rng,
+    picked.map(p => p.skill * categoryWeight[playerCategory(p)]!)
+  );
+  return i === undefined ? undefined : picked[i]!.id;
+};
+
+/**
+ * An opponent's shooter (#124): anyone in its squad, since other clubs don't
+ * pick a team, weighted as `pickShooter` weights the managed club's.
+ */
+const pickSquadShooter = (rng: Rng, squad: readonly SquadPlayer[]) =>
+  weighted(
+    rng,
+    squad.map(p => p.skill * categoryWeight[positionCategory(p.position)]!)
+  );
 
 /**
  * Decides a match as moments (#107) in place of the original's attacking
@@ -51,15 +71,27 @@ const pickShooter = (rng: Rng, players: readonly Player[]) => {
  * difference ≥ 75`, and a match still goalless after them gives home then
  * away one more. Each chance draws its outcome, its minute and, for the
  * managed club, its shooter. The score is `[home, away]`.
+ *
+ * Given the opponent's squad (#124), its shooters are drawn too, from a
+ * stream of their own seeded by `squadSeed` and `seed` together. Neither
+ * seed advances, so the RND sequence and the squad stream draw as without
+ * them, and only the names change.
  */
 export const decideMoments = (input: {
   home: boolean;
   opponent: readonly number[];
+  opponentSquad?: readonly SquadPlayer[];
   players: readonly Player[];
   seed: number;
+  squadSeed?: number;
   strength: readonly number[];
 }) => {
   const rng = createRng(input.seed);
+  const { opponentSquad, squadSeed } = input;
+  const squadRng =
+    opponentSquad && squadSeed !== undefined
+      ? createRng(squadSeed ^ input.seed)
+      : undefined;
   const drawn: Moment[] = [];
   const chance = (side: Moment['side']) => {
     const roll = rng.int(1, 100);
@@ -68,11 +100,16 @@ export const decideMoments = (input: {
     const minute = rng.int(1, 90);
     const player =
       side === 'club' ? pickShooter(rng, input.players) : undefined;
+    const squadPlayer =
+      side === 'opponent' && squadRng
+        ? pickSquadShooter(squadRng, opponentSquad!)
+        : undefined;
     drawn.push({
       kind,
       minute,
       ...(player === undefined ? {} : { player }),
-      side
+      side,
+      ...(squadPlayer === undefined ? {} : { squadPlayer })
     });
   };
   for (let i = 0; i < 5; i++) {

@@ -30,14 +30,14 @@ const listed = data as Readonly<{
 const squadSize = 12;
 
 /** Defence 0, midfield 1 or attack 2; a goalkeeper counts as a defender. */
+export const positionCategory = (position: Position) =>
+  position === 'MF' ? 1 : position === 'FW' ? 2 : 0;
+
+/** A player's category: by position, or else by his place, as the original. */
 export const playerCategory = (player: Player) =>
   player.position === undefined
     ? Math.floor((player.id - 1) / 8)
-    : player.position === 'MF'
-      ? 1
-      : player.position === 'FW'
-        ? 2
-        : 0;
+    : positionCategory(player.position);
 
 /** Seeds the squad stream from the game's seed, away from the RND sequence. */
 const squadSeedFor = (seed: number) => seed ^ 0xa5_a5;

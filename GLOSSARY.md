@@ -78,7 +78,7 @@ One opportunity for a side to score in a match, won through a team-strength test
 _Avoid_: Attack when not referring to the original's displayed sequence
 
 **Moment**:
-One decisive event in a match: a goal, a save or a near miss, at a minute, for the side that made the chance. A moment for the managed club names the player who shot.
+One decisive event in a match: a goal, a save or a near miss, at a minute, for the side that made the chance. It names the player who shot: for the managed club one of its picked players, and, when clubs own squads, for an opponent one of its squad.
 _Avoid_: Event, highlight
 
 **Ticker**:

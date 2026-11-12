@@ -36,7 +36,10 @@ Gameplay baseline: [gameplay-baseline.md](gameplay-baseline.md): automated runs 
 
 Phase-two design: [mobile-play.md](mobile-play.md): touch and mobile play.
 
-Exploration: [multiplayer.md](multiplayer.md): what a server-based multiplayer version could take, a proposed format, and prior art.
+Exploration:
+
+- [multiplayer.md](multiplayer.md): what a server-based multiplayer version could take, a proposed format, and prior art.
+- [highlights-engine.md](highlights-engine.md): a new event-based highlights engine for the Enhanced rules, and the top-down sprite view chosen from mockups.
 
 Which parity is required: [ADR-0008](adr/0008-relax-presentation-parity.md) keeps rules parity and makes presentation parity best effort.
 

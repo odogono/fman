@@ -3,6 +3,7 @@ import { emptyAttackCarry, type AttackCarry } from './highlights';
 import { add, divide, floor, fromNumber, multiply, toNumber } from './numeric';
 import { createRng } from './rng';
 import {
+  clubSquads,
   gracePeriodWeeks,
   isRuleset,
   presentDay,
@@ -11,11 +12,19 @@ import {
   tiringInjuries,
   type Ruleset
 } from './ruleset';
+import {
+  joinBuyer,
+  startingSquads,
+  type Position,
+  type SquadPlayer
+} from './squads';
 
 export type Player = Readonly<{
   energy: number;
   id: number;
   name: string;
+  /** The player's position under `clubSquads` (#113); otherwise his id gives it. */
+  position?: Position;
   skill: number;
   status: 0 | 1 | 2 | 3;
   value: number;
@@ -44,6 +53,8 @@ export type Game = Readonly<{
   cupRound: number;
   debt: number;
   division: number;
+  /** Players in no club's squad and outside the 24 places, under `clubSquads` (#113). */
+  freeAgents?: readonly SquadPlayer[];
   /**
    * Weeks of bills left to get back under the credit limit, while a grace
    * period runs (#74); absent otherwise. At 0 the period has run out.
@@ -65,6 +76,8 @@ export type Game = Readonly<{
   scheduleCounter: number;
   seasons: number;
   seed: number;
+  /** The second random stream that squads draw from, under `clubSquads` (#113). */
+  squadSeed?: number;
 }>;
 
 const isIntegerIn = (value: number, min: number, max: number) =>
@@ -93,41 +106,51 @@ export const createNewGame = (options: {
   }
   const rng = createRng(options.seed);
   const statuses: Player['status'][] = new Array(24).fill(0);
+  const chosen: number[] = [];
   for (let picked = 0; picked < 12;) {
     const index = rng.int(1, 24) - 1;
     if (statuses[index] !== 0) {
       continue;
     }
     statuses[index] = picked === 11 ? 1 : 2;
+    chosen.push(index);
     picked++;
   }
-  const players = startingPlayerNames(ruleset).map((name, index): Player => {
+  const orderedClubs = [...startingClubs(ruleset)];
+  [orderedClubs[63], orderedClubs[options.club - 1]] = [
+    orderedClubs[options.club - 1]!,
+    orderedClubs[63]!
+  ];
+  const squads = clubSquads(ruleset)
+    ? startingSquads(orderedClubs, 64, chosen, options.seed)
+    : undefined;
+  const places =
+    squads?.places ??
+    startingPlayerNames(ruleset).map(name => ({ name, position: undefined }));
+  const players = places.map(({ name, position }, index): Player => {
     const skill = rng.int(1, 5);
     const energy = rng.int(1, 20);
     return {
       energy,
       id: index + 1,
       name,
+      ...(position === undefined ? {} : { position }),
       skill,
       status: statuses[index]!,
       value: 5000 * skill
     };
   });
-  const orderedClubs = [...startingClubs(ruleset)];
-  [orderedClubs[63], orderedClubs[options.club - 1]] = [
-    orderedClubs[options.club - 1]!,
-    orderedClubs[63]!
-  ];
   return {
     attackCarry: emptyAttackCarry(),
     cash: 100_000,
     club: 64,
-    clubs: orderedClubs,
+    clubs: squads?.clubs ?? orderedClubs,
     ...(options.colour === undefined ? {} : { colour: options.colour }),
     cupFinished: false,
     cupRound: 0,
     debt: 0,
     division: 4,
+    ...(squads ? { freeAgents: squads.freeAgents } : {}),
     homeGate: 5000,
     league: Array.from({ length: 16 }, () => ({
       against: 0,
@@ -148,7 +171,8 @@ export const createNewGame = (options: {
     ruleset,
     scheduleCounter: 1,
     seasons: 0,
-    seed: rng.seed
+    seed: rng.seed,
+    ...(squads ? { squadSeed: squads.squadSeed } : {})
   };
 };
 
@@ -275,7 +299,7 @@ export const respondToSale = (
 ): Game => {
   const rng = createRng(game.seed);
   const injured = !accepted && rng.int(1, 3) !== 1;
-  return {
+  const responded: Game = {
     ...game,
     cash: game.cash + (accepted ? offer.amount : 0),
     players: game.players.map(player =>
@@ -286,5 +310,20 @@ export const respondToSale = (
         : player
     ),
     seed: rng.seed
+  };
+  if (!accepted || !clubSquads(game.ruleset) || offer.buyerId === game.club) {
+    return responded;
+  }
+  return {
+    ...responded,
+    ...joinBuyer(
+      game.clubs,
+      game.freeAgents!,
+      responded.players,
+      responded.players[offer.playerId - 1]!,
+      offer.buyerId,
+      5 - game.division,
+      game.squadSeed!
+    )
   };
 };

@@ -1,5 +1,6 @@
 import type { Player } from './management';
 import { createRng, type Rng } from './rng';
+import { playerCategory } from './squads';
 
 /**
  * One decisive event in a match (#107): a goal, a save or a near miss, at a
@@ -28,9 +29,7 @@ const categoryWeight = [1, 2, 4] as const;
 /** A picked player, weighted by skill and leaning towards attackers. */
 const pickShooter = (rng: Rng, players: readonly Player[]) => {
   const picked = players.filter(p => p.status === 2);
-  const weights = picked.map(
-    p => p.skill * categoryWeight[Math.floor((p.id - 1) / 8)]!
-  );
+  const weights = picked.map(p => p.skill * categoryWeight[playerCategory(p)]!);
   const total = weights.reduce((sum, w) => sum + w, 0);
   if (total === 0) {
     return undefined;

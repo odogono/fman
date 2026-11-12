@@ -2,16 +2,20 @@ import { framePeriod, validateFrames } from './frame-clock';
 import type { Game } from './management';
 import { nameBytes } from './names';
 import {
+  clubSquads,
   gracePeriodWeeks,
   isRuleset,
   presentDay,
   tiringInjuries,
   type Ruleset
 } from './ruleset';
+import { positions } from './squads';
 
-export const saveLimit = 100_000;
+// Room for a journal's 5000 inputs on top of a game: about 8 KB, or 50 KB
+// under club squads (#113), whose 872 players outside the places are saved too.
+export const saveLimit = 200_000;
 /** The version every save is written with. */
-export const saveVersion = 10;
+export const saveVersion = 11;
 /** The first save version whose games name their ruleset. */
 export const rulesetSaveVersion = 6;
 /** The first save version whose title-screen journals name their ruleset. */
@@ -55,6 +59,14 @@ const position = (v: unknown) =>
   integer(v.x, -256, 256) &&
   integer(v.y, -256, 256);
 
+/** A player outside the 24 places under club squads (#113). */
+const squadPlayer = (v: unknown) =>
+  record(v) &&
+  keys(v, ['name', 'position', 'skill']) &&
+  text(v.name, 8) &&
+  positions.includes(v.position as never) &&
+  integer(v.skill, 0, 100);
+
 /** Two inks the highlights can tell from the grass and from each other. */
 const kit = (v: unknown) =>
   record(v) &&
@@ -86,6 +98,7 @@ export const validGame = (v: unknown): v is Game => {
       'cupFinished',
       'cupRound',
       'division',
+      'freeAgents',
       'graceWeeks',
       'league',
       'leagueHome',
@@ -96,9 +109,15 @@ export const validGame = (v: unknown): v is Game => {
       'morale',
       'players',
       'ruleset',
-      'seed'
+      'seed',
+      'squadSeed'
     ]) &&
     isRuleset(v.ruleset) &&
+    (clubSquads(v.ruleset)
+      ? integer(v.squadSeed, 0, 65_535) &&
+        Array.isArray(v.freeAgents) &&
+        v.freeAgents.every(squadPlayer)
+      : v.squadSeed === undefined && v.freeAgents === undefined) &&
     (v.graceWeeks === undefined ||
       integer(v.graceWeeks, 0, gracePeriodWeeks(v.ruleset) ?? -1)) &&
     numeric.every(key => integer(v[key])) &&
@@ -121,9 +140,13 @@ export const validGame = (v: unknown): v is Game => {
     array(
       v.clubs,
       64,
-      c =>
+      (c, i) =>
         record(c) &&
-        keys(c, ['ink', 'kit', 'name', 'paper', 'width']) &&
+        keys(c, ['ink', 'kit', 'name', 'paper', 'squad', 'width']) &&
+        // Every club but the managed one keeps its squad outside the places.
+        (clubSquads(v.ruleset as Ruleset) && i + 1 !== v.club
+          ? Array.isArray(c.squad) && c.squad.every(squadPlayer)
+          : c.squad === undefined) &&
         text(c.name, c.ink === null ? 12 : 10) &&
         (c.ink === null || integer(c.ink, 0, 7)) &&
         (c.paper === undefined || integer(c.paper, 0, 7)) &&
@@ -144,6 +167,7 @@ export const validGame = (v: unknown): v is Game => {
           'energy',
           'id',
           'name',
+          'position',
           'skill',
           'status',
           'value',
@@ -154,6 +178,9 @@ export const validGame = (v: unknown): v is Game => {
           (tiringInjuries(v.ruleset as Ruleset) &&
             p.status === 3 &&
             integer(p.weeksOut, 1, 3))) &&
+        (clubSquads(v.ruleset as Ruleset)
+          ? positions.includes(p.position as never)
+          : p.position === undefined) &&
         text(p.name, 8) &&
         integer(p.status, 0, 3) &&
         integer(p.skill, 0, 100) &&
@@ -192,6 +219,11 @@ export const savedGame = (v: unknown, version: number): Game | undefined => {
     Array.isArray(v.players) &&
     v.players.some(p => record(p) && 'weeksOut' in p)
   ) {
+    return undefined;
+  }
+  // Club squads (#113) arrived in version 11; their ruleset rejects any
+  // earlier save, since it was never written without them.
+  if (version < 11 && record(v) && v.ruleset === 'club-squads') {
     return undefined;
   }
   if (version >= rulesetSaveVersion) {

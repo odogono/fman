@@ -18,17 +18,17 @@ const count = (players: readonly { position: string }[]) =>
 
 const players = [...data.freeAgents, ...Object.values(data.squads).flat()];
 
-test('every present-day club owns a squad of 1/4/4/3', () => {
+test('every present-day club owns a squad of 1/3/4/4, four to each playing category', () => {
   expect(Object.keys(data.squads).sort()).toEqual(
     presentDayClubs.map(club => club.name).sort()
   );
   for (const squad of Object.values(data.squads)) {
-    expect(count(squad)).toEqual({ DF: 4, FW: 3, GK: 1, MF: 4 });
+    expect(count(squad)).toEqual({ DF: 3, FW: 4, GK: 1, MF: 4 });
   }
 });
 
-test('there are 128 free agents: 8 goalkeepers and 40 of each other position', () => {
-  expect(count(data.freeAgents)).toEqual({ DF: 40, FW: 40, GK: 8, MF: 40 });
+test('there are 128 free agents, as evenly split between the playing categories as 128 allows', () => {
+  expect(count(data.freeAgents)).toEqual({ DF: 35, FW: 42, GK: 8, MF: 43 });
 });
 
 test('every name fits the original eight characters of printable Spectrum text', () => {

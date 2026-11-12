@@ -24,8 +24,8 @@ const positions = (counts: Readonly<Record<Position, number>>): Position[] =>
   (['GK', 'DF', 'MF', 'FW'] as const).flatMap(position =>
     Array.from({ length: counts[position] }, () => position)
   );
-const squadPositions = positions({ DF: 4, FW: 3, GK: 1, MF: 4 });
-const freeAgentPositions = positions({ DF: 40, FW: 40, GK: 8, MF: 40 });
+const squadPositions = positions({ DF: 3, FW: 4, GK: 1, MF: 4 });
+const freeAgentPositions = positions({ DF: 35, FW: 42, GK: 8, MF: 43 });
 
 export const generateSquads = (): ClubSquads => {
   const rng = createRng(seed);

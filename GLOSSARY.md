@@ -25,6 +25,10 @@ Where a player plays: goalkeeper, defence, midfield or attack. A goalkeeper coun
 A player who belongs to no club's squad. Transfer offers are drawn from the free agents, and clubs release their surplus players to them at the season end.
 _Avoid_: Unemployed, pool
 
+**Transfer list**:
+The free agents who can be offered to the manager, numbered alongside the managed club's squad in the places that squad doesn't fill.
+_Avoid_: Market when referring to these players; the market is the weekly offer
+
 **Skill**:
 A player's football ability, contributing to the strength of their playing category.
 

@@ -14,6 +14,7 @@
     "build": "bun run --cwd web build",
     "baseline": "bun tools/bots/cli.ts baseline",
     "baseline:compare": "bun tools/bots/cli.ts compare",
+    "squads": "bun tools/squads/generate.ts",
     "typecheck": "tsc --noEmit && bun run --cwd web typecheck",
     "test": "bun test tools && bun run --cwd web test",
     "lint": "eslint --cache .",

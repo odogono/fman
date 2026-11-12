@@ -1,5 +1,6 @@
 import { coloursText, levels } from '../sim/catalogue';
 import type { Game, Player } from '../sim/management';
+import { tiringInjuries } from '../sim/ruleset';
 import type { Paint } from './grid';
 import { createPrintScreen } from './print-screen';
 
@@ -45,9 +46,23 @@ export const paintStatus = (game: Game, put: Paint) => {
   print.paint(put);
 };
 
+/**
+ * The status cell: `p` for picked, and for an injury `i`, or under tiring
+ * injuries (#98) the weeks left out, 1–3.
+ */
+const statusText = (player: Player, weeksOut: boolean) =>
+  player.status === 2
+    ? 'p'
+    : player.status === 3
+      ? weeksOut
+        ? String(player.weeksOut ?? 1)
+        : 'i'
+      : ' ';
+
 export const printPlayer = (
   player: Player,
-  print: ReturnType<typeof createPrintScreen>
+  print: ReturnType<typeof createPrintScreen>,
+  weeksOut = false
 ) => {
   const category = Math.floor((player.id - 1) / 8);
   print.reset({ ink: category });
@@ -62,7 +77,7 @@ export const printPlayer = (
   print.tab(24);
   print.text(`£${player.value}`);
   print.tab(31);
-  print.text(player.status > 1 ? (player.status === 2 ? 'p' : 'i') : ' ', {
+  print.text(statusText(player, weeksOut), {
     ink: player.status > 1 ? (player.status === 2 ? 3 : 4) : 6,
     inverse: true
   });
@@ -88,15 +103,22 @@ export const paintSquad = (
   selection = false
 ) => {
   const print = createPrintScreen(game.leagueMatches > 0);
+  const weeksOut = tiringInjuries(game.ruleset);
   print.text('p', { ink: 3, inverse: true });
-  print.text(' = picked to play, ', { ink: 0, inverse: false });
-  print.text('i', { ink: 4, inverse: true });
-  print.text(' = injured', { ink: 0, inverse: false });
+  if (weeksOut) {
+    print.text(' = picked, ', { ink: 0, inverse: false });
+    print.text('1-3', { ink: 4, inverse: true });
+    print.text(' = weeks injured', { ink: 0, inverse: false });
+  } else {
+    print.text(' = picked to play, ', { ink: 0, inverse: false });
+    print.text('i', { ink: 4, inverse: true });
+    print.text(' = injured', { ink: 0, inverse: false });
+  }
   print.newline();
   print.text('  NAME   NO. SKILL ENERGY VALUE', { bright: true, paper: 6 });
   print.newline();
   const players = game.players.filter(player => player.status > 0);
-  players.forEach(player => printPlayer(player, print));
+  players.forEach(player => printPlayer(player, print, weeksOut));
   print.text('PLAYERS PICKED', { inverse: true });
   print.text(`=${picked}`, { inverse: false });
   print.newline();

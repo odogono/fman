@@ -212,14 +212,12 @@ const passive: Strategy = {
 };
 
 /**
- * Picks by skill × energy, keeps four weeks of bills in hand, buys good
- * players it can afford out of that surplus, sells its weakest reserve
- * above fourteen players, and pays debt off with the rest. Borrowing never
- * delays dismissal (a loan adds to the debt it is judged on), so it never
- * borrows.
+ * Balanced's play, with the squad size it sells down to and the energy at
+ * or below which a player is rested whenever enough others are available.
  */
-const balanced: Strategy = {
-  create: () => {
+const balancedPlay =
+  (squadSize: number, restAtOrBelow: number): Strategy['create'] =>
+  () => {
     let bidFor: number | undefined;
     return view => {
       const { game } = view;
@@ -233,7 +231,7 @@ const balanced: Strategy = {
           if (game.debt > 0 && game.cash > buffer) {
             return 'p';
           }
-          if (owned(game).length > 14 && weakestReserve) {
+          if (owned(game).length > squadSize && weakestReserve) {
             return 'a';
           }
           return '99';
@@ -248,7 +246,10 @@ const balanced: Strategy = {
         case 'selection':
           return pickToward(
             view,
-            topEleven(game, p => p.skill * p.energy)
+            // A rested player scores below every fit one, by energy.
+            topEleven(game, p =>
+              p.energy <= restAtOrBelow ? p.energy / 100 : p.skill * p.energy
+            )
           );
         case 'transfer': {
           const player = game.players[view.playerId - 1]!;
@@ -268,10 +269,33 @@ const balanced: Strategy = {
           throw new Error(`Balanced never reaches ${view.screen}`);
       }
     };
-  },
+  };
+
+/**
+ * Picks by skill × energy, keeps four weeks of bills in hand, buys good
+ * players it can afford out of that surplus, sells its weakest reserve
+ * above fourteen players, and pays debt off with the rest. Borrowing never
+ * delays dismissal (a loan adds to the debt it is judged on), so it never
+ * borrows.
+ */
+const balanced: Strategy = {
+  create: balancedPlay(14, 0),
   description:
     'Picks by skill × energy, buys good players from spare cash, sells surplus reserves and repays debt; never borrows.',
   name: 'balanced'
+};
+
+/**
+ * Plays as balanced does, but keeps a deeper squad, selling only above
+ * eighteen players, and rests anyone at energy 8 or below while enough
+ * others are available (#98). It measures what lasting injuries offer a
+ * manager who rotates.
+ */
+const rotating: Strategy = {
+  create: balancedPlay(18, 8),
+  description:
+    'Plays as balanced, but keeps up to eighteen players and rests tired ones.',
+  name: 'rotating'
 };
 
 /**
@@ -374,7 +398,8 @@ export const strategies: readonly Strategy[] = [
   passive,
   balanced,
   aggressive,
-  recovering
+  recovering,
+  rotating
 ];
 
 export const strategyNamed = (name: string) => {

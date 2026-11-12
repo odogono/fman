@@ -12,7 +12,7 @@ import {
  * gathers the accepted rule changes, and a game keeps the version it started
  * with, so every released version stays playable. An experimental ruleset
  * carries one change alone while it is measured against the original
- * (`moment-highlights`), and is retired once the change joins Enhanced (`even-difficulty`, `grace-period`,
+ * (`moment-highlights`, `club-squads`), and is retired once the change joins Enhanced (`even-difficulty`, `grace-period`,
  * `lasting-skill`, `steep-difficulty`, `tiring-injuries`).
  */
 export const rulesets = [
@@ -22,7 +22,8 @@ export const rulesets = [
   'enhanced-3',
   'enhanced-4',
   'enhanced-5',
-  'moment-highlights'
+  'moment-highlights',
+  'club-squads'
 ] as const;
 export type Ruleset = (typeof rulesets)[number];
 
@@ -39,6 +40,7 @@ type Difficulty = 'original' | 'smooth' | 'steep';
 const changes: Record<
   Ruleset,
   {
+    clubSquads: boolean;
     difficulty: Difficulty;
     gracePeriod: boolean;
     lastingSkill: boolean;
@@ -47,7 +49,17 @@ const changes: Record<
     tiringInjuries: boolean;
   }
 > = {
+  'club-squads': {
+    clubSquads: true,
+    difficulty: 'steep',
+    gracePeriod: true,
+    lastingSkill: true,
+    momentHighlights: false,
+    presentDay: true,
+    tiringInjuries: true
+  },
   'enhanced-1': {
+    clubSquads: false,
     difficulty: 'smooth',
     gracePeriod: false,
     lastingSkill: false,
@@ -56,6 +68,7 @@ const changes: Record<
     tiringInjuries: false
   },
   'enhanced-2': {
+    clubSquads: false,
     difficulty: 'smooth',
     gracePeriod: true,
     lastingSkill: false,
@@ -64,6 +77,7 @@ const changes: Record<
     tiringInjuries: false
   },
   'enhanced-3': {
+    clubSquads: false,
     difficulty: 'smooth',
     gracePeriod: true,
     lastingSkill: false,
@@ -72,6 +86,7 @@ const changes: Record<
     tiringInjuries: false
   },
   'enhanced-4': {
+    clubSquads: false,
     difficulty: 'steep',
     gracePeriod: true,
     lastingSkill: true,
@@ -80,6 +95,7 @@ const changes: Record<
     tiringInjuries: false
   },
   'enhanced-5': {
+    clubSquads: false,
     difficulty: 'steep',
     gracePeriod: true,
     lastingSkill: true,
@@ -88,6 +104,7 @@ const changes: Record<
     tiringInjuries: true
   },
   'moment-highlights': {
+    clubSquads: false,
     difficulty: 'original',
     gracePeriod: false,
     lastingSkill: false,
@@ -96,6 +113,7 @@ const changes: Record<
     tiringInjuries: false
   },
   original: {
+    clubSquads: false,
     difficulty: 'original',
     gracePeriod: false,
     lastingSkill: false,
@@ -186,3 +204,11 @@ export const tiringInjuries = (ruleset: Ruleset) =>
  */
 export const momentHighlights = (ruleset: Ruleset) =>
   changes[ruleset].momentHighlights;
+
+/**
+ * Whether every present-day club owns a squad of invented players, with the
+ * managed club's squad and the transfer list in the original's 24 numbered
+ * places, and transfer offers drawn from free agents (#113, measured as
+ * `club-squads` on top of `enhanced-5`). Squads don't change how matches play.
+ */
+export const clubSquads = (ruleset: Ruleset) => changes[ruleset].clubSquads;

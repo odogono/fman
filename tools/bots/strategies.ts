@@ -4,6 +4,7 @@ import {
   type Player
 } from '../../web/src/sim/management';
 import type { View } from '../../web/src/sim/session';
+import { playerCategory } from '../../web/src/sim/squads';
 import type { HarnessRng } from './random';
 
 /** The screens on which a strategy decides; the runner answers the rest. */
@@ -74,15 +75,15 @@ export const topEleven = (game: Game, score: (p: Player) => number) =>
  *
  * Total strength is the sum of the five team-strength attributes a picked
  * team would have, as the original computes them: average energy over
- * eleven, and skill summed per playing category (players 1-8, 9-16,
- * 17-24), each 1 to 20. Ties go to the higher skill × 20 + energy, then to
- * the first team in id order. The sums are kept as the search goes, so a
+ * eleven, and skill summed per playing category (by position under club
+ * squads, otherwise players 1-8, 9-16, 17-24), each 1 to 20. Ties go to the
+ * higher skill × 20 + energy, then to the first team in id order. The sums are kept as the search goes, so a
  * candidate team costs a few additions rather than a pass over its players.
  */
 export const strongestTeam = (game: Game) => {
   const pool = [...available(game)].sort((a, b) => a.id - b.id);
   const size = Math.min(11, pool.length);
-  const category = pool.map(p => Math.floor((p.id - 1) / 8));
+  const category = pool.map(playerCategory);
   const chosen: number[] = [];
   const skill = [0, 0, 0];
   let energy = 0;

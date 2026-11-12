@@ -1,3 +1,5 @@
+import type { SquadPlayer } from './squads';
+
 export const levels = [
   'Beginner',
   'Novice',
@@ -45,6 +47,11 @@ export type Club = Readonly<{
   name: string;
   /** A name colour's paper, when it is not the screen's white. */
   paper?: number;
+  /**
+   * The club's squad under `clubSquads` (#113), most recent signing last;
+   * absent for the managed club, whose squad is in the 24 places.
+   */
+  squad?: readonly SquadPlayer[];
   width?: number;
 }>;
 

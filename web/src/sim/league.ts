@@ -3,6 +3,7 @@ import { scorePrintReport, tablePrintReport } from './name-print-fault';
 import { add, divide, floor, fromNumber, multiply, toNumber } from './numeric';
 import { createRng } from './rng';
 import { opponentBonus } from './ruleset';
+import { playerCategory } from './squads';
 
 const clamp = (value: number) => Math.max(1, Math.min(20, value));
 export const teamStrength = (game: Game): number[] => {
@@ -12,7 +13,7 @@ export const teamStrength = (game: Game): number[] => {
       continue;
     }
     result[0] = result[0]! + player.energy;
-    const category = Math.floor((player.id - 1) / 8) + 2;
+    const category = playerCategory(player) + 2;
     result[category] = result[category]! + player.skill;
   }
   result[0] = Math.floor(result[0]! / 11);

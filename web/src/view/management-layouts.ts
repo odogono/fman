@@ -1,6 +1,7 @@
 import { coloursText, levels } from '../sim/catalogue';
 import type { Game, Player } from '../sim/management';
 import { tiringInjuries } from '../sim/ruleset';
+import { playerCategory } from '../sim/squads';
 import type { Paint } from './grid';
 import { createPrintScreen } from './print-screen';
 
@@ -64,7 +65,7 @@ export const printPlayer = (
   print: ReturnType<typeof createPrintScreen>,
   weeksOut = false
 ) => {
-  const category = Math.floor((player.id - 1) / 8);
+  const category = playerCategory(player);
   print.reset({ ink: category });
   print.text(['D█', 'M█', 'A█'][category]!, { inverse: true });
   print.text('', { inverse: false });

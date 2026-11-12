@@ -2,7 +2,8 @@ import type { Club } from './catalogue';
 import type { Game } from './management';
 import { movementPrintReport } from './name-print-fault';
 import { createRng } from './rng';
-import { lastingSkill, tiringInjuries } from './ruleset';
+import { clubSquads, lastingSkill, tiringInjuries } from './ruleset';
+import { releaseAndRelist, renewSkill } from './squads';
 
 export type ClubMovement = Readonly<{
   club: Club;
@@ -100,7 +101,18 @@ export const completeSeason = (game: Game) => {
   const lasting = lastingSkill(game.ruleset);
   // Under tiring injuries (#98) every injury heals at the season end.
   const healing = tiringInjuries(game.ruleset);
-  const players = game.players.map(p => {
+  // Under club squads (#113) the squads change around the original's draws
+  // over the 24 places, from their own stream.
+  const relisted = clubSquads(game.ruleset)
+    ? releaseAndRelist(
+        clubs,
+        game.freeAgents!,
+        game.players,
+        factor,
+        game.squadSeed!
+      )
+    : undefined;
+  const players = (relisted?.players ?? game.players).map(p => {
     // Skill drift draws one number, as the reroll does, so every later draw
     // is the same under both rules.
     const skill =
@@ -115,6 +127,14 @@ export const completeSeason = (game: Game) => {
     }
     return next;
   });
+  const squads = relisted
+    ? renewSkill(
+        relisted.clubs,
+        relisted.freeAgents,
+        lasting,
+        relisted.squadSeed
+      )
+    : undefined;
   return {
     bonus,
     finalPosition,
@@ -122,10 +142,11 @@ export const completeSeason = (game: Game) => {
       ...game,
       cash: game.cash + bonus,
       club,
-      clubs,
+      clubs: squads?.clubs ?? clubs,
       cupFinished: false,
       cupRound: 0,
       division,
+      ...(squads ? { freeAgents: squads.freeAgents } : {}),
       homeGate: 5000 * factor,
       league: game.league.map(() => ({
         against: 0,
@@ -142,7 +163,8 @@ export const completeSeason = (game: Game) => {
       ratingTotal,
       scheduleCounter: 1,
       seasons,
-      seed: rng.seed
+      seed: rng.seed,
+      ...(squads ? { squadSeed: squads.squadSeed } : {})
     },
     movements,
     printFault: undefined

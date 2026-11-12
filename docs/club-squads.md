@@ -8,8 +8,10 @@ This version is groundwork. Squads don't change how matches play: opponent stren
 
 [`tools/squads/`](../tools/squads/README.md) writes the 896 invented players to `web/src/sim/data/club-squads.json`:
 
-- A squad of 12 for every present-day club: 1 goalkeeper, 4 defenders, 4 midfielders and 3 attackers.
-- 128 free agents: 8 goalkeepers and 40 of each other position.
+- A squad of 12 for every present-day club: 1 goalkeeper, 3 defenders, 4 midfielders and 4 attackers.
+- 128 free agents: 8 goalkeepers, 35 defenders, 43 midfielders and 42 attackers.
+
+That is four players to each playing category in a squad, with the goalkeeper among the defence, and the free agents as near even as 128 allows. The original draws a new game's 12 players and its transfer list evenly from the three categories, and a more realistic mix measured worse (below).
 
 A player's **position** belongs to him. A goalkeeper counts as a defender, in team strength and anywhere else a playing category is used, and no rule says one must be picked.
 
@@ -37,9 +39,12 @@ The Spectrum RND sequence sees exactly the draws `enhanced-5` makes. Every draw 
 
 ## Result
 
-Measured against `enhanced-5`: 200 runs per level and strategy, 10 seasons ([full baseline](baseline/club-squads.md)). 77 of 630 metric means differ beyond sampling noise, and most of them are the balanced strategy's:
+Measured against `enhanced-5`: 200 runs per level and strategy, 10 seasons ([full baseline](baseline/club-squads.md)). 81 of 630 metric means differ beyond sampling noise, most of them small and in both directions:
 
-- **Balanced** wins 2–5 points fewer league matches at every level, concedes 0.06–0.13 more goals a match, and from level 4 finishes 0.6–1.1 league places lower and about 0.3 divisions lower.
-- **Passive, rotating, aggressive and recovering** change by at most about a point of league win rate, or by amounts within noise.
+- **Balanced** wins 1–2 points fewer league matches at some levels (within noise at others), concedes 0.04–0.06 more goals a match, and finishes up to half a league place lower.
+- **Rotating** does slightly better: about 2 points more league wins at levels 3 and 5, and more promotions at levels 4 and 5.
+- **Passive** scores and concedes about 0.05 fewer goals a match. Aggressive and recovering change by amounts at the edge of noise.
 
-So squads don't leave the game as it was. The likeliest cause, not yet confirmed, is the mix of positions. In the original a new game's 12 players are a random draw from 8 of each playing category, and so is the transfer list. Under club squads the managed club starts with a fixed 5 defenders (the goalkeeper among them), 4 midfielders and 3 attackers, and the free agents are split 48/40/40. Balanced picks and buys by skill × energy without regard to category, and each category's strength is capped at 20, so a lopsided team wastes skill. Whether to rebalance the positions, or accept the change, is to be settled before promotion.
+The first measurement used a realistic mix: 1 goalkeeper, 4 defenders, 4 midfielders and 3 attackers in a squad, and free agents of 8 goalkeepers and 40 of each other position. With that mix balanced won 2–5 points fewer league matches at every level and finished up to 1.1 places lower. Balanced picks and buys by skill × energy without regard to category, and each category's strength is capped at 20, so a team heavy in defence wastes skill. The even mix halves that gap and keeps the game closest to `enhanced-5`, as groundwork should.
+
+What remains of balanced's gap is not yet explained. The likeliest cause is how players move: in the original a sold player returns to the transfer list and can be bought again, while under club squads he leaves for the buying club and the transfer list is drawn again each season. Balanced sells more than any other strategy.

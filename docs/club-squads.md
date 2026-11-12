@@ -36,6 +36,7 @@ So the NO. column, every prompt and error message, and the bots' answers stay as
 ## On screen
 
 - The squad and transfer screens tag each player by his position: `D█`, `M█` and `A█` as before, and `G█` for a goalkeeper, in defence's ink.
+- The squad screen lists the squad by position, goalkeeper first, then defence, midfield and attack, and by number within each, since a bought player can take any place.
 - The name editor renames the 64 clubs and the 24 places. Its player pages are titled `Players 1-8`, `Players 9-16` and `Players 17-24`, since positions no longer follow the numbers. Other clubs' players can't be renamed.
 - **Clubs**, in the game menu, lists any club's squad by name and position, without skill. It opens on the managed club. Free agents aren't listed, so the weekly offer is still a surprise.
 

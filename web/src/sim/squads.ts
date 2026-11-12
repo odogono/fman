@@ -39,6 +39,16 @@ export const playerCategory = (player: Player) =>
     ? Math.floor((player.id - 1) / 8)
     : positionCategory(player.position);
 
+/**
+ * A squad in the order the squad screen lists it: defence, midfield, then
+ * attack, a goalkeeper ahead of the defenders, and by number within each.
+ * Without positions this is the original's order by number.
+ */
+export const inSquadOrder = (players: readonly Player[]) => {
+  const rank = (p: Player) => (p.position === 'GK' ? -1 : playerCategory(p));
+  return players.toSorted((a, b) => rank(a) - rank(b) || a.id - b.id);
+};
+
 /** Seeds the squad stream from the game's seed, away from the RND sequence. */
 const squadSeedFor = (seed: number) => seed ^ 0xa5_a5;
 

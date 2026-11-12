@@ -54,4 +54,21 @@ Measured against `enhanced-5`: 200 runs per level and strategy, 10 seasons ([ful
 
 The first measurement used a realistic mix: 1 goalkeeper, 4 defenders, 4 midfielders and 3 attackers in a squad, and free agents of 8 goalkeepers and 40 of each other position. With that mix balanced won 2–5 points fewer league matches at every level and finished up to 1.1 places lower. Balanced picks and buys by skill × energy without regard to category, and each category's strength is capped at 20, so a team heavy in defence wastes skill. The even mix halves that gap and keeps the game closest to `enhanced-5`, as groundwork should.
 
-What remains of balanced's gap is not yet explained. The likeliest cause is how players move: in the original a sold player returns to the transfer list and can be bought again, while under club squads he leaves for the buying club and the transfer list is drawn again each season. Balanced sells more than any other strategy.
+### Balanced's remaining gap
+
+[#122](https://github.com/odogono/fman/issues/122) found the cause of the rest of balanced's gap. It comes from positions, not from how sold players move.
+
+For the 24 places, `enhanced-6` differs from `enhanced-5` in only two ways. A player's category comes from his position instead of his place, and a sold player is replaced in his place by a free agent. Both rulesets reroll a listed place's skill, energy and value from the RND sequence at the season end. So relisting changes only names and positions. Balanced was measured over 1,000 runs per level, with each difference switched off in turn:
+
+| Balanced, all levels                       | `enhanced-5` | `enhanced-6` | sold players stay listed | category by place | both  |
+| ------------------------------------------ | ------------ | ------------ | ------------------------ | ----------------- | ----- |
+| League win rate                            | 55.4%        | 54.0%        | 53.8%                    | 55.7%             | 55.4% |
+| Picked skill per week                      | 44.5         | 44.6         | 44.5                     | 44.6              | 44.5  |
+| Skill above a category's cap of 20, a week | 1.58         | 2.40         | 2.26                     | 1.62              | 1.58  |
+| Weakest category's strength                | 12.1         | 11.1         | 11.1                     | 12.1              | 12.1  |
+
+With both switched off, the runs match `enhanced-5` exactly. Keeping sold players on the list doesn't help. Taking a player's category from his place closes the whole gap, at every level.
+
+Balanced fields as much skill as before, but more of it lands in a category that is already full. In the original the transfer list is the places the club doesn't own, so its categories mirror the squad's: a squad short of attackers has more attackers' places on the list. At level 4, 55% of offers fall in the squad's thinnest category under `enhanced-5`, against 43% under `enhanced-6`. The squad's spread between its largest and smallest category grows from 2.35 to 2.95 players. A free agent's position doesn't depend on the squad, so club squads lose this balancing. Balanced buys by skill without regard to category, so it feels the loss most. Aggressive picks the strongest team by category and doesn't lose.
+
+The gap is accepted. The balancing was an accident of the original's numbering, not a rule, and a manager who buys with positions in mind keeps it. A later Enhanced version could draw a listed free agent of his place's category, so that a defender's place gets a defender, but that would need measuring as an experimental ruleset first.

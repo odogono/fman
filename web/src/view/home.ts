@@ -46,7 +46,7 @@ export type Home = Readonly<{
   morale: number;
 }>;
 
-const clubName = (club: Club): ClubName => ({
+export const clubName = (club: Club): ClubName => ({
   ink: clubInk(club),
   name: club.name.trim(),
   paper: club.paper ?? 7

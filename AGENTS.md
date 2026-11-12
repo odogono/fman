@@ -4,7 +4,7 @@
 
 - `web/src/sim`: the headless, deterministic simulation (no DOM, seeded RNG only)
 - `web/src/view`: rendering and input
-- `tools/`: repo tooling (`tools/commits/`: commit and changelog checks; `tools/zx/`: runs the original game, see its README; `tools/bots/`: the automated gameplay baseline, see `docs/gameplay-baseline.md`)
+- `tools/`: repo tooling (`tools/commits/`: commit and changelog checks; `tools/zx/`: runs the original game, see its README; `tools/bots/`: the automated gameplay baseline, see `docs/gameplay-baseline.md`; `tools/squads/`: writes the invented players of `club-squads`, see its README)
 - `docs/`: how each feature matches the original; index in `docs/README.md`. Agent workflows:
   - Reproducing original behaviour: `docs/agents/feature-loop.md`
   - Adding or promoting a ruleset: `docs/agents/ruleset-loop.md`

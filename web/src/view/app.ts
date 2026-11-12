@@ -14,6 +14,7 @@ import { answersFor, printAccepted, type OfferedAnswer } from './answers';
 import { barFor, tickerBar, type BarButton } from './context-bar';
 import { createFrameSampler } from './frame-sampler';
 import { homeFor, type Home } from './home';
+import { pickTeamFor, type PickTeam } from './pick-team';
 import {
   isRules,
   rulesChoices,
@@ -96,6 +97,11 @@ export type Dom = {
      * menu prompt waits, so the Home screen stands in for it.
      */
     home: Home | undefined;
+    /**
+     * Modern mode's pick team screen, standing in for the team and
+     * selection prompts and their bar.
+     */
+    pickTeam: PickTeam | undefined;
     /** The name of the screen on show, for the title above it. */
     title: string;
     /**
@@ -302,7 +308,8 @@ export const createApp = ({
     ) {
       dom.notice('Printing stopped. Open the menu to start a new game.');
     }
-    const bar = barShown() && !home;
+    const pickTeam = modern() ? pickTeamFor(view) : undefined;
+    const bar = barShown() && !home && !pickTeam;
     const answers = answersFor(view);
     const ticking = tickerRunning();
     const buttons = ticking ? tickerBar : bar ? barFor(answers) : undefined;
@@ -317,6 +324,7 @@ export const createApp = ({
         modern() && view.game
           ? homeFor({ ...view, game: view.game })
           : undefined,
+      pickTeam,
       title: screenTitle(view),
       typing: typingTaken(),
       view

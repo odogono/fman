@@ -590,6 +590,202 @@ main {
     display: block;
   }
 }
+/* Modern mode's pick team screen (#44): the team and selection prompts. */
+.pick-team[hidden] {
+  display: none;
+}
+.pick-team {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  width: 100%;
+  max-width: 480px;
+  font:
+    15px/1.3 system-ui,
+    sans-serif;
+}
+.pick-team p {
+  margin: 0;
+}
+.pick-team h3,
+.pick-count {
+  font-family: Spectrum, monospace;
+  font-weight: normal;
+  font-synthesis: none;
+}
+.pick-count {
+  padding: 4px 8px;
+  background: var(--normal-0);
+  color: var(--bright-7);
+  font-size: 16px;
+  line-height: 24px;
+  text-align: center;
+  text-transform: uppercase;
+}
+.pick-legend,
+.pick-hint {
+  text-align: center;
+}
+.pick-hint {
+  font-weight: 600;
+}
+.pick-strengths {
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+.pick-strengths th,
+.pick-strengths td {
+  padding: 2px 4px;
+  text-align: right;
+}
+.pick-strengths tbody th {
+  font-weight: normal;
+  text-align: left;
+}
+.pick-group {
+  display: grid;
+}
+.pick-group h3 {
+  margin: 8px 0 4px;
+  font-size: 22px;
+  line-height: 28px;
+}
+.pick-group.category-1 {
+  --ink: var(--normal-1);
+}
+.pick-group.category-2 {
+  --ink: var(--normal-2);
+}
+.pick-group h3,
+.pick-row {
+  color: var(--ink, var(--normal-0));
+}
+.pick-row {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) 30px 36px 48px 74px 26px;
+  gap: 4px;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  padding: 0 4px;
+  border: 0;
+  border-bottom: 1px solid var(--normal-0);
+  background: transparent;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  text-align: left;
+}
+button.pick-row {
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+button.pick-row:hover {
+  background: var(--bright-7);
+}
+button.pick-row:focus-visible {
+  outline: 3px solid var(--normal-0);
+  outline-offset: -3px;
+}
+.pick-row.pick-header {
+  min-height: 28px;
+  background: var(--bright-6);
+  color: var(--normal-0);
+  font-weight: 600;
+}
+.pick-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pick-number,
+.pick-skill,
+.pick-energy,
+.pick-value {
+  text-align: right;
+}
+.pick-tag,
+.pick-marker {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  font-family: Spectrum, monospace;
+  font-size: 14px;
+}
+.pick-row:not(.pick-header) .pick-tag {
+  background: var(--ink, var(--normal-0));
+  color: var(--bright-7);
+}
+.pick-row.picked .pick-marker,
+.pick-marker.picked {
+  background: var(--bright-3);
+  color: var(--bright-7);
+}
+.pick-row.injured .pick-marker,
+.pick-marker.injured {
+  padding: 0 2px;
+  background: var(--bright-4);
+  color: var(--normal-0);
+}
+.pick-none {
+  padding: 8px 4px;
+  border-bottom: 1px solid var(--normal-0);
+  color: #444;
+}
+/* The primary action stays in reach below a long squad. */
+.pick-actions {
+  position: sticky;
+  bottom: 0;
+  display: grid;
+  gap: 8px;
+  padding: 8px 0;
+  background: var(--paper);
+}
+.pick-actions button {
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 2px solid var(--normal-0);
+  color: var(--bright-7);
+  font: inherit;
+  font-size: 16px;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.pick-actions .red {
+  background: var(--bright-2);
+}
+.pick-actions .primary {
+  min-height: 56px;
+  background: var(--bright-6);
+  color: var(--normal-0);
+  font-family: Spectrum, monospace;
+  font-size: 22px;
+  font-synthesis: none;
+}
+.pick-actions button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.pick-actions button:focus-visible {
+  outline: 3px solid var(--normal-0);
+  outline-offset: 2px;
+}
+/* The pick team screen stands in for the team and selection prompts. */
+:root.modern.at-pick-team .machine,
+:root.modern.at-pick-team .context-bar {
+  display: none;
+}
+@media (min-width: 900px) and (min-aspect-ratio: 1) {
+  :root.modern main:has(#home:not([hidden])) .pick-team {
+    grid-column: 2;
+    width: 480px;
+  }
+}
 /* On paper, the amount being entered is printed in ink. */
 :root.modern .context-bar .amount {
   color: var(--normal-0);

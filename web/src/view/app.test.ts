@@ -7,9 +7,11 @@ import { latestEnhanced } from '../sim/ruleset';
 import { tickerPause } from '../sim/ticker';
 import { submitInput } from '../test/input';
 import type { AmountEntry } from './amount-entry';
+import { answersFor } from './answers';
 import { createApp, type Dom, type Menu, type MenuControl } from './app';
 import type { BarButton } from './context-bar';
 import type { Home } from './home';
+import type { PickTeam } from './pick-team';
 import { createStorage, type Options } from './storage';
 
 const frameMs = (1000 * spectrumFrameT) / spectrumClockHz;
@@ -51,6 +53,7 @@ const harness = ({
     menu: undefined as Menu | undefined,
     menuOpen: false,
     notice: '',
+    pickTeam: undefined as PickTeam | undefined,
     printed: 0,
     rendered: 0,
     title: '',
@@ -78,8 +81,9 @@ const harness = ({
     openMenu: () => {
       page.menuOpen = true;
     },
-    render: ({ amount, atHome, bar, focus, home, title, typing }) => {
+    render: ({ amount, atHome, bar, focus, home, pickTeam, title, typing }) => {
       page.amount = amount;
+      page.pickTeam = pickTeam;
       page.atHome = atHome;
       page.home = home;
       page.typing = typing;
@@ -942,6 +946,22 @@ test('Home screen choices submit the menu answers, and wait for the menu prompt'
   expect(run.view().screen).toBe('fixture');
 });
 
+/** Takes the quickest way on in Modern mode: kick off, continue or decline. */
+const playOn = (run: ReturnType<typeof harness>) => {
+  run.settle();
+  if (run.page.pickTeam) {
+    run.app.tap('team.kick-off');
+    run.app.pointerUp();
+    return;
+  }
+  const offered = run.page.bar!;
+  const next =
+    offered.find(b => b.answer.id.endsWith('.continue')) ??
+    offered.find(b => b.answer.id === 'transfer.decline') ??
+    offered.find(b => b.answer.id === 'sale.no');
+  run.tap(next!.label);
+};
+
 test('a cup round shows only the round on the Home screen, not the draw', () => {
   const run = harness({ options: modernOptions });
   run.toMenu();
@@ -949,14 +969,7 @@ test('a cup round shows only the round on the Home screen, not the draw', () => 
   run.app.pointerUp();
   for (let i = 0; run.view().screen !== 'menu'; i++) {
     expect(i).toBeLessThan(40);
-    run.settle();
-    const offered = run.page.bar!;
-    const next =
-      offered.find(b => b.answer.id === 'team.kick-off') ??
-      offered.find(b => b.answer.id.endsWith('.continue')) ??
-      offered.find(b => b.answer.id === 'transfer.decline') ??
-      offered.find(b => b.answer.id === 'sale.no');
-    run.tap(next!.label);
+    playOn(run);
   }
   expect(run.page.home?.fixture).toEqual({ title: 'F.A. Cup – Round 1' });
 });
@@ -986,15 +999,141 @@ test('during a match the Home screen shows that match, not the one after it', ()
           seen.push(fixture.kind);
         }
       }
-      const offered = run.page.bar!;
-      const next =
-        offered.find(b => b.answer.id === 'team.kick-off') ??
-        offered.find(b => b.answer.id.endsWith('.continue')) ??
-        offered.find(b => b.answer.id === 'transfer.decline') ??
-        offered.find(b => b.answer.id === 'sale.no');
-      run.tap(next!.label);
+      playOn(run);
     }
   }
+});
+
+/** Plays from the menu to the team prompt by tapping. */
+const toTeam = (run: ReturnType<typeof harness>) => {
+  run.toMenu();
+  run.app.tap('menu.play');
+  run.app.pointerUp();
+  for (let i = 0; run.view().screen !== 'team'; i++) {
+    expect(i).toBeLessThan(5);
+    run.tap('Continue');
+  }
+  run.settle();
+};
+/** Taps a pick team button, as a finger going down and up. */
+const pick = (run: ReturnType<typeof harness>, id: string) => {
+  run.settle();
+  run.app.tap(id);
+  run.wait(3);
+  run.app.pointerUp();
+  run.settle();
+};
+const liveRows = (pickTeam: PickTeam) =>
+  pickTeam.groups.flatMap(g => g.players).filter(row => row.answer);
+
+test('Modern mode picks the team on its own screen, adding then dropping as the original does', () => {
+  const run = harness({ options: modernOptions });
+  toTeam(run);
+  const team = run.page.pickTeam!;
+  // The team prompt: strengths, read-only rows, change or kick off.
+  expect(run.page.bar).toBeUndefined();
+  expect(team.prompt).toBe('team');
+  expect(team.picked).toBe(11);
+  expect(team.strengths?.rows.map(r => r[0])).toEqual([
+    'Energy',
+    'Morale',
+    'Defence',
+    'Midfield',
+    'Attack'
+  ]);
+  expect(liveRows(team)).toEqual([]);
+  expect(team.actions.map(a => [a.label, a.tone, a.enabled])).toEqual([
+    ['Change team', 'red', true],
+    ['Kick off', 'primary', true]
+  ]);
+  expect(team.groups.map(g => g.title)).toEqual([
+    'Defence',
+    'Midfield',
+    'Attack'
+  ]);
+
+  pick(run, 'team.change');
+  const adding = run.page.pickTeam!;
+  expect(run.view().screen).toBe('selection');
+  expect(adding.hint).toBe('Tap a player to add');
+  expect(adding.strengths).toBeUndefined();
+  expect(adding.actions.map(a => a.label)).toEqual(['Done – continue']);
+  // Only reserves take a tap while the original adds.
+  const reserves = liveRows(adding);
+  expect(reserves.length).toBeGreaterThan(0);
+  expect(reserves.every(row => row.status === 'reserve')).toBe(true);
+
+  pick(run, reserves[0]!.answer!);
+  const dropping = run.page.pickTeam!;
+  expect(dropping.picked).toBe(12);
+  expect(dropping.hint).toBe('12 picked – tap one to drop');
+  // No Done while twelve are picked: the original won't take 99.
+  expect(dropping.actions).toEqual([]);
+  const picked = liveRows(dropping);
+  expect(picked).toHaveLength(12);
+  expect(picked.every(row => row.status === 'picked')).toBe(true);
+
+  pick(run, picked.at(-1)!.answer!);
+  expect(run.page.pickTeam!.picked).toBe(11);
+  pick(run, 'selection.done');
+  expect(run.view().screen).toBe('team');
+  pick(run, 'team.kick-off');
+  expect(run.page.pickTeam).toBeUndefined();
+});
+
+test('every live pick team row and action is an offered answer', () => {
+  const run = harness({ options: modernOptions });
+  toTeam(run);
+  pick(run, 'team.change');
+  for (const step of [0, 1]) {
+    const shown = run.page.pickTeam!;
+    const offered = new Set(answersFor(run.view()).map(answer => answer.id));
+    for (const id of [
+      ...liveRows(shown).map(row => row.answer!),
+      ...shown.actions.map(action => action.id)
+    ]) {
+      expect(offered.has(id)).toBe(true);
+    }
+    if (step === 0) {
+      pick(run, liveRows(shown)[0]!.answer!);
+    }
+  }
+});
+
+test('the pick team screen groups by category and follows the ruleset', () => {
+  const enhanced = harness({ options: modernOptions });
+  toTeam(enhanced);
+  const shown = enhanced.page.pickTeam!;
+  // Club squads: a goalkeeper heads Defence; tiring injuries count weeks.
+  expect(shown.weeksOut).toBe(true);
+  expect(shown.groups[0]!.players[0]!.tag).toBe('G');
+  expect(shown.groups[1]!.players.every(row => row.tag === 'M')).toBe(true);
+  expect(shown.groups[2]!.players.every(row => row.tag === 'A')).toBe(true);
+
+  const original = harness({
+    options: JSON.stringify({ presentation: 'modern', rules: 'original' })
+  });
+  toTeam(original);
+  const plain = original.page.pickTeam!;
+  expect(plain.weeksOut).toBe(false);
+  // Without positions, a player's place gives his category.
+  plain.groups.forEach((group, category) => {
+    for (const row of group.players) {
+      expect(Math.floor((row.number - 1) / 8)).toBe(category);
+    }
+  });
+});
+
+test('Classic mode keeps the original team screens and their bar', () => {
+  const run = harness({ coarsePointer: true });
+  run.toMenu();
+  run.type('99');
+  run.settle();
+  run.type('');
+  run.settle();
+  expect(run.view().screen).toBe('team');
+  expect(run.page.pickTeam).toBeUndefined();
+  expect(run.labels()).toContain('Kick off (99)');
 });
 
 test('Modern mode takes no typed answers, only names', () => {

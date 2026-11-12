@@ -13,6 +13,7 @@ import type { App, Dom, MenuControl } from './app';
 import type { BarButton } from './context-bar';
 import { rasterText, rasterizeCells } from './glyphs';
 import type { ClubName, Home } from './home';
+import type { PickTeam, PickTeamRow } from './pick-team';
 import { paintAttack } from './pitch';
 import { tickerLines, tickerText } from './ticker-layout';
 
@@ -183,7 +184,7 @@ const amountPanel = (entry: AmountEntry) => {
 /** The context bar or Home screen button an event came from, if any. */
 const barButton = (event: Event) =>
   (event.target as Element).closest<HTMLButtonElement>(
-    '#context-bar button, #home button'
+    '#context-bar button, #home button, #pick-team button'
   );
 
 const pounds = (value: number) => `£${value.toLocaleString('en-GB')}`;
@@ -268,6 +269,127 @@ const paintHome = (pane: HTMLElement, home: Home) => {
   pane.replaceChildren(...parts);
 };
 
+const cell = (className: string, text: string | number) => {
+  const element = document.createElement('span');
+  element.className = className;
+  element.textContent = String(text);
+  return element;
+};
+
+/** One pick team row: a button while the original takes its number. */
+const pickRow = (row: PickTeamRow, adding: boolean) => {
+  const element = document.createElement(row.answer ? 'button' : 'div');
+  element.className = `pick-row ${row.status}`;
+  if (row.answer) {
+    element.setAttribute('type', 'button');
+    element.dataset.id = row.answer;
+    element.dataset.kind = 'choice';
+    element.setAttribute(
+      'aria-label',
+      `${adding ? 'Add' : 'Drop'} ${row.name}, number ${row.number}`
+    );
+  }
+  element.append(
+    cell('pick-tag', row.tag),
+    cell('pick-name', row.name),
+    cell('pick-number', row.number),
+    cell('pick-skill', row.skill),
+    cell('pick-energy', row.energy),
+    cell('pick-value', pounds(row.value)),
+    cell('pick-marker', row.marker)
+  );
+  return element;
+};
+
+/** Modern mode's pick team screen (#44). */
+const paintPickTeam = (pane: HTMLElement, pick: PickTeam) => {
+  const parts: HTMLElement[] = [];
+  if (pick.strengths) {
+    const strengths = document.createElement('table');
+    strengths.className = 'pick-strengths';
+    strengths.setAttribute('aria-label', 'Team strengths');
+    const head = strengths.createTHead().insertRow();
+    head.append(document.createElement('th'));
+    for (const club of [pick.strengths.club, pick.strengths.opponent]) {
+      const th = document.createElement('th');
+      th.scope = 'col';
+      th.append(clubLabel(club));
+      head.append(th);
+    }
+    const body = strengths.createTBody();
+    for (const [name, ours, theirs] of pick.strengths.rows) {
+      const row = body.insertRow();
+      const th = document.createElement('th');
+      th.scope = 'row';
+      th.textContent = name;
+      row.append(th);
+      row.insertCell().textContent = String(ours);
+      row.insertCell().textContent = String(theirs);
+    }
+    parts.push(strengths);
+  }
+  const picked = document.createElement('p');
+  picked.className = 'pick-count';
+  picked.textContent = `Players picked = ${pick.picked}`;
+  const legend = document.createElement('p');
+  legend.className = 'pick-legend';
+  legend.append(
+    cell('pick-marker picked', 'p'),
+    pick.weeksOut ? ' = picked, ' : ' = picked to play, ',
+    cell('pick-marker injured', pick.weeksOut ? '1-3' : 'i'),
+    pick.weeksOut ? ' = weeks injured' : ' = injured'
+  );
+  parts.push(picked, legend);
+  if (pick.hint) {
+    const hint = document.createElement('p');
+    hint.className = 'pick-hint';
+    hint.textContent = pick.hint;
+    parts.push(hint);
+  }
+  const adding = pick.picked <= 11;
+  for (const group of pick.groups) {
+    const section = document.createElement('section');
+    section.className = `pick-group category-${group.category}`;
+    const title = document.createElement('h3');
+    title.textContent = group.title;
+    const header = document.createElement('div');
+    header.className = 'pick-row pick-header';
+    header.setAttribute('aria-hidden', 'true');
+    header.append(
+      cell('pick-tag', ''),
+      cell('pick-name', 'Name'),
+      cell('pick-number', 'No.'),
+      cell('pick-skill', 'Skill'),
+      cell('pick-energy', 'Energy'),
+      cell('pick-value', 'Value'),
+      cell('pick-marker', '')
+    );
+    const rows = group.players.length
+      ? group.players.map(row => pickRow(row, adding))
+      : [cell('pick-none', 'None')];
+    section.append(title, header, ...rows);
+    parts.push(section);
+  }
+  if (pick.actions.length) {
+    const actions = document.createElement('div');
+    actions.className = 'pick-actions';
+    actions.append(
+      ...pick.actions.map(action => {
+        const element = document.createElement('button');
+        element.type = 'button';
+        element.textContent = action.label;
+        element.className = action.tone;
+        element.disabled = !action.enabled;
+        element.dataset.id = action.id;
+        element.dataset.kind = 'choice';
+        return element;
+      })
+    );
+    parts.push(actions);
+  }
+  pane.replaceChildren(...parts);
+};
+
 /** Builds the page inside `app` and returns the app's view of it. */
 export const createBrowserDom = (app: HTMLElement) => {
   app.innerHTML = `
@@ -286,6 +408,7 @@ export const createBrowserDom = (app: HTMLElement) => {
       <label for="command" id="prompt"></label><input id="command" name="command" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="256" />
     </form>
   </section>
+  <section id="pick-team" class="pick-team" aria-label="Pick team" hidden></section>
   <div id="context-bar" class="context-bar" aria-label="Answers" hidden></div>
   <pre id="transcript" class="sr-only" aria-live="polite" aria-atomic="true"></pre>
   <p id="ticker-live" class="sr-only" aria-live="polite"></p>
@@ -316,8 +439,10 @@ export const createBrowserDom = (app: HTMLElement) => {
   const machine = find<HTMLElement>('.machine');
   const bar = find<HTMLElement>('#context-bar');
   const homePane = find<HTMLElement>('#home');
+  const pickPane = find<HTMLElement>('#pick-team');
   let barKey = '';
   let homeKey = '';
+  let pickKey = '';
 
   const paintBar = (
     buttons: readonly BarButton[] | undefined,
@@ -417,6 +542,7 @@ export const createBrowserDom = (app: HTMLElement) => {
       display,
       focus,
       home,
+      pickTeam,
       title,
       typing,
       view
@@ -428,7 +554,14 @@ export const createBrowserDom = (app: HTMLElement) => {
         paintHome(homePane, home);
       }
       homeKey = key;
+      pickPane.hidden = !pickTeam;
+      const pick = JSON.stringify(pickTeam);
+      if (pickTeam && pick !== pickKey) {
+        paintPickTeam(pickPane, pickTeam);
+      }
+      pickKey = pick;
       document.documentElement.classList.toggle('at-home', atHome);
+      document.documentElement.classList.toggle('at-pick-team', !!pickTeam);
       input.readOnly = !typing;
       if (!typing && document.activeElement === input) {
         input.blur();
@@ -575,14 +708,16 @@ export const createBrowserDom = (app: HTMLElement) => {
       target.tap(button.dataset.id!);
     };
     bar.addEventListener('pointerdown', pressed);
-    homePane.addEventListener('pointerdown', pressed);
-    homePane.addEventListener('click', event => {
-      const button = barButton(event);
-      // Activated from the keyboard, whose own key is already down.
-      if (button?.dataset.id && event.detail === 0) {
-        target.tap(button.dataset.id, false);
-      }
-    });
+    for (const pane of [homePane, pickPane]) {
+      pane.addEventListener('pointerdown', pressed);
+      pane.addEventListener('click', event => {
+        const button = barButton(event);
+        // Activated from the keyboard, whose own key is already down.
+        if (button?.dataset.id && event.detail === 0) {
+          target.tap(button.dataset.id, false);
+        }
+      });
+    }
     bar.addEventListener('click', event => {
       const button = barButton(event);
       if (!button) {

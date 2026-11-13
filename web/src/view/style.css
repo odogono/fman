@@ -1020,16 +1020,16 @@ button.pick-row:focus-visible {
 /* Modern mode's loan and repayment screen (#134), and the balance after. */
 /* The chips keep to one line on the narrowest phones. */
 @media (max-width: 360px) {
-  .loan-chips button {
+  .amount-chips button {
     padding: 0 2px;
     font-size: 14px;
     white-space: nowrap;
   }
 }
-.modern-loan[hidden] {
+.modern-amount[hidden] {
   display: none;
 }
-.modern-loan {
+.modern-amount {
   display: grid;
   gap: 12px;
   align-content: start;
@@ -1039,11 +1039,11 @@ button.pick-row:focus-visible {
     16px/1.4 system-ui,
     sans-serif;
 }
-.modern-loan dl {
+.modern-amount dl {
   display: grid;
   margin: 0;
 }
-.modern-loan dl div {
+.modern-amount dl div {
   display: flex;
   justify-content: space-between;
   gap: 16px;
@@ -1051,15 +1051,15 @@ button.pick-row:focus-visible {
   min-height: 36px;
   border-bottom: 1px solid var(--normal-0);
 }
-.modern-loan dt,
-.modern-loan dd {
+.modern-amount dt,
+.modern-amount dd {
   margin: 0;
 }
-.modern-loan dd {
+.modern-amount dd {
   font-variant-numeric: tabular-nums;
   font-weight: 600;
 }
-.modern-loan button {
+.modern-amount button {
   min-height: 44px;
   border: 2px solid var(--normal-0);
   background: var(--paper);
@@ -1071,76 +1071,124 @@ button.pick-row:focus-visible {
   user-select: none;
   -webkit-user-select: none;
 }
-.modern-loan button:disabled {
+.modern-amount button:disabled {
   opacity: 0.4;
   cursor: default;
 }
-.modern-loan button:focus-visible {
+.modern-amount button:focus-visible {
   outline: 3px solid var(--normal-0);
   outline-offset: 2px;
 }
-.loan-stepper {
+.amount-stepper {
   display: grid;
   grid-template-columns: 64px minmax(0, 1fr) 64px;
   gap: 8px;
   align-items: center;
 }
-.loan-stepper button.red {
+.amount-stepper button.red {
   min-height: 64px;
   background: var(--bright-2);
   color: var(--bright-7);
   font-size: 36px;
   line-height: 1;
 }
-.loan-amount {
+.amount-value {
   display: block;
-  font-size: 40px;
+  font-size: min(40px, 10vw);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   line-height: 1.2;
   text-align: center;
 }
-.loan-limit {
+.amount-limit {
   color: #444;
   text-align: center;
 }
-.loan-chips {
+.amount-chips {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
 }
-.loan-keypad {
+.amount-keypad {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
-.loan-keypad button {
+.amount-keypad button {
   min-height: 52px;
   font-size: 20px;
 }
-.modern-loan button.loan-exact {
+.modern-amount button.amount-exact {
   justify-self: center;
   border: 0;
   background: none;
   color: var(--normal-1);
   text-decoration: underline;
 }
-.modern-loan .pick-actions button.primary {
+.modern-amount .pick-actions button.primary {
   background: var(--bright-6);
 }
-.modern-loan .pick-actions button.red {
+.modern-amount .pick-actions button.red {
   background: var(--bright-2);
   color: var(--bright-7);
 }
 /* The loan screen stands in for the Spectrum's and its bar. */
-:root.modern.has-loan .machine,
-:root.modern.has-loan .context-bar {
+:root.modern.has-amount .machine,
+:root.modern.has-amount .context-bar {
   display: none;
 }
 @media (min-width: 900px) and (min-aspect-ratio: 1) {
-  :root.modern main:has(#home:not([hidden])) .modern-loan {
+  :root.modern main:has(#home:not([hidden])) .modern-amount {
     grid-column: 2;
     align-self: start;
     width: 480px;
   }
+}
+/* Modern mode's transfer bid (#135): the player for sale. */
+.bid-player h2 {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 0 0 4px;
+  padding: 4px 8px;
+  background: var(--ink, var(--normal-0));
+  color: var(--bright-7);
+  font-family: Spectrum, monospace;
+  font-size: 20px;
+  font-weight: normal;
+  font-synthesis: none;
+  line-height: 28px;
+}
+.bid-player.category-1 {
+  --ink: var(--normal-1);
+}
+.bid-player.category-2 {
+  --ink: var(--normal-2);
+}
+.bid-player .pick-tag {
+  background: var(--bright-7);
+  color: var(--ink, var(--normal-0));
+}
+.bid-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bid-number {
+  font-size: 14px;
+  white-space: nowrap;
+}
+@media (max-width: 360px) {
+  .bid-player h2 {
+    font-size: 16px;
+  }
+}
+/* Modern mode's plain text messages, worded as the original has them. */
+.message-text {
+  margin: 0;
+  padding: 8px 12px;
+  background: var(--normal-0);
+  color: var(--bright-7);
+  font-weight: 600;
 }

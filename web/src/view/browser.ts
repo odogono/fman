@@ -13,8 +13,9 @@ import type { App, Dom, MenuControl } from './app';
 import type { BarButton } from './context-bar';
 import { rasterText, rasterizeCells } from './glyphs';
 import type { ClubName, Home } from './home';
+import type { BidPlayer, ModernAmount } from './modern-amount';
 import type { ModernHighlights } from './modern-highlights';
-import type { ModernLoan } from './modern-loan';
+import type { ModernMessage } from './modern-message';
 import type { ModernStatus } from './modern-status';
 import type { PickTeam, PickTeamRow, Strengths } from './pick-team';
 import { paintAttack, paintEmptyPitch } from './pitch';
@@ -187,7 +188,7 @@ const amountPanel = (entry: AmountEntry) => {
 /** The context bar or Home screen button an event came from, if any. */
 const barButton = (event: Event) =>
   (event.target as Element).closest<HTMLButtonElement>(
-    '#context-bar button, #home button, #pick-team button, #highlights button, #status button, #loan button'
+    '#context-bar button, #home button, #pick-team button, #highlights button, #status button, #amount-prompt button, #message button'
   );
 
 const pounds = (value: number) => `£${value.toLocaleString('en-GB')}`;
@@ -417,6 +418,61 @@ const paintHighlights = (
   pane.replaceChildren(...parts);
 };
 
+/** The player a transfer bid is for, in the ink of his category. */
+const bidPlayer = (player: BidPlayer) => {
+  const section = document.createElement('section');
+  section.className = `bid-player category-${player.category}`;
+  section.setAttribute('aria-label', 'Player for sale');
+  const heading = document.createElement('h2');
+  heading.append(
+    cell('pick-tag', player.tag),
+    cell('bid-name', player.name),
+    cell('bid-number', `No.${player.number}`)
+  );
+  const facts = document.createElement('dl');
+  for (const [term, value] of [
+    ['Skill', String(player.skill)],
+    ['Energy', String(player.energy)],
+    ['Value', pounds(player.value)]
+  ] as const) {
+    const row = document.createElement('div');
+    const dt = document.createElement('dt');
+    dt.textContent = term;
+    const dd = document.createElement('dd');
+    dd.textContent = value;
+    row.append(dt, dd);
+    facts.append(row);
+  }
+  section.append(heading, facts);
+  return section;
+};
+
+/**
+ * Modern mode's message screen: the balance after a loan or repayment, or a
+ * plain text message in a black bar, then Continue.
+ */
+const paintMessage = (pane: HTMLElement, message: ModernMessage) => {
+  const actions = document.createElement('div');
+  actions.className = 'pick-actions';
+  actions.append(
+    actionButton('Continue', message.done.id, 'choice', message.done.enabled)
+  );
+  if (message.kind === 'balance') {
+    pane.replaceChildren(
+      moneyRows([
+        ['Cash', message.cash],
+        ['Loan', message.debt]
+      ]),
+      actions
+    );
+    return;
+  }
+  const text = document.createElement('p');
+  text.className = 'message-text';
+  text.textContent = message.text;
+  pane.replaceChildren(text, actions);
+};
+
 /** Labelled money rows, as on the status screen. */
 const moneyRows = (rows: readonly (readonly [string, number])[]) => {
   const facts = document.createElement('dl');
@@ -433,33 +489,29 @@ const moneyRows = (rows: readonly (readonly [string, number])[]) => {
 };
 
 /**
- * Modern mode's loan and repayment screen (#134): the stepper and chips, or
+ * Modern mode's amount prompts, a loan or repayment (#134) or a transfer bid
+ * (#135): the player for sale on a bid, then the stepper and chips, or
  * the keypad while an exact amount is typed; then the balance after it.
  */
-const paintLoan = (pane: HTMLElement, loan: ModernLoan) => {
+const paintAmount = (pane: HTMLElement, amountPrompt: ModernAmount) => {
   const facts = moneyRows([
-    ['Cash', loan.cash],
-    ['Loan', loan.debt]
+    ['Cash', amountPrompt.cash],
+    ['Loan', amountPrompt.debt]
   ]);
   const actions = document.createElement('div');
   actions.className = 'pick-actions';
-  if (loan.kind === 'balance') {
-    actions.append(
-      actionButton('Continue', loan.done.id, 'choice', loan.done.enabled)
-    );
-    pane.replaceChildren(facts, actions);
-    return;
-  }
-  const { entry } = loan;
+  const { entry } = amountPrompt;
   const shown = document.createElement('output');
-  shown.className = 'loan-amount';
+  shown.className = 'amount-value';
   shown.setAttribute('aria-live', 'polite');
-  const limit = cell('loan-limit', `Up to ${pounds(entry.max)}`);
-  const parts: HTMLElement[] = [facts];
+  const limit = cell('amount-limit', `Up to ${pounds(entry.max)}`);
+  const parts: HTMLElement[] = amountPrompt.player
+    ? [bidPlayer(amountPrompt.player), facts]
+    : [facts];
   if (entry.typing === undefined) {
     shown.textContent = formatAmount(entry.value);
     const stepper = document.createElement('div');
-    stepper.className = 'loan-stepper';
+    stepper.className = 'amount-stepper';
     const minus = amountButton(
       '−',
       { delta: -amountStep, type: 'step' },
@@ -476,7 +528,7 @@ const paintLoan = (pane: HTMLElement, loan: ModernLoan) => {
     plus.setAttribute('aria-label', `More by ${pounds(amountStep)}`);
     stepper.append(minus, shown, plus);
     const chips = document.createElement('div');
-    chips.className = 'loan-chips';
+    chips.className = 'amount-chips';
     chips.append(
       ...amountChips.map(chip =>
         amountButton(
@@ -492,12 +544,12 @@ const paintLoan = (pane: HTMLElement, loan: ModernLoan) => {
       stepper,
       limit,
       chips,
-      amountButton('Enter exact amount', { type: 'keypad' }, 'loan-exact')
+      amountButton('Enter exact amount', { type: 'keypad' }, 'amount-exact')
     );
   } else {
     shown.textContent = `£${entry.typing}_`;
     const keypad = document.createElement('div');
-    keypad.className = 'loan-keypad';
+    keypad.className = 'amount-keypad';
     keypad.append(
       ...[1, 2, 3, 4, 5, 6, 7, 8, 9].map(digit =>
         amountButton(
@@ -519,16 +571,16 @@ const paintLoan = (pane: HTMLElement, loan: ModernLoan) => {
     parts.push(shown, limit, keypad);
   }
   const submit = actionButton(
-    loan.submit.label,
-    loan.submit.id,
+    amountPrompt.submit.label,
+    amountPrompt.submit.id,
     'choice',
-    loan.submit.enabled
+    amountPrompt.submit.enabled
   );
   const cancel = actionButton(
-    'Cancel',
-    loan.cancel.id,
+    amountPrompt.cancel.label,
+    amountPrompt.cancel.id,
     'choice',
-    loan.cancel.enabled
+    amountPrompt.cancel.enabled
   );
   cancel.className = 'red';
   actions.append(submit, cancel);
@@ -686,7 +738,8 @@ export const createBrowserDom = (app: HTMLElement) => {
   <section id="pick-team" class="pick-team" aria-label="Pick team" hidden></section>
   <section id="highlights" class="modern-highlights" aria-label="Match highlights" hidden></section>
   <section id="status" class="modern-status" aria-label="Club status" hidden></section>
-  <section id="loan" class="modern-loan" aria-label="Loan" hidden></section>
+  <section id="amount-prompt" class="modern-amount" aria-label="Amount" hidden></section>
+  <section id="message" class="modern-amount modern-message" aria-label="Message" role="status" hidden></section>
   <div id="context-bar" class="context-bar" aria-label="Answers" hidden></div>
   <pre id="transcript" class="sr-only" aria-live="polite" aria-atomic="true"></pre>
   <p id="ticker-live" class="sr-only" aria-live="polite"></p>
@@ -720,8 +773,10 @@ export const createBrowserDom = (app: HTMLElement) => {
   const pickPane = find<HTMLElement>('#pick-team');
   const highlightsPane = find<HTMLElement>('#highlights');
   const statusPane = find<HTMLElement>('#status');
-  const loanPane = find<HTMLElement>('#loan');
-  let loanKey = '';
+  const amountPane = find<HTMLElement>('#amount-prompt');
+  let amountKey_ = '';
+  const messagePane = find<HTMLElement>('#message');
+  let messageKey = '';
   let statusKey = '';
   // Modern mode's own pitch, kept between attacks as the original's is not.
   const modernPitch = document.createElement('canvas');
@@ -862,6 +917,7 @@ export const createBrowserDom = (app: HTMLElement) => {
     openMenu: () => menu.showModal(),
     render: ({
       amount,
+      amountPrompt,
       atHome,
       bar: buttons,
       clearInput,
@@ -869,7 +925,7 @@ export const createBrowserDom = (app: HTMLElement) => {
       focus,
       highlights,
       home,
-      loan,
+      message,
       pickTeam,
       status,
       title,
@@ -891,13 +947,22 @@ export const createBrowserDom = (app: HTMLElement) => {
       pickKey = pick;
       document.documentElement.classList.toggle('at-home', atHome);
       document.documentElement.classList.toggle('at-pick-team', !!pickTeam);
-      loanPane.hidden = !loan;
-      const loanShape = JSON.stringify(loan);
-      if (loan && loanShape !== loanKey) {
-        paintLoan(loanPane, loan);
+      amountPane.hidden = !amountPrompt;
+      const amountShape = JSON.stringify(amountPrompt);
+      if (amountPrompt && amountShape !== amountKey_) {
+        paintAmount(amountPane, amountPrompt);
       }
-      loanKey = loanShape;
-      document.documentElement.classList.toggle('has-loan', !!loan);
+      amountKey_ = amountShape;
+      document.documentElement.classList.toggle(
+        'has-amount',
+        !!amountPrompt || !!message
+      );
+      messagePane.hidden = !message;
+      const messageShape = JSON.stringify(message);
+      if (message && messageShape !== messageKey) {
+        paintMessage(messagePane, message);
+      }
+      messageKey = messageShape;
       statusPane.hidden = !status;
       const statusShape = JSON.stringify(status);
       if (status && statusShape !== statusKey) {
@@ -1067,7 +1132,7 @@ export const createBrowserDom = (app: HTMLElement) => {
       target.tap(button.dataset.id!);
     };
     bar.addEventListener('pointerdown', pressed);
-    loanPane.addEventListener('click', event => {
+    amountPane.addEventListener('click', event => {
       const action = barButton(event)?.dataset.action;
       if (action) {
         target.amount(JSON.parse(action) as AmountAction);
@@ -1078,7 +1143,8 @@ export const createBrowserDom = (app: HTMLElement) => {
       pickPane,
       highlightsPane,
       statusPane,
-      loanPane
+      amountPane,
+      messagePane
     ]) {
       pane.addEventListener('pointerdown', pressed);
       pane.addEventListener('click', event => {

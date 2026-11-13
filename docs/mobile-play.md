@@ -4,7 +4,7 @@ Design decisions for making the game playable without a keyboard, chiefly on pho
 
 ## Principles
 
-- Two **presentation modes**, Classic and Modern, drive one unchanged sim. Players can switch mid-game from Presentation in the game menu's Options. The choice is remembered, and Classic is the default until Modern mode's pick team and highlights screens exist.
+- Two **presentation modes**, Classic and Modern, drive one unchanged sim. Players can switch mid-game from Presentation in the game menu's Options. The choice is remembered. Modern is the default for players who have not chosen; a stored choice is kept.
 - Every tap submits an answer the original `INPUT` prompt accepts ([ADR 0005](adr/0005-touch-input-submits-original-answers.md)). Nothing becomes reachable that the original would not allow at that moment.
 - Modern mode keeps the original pacing and RNG behaviour. Tap to skip works wherever the original accepts "any key". A faster pace would be a later option, explicitly marked as not faithful.
 - Classic mode keeps typed entry. Modern mode takes answers only from its own controls, on every device. A held key still counts as a keypress during timed pauses, and Tab, Enter and Space still move between Modern mode's buttons and press them.
@@ -61,7 +61,14 @@ Style is "paper & ink": light grey paper, black text with red and blue ink rows,
   - Columns are the tag, Name, No., Skill, Energy, Value and the marker. Rows follow Classic's squad order. Under club squads a goalkeeper shows a `G` block in Defence, listed first; under tiring injuries the marker shows the weeks out in green and the legend matches Classic's.
   - A group with no players keeps its heading over a single "None" row.
   - The primary action stays pinned to the bottom of the screen.
-- **Highlights**: the original pitch rendering, unchanged and scaled to width. A scoreboard sits above it and the team-strength numbers in two columns below it, as on the original comparison screen.
+- **Highlights**: one screen for both rulesets' highlights, under a shared scoreboard. The screens after the match (result, replay, other matches, table) show Classic inside the Modern frame.
+  - The scoreboard is the competition line in a black inverse bar, worded as on Home's next fixture ("League Match – Division 4", "F.A. Cup – Round 5"), then the home club, the score and the away club, each club in its name colour. Drop the mockup's "Football Manager" and "Match Highlights" banners; the top bar already names the clubs.
+  - **Pitch** (Original rules): the original pitch rendering, unchanged and scaled to the width of the screen or pane, including its own GOAL! and NO GOAL! banners and score line. Between attacks, where Classic shows its text screen, the pitch keeps the last frame drawn; before the first attack it shows the empty pitch facing that attack's direction, so the layout never jumps.
+  - Below the pitch, the team-strength numbers in two columns as on the original comparison screen and Pick team: the managed club first, each column headed by its club's name in its name colour. On a short phone the pitch and scoreboard stay fully visible and the strengths scroll between the pitch and the button.
+  - The original's keys only shorten the pauses between attacks; nothing skips the drawing. So the pinned yellow button reads "Hold to hurry" and is a keypress while the finger is down. It is dimmed while an attack is being drawn and live only during timed pauses, when a tap on the pitch does the same.
+  - The pitch carries a screen-reader label naming the attacking club, and a polite live region announces each outcome, such as "Goal! Arsenal 1, Blackpool 0" or "No goal".
+  - **Ticker** (`moment-highlights`): drawn in paper & ink under the same scoreboard, as a scrollable list with no strength columns. The newest moment is on top and the minute mark is `′`. A Skip button sits below the list and works as in Classic.
+  - In the two-pane layout the screen fills the right pane, and the left pane's menu choices are disabled.
 - **Amounts** (bids, loans, repayments): a stepper with preset chips, plus a numeric keypad for exact values. The exact amount field also takes digits from a physical keyboard and keeps within the offered range.
 - **Desktop**: two panes when the window is at least 900px wide and wider than tall; otherwise the phone layout, centred at up to about 480px. The left pane always holds the club summary, next fixture and menu choices, enabled only while the menu prompt waits, since the original accepts them nowhere else. The right pane shows the screen on show, or Status while the menu waits. The mode switch is not in the header, as the mockup shows, but in the game menu's Options.
 

@@ -27,11 +27,6 @@ export type ModernHighlights = Readonly<{
   pitch?: Readonly<{
     /** The club whose attack is on the pitch, if one is. */
     attacking?: ClubName;
-    /**
-     * The original's keys only shorten its timed pauses, so a hold hurries
-     * the highlights only while one runs.
-     */
-    hurry: boolean;
     /** The attack's outcome once it shows, for screen readers. */
     outcome?: string;
     strengths: Strengths;
@@ -118,7 +113,6 @@ export const highlightsFor = (view: View): ModernHighlights | undefined => {
       ...(current
         ? { attacking: current.attack.direction === 'right' ? home : away }
         : {}),
-      hurry: current?.frame.kind === 'pause',
       ...(outcome ? { outcome } : {}),
       strengths: strengthsFor(game, fixture)
     },

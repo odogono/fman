@@ -405,21 +405,13 @@ const paintHighlights = (
     parts.push(pitch, strengths);
   }
   if (highlights.ticker) {
-    parts.push(tickerList(highlights.ticker));
+    const actions = document.createElement('div');
+    actions.className = 'pick-actions';
+    actions.append(
+      actionButton('Skip', 'ticker.skip', 'skip', highlights.ticker.skip)
+    );
+    parts.push(tickerList(highlights.ticker), actions);
   }
-  const actions = document.createElement('div');
-  actions.className = 'pick-actions';
-  actions.append(
-    highlights.ticker
-      ? actionButton('Skip', 'ticker.skip', 'skip', highlights.ticker.skip)
-      : actionButton(
-          'Hold to hurry',
-          'highlights.hurry',
-          'hold',
-          highlights.pitch!.hurry
-        )
-  );
-  parts.push(actions);
   pane.replaceChildren(...parts);
 };
 
@@ -866,12 +858,6 @@ export const createBrowserDom = (app: HTMLElement) => {
       ) {
         return;
       }
-      if (button.dataset.kind === 'hold') {
-        // A key held down until the finger lifts (ADR 0006).
-        event.preventDefault();
-        target.pressScreen();
-        return;
-      }
       // Submit on the way down, as a key does; keep focus off the button.
       event.preventDefault();
       target.tap(button.dataset.id!);
@@ -882,11 +868,7 @@ export const createBrowserDom = (app: HTMLElement) => {
       pane.addEventListener('click', event => {
         const button = barButton(event);
         // Activated from the keyboard, whose own key is already down.
-        if (
-          button?.dataset.id &&
-          button.dataset.kind !== 'hold' &&
-          event.detail === 0
-        ) {
+        if (button?.dataset.id && event.detail === 0) {
           target.tap(button.dataset.id, false);
         }
       });

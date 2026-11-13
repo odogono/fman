@@ -1266,20 +1266,24 @@ test('Modern mode shows the original pitch under a scoreboard, with the strength
   expect(run.page.highlights).toBeUndefined();
 });
 
-test('Hold to hurry is live only in timed pauses, and holds a key until the finger lifts', () => {
+test('a finger on the pitch in a timed pause holds a key until it lifts', () => {
   const run = harness({
     options: JSON.stringify({ presentation: 'modern', rules: 'original' })
   });
   kickOff(run);
-  const seen = { drawing: false, outcome: false };
-  for (let i = 0; i < 20_000 && !run.page.highlights?.pitch?.hurry; i++) {
+  const pausing = () => {
+    const view = run.view();
+    return (
+      view.screen === 'highlights' &&
+      'playback' in view &&
+      view.playback.current?.frame.kind === 'pause' &&
+      run.page.highlights!.pitch!.outcome !== undefined
+    );
+  };
+  for (let i = 0; i < 20_000 && !pausing(); i++) {
     expect(run.view().screen).toBe('highlights');
-    seen.drawing ||= run.page.highlights!.pitch!.hurry === false;
-    seen.outcome ||= run.page.highlights!.pitch!.outcome !== undefined;
     run.wait(1);
   }
-  expect(seen.drawing).toBe(true);
-  expect(run.page.highlights!.pitch!.hurry).toBe(true);
   expect(run.page.highlights!.pitch!.outcome).toMatch(/^(Goal! .+|No goal)$/);
   run.app.pressScreen();
   expect(run.app.journal.session.timingState.keyboard.key).toBe('Space');

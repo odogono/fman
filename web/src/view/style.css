@@ -794,16 +794,15 @@ button.pick-row:focus-visible {
 :root.modern .context-bar .amount {
   color: var(--normal-0);
 }
-/* Modern mode's highlights screen (#45): a scoreboard over the pitch or the
-   ticker, and the action pinned below. The pitch and scoreboard stay in view;
-   on a short phone the strengths or the ticker scroll between them and the
-   action. */
+/* Modern mode's highlights screen (#45): a scoreboard over the pitch and the
+   strengths, or over the ticker and its Skip button. The scoreboard and pitch
+   stay in view; on a short phone the strengths or the ticker scroll. */
 .modern-highlights[hidden] {
   display: none;
 }
 .modern-highlights {
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto minmax(0, 1fr);
   gap: 8px;
   width: 100%;
   max-width: 480px;

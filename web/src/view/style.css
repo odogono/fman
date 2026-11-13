@@ -911,6 +911,11 @@ button.pick-row:focus-visible {
 :root.modern.at-highlights .context-bar {
   display: none;
 }
+/* Alone on a wide window, the top bar lines up with the match. */
+:root.modern.at-highlights .top-bar {
+  width: 100%;
+  max-width: 480px;
+}
 @media (min-width: 900px) and (min-aspect-ratio: 1) {
   :root.modern main:has(#home:not([hidden])) .modern-highlights {
     grid-column: 2;

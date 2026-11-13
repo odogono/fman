@@ -1262,6 +1262,8 @@ test('Modern mode shows the original pitch under a scoreboard, with the strength
   ]);
   expect(run.page.bar).toBeUndefined();
   expect(run.page.title).toContain(' v ');
+  // No Home pane beside the match, even on a wide window.
+  expect(run.page.home).toBeUndefined();
   playOut(run);
   expect(run.page.highlights).toBeUndefined();
 });

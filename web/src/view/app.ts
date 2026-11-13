@@ -329,7 +329,8 @@ export const createApp = ({
       focus: !display.paused && !menuOpen && !barShown(),
       highlights,
       home:
-        modern() && view.game
+        // The highlights stand alone, without the Home pane beside them.
+        modern() && view.game && !highlights
           ? homeFor({ ...view, game: view.game })
           : undefined,
       pickTeam,

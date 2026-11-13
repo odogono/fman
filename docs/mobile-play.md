@@ -68,9 +68,9 @@ Style is "paper & ink": light grey paper, black text with red and blue ink rows,
   - The pitch screen has no button. The original's keys only shorten the pauses between attacks, and nothing skips the drawing, so a finger on the pitch is a keypress during a timed pause, as on Classic's screen.
   - The pitch carries a screen-reader label naming the attacking club, and a polite live region announces each outcome, such as "Goal! Arsenal 1, Blackpool 0" or "No goal".
   - **Ticker** (`moment-highlights`): drawn in paper & ink under the same scoreboard, as a scrollable list with no strength columns. The newest moment is on top and the minute mark is `′`. A Skip button sits below the list and works as in Classic.
-  - In the two-pane layout the screen fills the right pane, and the left pane's menu choices are disabled.
+  - On a wide window the highlights stand alone, centred as on a phone, without the left pane: its choices are all disabled during a match, and it would draw the eye from the pitch.
 - **Amounts** (bids, loans, repayments): a stepper with preset chips, plus a numeric keypad for exact values. The exact amount field also takes digits from a physical keyboard and keeps within the offered range.
-- **Desktop**: two panes when the window is at least 900px wide and wider than tall; otherwise the phone layout, centred at up to about 480px. The left pane always holds the club summary, next fixture and menu choices, enabled only while the menu prompt waits, since the original accepts them nowhere else. The right pane shows the screen on show, or Status while the menu waits. The mode switch is not in the header, as the mockup shows, but in the game menu's Options.
+- **Desktop**: two panes when the window is at least 900px wide and wider than tall; otherwise the phone layout, centred at up to about 480px. The left pane holds the club summary, next fixture and menu choices, enabled only while the menu prompt waits, since the original accepts them nowhere else; it is hidden during the highlights. The right pane shows the screen on show, or Status while the menu waits. The mode switch is not in the header, as the mockup shows, but in the game menu's Options.
 
 ![Desktop](https://gist.githubusercontent.com/odogono/00dcc8e44efa42a79b1c8599d68c7496/raw/desktop.jpg)
 

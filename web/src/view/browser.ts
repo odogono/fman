@@ -14,6 +14,7 @@ import type { BarButton } from './context-bar';
 import { rasterText, rasterizeCells } from './glyphs';
 import type { ClubName, Home } from './home';
 import type { ModernHighlights } from './modern-highlights';
+import type { ModernLoan } from './modern-loan';
 import type { ModernStatus } from './modern-status';
 import type { PickTeam, PickTeamRow, Strengths } from './pick-team';
 import { paintAttack, paintEmptyPitch } from './pitch';
@@ -186,7 +187,7 @@ const amountPanel = (entry: AmountEntry) => {
 /** The context bar or Home screen button an event came from, if any. */
 const barButton = (event: Event) =>
   (event.target as Element).closest<HTMLButtonElement>(
-    '#context-bar button, #home button, #pick-team button, #highlights button, #status button'
+    '#context-bar button, #home button, #pick-team button, #highlights button, #status button, #loan button'
   );
 
 const pounds = (value: number) => `£${value.toLocaleString('en-GB')}`;
@@ -416,6 +417,125 @@ const paintHighlights = (
   pane.replaceChildren(...parts);
 };
 
+/** Labelled money rows, as on the status screen. */
+const moneyRows = (rows: readonly (readonly [string, number])[]) => {
+  const facts = document.createElement('dl');
+  for (const [term, value] of rows) {
+    const row = document.createElement('div');
+    const dt = document.createElement('dt');
+    dt.textContent = term;
+    const dd = document.createElement('dd');
+    dd.textContent = pounds(value);
+    row.append(dt, dd);
+    facts.append(row);
+  }
+  return facts;
+};
+
+/**
+ * Modern mode's loan and repayment screen (#134): the stepper and chips, or
+ * the keypad while an exact amount is typed; then the balance after it.
+ */
+const paintLoan = (pane: HTMLElement, loan: ModernLoan) => {
+  const facts = moneyRows([
+    ['Cash', loan.cash],
+    ['Loan', loan.debt]
+  ]);
+  const actions = document.createElement('div');
+  actions.className = 'pick-actions';
+  if (loan.kind === 'balance') {
+    actions.append(
+      actionButton('Continue', loan.done.id, 'choice', loan.done.enabled)
+    );
+    pane.replaceChildren(facts, actions);
+    return;
+  }
+  const { entry } = loan;
+  const shown = document.createElement('output');
+  shown.className = 'loan-amount';
+  shown.setAttribute('aria-live', 'polite');
+  const limit = cell('loan-limit', `Up to ${pounds(entry.max)}`);
+  const parts: HTMLElement[] = [facts];
+  if (entry.typing === undefined) {
+    shown.textContent = formatAmount(entry.value);
+    const stepper = document.createElement('div');
+    stepper.className = 'loan-stepper';
+    const minus = amountButton(
+      '−',
+      { delta: -amountStep, type: 'step' },
+      'red',
+      entry.value <= entry.min
+    );
+    minus.setAttribute('aria-label', `Less by ${pounds(amountStep)}`);
+    const plus = amountButton(
+      '+',
+      { delta: amountStep, type: 'step' },
+      'red',
+      entry.value >= entry.max
+    );
+    plus.setAttribute('aria-label', `More by ${pounds(amountStep)}`);
+    stepper.append(minus, shown, plus);
+    const chips = document.createElement('div');
+    chips.className = 'loan-chips';
+    chips.append(
+      ...amountChips.map(chip =>
+        amountButton(
+          `+£${chip / 1000}k`,
+          { delta: chip, type: 'step' },
+          'chip',
+          entry.value >= entry.max
+        )
+      ),
+      amountButton('Max', { type: 'max' }, 'chip', entry.value >= entry.max)
+    );
+    parts.push(
+      stepper,
+      limit,
+      chips,
+      amountButton('Enter exact amount', { type: 'keypad' }, 'loan-exact')
+    );
+  } else {
+    shown.textContent = `£${entry.typing}_`;
+    const keypad = document.createElement('div');
+    keypad.className = 'loan-keypad';
+    keypad.append(
+      ...[1, 2, 3, 4, 5, 6, 7, 8, 9].map(digit =>
+        amountButton(
+          String(digit),
+          { digit, type: 'digit' },
+          'chip',
+          !digitAllowed(entry, digit)
+        )
+      ),
+      amountButton('Del', { type: 'back' }, 'chip', !entry.typing),
+      amountButton(
+        '0',
+        { digit: 0, type: 'digit' },
+        'chip',
+        !digitAllowed(entry, 0)
+      ),
+      amountButton('Done', { type: 'done' }, 'chip')
+    );
+    parts.push(shown, limit, keypad);
+  }
+  const submit = actionButton(
+    loan.submit.label,
+    loan.submit.id,
+    'choice',
+    loan.submit.enabled
+  );
+  const cancel = actionButton(
+    'Cancel',
+    loan.cancel.id,
+    'choice',
+    loan.cancel.enabled
+  );
+  cancel.className = 'red';
+  actions.append(submit, cancel);
+  parts.push(actions);
+  pane.replaceChildren(...parts);
+};
+
 /** Modern mode's status screen (#133): the original's facts as rows. */
 const paintStatus = (pane: HTMLElement, status: ModernStatus) => {
   const heading = document.createElement('h2');
@@ -566,6 +686,7 @@ export const createBrowserDom = (app: HTMLElement) => {
   <section id="pick-team" class="pick-team" aria-label="Pick team" hidden></section>
   <section id="highlights" class="modern-highlights" aria-label="Match highlights" hidden></section>
   <section id="status" class="modern-status" aria-label="Club status" hidden></section>
+  <section id="loan" class="modern-loan" aria-label="Loan" hidden></section>
   <div id="context-bar" class="context-bar" aria-label="Answers" hidden></div>
   <pre id="transcript" class="sr-only" aria-live="polite" aria-atomic="true"></pre>
   <p id="ticker-live" class="sr-only" aria-live="polite"></p>
@@ -599,6 +720,8 @@ export const createBrowserDom = (app: HTMLElement) => {
   const pickPane = find<HTMLElement>('#pick-team');
   const highlightsPane = find<HTMLElement>('#highlights');
   const statusPane = find<HTMLElement>('#status');
+  const loanPane = find<HTMLElement>('#loan');
+  let loanKey = '';
   let statusKey = '';
   // Modern mode's own pitch, kept between attacks as the original's is not.
   const modernPitch = document.createElement('canvas');
@@ -746,6 +869,7 @@ export const createBrowserDom = (app: HTMLElement) => {
       focus,
       highlights,
       home,
+      loan,
       pickTeam,
       status,
       title,
@@ -767,6 +891,13 @@ export const createBrowserDom = (app: HTMLElement) => {
       pickKey = pick;
       document.documentElement.classList.toggle('at-home', atHome);
       document.documentElement.classList.toggle('at-pick-team', !!pickTeam);
+      loanPane.hidden = !loan;
+      const loanShape = JSON.stringify(loan);
+      if (loan && loanShape !== loanKey) {
+        paintLoan(loanPane, loan);
+      }
+      loanKey = loanShape;
+      document.documentElement.classList.toggle('has-loan', !!loan);
       statusPane.hidden = !status;
       const statusShape = JSON.stringify(status);
       if (status && statusShape !== statusKey) {
@@ -936,7 +1067,19 @@ export const createBrowserDom = (app: HTMLElement) => {
       target.tap(button.dataset.id!);
     };
     bar.addEventListener('pointerdown', pressed);
-    for (const pane of [homePane, pickPane, highlightsPane, statusPane]) {
+    loanPane.addEventListener('click', event => {
+      const action = barButton(event)?.dataset.action;
+      if (action) {
+        target.amount(JSON.parse(action) as AmountAction);
+      }
+    });
+    for (const pane of [
+      homePane,
+      pickPane,
+      highlightsPane,
+      statusPane,
+      loanPane
+    ]) {
       pane.addEventListener('pointerdown', pressed);
       pane.addEventListener('click', event => {
         const button = barButton(event);

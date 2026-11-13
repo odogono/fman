@@ -75,7 +75,7 @@ Style is "paper & ink": light grey paper, black text with red and blue ink rows,
   - "Done – continue" (an empty answer) is the yellow primary action, pinned to the bottom.
   - Like Modern mode's other screens, it can't be copied with Print screen; Classic mode still can.
 - **Amounts** (bids, loans, repayments): a stepper with preset chips, plus a numeric keypad for exact values. The exact amount field also takes digits from a physical keyboard and keeps within the offered range.
-- **Loan and repayment** (`l`, `p`): one screen for both prompts, named by the top bar ("Obtain a loan", "Pay off loan"), without the mockup's banner.
+- **Loan and repayment** (`l`, `p`): one screen for both prompts, named by the top bar ("Loan", "Repay loan"), without the mockup's banner.
   - Cash and Loan rows at the top. The original never shows the credit limit up front, so there is no row for it; under the amount, "Up to £X" gives the most the controls allow.
   - A large amount between red − and + buttons, Classic's chips (+£10k, +£50k, +£100k, Max) rather than the mockup's, and "Enter exact amount", which swaps the stepper for the keypad (digits, Del, Done).
   - Both start at £0. The yellow primary ("Take loan", "Pay off loan") is disabled at £0, where it would do what Cancel does; a red Cancel (`0`) sits under it, both pinned to the bottom.

@@ -15,6 +15,7 @@ import { barFor, tickerBar, type BarButton } from './context-bar';
 import { createFrameSampler } from './frame-sampler';
 import { homeFor, type Home } from './home';
 import { highlightsFor, type ModernHighlights } from './modern-highlights';
+import { loanFor, type ModernLoan } from './modern-loan';
 import { statusFor, type ModernStatus } from './modern-status';
 import { pickTeamFor, type PickTeam } from './pick-team';
 import {
@@ -104,6 +105,8 @@ export type Dom = {
      * menu prompt waits, so the Home screen stands in for it.
      */
     home: Home | undefined;
+    /** Modern mode's loan and repayment screen, or the balance after one. */
+    loan: ModernLoan | undefined;
     /**
      * Modern mode's pick team screen, standing in for the team and
      * selection prompts and their bar.
@@ -282,7 +285,12 @@ export const createApp = ({
     return (
       atHome() ||
       (modern() &&
-        Boolean(pickTeamFor(view) ?? highlightsFor(view) ?? statusFor(view)))
+        Boolean(
+          pickTeamFor(view) ??
+          highlightsFor(view) ??
+          statusFor(view) ??
+          loanFor(view, amountEntry)
+        ))
     );
   };
   /** Modern mode's Home screen stands in for the menu prompt. */
@@ -332,8 +340,10 @@ export const createApp = ({
     const pickTeam = modern() ? pickTeamFor(view) : undefined;
     const highlights = modern() ? highlightsFor(view) : undefined;
     const status = modern() ? statusFor(view, home) : undefined;
-    const bar = barShown() && !home && !pickTeam && !highlights && !status;
     const answers = answersFor(view);
+    const loan = modern() ? loanFor(view, amountFor(answers)) : undefined;
+    const bar =
+      barShown() && !home && !pickTeam && !highlights && !status && !loan;
     const ticking = tickerRunning() && !highlights;
     const buttons = ticking ? tickerBar : bar ? barFor(answers) : undefined;
     dom.render({
@@ -349,6 +359,7 @@ export const createApp = ({
         modern() && view.game && !highlights
           ? homeFor({ ...view, game: view.game })
           : undefined,
+      loan,
       pickTeam,
       status,
       title: screenTitle(view),

@@ -12,6 +12,7 @@ import { createApp, type Dom, type Menu, type MenuControl } from './app';
 import type { BarButton } from './context-bar';
 import type { Home } from './home';
 import type { ModernHighlights } from './modern-highlights';
+import type { ModernLoan } from './modern-loan';
 import type { ModernStatus } from './modern-status';
 import type { PickTeam } from './pick-team';
 import { createStorage, type Options } from './storage';
@@ -65,6 +66,7 @@ const harness = ({
     highlights: undefined as ModernHighlights | undefined,
     home: undefined as Home | undefined,
     inputFocus: false,
+    loan: undefined as ModernLoan | undefined,
     menu: undefined as Menu | undefined,
     menuOpen: false,
     notice: '',
@@ -104,12 +106,14 @@ const harness = ({
       focus,
       highlights,
       home,
+      loan,
       pickTeam,
       status,
       title,
       typing
     }) => {
       page.status = status;
+      page.loan = loan;
       page.amount = amount;
       page.highlights = highlights;
       page.pickTeam = pickTeam;
@@ -1208,9 +1212,11 @@ test('Modern mode takes an exact amount from a physical keyboard', () => {
     expect(key(run, digit, `Digit${digit}`)).toBe(true);
   }
   key(run, 'Backspace');
-  expect(run.page.amount?.typing).toBe('120');
+  const entry = () =>
+    run.page.loan?.kind === 'borrow' ? run.page.loan.entry : undefined;
+  expect(entry()?.typing).toBe('120');
   key(run, 'Enter');
-  expect(run.page.amount).toMatchObject({ typing: undefined, value: 120 });
+  expect(entry()).toMatchObject({ typing: undefined, value: 120 });
   expect(run.view().screen).toBe('borrow');
 });
 
@@ -1387,4 +1393,84 @@ test('Classic mode keeps the original status screen, which prints', () => {
   expect(run.labels()).toEqual(['Continue']);
   run.app.openMenu();
   expect(run.control('Print screen')).toMatchObject({ disabled: false });
+});
+
+/** Opens a Modern loan or repayment prompt from the Home screen. */
+const toLoan = (run: ReturnType<typeof harness>, id: string) => {
+  run.settle();
+  run.app.tap(id);
+  run.app.pointerUp();
+  run.settle();
+};
+
+test('Modern mode takes a loan on its own screen, then shows the balance', () => {
+  const run = harness({ options: modernOptions });
+  run.toMenu();
+  toLoan(run, 'menu.borrow');
+  const game = run.view().game!;
+  const loan = run.page.loan!;
+  if (loan.kind !== 'borrow') {
+    throw new Error('No loan screen');
+  }
+  expect(run.page.bar).toBeUndefined();
+  expect(loan).toMatchObject({
+    cancel: { enabled: true, id: 'borrow.cancel' },
+    cash: game.cash,
+    debt: game.debt,
+    entry: { max: creditLimit(game) - game.debt, value: 0 },
+    // At £0 the loan would do no more than Cancel does.
+    submit: { enabled: false, id: 'borrow.amount', label: 'Take loan' }
+  });
+  run.app.amount({ delta: 50_000, type: 'step' });
+  expect(run.page.loan).toMatchObject({ submit: { enabled: true } });
+  run.app.tap('borrow.amount');
+  run.wait(3);
+  run.app.pointerUp();
+  run.settle();
+  expect(run.view().game!.debt).toBe(game.debt + 50_000);
+  expect(run.page.loan).toEqual({
+    cash: game.cash + 50_000,
+    debt: game.debt + 50_000,
+    done: { enabled: true, id: 'message.continue' },
+    kind: 'balance'
+  });
+  run.app.tap('message.continue');
+  run.wait(3);
+  run.app.pointerUp();
+  run.settle();
+  expect(run.view().screen).toBe('menu');
+  expect(run.page.loan).toBeUndefined();
+});
+
+test('Modern mode pays off a loan up to the debt and cash, or cancels', () => {
+  const run = harness({ options: modernOptions });
+  run.toMenu();
+  toLoan(run, 'menu.borrow');
+  run.app.amount({ delta: 10_000, type: 'step' });
+  run.app.tap('borrow.amount');
+  run.app.pointerUp();
+  run.settle();
+  toLoan(run, 'message.continue');
+  toLoan(run, 'menu.repay');
+  const game = run.view().game!;
+  expect(run.page.loan).toMatchObject({
+    entry: { max: Math.min(game.debt, game.cash), value: 0 },
+    kind: 'repay',
+    submit: { label: 'Pay off loan' }
+  });
+  run.app.tap('repay.cancel');
+  run.app.pointerUp();
+  run.settle();
+  expect(run.view().game!.debt).toBe(game.debt);
+  // Cancel borrows or repays nothing, the original's way.
+  expect(run.page.loan).toMatchObject({ debt: game.debt, kind: 'balance' });
+});
+
+test('Classic mode keeps the original loan screen and its bar', () => {
+  const run = harness({ coarsePointer: true });
+  run.toMenu();
+  run.tap('Loan (l)');
+  run.settle();
+  expect(run.page.loan).toBeUndefined();
+  expect(run.labels()).toEqual(['Cancel (0)', 'Take loan']);
 });

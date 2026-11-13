@@ -81,6 +81,11 @@ Style is "paper & ink": light grey paper, black text with red and blue ink rows,
   - Both start at £0. The yellow primary ("Take loan", "Pay off loan") is disabled at £0, where it would do what Cancel does; a red Cancel (`0`) sits under it, both pinned to the bottom.
   - The balance message that follows gets its own screen: Cash and Loan rows and Continue.
   - The weekly cost of a loan is left to #97.
+- **Transfer bid** (the offer after a matchday): named by the top bar ("Transfer market"), without the mockup's banner.
+  - The player: the name in an inverse bar in its category's ink, with its D/M/A or G tag and number, then Skill, Energy and Value rows. Then Cash and Loan rows, as the original shows the debt too.
+  - The bid uses the loan screen's controls: − and +, Classic's chips, and the exact-amount keypad. It starts at the player's value, with "Up to £X" for the cash.
+  - "Place bid" is the yellow primary, disabled at £0, where a bid can only be refused; a red "Pass" (`99`) sits under it.
+- **Messages**: every plain text message (a refused bid, "has been sold", "has joined your team", the full-squad notice) shows its text in a black inverse bar, worded as the original has it, with Continue under it.
 - **Desktop**: two panes when the window is at least 900px wide and wider than tall; otherwise the phone layout, centred at up to about 480px. The left pane holds the club summary, next fixture and menu choices, enabled only while the menu prompt waits, since the original accepts them nowhere else; it is hidden during the highlights. The right pane shows the screen on show, or, while the menu waits, Modern mode's status read-only, without its Done button. The mode switch is not in the header, as the mockup shows, but in the game menu's Options.
 
 ![Desktop](https://gist.githubusercontent.com/odogono/00dcc8e44efa42a79b1c8599d68c7496/raw/desktop.jpg)

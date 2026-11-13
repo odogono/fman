@@ -75,6 +75,12 @@ Style is "paper & ink": light grey paper, black text with red and blue ink rows,
   - "Done – continue" (an empty answer) is the yellow primary action, pinned to the bottom.
   - Like Modern mode's other screens, it can't be copied with Print screen; Classic mode still can.
 - **Amounts** (bids, loans, repayments): a stepper with preset chips, plus a numeric keypad for exact values. The exact amount field also takes digits from a physical keyboard and keeps within the offered range.
+- **Loan and repayment** (`l`, `p`): one screen for both prompts, named by the top bar ("Obtain a loan", "Pay off loan"), without the mockup's banner.
+  - Cash and Loan rows at the top. The original never shows the credit limit up front, so there is no row for it; under the amount, "Up to £X" gives the most the controls allow.
+  - A large amount between red − and + buttons, Classic's chips (+£10k, +£50k, +£100k, Max) rather than the mockup's, and "Enter exact amount", which swaps the stepper for the keypad (digits, Del, Done).
+  - Both start at £0. The yellow primary ("Take loan", "Pay off loan") is disabled at £0, where it would do what Cancel does; a red Cancel (`0`) sits under it, both pinned to the bottom.
+  - The balance message that follows gets its own screen: Cash and Loan rows and Continue.
+  - The weekly cost of a loan is left to #97.
 - **Desktop**: two panes when the window is at least 900px wide and wider than tall; otherwise the phone layout, centred at up to about 480px. The left pane holds the club summary, next fixture and menu choices, enabled only while the menu prompt waits, since the original accepts them nowhere else; it is hidden during the highlights. The right pane shows the screen on show, or, while the menu waits, Modern mode's status read-only, without its Done button. The mode switch is not in the header, as the mockup shows, but in the game menu's Options.
 
 ![Desktop](https://gist.githubusercontent.com/odogono/00dcc8e44efa42a79b1c8599d68c7496/raw/desktop.jpg)

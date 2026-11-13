@@ -12,6 +12,7 @@ import { createApp, type Dom, type Menu, type MenuControl } from './app';
 import type { BarButton } from './context-bar';
 import type { Home } from './home';
 import type { ModernHighlights } from './modern-highlights';
+import type { ModernStatus } from './modern-status';
 import type { PickTeam } from './pick-team';
 import { createStorage, type Options } from './storage';
 
@@ -70,6 +71,7 @@ const harness = ({
     pickTeam: undefined as PickTeam | undefined,
     printed: 0,
     rendered: 0,
+    status: undefined as ModernStatus | undefined,
     title: '',
     typing: true
   };
@@ -103,9 +105,11 @@ const harness = ({
       highlights,
       home,
       pickTeam,
+      status,
       title,
       typing
     }) => {
+      page.status = status;
       page.amount = amount;
       page.highlights = highlights;
       page.pickTeam = pickTeam;
@@ -972,9 +976,15 @@ test('Home screen choices submit the menu answers, and wait for the menu prompt'
   run.app.tap('menu.borrow');
   run.app.pointerUp();
   expect(run.view().screen).toBe('status');
-  // Screens without a Modern design show the bar, without the original's keys.
-  expect(run.labels()).toEqual(['Continue']);
-  run.tap('Continue');
+  // The status screen stands in for the original's and its bar.
+  expect(run.page.bar).toBeUndefined();
+  expect(run.page.status?.done).toEqual({
+    enabled: true,
+    id: 'status.continue'
+  });
+  run.app.tap('status.continue');
+  run.wait(3);
+  run.app.pointerUp();
   run.settle();
   expect(run.page.atHome).toBe(true);
   run.app.tap('menu.play');
@@ -1330,4 +1340,51 @@ test('Modern mode shows moment highlights as a ticker, newest first, with Skip',
   run.wait(tickerPause + 10);
   expect(run.view().screen).toBe('result');
   expect(run.page.highlights).toBeUndefined();
+});
+
+test('Modern mode shows the original status facts, and Done returns to the menu', () => {
+  const run = harness({ options: modernOptions });
+  run.toMenu();
+  // Beside the Home screen while the menu waits: read-only.
+  expect(run.page.status).toBeDefined();
+  expect(run.page.status?.done).toBeUndefined();
+  run.app.tap('menu.status');
+  run.wait(3);
+  run.app.pointerUp();
+  run.settle();
+  const game = run.view().game!;
+  const club = game.clubs[game.club - 1]!;
+  expect(run.page.status).toMatchObject({
+    cash: game.cash,
+    club: { name: club.name.trim() },
+    debt: game.debt,
+    leagueMatches: 0,
+    level: { name: 'Beginner' },
+    manager: 'alex',
+    morale: game.morale,
+    rating: game.rating,
+    seasons: game.seasons
+  });
+  // Before the first league match there is no position to show.
+  expect(run.page.status?.leaguePosition).toBeUndefined();
+  // Modern mode's own screen is not the Spectrum's to copy.
+  run.app.openMenu();
+  expect(run.control('Print screen')).toMatchObject({ disabled: true });
+  run.press('Resume');
+  run.app.tap('status.continue');
+  run.wait(3);
+  run.app.pointerUp();
+  run.settle();
+  expect(run.view().screen).toBe('menu');
+});
+
+test('Classic mode keeps the original status screen, which prints', () => {
+  const run = harness({ coarsePointer: true });
+  run.toMenu();
+  run.tap('Score (s)');
+  run.settle();
+  expect(run.page.status).toBeUndefined();
+  expect(run.labels()).toEqual(['Continue']);
+  run.app.openMenu();
+  expect(run.control('Print screen')).toMatchObject({ disabled: false });
 });

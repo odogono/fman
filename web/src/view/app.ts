@@ -15,6 +15,7 @@ import { barFor, tickerBar, type BarButton } from './context-bar';
 import { createFrameSampler } from './frame-sampler';
 import { homeFor, type Home } from './home';
 import { highlightsFor, type ModernHighlights } from './modern-highlights';
+import { statusFor, type ModernStatus } from './modern-status';
 import { pickTeamFor, type PickTeam } from './pick-team';
 import {
   isRules,
@@ -108,6 +109,11 @@ export type Dom = {
      * selection prompts and their bar.
      */
     pickTeam: PickTeam | undefined;
+    /**
+     * Modern mode's status screen: on the status prompt, or read-only beside
+     * the Home screen while the menu waits.
+     */
+    status: ModernStatus | undefined;
     /** The name of the screen on show, for the title above it. */
     title: string;
     /**
@@ -270,6 +276,15 @@ export const createApp = ({
     modern() ||
     options.touch === 'on' ||
     (options.touch === 'auto' && dom.coarsePointer);
+  /** Modern mode shows a screen of its own, not the Spectrum's. */
+  const ownScreen = () => {
+    const view = journal.session.view;
+    return (
+      atHome() ||
+      (modern() &&
+        Boolean(pickTeamFor(view) ?? highlightsFor(view) ?? statusFor(view)))
+    );
+  };
   /** Modern mode's Home screen stands in for the menu prompt. */
   const atHome = () => modern() && journal.session.view.screen === 'menu';
   /** Modern mode takes typing only where a name is asked for. */
@@ -316,7 +331,8 @@ export const createApp = ({
     }
     const pickTeam = modern() ? pickTeamFor(view) : undefined;
     const highlights = modern() ? highlightsFor(view) : undefined;
-    const bar = barShown() && !home && !pickTeam && !highlights;
+    const status = modern() ? statusFor(view, home) : undefined;
+    const bar = barShown() && !home && !pickTeam && !highlights && !status;
     const answers = answersFor(view);
     const ticking = tickerRunning() && !highlights;
     const buttons = ticking ? tickerBar : bar ? barFor(answers) : undefined;
@@ -334,6 +350,7 @@ export const createApp = ({
           ? homeFor({ ...view, game: view.game })
           : undefined,
       pickTeam,
+      status,
       title: screenTitle(view),
       typing: typingTaken(),
       view
@@ -410,7 +427,7 @@ export const createApp = ({
             'Print screen',
             printScreen,
             // Modern mode's own screens are not the Spectrum's to copy.
-            !printAccepted(journal.session.view) || atHome()
+            !printAccepted(journal.session.view) || ownScreen()
           ),
           button('Save', () => showMenu('save'), !storageWorks),
           button('Load', () => showMenu('load')),

@@ -922,3 +922,97 @@ button.pick-row:focus-visible {
     width: 480px;
   }
 }
+/* Modern mode's status screen (#133): the original's facts in paper & ink. */
+.modern-status[hidden] {
+  display: none;
+}
+.modern-status {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  width: 100%;
+  max-width: 480px;
+  font:
+    16px/1.4 system-ui,
+    sans-serif;
+}
+.modern-status p {
+  margin: 0;
+}
+.status-club {
+  margin: 0;
+  font-family: Spectrum, monospace;
+  font-size: 24px;
+  font-weight: normal;
+  font-synthesis: none;
+  line-height: 32px;
+}
+.status-rating {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 8px !important;
+  padding: 6px 8px;
+  background: var(--normal-0);
+  color: var(--bright-7);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.status-rating-value {
+  font-variant-numeric: tabular-nums;
+}
+/* The primary action keeps to one line on the narrowest phones. */
+@media (max-width: 360px) {
+  .pick-actions .primary {
+    font-size: 15px;
+    white-space: nowrap;
+  }
+}
+.modern-status dl {
+  display: grid;
+  margin: 0;
+}
+.modern-status dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  min-height: 36px;
+  border-bottom: 1px solid var(--normal-0);
+}
+.modern-status dl div:nth-child(odd) {
+  color: var(--normal-2);
+}
+.modern-status dl div:nth-child(even) {
+  color: var(--normal-1);
+}
+.modern-status dt,
+.modern-status dd {
+  margin: 0;
+}
+.modern-status dd {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+.status-level {
+  padding: 0 4px;
+}
+/* The status stands in for the Spectrum's status screen and its bar. */
+:root.modern.has-status .machine,
+:root.modern.has-status .context-bar {
+  display: none;
+}
+/* On a phone the Home screen stands alone while the menu waits. */
+:root.modern.at-home .modern-status {
+  display: none;
+}
+@media (min-width: 900px) and (min-aspect-ratio: 1) {
+  :root.modern main:has(#home:not([hidden])) .modern-status {
+    display: grid;
+    grid-column: 2;
+    width: 480px;
+  }
+  :root.modern.at-home.has-status .machine {
+    display: none;
+  }
+}

@@ -14,6 +14,7 @@ import type { BarButton } from './context-bar';
 import { rasterText, rasterizeCells } from './glyphs';
 import type { ClubName, Home } from './home';
 import type { ModernHighlights } from './modern-highlights';
+import type { ModernStatus } from './modern-status';
 import type { PickTeam, PickTeamRow, Strengths } from './pick-team';
 import { paintAttack, paintEmptyPitch } from './pitch';
 import { tickerLines, tickerText } from './ticker-layout';
@@ -185,7 +186,7 @@ const amountPanel = (entry: AmountEntry) => {
 /** The context bar or Home screen button an event came from, if any. */
 const barButton = (event: Event) =>
   (event.target as Element).closest<HTMLButtonElement>(
-    '#context-bar button, #home button, #pick-team button, #highlights button'
+    '#context-bar button, #home button, #pick-team button, #highlights button, #status button'
   );
 
 const pounds = (value: number) => `£${value.toLocaleString('en-GB')}`;
@@ -415,6 +416,67 @@ const paintHighlights = (
   pane.replaceChildren(...parts);
 };
 
+/** Modern mode's status screen (#133): the original's facts as rows. */
+const paintStatus = (pane: HTMLElement, status: ModernStatus) => {
+  const heading = document.createElement('h2');
+  heading.className = 'status-club';
+  heading.append(clubLabel(status.club));
+  const lines = (...texts: string[]) =>
+    texts.map(text => {
+      const line = document.createElement('p');
+      line.textContent = text;
+      return line;
+    });
+  const rating = document.createElement('p');
+  rating.className = 'status-rating';
+  rating.append(
+    'Managerial rating',
+    cell('status-rating-value', `${status.rating} / 100`)
+  );
+  const facts = document.createElement('dl');
+  const level = cell('status-level', status.level.name);
+  level.style.color = `var(--bright-${status.level.ink})`;
+  level.style.background = `var(--normal-${status.level.paper})`;
+  const rows: (readonly [string, string | HTMLElement])[] = [
+    ['Level', level],
+    ['Seasons', String(status.seasons)],
+    ['Cash', pounds(status.cash)],
+    ['Loan', pounds(status.debt)],
+    ['Morale', String(status.morale)],
+    ['League position', String(status.leaguePosition ?? '—')],
+    ['League match', String(status.leagueMatches)]
+  ];
+  for (const [term, value] of rows) {
+    const row = document.createElement('div');
+    const dt = document.createElement('dt');
+    dt.textContent = term;
+    const dd = document.createElement('dd');
+    dd.append(value);
+    row.append(dt, dd);
+    facts.append(row);
+  }
+  const parts: HTMLElement[] = [
+    heading,
+    ...lines(`Manager: ${status.manager}`, `Colours: ${status.colours}`),
+    rating,
+    facts
+  ];
+  if (status.done) {
+    const actions = document.createElement('div');
+    actions.className = 'pick-actions';
+    actions.append(
+      actionButton(
+        'Done – continue',
+        status.done.id,
+        'choice',
+        status.done.enabled
+      )
+    );
+    parts.push(actions);
+  }
+  pane.replaceChildren(...parts);
+};
+
 /** Modern mode's pick team screen (#44). */
 const paintPickTeam = (pane: HTMLElement, pick: PickTeam) => {
   const parts: HTMLElement[] = [];
@@ -503,6 +565,7 @@ export const createBrowserDom = (app: HTMLElement) => {
   </section>
   <section id="pick-team" class="pick-team" aria-label="Pick team" hidden></section>
   <section id="highlights" class="modern-highlights" aria-label="Match highlights" hidden></section>
+  <section id="status" class="modern-status" aria-label="Club status" hidden></section>
   <div id="context-bar" class="context-bar" aria-label="Answers" hidden></div>
   <pre id="transcript" class="sr-only" aria-live="polite" aria-atomic="true"></pre>
   <p id="ticker-live" class="sr-only" aria-live="polite"></p>
@@ -535,6 +598,8 @@ export const createBrowserDom = (app: HTMLElement) => {
   const homePane = find<HTMLElement>('#home');
   const pickPane = find<HTMLElement>('#pick-team');
   const highlightsPane = find<HTMLElement>('#highlights');
+  const statusPane = find<HTMLElement>('#status');
+  let statusKey = '';
   // Modern mode's own pitch, kept between attacks as the original's is not.
   const modernPitch = document.createElement('canvas');
   modernPitch.className = 'modern-pitch';
@@ -682,6 +747,7 @@ export const createBrowserDom = (app: HTMLElement) => {
       highlights,
       home,
       pickTeam,
+      status,
       title,
       typing,
       view
@@ -701,6 +767,12 @@ export const createBrowserDom = (app: HTMLElement) => {
       pickKey = pick;
       document.documentElement.classList.toggle('at-home', atHome);
       document.documentElement.classList.toggle('at-pick-team', !!pickTeam);
+      statusPane.hidden = !status;
+      const statusShape = JSON.stringify(status);
+      if (status && statusShape !== statusKey) {
+        paintStatus(statusPane, status);
+      }
+      statusKey = statusShape;
       highlightsPane.hidden = !highlights;
       const highlightsShape = JSON.stringify(highlights);
       if (highlights && highlightsShape !== highlightsKey) {
@@ -708,6 +780,7 @@ export const createBrowserDom = (app: HTMLElement) => {
       }
       highlightsKey = highlightsShape;
       document.documentElement.classList.toggle('at-highlights', !!highlights);
+      document.documentElement.classList.toggle('has-status', !!status);
       if (highlights?.pitch && view.screen === 'highlights') {
         paintModernPitch(view);
       }
@@ -863,7 +936,7 @@ export const createBrowserDom = (app: HTMLElement) => {
       target.tap(button.dataset.id!);
     };
     bar.addEventListener('pointerdown', pressed);
-    for (const pane of [homePane, pickPane, highlightsPane]) {
+    for (const pane of [homePane, pickPane, highlightsPane, statusPane]) {
       pane.addEventListener('pointerdown', pressed);
       pane.addEventListener('click', event => {
         const button = barButton(event);

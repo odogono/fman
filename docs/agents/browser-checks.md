@@ -19,8 +19,9 @@ For a change to see in the real app (layout, touch controls, the game menu, the 
 | `#context-bar`                  | Classic mode's touch answers.                                                                            |
 | `#home`                         | Modern mode's Home screen; its choices are `#home button[data-id]`.                                      |
 | `#pick-team`                    | Modern mode's pick team screen; its live rows and actions are `#pick-team button[data-id]`.              |
+| `#highlights`                   | Modern mode's highlights screen: scoreboard, pitch or ticker, and its Hold to hurry or Skip button.      |
 
-Storage keys (`web/src/view/storage.ts`): `fman:options` holds `{ presentation, rules, scale, sound, touch }`, `fman:autosave` the session the page resumes on load, `fman:slot:<n>` the save slots. Set options, then `location.reload()`; `sound: false` keeps prompts quiet, and `touch: 'on'` forces the context bar, and `presentation: 'modern'` turns on Modern mode.
+Storage keys (`web/src/view/storage.ts`): `fman:options` holds `{ presentation, rules, scale, sound, touch }`, `fman:autosave` the session the page resumes on load, `fman:slot:<n>` the save slots. Set options, then `location.reload()`; `sound: false` keeps prompts quiet, and `touch: 'on'` forces the context bar, and `presentation: 'classic'` turns off Modern mode, the default.
 
 ## Pitfalls
 

@@ -1,5 +1,5 @@
-import { fixtureSides, teamStrength } from '../sim/league';
-import type { Player } from '../sim/management';
+import { fixtureSides, teamStrength, type MatchFixture } from '../sim/league';
+import type { Game, Player } from '../sim/management';
 import { tiringInjuries } from '../sim/ruleset';
 import type { View } from '../sim/session';
 import { inSquadOrder, playerCategory } from '../sim/squads';
@@ -44,6 +44,13 @@ export type PickTeamAction = Readonly<{
  * Modern mode's pick team screen (#44), standing in for the original's team
  * prompt (change or kick off) and its selection prompt (add or drop).
  */
+/** The two teams' strengths: the managed club's, then the opponent's. */
+export type Strengths = Readonly<{
+  club: ClubName;
+  opponent: ClubName;
+  rows: readonly (readonly [string, number, number])[];
+}>;
+
 export type PickTeam = Readonly<{
   actions: readonly PickTeamAction[];
   groups: readonly PickTeamGroup[];
@@ -51,12 +58,8 @@ export type PickTeam = Readonly<{
   hint?: string;
   picked: number;
   prompt: 'team' | 'selection';
-  /** The team prompt's strengths: the managed club's, then the opponent's. */
-  strengths?: Readonly<{
-    club: ClubName;
-    opponent: ClubName;
-    rows: readonly (readonly [string, number, number])[];
-  }>;
+  /** The team prompt's strengths. */
+  strengths?: Strengths;
   /** Under tiring injuries the legend counts weeks out, not `i`. */
   weeksOut: boolean;
 }>;
@@ -96,6 +99,19 @@ const rowFor = (
   };
 };
 
+/** As on the original comparison screen: the managed club first. */
+export const strengthsFor = (game: Game, fixture: MatchFixture): Strengths => {
+  const { club, opponent } = fixtureSides(game, fixture);
+  const ours = teamStrength(game);
+  return {
+    club: clubName(club),
+    opponent: clubName(opponent),
+    rows: strengthNames.map(
+      (name, i) => [name, ours[i]!, fixture.opponentStrength[i]!] as const
+    )
+  };
+};
+
 export const pickTeamFor = (view: View): PickTeam | undefined => {
   if (view.screen !== 'team' && view.screen !== 'selection') {
     return undefined;
@@ -117,8 +133,6 @@ export const pickTeamFor = (view: View): PickTeam | undefined => {
     title
   }));
   if (view.screen === 'team') {
-    const { club, opponent } = fixtureSides(game, view.fixture);
-    const ours = teamStrength(game);
     return {
       actions: [
         action('team.change', 'Change team', 'red'),
@@ -127,14 +141,7 @@ export const pickTeamFor = (view: View): PickTeam | undefined => {
       groups,
       picked,
       prompt: 'team',
-      strengths: {
-        club: clubName(club),
-        opponent: clubName(opponent),
-        rows: strengthNames.map(
-          (name, i) =>
-            [name, ours[i]!, view.fixture.opponentStrength[i]!] as const
-        )
-      },
+      strengths: strengthsFor(game, view.fixture),
       weeksOut
     };
   }

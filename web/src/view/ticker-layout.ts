@@ -25,7 +25,7 @@ export type TickerLine = Readonly<{
 const width = 32;
 
 /** Who a moment names: the player who shot, or else the club. */
-const named = (game: Game, fixture: MatchFixture, moment: Moment) => {
+export const named = (game: Game, fixture: MatchFixture, moment: Moment) => {
   if (moment.side === 'club' && moment.player !== undefined) {
     const player = game.players.find(p => p.id === moment.player);
     if (player) {

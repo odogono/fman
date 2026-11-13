@@ -1,5 +1,9 @@
 import type { Club } from '../sim/catalogue';
-import type { Attack, SpriteDraw } from '../sim/highlights';
+import {
+  emptyAttackCarry,
+  type Attack,
+  type SpriteDraw
+} from '../sim/highlights';
 import { rasterText, rasterizeCells } from './glyphs';
 import type { Cell } from './grid';
 import { createPrintScreen } from './print-screen';
@@ -257,6 +261,28 @@ export const paintAttack = (
   context.putImageData(
     new ImageData(
       rasterizeHighlight(attack, index, score, home, away, flashPhase),
+      256,
+      176
+    ),
+    0,
+    0
+  );
+
+/** The pitch with nobody on it, facing right as the home side attacks. */
+export const paintEmptyPitch = (context: CanvasRenderingContext2D) =>
+  context.putImageData(
+    new ImageData(
+      rasterizeAttack(
+        {
+          carry: emptyAttackCarry(),
+          direction: 'right',
+          frames: [],
+          goal: false,
+          seed: 0,
+          trace: []
+        },
+        -1
+      ),
       256,
       176
     ),

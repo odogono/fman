@@ -26,7 +26,7 @@ export type Options = {
   touch: 'auto' | 'on' | 'off';
 };
 export const defaultOptions: Options = {
-  presentation: 'classic',
+  presentation: 'modern',
   rules: defaultRules,
   scale: 'auto',
   sound: true,
@@ -58,7 +58,8 @@ export const createStorage = (backend: () => StorageBackend) => {
       try {
         const value = JSON.parse(read(optionsKey) ?? 'null');
         return {
-          presentation: value?.presentation === 'modern' ? 'modern' : 'classic',
+          presentation:
+            value?.presentation === 'classic' ? 'classic' : 'modern',
           rules: isRules(value?.rules) ? value.rules : defaultRules,
           scale: [1, 2, 3].includes(value?.scale) ? value.scale : 'auto',
           sound: value?.sound !== false,

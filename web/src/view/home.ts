@@ -76,6 +76,10 @@ const sides = (game: Game, opponent: number, home: boolean) => {
 
 const leagueTitle = (game: Game) => `League match – Division ${game.division}`;
 
+/** The competition a matchday's own fixture belongs to, as the Home screen words it. */
+export const fixtureTitle = (game: Game, fixture: MatchFixture) =>
+  fixture.kind === 'cup' ? cupTitle(game.cupRound) : leagueTitle(game);
+
 /**
  * A matchday prepares its fixture as it starts, which moves the schedule on:
  * the game then previews the match after it. So while one is in progress
@@ -85,8 +89,7 @@ const fixtureFor = (game: Game, current?: MatchFixture): Home['fixture'] => {
   if (current) {
     return {
       ...sides(game, current.opponent, current.home),
-      title:
-        current.kind === 'cup' ? cupTitle(game.cupRound) : leagueTitle(game)
+      title: fixtureTitle(game, current)
     };
   }
   const preview = previewFixture(game);

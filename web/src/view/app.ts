@@ -14,6 +14,7 @@ import { answersFor, printAccepted, type OfferedAnswer } from './answers';
 import { barFor, tickerBar, type BarButton } from './context-bar';
 import { createFrameSampler } from './frame-sampler';
 import { homeFor, type Home } from './home';
+import { highlightsFor, type ModernHighlights } from './modern-highlights';
 import { pickTeamFor, type PickTeam } from './pick-team';
 import {
   isRules,
@@ -92,6 +93,11 @@ export type Dom = {
     clearInput: boolean;
     display: Display;
     focus: boolean;
+    /**
+     * Modern mode's highlights screen, standing in for the original's
+     * highlights and the ticker's Skip button.
+     */
+    highlights: ModernHighlights | undefined;
     /**
      * Modern mode's Home screen, while a game is in play. `atHome`: the
      * menu prompt waits, so the Home screen stands in for it.
@@ -309,9 +315,10 @@ export const createApp = ({
       dom.notice('Printing stopped. Open the menu to start a new game.');
     }
     const pickTeam = modern() ? pickTeamFor(view) : undefined;
-    const bar = barShown() && !home && !pickTeam;
+    const highlights = modern() ? highlightsFor(view) : undefined;
+    const bar = barShown() && !home && !pickTeam && !highlights;
     const answers = answersFor(view);
-    const ticking = tickerRunning();
+    const ticking = tickerRunning() && !highlights;
     const buttons = ticking ? tickerBar : bar ? barFor(answers) : undefined;
     dom.render({
       amount: bar ? amountFor(answers) : undefined,
@@ -320,8 +327,10 @@ export const createApp = ({
       clearInput,
       display,
       focus: !display.paused && !menuOpen && !barShown(),
+      highlights,
       home:
-        modern() && view.game
+        // The highlights stand alone, without the Home pane beside them.
+        modern() && view.game && !highlights
           ? homeFor({ ...view, game: view.game })
           : undefined,
       pickTeam,

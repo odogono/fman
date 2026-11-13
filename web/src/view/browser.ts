@@ -1,6 +1,6 @@
 import { version } from '../../../package.json';
 import { fixtureSides } from '../sim/league';
-import { flashPhase } from '../sim/session';
+import { flashPhase, type View } from '../sim/session';
 import {
   amountChips,
   amountStep,
@@ -13,8 +13,9 @@ import type { App, Dom, MenuControl } from './app';
 import type { BarButton } from './context-bar';
 import { rasterText, rasterizeCells } from './glyphs';
 import type { ClubName, Home } from './home';
-import type { PickTeam, PickTeamRow } from './pick-team';
-import { paintAttack } from './pitch';
+import type { ModernHighlights } from './modern-highlights';
+import type { PickTeam, PickTeamRow, Strengths } from './pick-team';
+import { paintAttack, paintEmptyPitch } from './pitch';
 import { tickerLines, tickerText } from './ticker-layout';
 
 // The commit the site build stamps in; `bun run dev` leaves it undefined.
@@ -184,7 +185,7 @@ const amountPanel = (entry: AmountEntry) => {
 /** The context bar or Home screen button an event came from, if any. */
 const barButton = (event: Event) =>
   (event.target as Element).closest<HTMLButtonElement>(
-    '#context-bar button, #home button, #pick-team button'
+    '#context-bar button, #home button, #pick-team button, #highlights button'
   );
 
 const pounds = (value: number) => `£${value.toLocaleString('en-GB')}`;
@@ -301,32 +302,124 @@ const pickRow = (row: PickTeamRow, adding: boolean) => {
   return element;
 };
 
+/** The two teams' strengths in two columns, each headed by its club. */
+const strengthsTable = (strengths: Strengths) => {
+  const table = document.createElement('table');
+  table.className = 'pick-strengths';
+  table.setAttribute('aria-label', 'Team strengths');
+  const head = table.createTHead().insertRow();
+  head.append(document.createElement('th'));
+  for (const club of [strengths.club, strengths.opponent]) {
+    const th = document.createElement('th');
+    th.scope = 'col';
+    th.append(clubLabel(club));
+    head.append(th);
+  }
+  const body = table.createTBody();
+  for (const [name, ours, theirs] of strengths.rows) {
+    const row = body.insertRow();
+    const th = document.createElement('th');
+    th.scope = 'row';
+    th.textContent = name;
+    row.append(th);
+    row.insertCell().textContent = String(ours);
+    row.insertCell().textContent = String(theirs);
+  }
+  return table;
+};
+
+/** Modern mode's highlights scoreboard: the competition, then the score. */
+const scoreboard = (highlights: ModernHighlights) => {
+  const board = document.createElement('section');
+  board.className = 'scoreboard';
+  board.setAttribute('aria-label', 'Score');
+  const title = document.createElement('h3');
+  title.textContent = highlights.title;
+  const score = document.createElement('p');
+  score.append(
+    clubLabel(highlights.home),
+    cell('scoreboard-goals', `${highlights.score[0]} v ${highlights.score[1]}`),
+    clubLabel(highlights.away)
+  );
+  board.append(title, score);
+  return board;
+};
+
+/** Modern mode's ticker (#108, #45): newest on top, with Skip below. */
+const tickerList = (ticker: NonNullable<ModernHighlights['ticker']>) => {
+  const list = document.createElement('ol');
+  list.className = 'modern-ticker';
+  list.setAttribute('aria-label', 'Match moments');
+  list.append(
+    ...ticker.lines.map(line => {
+      const item = document.createElement('li');
+      item.className = line.kind;
+      item.append(
+        cell('ticker-minute', line.minute),
+        cell('ticker-word', line.word),
+        cell('ticker-name', line.name),
+        cell('ticker-score', line.score ?? '')
+      );
+      return item;
+    })
+  );
+  return list;
+};
+
+const actionButton = (
+  label: string,
+  id: string,
+  kind: string,
+  enabled: boolean
+) => {
+  const element = document.createElement('button');
+  element.type = 'button';
+  element.textContent = label;
+  element.className = 'primary';
+  element.disabled = !enabled;
+  element.dataset.id = id;
+  element.dataset.kind = kind;
+  return element;
+};
+
+/**
+ * Modern mode's highlights screen (#45), around `pitch`, the canvas the
+ * original pitch is painted on.
+ */
+const paintHighlights = (
+  pane: HTMLElement,
+  pitch: HTMLCanvasElement,
+  highlights: ModernHighlights
+) => {
+  const parts: HTMLElement[] = [scoreboard(highlights)];
+  if (highlights.pitch) {
+    pitch.setAttribute(
+      'aria-label',
+      highlights.pitch.attacking
+        ? `Pitch: ${highlights.pitch.attacking.name} attacking`
+        : 'Pitch'
+    );
+    const strengths = document.createElement('div');
+    strengths.className = 'highlights-strengths';
+    strengths.append(strengthsTable(highlights.pitch.strengths));
+    parts.push(pitch, strengths);
+  }
+  if (highlights.ticker) {
+    const actions = document.createElement('div');
+    actions.className = 'pick-actions';
+    actions.append(
+      actionButton('Skip', 'ticker.skip', 'skip', highlights.ticker.skip)
+    );
+    parts.push(tickerList(highlights.ticker), actions);
+  }
+  pane.replaceChildren(...parts);
+};
+
 /** Modern mode's pick team screen (#44). */
 const paintPickTeam = (pane: HTMLElement, pick: PickTeam) => {
   const parts: HTMLElement[] = [];
   if (pick.strengths) {
-    const strengths = document.createElement('table');
-    strengths.className = 'pick-strengths';
-    strengths.setAttribute('aria-label', 'Team strengths');
-    const head = strengths.createTHead().insertRow();
-    head.append(document.createElement('th'));
-    for (const club of [pick.strengths.club, pick.strengths.opponent]) {
-      const th = document.createElement('th');
-      th.scope = 'col';
-      th.append(clubLabel(club));
-      head.append(th);
-    }
-    const body = strengths.createTBody();
-    for (const [name, ours, theirs] of pick.strengths.rows) {
-      const row = body.insertRow();
-      const th = document.createElement('th');
-      th.scope = 'row';
-      th.textContent = name;
-      row.append(th);
-      row.insertCell().textContent = String(ours);
-      row.insertCell().textContent = String(theirs);
-    }
-    parts.push(strengths);
+    parts.push(strengthsTable(pick.strengths));
   }
   const picked = document.createElement('p');
   picked.className = 'pick-count';
@@ -409,6 +502,7 @@ export const createBrowserDom = (app: HTMLElement) => {
     </form>
   </section>
   <section id="pick-team" class="pick-team" aria-label="Pick team" hidden></section>
+  <section id="highlights" class="modern-highlights" aria-label="Match highlights" hidden></section>
   <div id="context-bar" class="context-bar" aria-label="Answers" hidden></div>
   <pre id="transcript" class="sr-only" aria-live="polite" aria-atomic="true"></pre>
   <p id="ticker-live" class="sr-only" aria-live="polite"></p>
@@ -440,6 +534,16 @@ export const createBrowserDom = (app: HTMLElement) => {
   const bar = find<HTMLElement>('#context-bar');
   const homePane = find<HTMLElement>('#home');
   const pickPane = find<HTMLElement>('#pick-team');
+  const highlightsPane = find<HTMLElement>('#highlights');
+  // Modern mode's own pitch, kept between attacks as the original's is not.
+  const modernPitch = document.createElement('canvas');
+  modernPitch.className = 'modern-pitch';
+  modernPitch.width = 256;
+  modernPitch.height = 176;
+  modernPitch.setAttribute('role', 'img');
+  const modernPitchContext = modernPitch.getContext('2d')!;
+  let modernPitchFor: unknown;
+  let highlightsKey = '';
   let barKey = '';
   let homeKey = '';
   let pickKey = '';
@@ -477,6 +581,40 @@ export const createBrowserDom = (app: HTMLElement) => {
         element.className = `${button.tone}${button.wide ? ' wide' : ''}`;
         return element;
       })
+    );
+  };
+
+  /**
+   * Paints the attack on Modern mode's pitch. Between attacks, where the
+   * original shows its text screen, the last frame stays; before the first,
+   * the empty pitch.
+   */
+  const paintModernPitch = (view: View & { screen: 'highlights' }) => {
+    if (!('playback' in view)) {
+      return;
+    }
+    const { playback } = view;
+    const current = playback.current;
+    const fresh = modernPitchFor !== playback;
+    modernPitchFor = playback;
+    if (!current) {
+      if (fresh) {
+        paintEmptyPitch(modernPitchContext);
+      }
+      return;
+    }
+    if (current.frame.intro && !fresh) {
+      return;
+    }
+    const { away, home } = fixtureSides(view.game, view.fixture);
+    paintAttack(
+      modernPitchContext,
+      current.attack,
+      current.index,
+      playback.score,
+      home,
+      away,
+      flashPhase(view)
     );
   };
 
@@ -541,6 +679,7 @@ export const createBrowserDom = (app: HTMLElement) => {
       clearInput,
       display,
       focus,
+      highlights,
       home,
       pickTeam,
       title,
@@ -562,6 +701,16 @@ export const createBrowserDom = (app: HTMLElement) => {
       pickKey = pick;
       document.documentElement.classList.toggle('at-home', atHome);
       document.documentElement.classList.toggle('at-pick-team', !!pickTeam);
+      highlightsPane.hidden = !highlights;
+      const highlightsShape = JSON.stringify(highlights);
+      if (highlights && highlightsShape !== highlightsKey) {
+        paintHighlights(highlightsPane, modernPitch, highlights);
+      }
+      highlightsKey = highlightsShape;
+      document.documentElement.classList.toggle('at-highlights', !!highlights);
+      if (highlights?.pitch && view.screen === 'highlights') {
+        paintModernPitch(view);
+      }
       input.readOnly = !typing;
       if (!typing && document.activeElement === input) {
         input.blur();
@@ -598,14 +747,20 @@ export const createBrowserDom = (app: HTMLElement) => {
           flashPhase(view)
         );
       }
-      // The ticker announces each new line alone (#108), not the whole screen.
+      // The ticker announces each new line alone (#108), not the whole
+      // screen; Modern mode's pitch announces each attack's outcome (#45).
       const ticker = view.screen === 'highlights' && 'ticker' in view;
-      transcript.setAttribute('aria-live', ticker ? 'off' : 'polite');
+      transcript.setAttribute(
+        'aria-live',
+        ticker || highlights ? 'off' : 'polite'
+      );
       const newest =
         view.screen === 'highlights' && 'ticker' in view
           ? tickerLines(view.game, view.fixture, view.ticker.shown)[0]
           : undefined;
-      const said = newest ? tickerText(newest) : '';
+      const said = newest
+        ? tickerText(newest)
+        : (highlights?.pitch?.outcome ?? '');
       if (tickerLive.textContent !== said) {
         tickerLive.textContent = said;
       }
@@ -708,7 +863,7 @@ export const createBrowserDom = (app: HTMLElement) => {
       target.tap(button.dataset.id!);
     };
     bar.addEventListener('pointerdown', pressed);
-    for (const pane of [homePane, pickPane]) {
+    for (const pane of [homePane, pickPane, highlightsPane]) {
       pane.addEventListener('pointerdown', pressed);
       pane.addEventListener('click', event => {
         const button = barButton(event);
@@ -734,6 +889,7 @@ export const createBrowserDom = (app: HTMLElement) => {
       }
     });
     machine.addEventListener('pointerdown', target.pressScreen);
+    modernPitch.addEventListener('pointerdown', target.pressScreen);
     addEventListener('pointerup', target.pointerUp);
     addEventListener('pointercancel', target.pointerUp);
     document.addEventListener('keyup', target.keyUp);

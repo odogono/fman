@@ -11,6 +11,7 @@ import { answersFor } from './answers';
 import { createApp, type Dom, type Menu, type MenuControl } from './app';
 import type { BarButton } from './context-bar';
 import type { Home } from './home';
+import type { ModernHighlights } from './modern-highlights';
 import type { PickTeam } from './pick-team';
 import { createStorage, type Options } from './storage';
 
@@ -21,13 +22,19 @@ const harness = ({
   autosave,
   coarsePointer = false,
   downloadFails = false,
+  firstVisit = false,
   options,
   storageFails = false
 }: {
   autosave?: string;
   coarsePointer?: boolean;
   downloadFails?: boolean;
-  /** The stored options, as the page finds them on opening. */
+  /** Nothing stored yet, as on a player's first visit. */
+  firstVisit?: boolean;
+  /**
+   * The stored options, as the page finds them on opening. Classic mode
+   * unless they name a presentation mode.
+   */
   options?: string;
   storageFails?: boolean;
 } = {}) => {
@@ -35,8 +42,14 @@ const harness = ({
   if (autosave !== undefined) {
     stored.set('fman:autosave', autosave);
   }
-  if (options !== undefined) {
-    stored.set('fman:options', options);
+  if (!firstVisit) {
+    stored.set(
+      'fman:options',
+      JSON.stringify({
+        presentation: 'classic',
+        ...(JSON.parse(options ?? '{}') as object)
+      })
+    );
   }
   const page = {
     amount: undefined as AmountEntry | undefined,
@@ -48,6 +61,7 @@ const harness = ({
     fit: false,
     focused: 0,
     hidden: false,
+    highlights: undefined as ModernHighlights | undefined,
     home: undefined as Home | undefined,
     inputFocus: false,
     menu: undefined as Menu | undefined,
@@ -81,8 +95,19 @@ const harness = ({
     openMenu: () => {
       page.menuOpen = true;
     },
-    render: ({ amount, atHome, bar, focus, home, pickTeam, title, typing }) => {
+    render: ({
+      amount,
+      atHome,
+      bar,
+      focus,
+      highlights,
+      home,
+      pickTeam,
+      title,
+      typing
+    }) => {
       page.amount = amount;
+      page.highlights = highlights;
       page.pickTeam = pickTeam;
       page.atHome = atHome;
       page.home = home;
@@ -869,6 +894,17 @@ const key = (run: ReturnType<typeof harness>, name: string, code = name) => {
   return prevented;
 };
 
+test('a first visit opens in Modern mode; a stored Classic choice is kept', () => {
+  const first = harness({ firstVisit: true });
+  first.toMenu();
+  expect(first.page.applied.at(-1)?.presentation).toBe('modern');
+  expect(first.page.atHome).toBe(true);
+  const classic = harness({
+    options: JSON.stringify({ presentation: 'classic' })
+  });
+  expect(classic.page.applied.at(-1)?.presentation).toBe('classic');
+});
+
 test('the Presentation option switches modes mid-game, and is remembered', () => {
   const run = harness();
   run.toMenu();
@@ -1182,4 +1218,116 @@ test('in Modern mode a held key still cuts a timed pause short', () => {
     repeat: false
   });
   expect(run.app.journal.session.timingState.keyboard.key).toBe('KeyX');
+});
+
+/** Kicks off from the team screen in Modern mode. */
+const kickOff = (run: ReturnType<typeof harness>) => {
+  toTeam(run);
+  run.app.tap('team.kick-off');
+  run.app.pointerUp();
+  run.wait(1);
+  expect(run.view().screen).toBe('highlights');
+};
+/** Lets the highlights play out, however long they take. */
+const playOut = (run: ReturnType<typeof harness>) => {
+  for (let i = 0; run.view().screen === 'highlights'; i++) {
+    expect(i).toBeLessThan(100_000);
+    run.wait(1);
+  }
+};
+
+test('Modern mode shows the original pitch under a scoreboard, with the strengths below', () => {
+  const run = harness({
+    options: JSON.stringify({ presentation: 'modern', rules: 'original' })
+  });
+  kickOff(run);
+  const shown = run.page.highlights!;
+  const view = run.view();
+  const game = view.game!;
+  expect(shown.ticker).toBeUndefined();
+  expect(shown.title).toBe(`League match – Division ${game.division}`);
+  expect([shown.home.name, shown.away.name]).toContain(
+    game.clubs[game.club - 1]!.name.trim()
+  );
+  // The managed club first, as on the original comparison screen.
+  expect(shown.pitch!.strengths.club.name).toBe(
+    game.clubs[game.club - 1]!.name.trim()
+  );
+  expect(shown.pitch!.strengths.rows.map(([name]) => name)).toEqual([
+    'Energy',
+    'Morale',
+    'Defence',
+    'Midfield',
+    'Attack'
+  ]);
+  expect(run.page.bar).toBeUndefined();
+  expect(run.page.title).toContain(' v ');
+  // No Home pane beside the match, even on a wide window.
+  expect(run.page.home).toBeUndefined();
+  playOut(run);
+  expect(run.page.highlights).toBeUndefined();
+});
+
+test('a finger on the pitch in a timed pause holds a key until it lifts', () => {
+  const run = harness({
+    options: JSON.stringify({ presentation: 'modern', rules: 'original' })
+  });
+  kickOff(run);
+  const pausing = () => {
+    const view = run.view();
+    return (
+      view.screen === 'highlights' &&
+      'playback' in view &&
+      view.playback.current?.frame.kind === 'pause' &&
+      run.page.highlights!.pitch!.outcome !== undefined
+    );
+  };
+  for (let i = 0; i < 20_000 && !pausing(); i++) {
+    expect(run.view().screen).toBe('highlights');
+    run.wait(1);
+  }
+  expect(run.page.highlights!.pitch!.outcome).toMatch(/^(Goal! .+|No goal)$/);
+  run.app.pressScreen();
+  expect(run.app.journal.session.timingState.keyboard.key).toBe('Space');
+  run.app.pointerUp();
+  run.wait(5);
+  expect(run.app.journal.session.timingState.keyboard.key).not.toBe('Space');
+  playOut(run);
+  expect(run.view().screen).toBe('result');
+  expect(run.page.highlights).toBeUndefined();
+});
+
+test('Modern mode shows moment highlights as a ticker, newest first, with Skip', () => {
+  const run = harness({
+    autosave: momentHighlightsSave(),
+    options: modernOptions
+  });
+  for (const id of ['menu.play', 'team.kick-off']) {
+    run.settle();
+    run.app.tap(id);
+    run.app.pointerUp();
+    while (run.view().screen === 'fixture') {
+      run.settle();
+      run.app.tap(answersFor(run.view())[0]!.id);
+      run.app.pointerUp();
+    }
+  }
+  run.wait(1);
+  expect(run.view().screen).toBe('highlights');
+  expect(run.page.bar).toBeUndefined();
+  expect(run.page.highlights!.pitch).toBeUndefined();
+  expect(run.page.highlights!.ticker!.skip).toBe(true);
+  run.wait(5);
+  run.app.tap('ticker.skip');
+  const ticker = run.page.highlights!.ticker!;
+  const view = run.view();
+  if (view.screen !== 'highlights' || !('ticker' in view)) {
+    throw new Error('No ticker');
+  }
+  expect(ticker.lines).toHaveLength(view.ticker.shown.length);
+  expect(ticker.lines[0]!.minute).toBe(`${view.ticker.shown.at(-1)!.minute}′`);
+  expect(run.page.highlights!.score).toEqual(view.ticker.score);
+  run.wait(tickerPause + 10);
+  expect(run.view().screen).toBe('result');
+  expect(run.page.highlights).toBeUndefined();
 });

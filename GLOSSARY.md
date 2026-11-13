@@ -56,6 +56,9 @@ The managed club's confidence, affected by match and cup results.
 **Team strength**:
 The five attributes used to compare clubs for a match: Energy, Morale, Defence, Midfield and Attack.
 
+**Managerial rating**:
+The manager's score out of 100, earned at each season end from the league finish and how far the club went in the F.A. Cup.
+
 **Difficulty level**:
 The manager's chosen level, from Beginner (1) to Genius (7), which strengthens every opponent the managed club meets.
 _Avoid_: Skill when referring to the level; skill belongs to players

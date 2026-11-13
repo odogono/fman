@@ -14,8 +14,9 @@ import { answersFor, printAccepted, type OfferedAnswer } from './answers';
 import { barFor, tickerBar, type BarButton } from './context-bar';
 import { createFrameSampler } from './frame-sampler';
 import { homeFor, type Home } from './home';
+import { amountPromptFor, type ModernAmount } from './modern-amount';
 import { highlightsFor, type ModernHighlights } from './modern-highlights';
-import { loanFor, type ModernLoan } from './modern-loan';
+import { messageFor, type ModernMessage } from './modern-message';
 import { statusFor, type ModernStatus } from './modern-status';
 import { pickTeamFor, type PickTeam } from './pick-team';
 import {
@@ -89,6 +90,8 @@ export type Dom = {
   render: (screen: {
     /** The amount being entered on an amount prompt, while the bar shows. */
     amount: AmountEntry | undefined;
+    /** Modern mode's loan, repayment or transfer bid screen. */
+    amountPrompt: ModernAmount | undefined;
     atHome: boolean;
     /** The context bar's buttons, or `undefined` when the bar is hidden. */
     bar: readonly BarButton[] | undefined;
@@ -105,12 +108,12 @@ export type Dom = {
      * menu prompt waits, so the Home screen stands in for it.
      */
     home: Home | undefined;
-    /** Modern mode's loan and repayment screen, or the balance after one. */
-    loan: ModernLoan | undefined;
     /**
      * Modern mode's pick team screen, standing in for the team and
      * selection prompts and their bar.
      */
+    /** Modern mode's message screen: a balance or a plain text message. */
+    message: ModernMessage | undefined;
     pickTeam: PickTeam | undefined;
     /**
      * Modern mode's status screen: on the status prompt, or read-only beside
@@ -289,7 +292,8 @@ export const createApp = ({
           pickTeamFor(view) ??
           highlightsFor(view) ??
           statusFor(view) ??
-          loanFor(view, amountEntry)
+          amountPromptFor(view, amountEntry) ??
+          messageFor(view)
         ))
     );
   };
@@ -341,13 +345,23 @@ export const createApp = ({
     const highlights = modern() ? highlightsFor(view) : undefined;
     const status = modern() ? statusFor(view, home) : undefined;
     const answers = answersFor(view);
-    const loan = modern() ? loanFor(view, amountFor(answers)) : undefined;
+    const amountPrompt = modern()
+      ? amountPromptFor(view, amountFor(answers))
+      : undefined;
+    const message = modern() ? messageFor(view) : undefined;
     const bar =
-      barShown() && !home && !pickTeam && !highlights && !status && !loan;
+      barShown() &&
+      !home &&
+      !pickTeam &&
+      !highlights &&
+      !status &&
+      !amountPrompt &&
+      !message;
     const ticking = tickerRunning() && !highlights;
     const buttons = ticking ? tickerBar : bar ? barFor(answers) : undefined;
     dom.render({
       amount: bar ? amountFor(answers) : undefined,
+      amountPrompt,
       atHome: home,
       bar: buttons && modern() ? withoutKeys(buttons) : buttons,
       clearInput,
@@ -359,7 +373,7 @@ export const createApp = ({
         modern() && view.game && !highlights
           ? homeFor({ ...view, game: view.game })
           : undefined,
-      loan,
+      message,
       pickTeam,
       status,
       title: screenTitle(view),

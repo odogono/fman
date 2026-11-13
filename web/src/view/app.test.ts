@@ -11,8 +11,9 @@ import { answersFor } from './answers';
 import { createApp, type Dom, type Menu, type MenuControl } from './app';
 import type { BarButton } from './context-bar';
 import type { Home } from './home';
+import type { ModernAmount } from './modern-amount';
 import type { ModernHighlights } from './modern-highlights';
-import type { ModernLoan } from './modern-loan';
+import type { ModernMessage } from './modern-message';
 import type { ModernStatus } from './modern-status';
 import type { PickTeam } from './pick-team';
 import { createStorage, type Options } from './storage';
@@ -55,6 +56,7 @@ const harness = ({
   }
   const page = {
     amount: undefined as AmountEntry | undefined,
+    amountPrompt: undefined as ModernAmount | undefined,
     applied: [] as Options[],
     atHome: false,
     bar: undefined as readonly BarButton[] | undefined,
@@ -66,9 +68,9 @@ const harness = ({
     highlights: undefined as ModernHighlights | undefined,
     home: undefined as Home | undefined,
     inputFocus: false,
-    loan: undefined as ModernLoan | undefined,
     menu: undefined as Menu | undefined,
     menuOpen: false,
+    message: undefined as ModernMessage | undefined,
     notice: '',
     pickTeam: undefined as PickTeam | undefined,
     printed: 0,
@@ -101,19 +103,21 @@ const harness = ({
     },
     render: ({
       amount,
+      amountPrompt,
       atHome,
       bar,
       focus,
       highlights,
       home,
-      loan,
+      message,
       pickTeam,
       status,
       title,
       typing
     }) => {
       page.status = status;
-      page.loan = loan;
+      page.amountPrompt = amountPrompt;
+      page.message = message;
       page.amount = amount;
       page.highlights = highlights;
       page.pickTeam = pickTeam;
@@ -1004,12 +1008,15 @@ const playOn = (run: ReturnType<typeof harness>) => {
     run.app.pointerUp();
     return;
   }
-  const offered = run.page.bar!;
+  // Modern mode's own screens and its bar submit the same offered answers.
+  const offered = answersFor(run.view()).map(answer => answer.id);
   const next =
-    offered.find(b => b.answer.id.endsWith('.continue')) ??
-    offered.find(b => b.answer.id === 'transfer.decline') ??
-    offered.find(b => b.answer.id === 'sale.no');
-  run.tap(next!.label);
+    offered.find(id => id.endsWith('.continue')) ??
+    offered.find(id => id === 'transfer.decline') ??
+    offered.find(id => id === 'sale.no');
+  run.app.tap(next!);
+  run.wait(3);
+  run.app.pointerUp();
 };
 
 test('a cup round shows only the round on the Home screen, not the draw', () => {
@@ -1213,7 +1220,9 @@ test('Modern mode takes an exact amount from a physical keyboard', () => {
   }
   key(run, 'Backspace');
   const entry = () =>
-    run.page.loan?.kind === 'borrow' ? run.page.loan.entry : undefined;
+    run.page.amountPrompt?.kind === 'borrow'
+      ? run.page.amountPrompt.entry
+      : undefined;
   expect(entry()?.typing).toBe('120');
   key(run, 'Enter');
   expect(entry()).toMatchObject({ typing: undefined, value: 120 });
@@ -1408,7 +1417,7 @@ test('Modern mode takes a loan on its own screen, then shows the balance', () =>
   run.toMenu();
   toLoan(run, 'menu.borrow');
   const game = run.view().game!;
-  const loan = run.page.loan!;
+  const loan = run.page.amountPrompt!;
   if (loan.kind !== 'borrow') {
     throw new Error('No loan screen');
   }
@@ -1422,13 +1431,14 @@ test('Modern mode takes a loan on its own screen, then shows the balance', () =>
     submit: { enabled: false, id: 'borrow.amount', label: 'Take loan' }
   });
   run.app.amount({ delta: 50_000, type: 'step' });
-  expect(run.page.loan).toMatchObject({ submit: { enabled: true } });
+  expect(run.page.amountPrompt).toMatchObject({ submit: { enabled: true } });
   run.app.tap('borrow.amount');
   run.wait(3);
   run.app.pointerUp();
   run.settle();
   expect(run.view().game!.debt).toBe(game.debt + 50_000);
-  expect(run.page.loan).toEqual({
+  expect(run.page.amountPrompt).toBeUndefined();
+  expect(run.page.message).toEqual({
     cash: game.cash + 50_000,
     debt: game.debt + 50_000,
     done: { enabled: true, id: 'message.continue' },
@@ -1439,7 +1449,7 @@ test('Modern mode takes a loan on its own screen, then shows the balance', () =>
   run.app.pointerUp();
   run.settle();
   expect(run.view().screen).toBe('menu');
-  expect(run.page.loan).toBeUndefined();
+  expect(run.page.message).toBeUndefined();
 });
 
 test('Modern mode pays off a loan up to the debt and cash, or cancels', () => {
@@ -1453,7 +1463,7 @@ test('Modern mode pays off a loan up to the debt and cash, or cancels', () => {
   toLoan(run, 'message.continue');
   toLoan(run, 'menu.repay');
   const game = run.view().game!;
-  expect(run.page.loan).toMatchObject({
+  expect(run.page.amountPrompt).toMatchObject({
     entry: { max: Math.min(game.debt, game.cash), value: 0 },
     kind: 'repay',
     submit: { label: 'Pay off loan' }
@@ -1463,7 +1473,10 @@ test('Modern mode pays off a loan up to the debt and cash, or cancels', () => {
   run.settle();
   expect(run.view().game!.debt).toBe(game.debt);
   // Cancel borrows or repays nothing, the original's way.
-  expect(run.page.loan).toMatchObject({ debt: game.debt, kind: 'balance' });
+  expect(run.page.message).toMatchObject({
+    debt: game.debt,
+    kind: 'balance'
+  });
 });
 
 test('Classic mode keeps the original loan screen and its bar', () => {
@@ -1471,6 +1484,7 @@ test('Classic mode keeps the original loan screen and its bar', () => {
   run.toMenu();
   run.tap('Loan (l)');
   run.settle();
-  expect(run.page.loan).toBeUndefined();
+  expect(run.page.amountPrompt).toBeUndefined();
+  expect(run.page.message).toBeUndefined();
   expect(run.labels()).toEqual(['Cancel (0)', 'Take loan']);
 });

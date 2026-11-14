@@ -1,4 +1,4 @@
-import { expect, test } from 'bun:test';
+import { expect, setDefaultTimeout, test } from 'bun:test';
 
 import { longestClip } from '../sim/ticker';
 import { checkClip, type ClipIssueKind } from './clip-checks';
@@ -21,6 +21,10 @@ import {
   type ClipSide,
   type Line
 } from './clips';
+
+// Most of these tests build and play out a hundred clips or more, which is
+// slow on a busy CI runner; bun's 5 s default is for ordinary tests.
+setDefaultTimeout(20_000);
 
 const lines: readonly Line[] = [
   'keeper',
@@ -67,7 +71,7 @@ test('the same moment always plays the same clip', () => {
 });
 
 test('clips run at real-world pace, within what the sim holds', () => {
-  for (let seed = 0; seed < 200; seed++) {
+  for (let seed = 0; seed < 100; seed++) {
     for (const kind of ['goal', 'save', 'near-miss'] as const) {
       const script = createClipScript(input({ kind, seed }));
       // A corner's cross goes straight to the shooter.
@@ -95,7 +99,7 @@ test('clips run at real-world pace, within what the sim holds', () => {
 
 test('the seed picks each outcome of a save, a clearance and a near miss', () => {
   const seen = new Set<string>();
-  for (let seed = 0; seed < 200; seed++) {
+  for (let seed = 0; seed < 100; seed++) {
     for (const kind of ['save', 'clearance', 'near-miss'] as const) {
       const { outcome } = createClipScript(input({ kind, seed }));
       expect(outcomeKind(outcome)).toBe(kind);

@@ -1178,13 +1178,14 @@ test('after a goal the scorer wheels away and team-mates pile in', () => {
     expect(Math.hypot(scorer.x - start.x, scorer.y - start.y)).toBeGreaterThan(
       4
     );
-    expect(scorer.pose).toBe('celebrate');
+    // Arms up, jumping for joy or on their knees.
+    expect(['celebrate', 'jump', 'slide']).toContain(scorer.pose);
     // Team-mates celebrate around them.
     const huddle = end.players.filter(
       (p, i) =>
         i !== 9 &&
         p.side === 'attack' &&
-        p.pose === 'celebrate' &&
+        (p.pose === 'celebrate' || p.pose === 'jump') &&
         Math.hypot(p.x - scorer.x, p.y - scorer.y) < 3
     );
     expect(huddle.length).toBeGreaterThanOrEqual(1);
@@ -1292,4 +1293,29 @@ test('a shot is struck in range, however the build-up goes', () => {
       expect(out).toBeLessThan(script.finish === 'shot' ? 25 : 31);
     }
   }
+});
+
+test('a scorer wheels away arms up, then celebrates arms up, jumping or on their knees', () => {
+  const ends = new Set<string>();
+  for (let seed = 0; seed < 60; seed++) {
+    const script = createClipScript(input({ kind: 'goal', seed }));
+    const poses = Array.from(
+      { length: script.length - script.phases.reaction },
+      (_, k) => script.frame(script.phases.reaction + k).players[9]!.pose
+    );
+    expect(poses).toContain('cheer');
+    expect(poses).not.toContain('run');
+    ends.add(poses.at(-1)!);
+    // A jump shows the crouch, then the leap.
+    if (poses.at(-1) === 'jump') {
+      const frames = new Set(
+        Array.from(
+          { length: 40 },
+          (_, k) => script.frame(script.length - 1 - k).players[9]!
+        ).flatMap(p => (p.pose === 'jump' ? [p.poseFrame] : []))
+      );
+      expect([...frames].sort()).toEqual([0, 1]);
+    }
+  }
+  expect([...ends].sort()).toEqual(['celebrate', 'jump', 'slide']);
 });

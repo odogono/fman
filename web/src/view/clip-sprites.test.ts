@@ -50,12 +50,18 @@ test('players are about 14 by 22 art pixels, larger than the original 8 by 8 cha
     ([name]) => !/^(ball|tired|dive)/.test(name)
   )) {
     // Clear rows under the feet lift a frame off the ground: a stride's
-    // bounce by a row, a header's leap by a few. Everything else stands on
-    // its bottom row.
+    // bounce by a row or two, a header's or a jump's leap by a few.
+    // Everything else stands on its bottom row.
     const lift = grid.length - 1 - grid.findLastIndex(row => /[^.]/.test(row));
     const body = grid.length - lift;
     expect(lift, name).toBeLessThanOrEqual(
-      name.startsWith('header') ? 6 : name.startsWith('run') ? 1 : 0
+      /^(header|jump)/.test(name)
+        ? 6
+        : name.startsWith('cheer')
+          ? 2
+          : name.startsWith('run')
+            ? 1
+            : 0
     );
     expect(grid[0]!.length, name).toBeGreaterThanOrEqual(11);
     // A header's arms reach out a little wider.
@@ -150,5 +156,24 @@ test('a header meets the ball with the forehead, as the ball is drawn', () => {
     const top = grid.findIndex(row => /[^.]/.test(row));
     const forehead = (grid.length - top - 3) * artPixelMetres;
     expect(Math.abs(forehead - drawn), facing).toBeLessThan(0.35);
+  }
+});
+
+// A stride is 0.8 m of ground.
+test('a celebrating run strides as a run, and a jump crouches then leaps', () => {
+  for (const facing of ['down', 'left', 'up'] as const) {
+    expect(playerArt.cheer[facing]).toHaveLength(4);
+    expect(playerArt.jump[facing]).toHaveLength(2);
+    const frames = new Set(
+      [0, 1, 2, 3].map(
+        k => spriteFor({ facing, pose: 'cheer', travelled: k * 0.8 }).grid
+      )
+    );
+    expect(frames.size).toBe(4);
+    playerArt.jump[facing].forEach((grid, poseFrame) =>
+      expect(
+        spriteFor({ facing, pose: 'jump', poseFrame, travelled: 0 }).grid
+      ).toBe(grid)
+    );
   }
 });

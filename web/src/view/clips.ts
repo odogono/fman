@@ -667,16 +667,33 @@ export const createClipScript = (input: ClipInput): ClipScript => {
    */
   const separate = (held: ReadonlySet<number>) => {
     for (let i = 0; i < count; i++) {
+      const a = movers[i]!;
       for (let j = i + 1; j < count; j++) {
-        const a = movers[i]!;
         const b = movers[j]!;
-        const gap = distance(a, b);
-        const [heldA, heldB] = [held.has(i), held.has(j)];
-        if (gap >= personalSpace || (heldA && heldB)) {
+        // Most pairs are far apart on one axis or the other: skip them
+        // before working out how far apart they are, as this runs for
+        // every pair in every frame.
+        const dd = b.d - a.d;
+        const dx = b.x - a.x;
+        if (dd >= personalSpace || dd <= -personalSpace) {
           continue;
         }
+        if (dx >= personalSpace || dx <= -personalSpace) {
+          continue;
+        }
+        const squared = dd * dd + dx * dx;
+        if (squared >= personalSpace * personalSpace) {
+          continue;
+        }
+        const heldA = held.has(i);
+        const heldB = held.has(j);
+        if (heldA && heldB) {
+          continue;
+        }
+        const gap = Math.sqrt(squared);
         // Exactly on top of each other, they step apart across the pitch.
-        const [ud, ux] = gap ? [(b.d - a.d) / gap, (b.x - a.x) / gap] : [0, 1];
+        const ud = gap ? dd / gap : 0;
+        const ux = gap ? dx / gap : 1;
         const push = personalSpace - gap;
         const shareA = heldA ? 0 : heldB ? 1 : 0.5;
         a.d -= ud * push * shareA;

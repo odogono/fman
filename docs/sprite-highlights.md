@@ -53,10 +53,19 @@ New sprites drawn for this view, larger than the original's 8×8 characters: abo
 
 - **Drawn on a canvas** of its own at the screen's resolution. Each art pixel covers a whole number of device pixels, rounded from the camera's scale, and sprites sit on whole device pixels, so the art stays crisp. Through the zoom a sprite steps up one size rather than growing smoothly.
 - **Tinted when drawn.** The shirt takes the kit colour, the shorts and socks a fixed darker shade of it, with a dark outline. A keeper's shirt takes the goalkeeper colour. Skin and hair come from small palettes, picked by a hash of the player's name, so a player looks the same in every clip and match. Nothing about looks is stored.
-- **Pitch.** The markings stay drawn as lines, over mown stripes. The mini-map keeps its dots; the kick-off and full-time stills use the stand pose.
+- **Pitch.** The markings stay drawn as lines, over mown stripes. The mini-map keeps its dots; the kick-off and full-time stills use the stand pose. The ball is 7 art pixels across.
 - **Source.** The sprites are pixel grids written as text in `web/src/view/assets`. They began as reference images made for this project with ChatGPT's image tool, which were converted to grids in the sprites' palette and cleaned up by hand; only the grids are kept, with their provenance in the assets README. The original's characters stay with the original pitch, and the mockups in [highlights-engine.md](highlights-engine.md) are for direction only.
 
 The clip engine shipped first with placeholder shapes, a kit-coloured circle per player and a white dot for the ball ([#144](https://github.com/odogono/fman/issues/144)); the sprites replaced them in [#146](https://github.com/odogono/fman/issues/146). The named player's label is spelled as on the ticker line, above their head and any status icon. A held ball is drawn in the holder's hands, not on its own. A runner's frame, and the ball's spin, change with the ground covered, so they keep pace with the speed.
+
+### Goals and stadium
+
+The ground is drawn in the same art at the same scale ([#157](https://github.com/odogono/fman/issues/157)). The camera keeps up to 8 m beyond the lines in view, so only the edge of the stadium shows.
+
+- **Goals.** Posts, crossbar and a meshed net, drawn twice: the top goal seen from the front, its net rising behind the crossbar, and the bottom goal seen from behind, its net in front. Players and the ball stand in front of or behind a goal by their depth on the screen.
+- **Around the pitch.** A strip of grass, then pitch-side advertising boards about 3 m beyond the touchlines and goal lines, then stands with a crowd. The boards are plain colour panels with stripes and shapes, without text or brands.
+- **Crowd.** A repeating block of fans, mostly in the home side's kit. In a goal's reaction it stands and raises its arms; at all other times it sits. The cheer follows the clip's phase and outcome, so it draws nothing from the seed.
+- **Source.** As the players': tiles converted from generated references and cleaned up by hand.
 
 ### Status icons
 
@@ -72,3 +81,4 @@ A page of its own, `web/clips.html`, served by `bun run dev` at `/clips` and lef
 2. **The sprite view with placeholder shapes** (Modern, done in [#144](https://github.com/odogono/fman/issues/144)): the clip scripts, seeding, camera and zoom, mini-map, ends, team shapes, the goalkeeper colour, cuts, Skip, resuming mid-clip, reduced motion and screen readers. Only the latest moment's ticker line shows under the pitch. The debug page ships with it.
 3. **The moments drawer and panel** (Modern, done in [#145](https://github.com/odogono/fman/issues/145)).
 4. **The sprite artwork** (done in [#146](https://github.com/odogono/fman/issues/146)): the sprites, facing, the new poses and the tired status icon.
+5. **Goals and stadium** ([#157](https://github.com/odogono/fman/issues/157)): the goals, boards and crowd, and a larger ball.

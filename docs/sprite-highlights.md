@@ -1,6 +1,6 @@
 # Sprite highlights
 
-[#111](https://github.com/odogono/fman/issues/111). In Modern mode, matches decided as [moments](moment-highlights.md) are shown on a top-down pitch with tiny sprites, in place of the paper-and-ink ticker. The direction and mockups are in [highlights-engine.md](highlights-engine.md). The clips play with placeholder shapes ([#144](https://github.com/odogono/fman/issues/144)); the moments drawer and panel ([#145](https://github.com/odogono/fman/issues/145)) and the sprite artwork are not built yet.
+[#111](https://github.com/odogono/fman/issues/111). In Modern mode, matches decided as [moments](moment-highlights.md) are shown on a top-down pitch with tiny sprites, in place of the paper-and-ink ticker. The direction and mockups are in [highlights-engine.md](highlights-engine.md). The clips play with placeholder shapes ([#144](https://github.com/odogono/fman/issues/144)); the moments drawer and panel ([#145](https://github.com/odogono/fman/issues/145)) and the sprite artwork ([#146](https://github.com/odogono/fman/issues/146)) are not built yet.
 
 ## Scope
 
@@ -35,7 +35,7 @@ Everything moves at real speeds: passes at about 15 m/s, runs at 5 to 7 m/s, hal
 - **Kick-off and full time.** During the 0-0 header both sides stand in shape with the ball on the centre spot, captioned "Kick-off". The final hold shows the same still pitch captioned "Full time", or the full ticker list after Skip.
 - **Ends.** The sides change ends at half-time: the home side attacks up the screen before 46′ and down after.
 - **Players.** The managed club shows one sprite per picked player, set out by position: defence at the back, midfield in the middle, attack up front. A picked goalkeeper keeps goal; with none, the first-picked defender does, so even a side picked short has a keeper. A player with no position plays in midfield. A goalkeeper the moment names as its shooter plays up front, and the same rule picks who keeps goal instead. A team picked short of 11 plays short. Each line spreads evenly across the pitch at a fixed depth, whatever its count. The opponent fields a 4-4-2 in squad order: its first goalkeeper, then its first four defenders, four midfielders and two attackers, filling any gap from other positions. The named player always plays, in place of the last-listed player in their position. Only the player the moment names is labelled, in the zoomed view.
-- **Tiredness.** In the zoomed view, tired players show it (sweat, hands on knees), more often later in the match. It reads each side's real energy and the minute, and draws only from the clip's seed.
+- **Tiredness.** In the zoomed view, a tired player shows a tired [status icon](#status-icons). A managed player's chance of showing it is `(1 − energy/20) × minute/90` from their own energy; an opponent's uses the side's team Energy, since other clubs' players' energy isn't kept. At most three players a side show it, the named player and keepers included. It is decided once per clip, from the clip's seed only.
 
 ## The screen
 
@@ -49,15 +49,26 @@ Everything moves at real speeds: passes at about 15 m/s, runs at 5 to 7 m/s, hal
 
 ## Artwork
 
-New sprites drawn for this view on a canvas of its own at the screen's resolution, so the camera can zoom smoothly, a little taller than the original's 8×8 characters, with poses for running, shooting, diving, celebrating and tired, tinted by kit when drawn. The original's characters stay with the original pitch, and the generated mockups are for direction only. The clip engine ships first with placeholder shapes: a kit-coloured circle per player, a white dot for the ball and lines for the markings, with the named player's label spelled as on the ticker line.
+New sprites drawn for this view, a little taller than the original's 8×8 characters: about 8 by 12 art pixels, in a three-quarter view as in the 16-bit football games. Each faces one of four directions, with up, down and left drawn and right mirrored. The clip records each player's facing, from their movement or towards the ball. The poses are stand, run (a cycle of frames), kick (for both passing and shooting), dive, hold (the ball held up, by a keeper or a thrower), head (hands on head after a near miss) and celebrate. The ball has a few spin frames and its shadow.
+
+- **Drawn on a canvas** of its own at the screen's resolution. Each art pixel covers a whole number of device pixels, rounded from the camera's scale, and sprites sit on whole device pixels, so the art stays crisp. Through the zoom a sprite steps up one size rather than growing smoothly.
+- **Tinted when drawn.** The shirt takes the kit colour, the shorts and socks a fixed darker shade of it, with a dark outline. A keeper's shirt takes the goalkeeper colour. Skin and hair come from small palettes, picked by a hash of the player's name, so a player looks the same in every clip and match. Nothing about looks is stored.
+- **Pitch.** The markings stay drawn as lines, over mown stripes. The mini-map keeps its dots; the kick-off and full-time stills use the stand pose.
+- **Source.** The sprites are pixel grids written as text in `web/src/view/assets`, authored for this project and dedicated to the public domain, as noted in its README. The original's characters stay with the original pitch, and the generated mockups are for direction only.
+
+The clip engine ships first with placeholder shapes: a kit-coloured circle per player, a white dot for the ball and lines for the markings, with the named player's label spelled as on the ticker line.
+
+### Status icons
+
+A **status icon** is a small pixel-art icon floating above a player's head, after the thought bubbles of _The Sims_, at the sprites' scale. It shows only in the zoomed view: in the wide view it would be too small to read. A player shows at most one; when more than one applies, a fixed order picks it. The sprite artwork brings only the tired icon. Later states, such as injuries during the match ([#110](https://github.com/odogono/fman/issues/110)), take the same place.
 
 ## Debug page
 
-A page of its own, `web/clips.html`, served by `bun run dev` at `/clips` and left out of the build, plays any clip the engine can make. It sets the kind, outcome and restart (or leaves them to the seed), the scoring side, the minute, both kits, the managed side's line counts with or without a goalkeeper, and the moment's place in the list, with a random-seed button. It plays, pauses, steps and scrubs frames at ¼×, 1× and 4×, shows the clip's length, moment frame and passes, and can overlay player ids and the ball's path. It can also load the autosave or a web save file and replay a moment from that match's ticker.
+A page of its own, `web/clips.html`, served by `bun run dev` at `/clips` and left out of the build, plays any clip the engine can make. It sets the kind, outcome and restart (or leaves them to the seed), the scoring side, the minute, both kits, the managed side's line counts with or without a goalkeeper, and the moment's place in the list, with a random-seed button. It plays, pauses, steps and scrubs frames at ¼×, 1× and 4×, shows the clip's length, moment frame and passes, and can overlay player ids and the ball's path. It sets each side's energy, to show tiredness. It can also load the autosave or a web save file and replay a moment from that match's ticker.
 
 ## Order of work
 
 1. **Clip lengths from the view** (sim, done in [#143](https://github.com/odogono/fman/issues/143)): the ticker's timeline takes a length for each moment, saves it, and defaults to 75 frames.
 2. **The sprite view with placeholder shapes** (Modern, done in [#144](https://github.com/odogono/fman/issues/144)): the clip scripts, seeding, camera and zoom, mini-map, ends, team shapes, the goalkeeper colour, cuts, Skip, resuming mid-clip, reduced motion and screen readers. Only the latest moment's ticker line shows under the pitch. The debug page ships with it.
 3. **The moments drawer and panel** ([#145](https://github.com/odogono/fman/issues/145)).
-4. **The sprite artwork**, including tiredness.
+4. **The sprite artwork** ([#146](https://github.com/odogono/fman/issues/146)): the sprites, facing, the new poses and the tired status icon.

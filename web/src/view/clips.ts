@@ -33,15 +33,23 @@ export const missOutcomes: readonly MissOutcome[] = [
   'over'
 ];
 
-/** How the build-up starts: in open play, or from a free kick or a throw-in. */
-export type Restart = 'free-kick' | 'open-play' | 'throw-in';
+/**
+ * How the build-up starts: in open play, or from a free kick, a throw-in,
+ * a goal kick or a corner.
+ */
+export type Restart =
+  'corner' | 'free-kick' | 'goal-kick' | 'open-play' | 'throw-in';
 export const restarts: readonly Restart[] = [
   'open-play',
   'free-kick',
-  'throw-in'
+  'throw-in',
+  'goal-kick',
+  'corner'
 ];
 const restartNames: Record<Restart, string> = {
+  corner: 'Corner',
   'free-kick': 'Free kick',
+  'goal-kick': 'Goal kick',
   'open-play': '',
   'throw-in': 'Throw-in'
 };
@@ -106,7 +114,7 @@ export type ClipPass = Readonly<{
   end: number;
   from: string;
   /** A pass in open play, or the restart that starts the build-up. */
-  kind: 'free-kick' | 'pass' | 'throw-in';
+  kind: 'pass' | Exclude<Restart, 'open-play'>;
   start: number;
   to: string;
 }>;
@@ -272,20 +280,28 @@ export const createClipScript = (input: ClipInput): ClipScript => {
   );
   const others = outfield.filter(i => i !== shooter);
   const deep = others.filter(i => attackers[i]!.line !== 'attack');
-  const starter = others.length
-    ? rng.pick(deep.length ? deep : others)
-    : shooter;
-  // About half the build-ups start in open play, a quarter each from a
-  // free kick and a throw-in.
+  let starter = others.length ? rng.pick(deep.length ? deep : others) : shooter;
+  // Of the build-ups, 40% start in open play, 20% each from a free kick and
+  // a throw-in, and 10% each from a goal kick and a corner. A side with no
+  // keeper but the shooter takes no goal kick.
   const restartRoll = rng.next();
-  const restart: Restart = !others.length
-    ? 'open-play'
-    : (input.restart ??
-      (restartRoll < 0.5
-        ? 'open-play'
-        : restartRoll < 0.75
-          ? 'free-kick'
-          : 'throw-in'));
+  const goalKicker =
+    attackKeeper >= 0 && attackKeeper !== shooter ? attackKeeper : -1;
+  const drawn: Restart =
+    input.restart ??
+    (restartRoll < 0.4
+      ? 'open-play'
+      : restartRoll < 0.6
+        ? 'free-kick'
+        : restartRoll < 0.8
+          ? 'throw-in'
+          : restartRoll < 0.9
+            ? 'goal-kick'
+            : 'corner');
+  const restart: Restart =
+    !others.length || (drawn === 'goal-kick' && goalKicker < 0)
+      ? 'open-play'
+      : drawn;
   const touchline = rng.next() < 0.5 ? 0 : pitchWidth;
   if (restart === 'throw-in') {
     ballStart.d = rng.between(20, 80);
@@ -293,14 +309,27 @@ export const createClipScript = (input: ClipInput): ClipScript => {
   } else if (restart === 'free-kick') {
     ballStart.d = rng.between(30, 70);
     ballStart.x = rng.between(12, 56);
+  } else if (restart === 'goal-kick') {
+    starter = goalKicker;
+    ballStart.d = 5.5;
+    ballStart.x = 34 + (touchline === 0 ? -9.16 : 9.16);
+  } else if (restart === 'corner') {
+    ballStart.d = pitchLength - 0.3;
+    ballStart.x = touchline === 0 ? 0.3 : pitchWidth - 0.3;
   }
   const movers: Mover[] = Array.from({ length: count }, (_, i) => ({
     ...target(i, ballStart, 0),
     pose: 'run'
   }));
-  movers[starter]!.d = ballStart.d - (restart === 'free-kick' ? 1.5 : 0.8);
+  movers[starter]!.d =
+    ballStart.d -
+    (restart === 'free-kick' || restart === 'goal-kick'
+      ? 1.5
+      : restart === 'corner'
+        ? -0.6
+        : 0.8);
   movers[starter]!.x =
-    restart === 'throw-in'
+    restart === 'throw-in' || restart === 'corner'
       ? touchline + (touchline === 0 ? -0.8 : 0.8)
       : ballStart.x;
   const ball = { ...ballStart, height: 0 };
@@ -448,6 +477,11 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     d: pitchLength - rng.between(11, 22),
     x: 34 + rng.between(-14, 14)
   };
+  if (restart === 'corner') {
+    // From a corner the shooter meets the cross in the box.
+    shootingSpot.d = pitchLength - rng.between(6, 12);
+    shootingSpot.x = 34 + rng.between(-6, 6);
+  }
   const passCount = others.length ? rng.int(2, 5) : 0;
   const minBuildUp = 6 * clipFps;
   /** Past this, no one carries the ball on; past the next, the shooter is found. */
@@ -498,8 +532,12 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     const from = { d: ball.d, x: ball.x };
     const runFrom = { d: runner.d, x: runner.x };
     const lofted =
-      kind === 'throw-in' || (kind === 'free-kick' && distance(from, end) > 25);
-    const speed = kind === 'throw-in' ? 12 : lofted ? 18 : 15;
+      kind === 'throw-in' ||
+      kind === 'corner' ||
+      kind === 'goal-kick' ||
+      (kind === 'free-kick' && distance(from, end) > 25);
+    const speed =
+      kind === 'throw-in' ? 12 : kind === 'goal-kick' ? 22 : lofted ? 18 : 15;
     const frames = Math.ceil(
       Math.max(
         distance(from, end) / perFrame(speed),
@@ -577,7 +615,29 @@ export const createClipScript = (input: ClipInput): ClipScript => {
   // played to a team-mate.
   let captionEnd = captionFrames;
   if (restart !== 'open-play') {
-    const waits = restart === 'throw-in' ? rng.int(50, 80) : rng.int(75, 110);
+    const waits =
+      restart === 'throw-in'
+        ? rng.int(50, 80)
+        : restart === 'corner'
+          ? rng.int(90, 130)
+          : rng.int(75, 110);
+    // For a corner, the shooter and up to four more attack the box.
+    const box = new Map<number, Point>();
+    if (restart === 'corner') {
+      box.set(shooter, shootingSpot);
+      for (const i of others
+        .filter(i => i !== starter && attackers[i]!.line !== 'defence')
+        .slice(0, 4)) {
+        box.set(i, {
+          d: pitchLength - rng.between(5, 13),
+          x: 34 + rng.between(-10, 10)
+        });
+      }
+      for (const [i, spot] of box) {
+        movers[i]!.d = spot.d - rng.between(3, 6);
+        movers[i]!.x = spot.x + rng.between(-3, 3);
+      }
+    }
     captionEnd = Math.max(captionFrames, waits);
     keepAway = restart === 'free-kick' ? { d: ball.d, x: ball.x } : undefined;
     if (keepAway) {
@@ -592,7 +652,7 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     for (let f = 0; f < waits; f++) {
       taker.pose = restart === 'throw-in' ? 'hold' : 'run';
       ball.height = restart === 'throw-in' ? 0.3 : 0;
-      steer(frame, new Set([holder]));
+      steer(frame, new Set([holder]), box);
       record();
       frame++;
     }
@@ -601,15 +661,26 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       const gap = distance(movers[i]!, ball);
       return i !== holder && gap > 6 && gap < 20;
     });
+    // A goal kick goes long, to someone onside in the middle of the pitch.
+    const long = others.filter(
+      i => onside(i) && movers[i]!.d > 30 && movers[i]!.d < 75
+    );
     pass(
-      restart === 'throw-in' && near.length ? rng.pick(near) : nextReceiver(),
+      restart === 'corner'
+        ? shooter
+        : restart === 'throw-in' && near.length
+          ? rng.pick(near)
+          : restart === 'goal-kick' && long.length
+            ? rng.pick(long)
+            : nextReceiver(),
       restart
     );
   }
 
   // The build-up: each player takes the ball under control, may carry it
   // on, then passes; the last pass reaches the shooter in shooting range.
-  for (;;) {
+  // A corner's cross has already found the shooter.
+  while (restart !== 'corner') {
     dribble(rng.int(25, 50), { d: ball.d + 1, x: ball.x }, 1.5);
     const towards = holder === shooter ? { d: 101, x: 34 } : shootingSpot;
     const carries = rng.next() < 0.6 && frame < lastCarry;

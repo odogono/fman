@@ -64,18 +64,20 @@ test('clips run at real-world pace, within what the sim holds', () => {
   for (let seed = 0; seed < 200; seed++) {
     for (const kind of ['goal', 'save', 'near-miss'] as const) {
       const script = createClipScript(input({ kind, seed }));
-      expect(script.length).toBeGreaterThanOrEqual(10 * clipFps);
+      // A corner's cross goes straight to the shooter.
+      const corner = script.restart === 'corner';
+      expect(script.length).toBeGreaterThanOrEqual((corner ? 8 : 10) * clipFps);
       expect(script.length).toBeLessThanOrEqual(35 * clipFps);
       expect(script.length).toBeLessThanOrEqual(longestClip);
       expect(Number.isInteger(script.length)).toBe(true);
       // The build-up, the zoom, the moment, then the reaction, in order.
       const { moment, reaction, zoom } = script.phases;
-      expect(zoom).toBeGreaterThanOrEqual(6 * clipFps);
+      expect(zoom).toBeGreaterThanOrEqual((corner ? 3 : 6) * clipFps);
       expect(zoom).toBeLessThan(moment);
       expect(script.momentFrame).toBeGreaterThan(moment);
       expect(script.momentFrame).toBeLessThan(reaction);
       expect(reaction).toBeLessThan(script.length);
-      expect(script.passes.length).toBeGreaterThanOrEqual(2);
+      expect(script.passes.length).toBeGreaterThanOrEqual(corner ? 1 : 2);
       expect(script.passes.length).toBeLessThanOrEqual(5);
       expect(script.passes.at(-1)!.to).toBe(`#d70000 ${9}`);
     }
@@ -249,5 +251,42 @@ test('defenders stand back from a free kick until it is taken', () => {
         expect(gap).toBeGreaterThan(8.5);
       }
     }
+  }
+});
+
+test('a goal kick is taken by the keeper from the six-yard box, and goes long', () => {
+  for (let seed = 0; seed < 20; seed++) {
+    const script = createClipScript(input({ restart: 'goal-kick', seed }));
+    expect(script.frame(0).caption).toBe('34′ Goal kick');
+    const kick = script.passes[0]!;
+    expect(kick).toMatchObject({ from: '#d70000 0', kind: 'goal-kick' });
+    const start = script.frame(0).ball;
+    expect(depth(start.y)).toBeCloseTo(5.5);
+    const received = script.frame(kick.end).ball;
+    expect(depth(received.y)).toBeGreaterThan(30);
+  }
+  // Without a keeper of its own, a side takes no goal kick.
+  const keeperless = createClipScript(
+    input({
+      attack: side('#d70000', ['defence', 'midfield', 'attack']),
+      restart: 'goal-kick',
+      shooter: 2
+    })
+  );
+  expect(keeperless.restart).toBe('open-play');
+});
+
+test('a corner is crossed from the flag to the shooter in the box', () => {
+  for (let seed = 0; seed < 20; seed++) {
+    const script = createClipScript(input({ restart: 'corner', seed }));
+    expect(script.frame(0).caption).toBe('34′ Corner');
+    const start = script.frame(0).ball;
+    expect(depth(start.y)).toBeGreaterThan(104);
+    expect(start.x < 1 || start.x > 67).toBe(true);
+    expect(script.passes).toHaveLength(1);
+    expect(script.passes[0]).toMatchObject({ kind: 'corner', to: '#d70000 9' });
+    const met = script.frame(script.passes[0]!.end).ball;
+    expect(depth(met.y)).toBeGreaterThan(pitchLength - 16.5);
+    expect(Math.abs(met.x - 34)).toBeLessThan(20.16);
   }
 });

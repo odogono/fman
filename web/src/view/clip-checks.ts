@@ -312,24 +312,20 @@ export const checkClip = (script: ClipScript): ClipIssue[] => {
     }
   }
 
-  // The back line holds together, but for the defender closing the ball down.
+  // The back line holds together, but for one defender stepping out of it,
+  // such as to close the ball down: its depth without whichever one makes
+  // it deepest.
   const backLine = input.defence.players.flatMap((p, j) =>
     p.line === 'defence' ? [attackers + j] : []
   );
   const spread = (at: number) => {
-    const frame = frames[at]!;
-    const nearest = backLine.reduce(
-      (best, i) =>
-        gap(frame.players[i]!, frame.ball) <
-        gap(frame.players[best]!, frame.ball)
-          ? i
-          : best,
-      backLine[0]!
-    );
     const depths = backLine
-      .filter(i => i !== nearest)
-      .map(i => frame.players[i]!.y);
-    return depths.length < 2 ? 0 : Math.max(...depths) - Math.min(...depths);
+      .map(i => frames[at]!.players[i]!.y)
+      .toSorted((a, b) => a - b);
+    if (depths.length < 3) {
+      return 0;
+    }
+    return Math.min(depths.at(-1)! - depths[1]!, depths.at(-2)! - depths[0]!);
   };
   if (backLine.length >= 3) {
     for (const run of runs(

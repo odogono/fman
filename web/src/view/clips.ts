@@ -136,6 +136,17 @@ const laneClearance = 1;
 const longestBackPass = 11;
 /** The ball is this far ahead of a carrier's feet, in metres. */
 const stride = 0.8;
+/**
+ * Players keep at least this far apart, in metres, about a sprite's width,
+ * so no one is drawn standing inside anyone else.
+ */
+const personalSpace = 1.3;
+/** A defender further than this from their place, in metres, sprints back. */
+const recoveryGap = 3;
+/** How far apart, in metres, a back line lets its players get as it moves. */
+const backLineGive = 2;
+/** How far a back line's players may sway out of line, in metres. */
+const backLineSway = 0.4;
 
 export type ClipPhase = 'build-up' | 'moment' | 'reaction' | 'zoom';
 
@@ -391,6 +402,14 @@ export const createClipScript = (input: ClipInput): ClipScript => {
   const defenceKeeper = defenders.findIndex(p => p.line === 'keeper');
   const keeperSlot = defenceKeeper < 0 ? -1 : attackers.length + defenceKeeper;
 
+  /** Where the back line wants to stand, given the ball. */
+  const backLineFor = (ball: Point) => clamp(ball.d + 14, 55, 99);
+  /**
+   * The depth the back line holds while play goes on: where it wants to be,
+   * but never more than `backLineGive` from any of its players but the one
+   * closing the ball down, so it moves as one and waits for a laggard.
+   */
+  let backLineDepth: number | undefined;
   // Where each player wants to be, given the ball.
   const target = (i: number, ball: Point, frame: number): Point => {
     const quirk = quirks[i]!;
@@ -419,14 +438,18 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     }
     const depth =
       line === 'defence'
-        ? clamp(ball.d + 14, 55, 99)
+        ? (backLineDepth ?? backLineFor(ball))
         : line === 'midfield'
           ? clamp(ball.d + 2, 40, 90)
           : clamp(ball.d - 12, 30, 75);
     const across =
       34 + (pitchWidth * defenceSpots[j]! - 34) * 0.75 + 0.35 * (ball.x - 34);
     return {
-      d: depth + quirk.d + sway * 1.5,
+      // The back line holds one depth, to keep the attackers offside.
+      d:
+        line === 'defence'
+          ? depth + sway * backLineSway
+          : depth + quirk.d + sway * 1.5,
       x: clamp(across + quirk.x, 3, pitchWidth - 3)
     };
   };
@@ -450,8 +473,14 @@ export const createClipScript = (input: ClipInput): ClipScript => {
   const restartRoll = rng.next();
   const goalKicker =
     attackKeeper >= 0 && attackKeeper !== shooter ? attackKeeper : -1;
+  // A defender or keeper who shoots has come up for a set piece: a corner
+  // 60% of the time, a free kick 40%.
+  const setPiece =
+    attackers[shooter]?.line === 'defence' ||
+    attackers[shooter]?.line === 'keeper';
   const drawn: Restart =
     input.restart ??
+    (setPiece ? (restartRoll < 0.6 ? 'corner' : 'free-kick') : undefined) ??
     (restartRoll < 0.4
       ? 'open-play'
       : restartRoll < 0.6
@@ -632,6 +661,32 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     }
   };
 
+  /**
+   * Players closer than `personalSpace` step apart, each half the way, or
+   * all of it when the other is `held` to a run of their own.
+   */
+  const separate = (held: ReadonlySet<number>) => {
+    for (let i = 0; i < count; i++) {
+      for (let j = i + 1; j < count; j++) {
+        const a = movers[i]!;
+        const b = movers[j]!;
+        const gap = distance(a, b);
+        const [heldA, heldB] = [held.has(i), held.has(j)];
+        if (gap >= personalSpace || (heldA && heldB)) {
+          continue;
+        }
+        // Exactly on top of each other, they step apart across the pitch.
+        const [ud, ux] = gap ? [(b.d - a.d) / gap, (b.x - a.x) / gap] : [0, 1];
+        const push = personalSpace - gap;
+        const shareA = heldA ? 0 : heldB ? 1 : 0.5;
+        a.d -= ud * push * shareA;
+        a.x -= ux * push * shareA;
+        b.d += ud * push * (1 - shareA);
+        b.x += ux * push * (1 - shareA);
+      }
+    }
+  };
+
   // Every player not told otherwise heads for their place in the shape.
   const steer = (
     frame: number,
@@ -654,6 +709,17 @@ export const createClipScript = (input: ClipInput): ClipScript => {
         nearest = gap;
         presser = i;
       }
+    }
+    const inLine = defenders.flatMap((p, j) =>
+      p.line === 'defence' && attackers.length + j !== presser
+        ? [movers[attackers.length + j]!.d]
+        : []
+    );
+    const wanted = backLineFor(ball);
+    if (inLine.length) {
+      const low = Math.max(...inLine) - backLineGive;
+      const high = Math.min(...inLine) + backLineGive;
+      backLineDepth = low <= high ? clamp(wanted, low, high) : (low + high) / 2;
     }
     movers.forEach((mover, i) => {
       if (held.has(i)) {
@@ -680,10 +746,18 @@ export const createClipScript = (input: ClipInput): ClipScript => {
           standOff(goal, lane.from, lane.to, laneWidth);
         }
       }
-      const speed = perFrame(
-        i < attackers.length ? 6 : i === keeperSlot ? 4 : 5.5
-      );
       const gap = distance(mover, goal);
+      // A defender out of position, such as one the ball has gone past,
+      // sprints to get back.
+      const speed = perFrame(
+        i < attackers.length
+          ? 6
+          : i === keeperSlot
+            ? 4
+            : gap > recoveryGap
+              ? 7.5
+              : 5.5
+      );
       if (gap <= speed) {
         mover.d = goal.d;
         mover.x = goal.x;
@@ -698,6 +772,15 @@ export const createClipScript = (input: ClipInput): ClipScript => {
         standOff(mover, lane.from, lane.to, laneClearance);
       }
     });
+    separate(held);
+    // Stepping apart never takes a defender into a pass's way.
+    if (lane) {
+      for (let i = attackers.length; i < count; i++) {
+        if (!held.has(i)) {
+          standOff(movers[i]!, lane.from, lane.to, laneClearance);
+        }
+      }
+    }
   };
 
   const passes: ClipPass[] = [];
@@ -1155,7 +1238,11 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     const loose = interception
       ? meet
       : { d: meet.d - rng.between(3, 6), x: meet.x + rng.between(-4, 4) };
-    const held = new Set([holder, shooter, clearer]);
+    // Only the defender runs to a script; the passer and the receiver (or
+    // the shooter) stay where their own moves leave them, but step aside
+    // rather than stand inside anyone.
+    const held = new Set([clearer]);
+    const where = (i: number) => ({ d: movers[i]!.d, x: movers[i]!.x });
     // The final pass, or the shot, is struck.
     kick(holder, meet);
     cameraFocus = () => ({ d: ball.d + 4, x: ball.x });
@@ -1195,7 +1282,14 @@ export const createClipScript = (input: ClipInput): ClipScript => {
           }
         }
       }
-      steer(frame, held, new Map());
+      steer(
+        frame,
+        held,
+        new Map([
+          [holder, where(holder)],
+          [shooter, where(shooter)]
+        ])
+      );
       record();
       frame++;
     }

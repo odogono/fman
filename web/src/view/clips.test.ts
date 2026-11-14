@@ -1,6 +1,7 @@
 import { expect, test } from 'bun:test';
 
 import { longestClip } from '../sim/ticker';
+import { checkClip, type ClipIssueKind } from './clip-checks';
 import {
   cameraWide,
   captionFrames,
@@ -671,4 +672,25 @@ test('a receiver runs onto a pass without turning sharply as it is played', () =
       (speeds[0]! * speeds[1]!);
     expect(cos).toBeGreaterThan(Math.cos(Math.PI / 4));
   }
+});
+
+test('clips pass the clip checks, whoever shoots', () => {
+  const found = new Map<ClipIssueKind, string>();
+  // A forward, a midfielder and a defender shoot, on both ends.
+  for (const shooter of [9, 6, 2]) {
+    for (let seed = 0; seed < 30; seed++) {
+      for (const kind of ['goal', 'save', 'near-miss', 'clearance'] as const) {
+        const script = createClipScript(
+          input({ attackingUp: seed % 2 === 0, kind, seed, shooter })
+        );
+        for (const issue of checkClip(script)) {
+          found.set(
+            issue.kind,
+            `seed ${seed}, ${kind}, shooter ${shooter}: ${issue.message} (${issue.start}–${issue.end})`
+          );
+        }
+      }
+    }
+  }
+  expect([...found.values()]).toEqual([]);
 });

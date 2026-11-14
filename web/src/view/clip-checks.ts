@@ -165,16 +165,17 @@ const checkPass = (
   const pace = metres / seconds;
   const least =
     pass.kind === 'throw-in' ? clipLimits.throwInPace : clipLimits.passPace;
-  if (metres >= clipLimits.paceFrom && pace < least) {
+  if (!pass.cutOut && metres >= clipLimits.paceFrom && pace < least) {
     add(
       'slow-pass',
       `${name}: ${pace.toFixed(1)} m/s over ${metres.toFixed(0)} m`
     );
   }
 
+  // A pass a keeper came and caught never reaches its receiver.
   const receiver = to.players[pass.receiver]!;
   const missed = gap(receiver, to.ball);
-  if (missed > clipLimits.receiverReach) {
+  if (!pass.cutOut && missed > clipLimits.receiverReach) {
     add(
       'receiver-misses',
       `${name}: receiver ${missed.toFixed(1)} m from the ball`,

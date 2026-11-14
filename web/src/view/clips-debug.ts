@@ -198,7 +198,8 @@ const outcomesFor = (kind: Moment['kind']): readonly ClipOutcome[] =>
   kind === 'goal'
     ? ['goal']
     : kind === 'save'
-      ? saveOutcomes
+      ? // A claim comes off a cross, so forcing one forces a header.
+        [...saveOutcomes, 'claim']
       : kind === 'clearance'
         ? clearanceOutcomes
         : missOutcomes;

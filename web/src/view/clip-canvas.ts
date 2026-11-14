@@ -38,6 +38,11 @@ export type ClipOverlays = Readonly<{
   ids?: boolean;
   /** The ball's path, on the pitch in metres. */
   path?: readonly Readonly<{ x: number; y: number }>[];
+  /**
+   * The problems showing in this frame, for the debug page: each rings its
+   * players (indexes into the frame's players) and is listed in a corner.
+   */
+  problems?: readonly Readonly<{ players: readonly number[]; text: string }>[];
 }>;
 
 const grass = ['#2f7d32', '#2a7230'] as const;
@@ -345,6 +350,20 @@ export const paintClip = (
       ctx.fillText(String(id), x! + scale * 1.4, y! - scale * 1.2);
     }
   }
+  if (overlays.problems?.length) {
+    ctx.strokeStyle = '#ff3b30';
+    ctx.lineWidth = 2;
+    const ringed = new Set(overlays.problems.flatMap(p => p.players));
+    for (const i of ringed) {
+      const player = frame.players[i];
+      if (player) {
+        const [x, y] = onScreen(player.x, player.y);
+        ctx.beginPath();
+        ctx.arc(x!, y! - scale * 0.6, scale * 1.2, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+  }
   if (frame.label) {
     const { label } = frame;
     const [x, y] = onScreen(label.x, label.y);
@@ -403,5 +422,20 @@ export const paintClip = (
     ctx.beginPath();
     ctx.arc(left + ball.x * unit, top + ball.y * unit, 2, 0, Math.PI * 2);
     ctx.fill();
+  }
+  // The problems' list, in the bottom left, clear of the caption and map.
+  if (overlays.problems?.length) {
+    ctx.font = '600 11px system-ui, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    const { problems } = overlays;
+    problems.forEach(({ text }, k) => {
+      const top = height - 8 - (problems.length - k) * 18;
+      const textWidth = ctx.measureText(text).width;
+      ctx.fillStyle = 'rgba(140, 0, 0, 0.85)';
+      ctx.fillRect(6, top, textWidth + 10, 16);
+      ctx.fillStyle = '#fff';
+      ctx.fillText(text, 11, top + 8);
+    });
   }
 };

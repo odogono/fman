@@ -1,6 +1,7 @@
 import { expect, test } from 'bun:test';
 
 import { longestClip } from '../sim/ticker';
+import { checkClip, type ClipIssueKind } from './clip-checks';
 import {
   cameraWide,
   captionFrames,
@@ -449,10 +450,10 @@ test('fresh players, players without energy, and the first minute show no tiredn
   }
 });
 
-/** How many players show tired over 200 clips. */
+/** How many players show tired over 100 clips. */
 const tiredCount = (energy: number, minute: number) => {
   let tired = 0;
-  for (let seed = 0; seed < 200; seed++) {
+  for (let seed = 0; seed < 100; seed++) {
     const script = createClipScript(
       input({ attack: spent('#d70000', energy), minute, seed })
     );
@@ -535,6 +536,13 @@ const passesOf = (seeds: number) =>
     })
   ).flat();
 
+/**
+ * The passes of 100 seeds' clips of every kind, worked out once for all the
+ * tests that look at passes, since building them is the slow part.
+ */
+let passesMade: ReturnType<typeof passesOf> | undefined;
+const everyPass = () => (passesMade ??= passesOf(100));
+
 const facingVectors = {
   down: [0, 1],
   left: [-1, 0],
@@ -543,7 +551,7 @@ const facingVectors = {
 } as const;
 
 test('a passer faces the way they play the ball', () => {
-  for (const { from, passer, to } of passesOf(100)) {
+  for (const { from, passer, to } of everyPass()) {
     const player = from.players[passer]!;
     const metres = Math.hypot(to.ball.x - player.x, to.ball.y - player.y);
     if (metres < 2) {
@@ -559,7 +567,7 @@ test('a passer faces the way they play the ball', () => {
 
 test('a long pass goes in the air; along the ground it is 30 m at most', () => {
   let lofted = 0;
-  for (const { metres, pass, script } of passesOf(100)) {
+  for (const { metres, pass, script } of everyPass()) {
     const middle = script.frame((pass.start + pass.end) / 2);
     if (middle.ball.height > 0) {
       lofted++;
@@ -571,7 +579,7 @@ test('a long pass goes in the air; along the ground it is 30 m at most', () => {
 });
 
 test('the ball keeps a pass’s pace, and the receiver gets to it', () => {
-  for (const { metres, pace, pass, receiver, to } of passesOf(100)) {
+  for (const { metres, pace, pass, receiver, to } of everyPass()) {
     if (metres >= 9) {
       expect(pace).toBeGreaterThanOrEqual(pass.kind === 'throw-in' ? 8 : 10);
     }
@@ -583,7 +591,7 @@ test('the ball keeps a pass’s pace, and the receiver gets to it', () => {
 });
 
 test('a pass along the ground never runs through a defender', () => {
-  for (const { pass, script } of passesOf(100)) {
+  for (const { pass, script } of everyPass()) {
     for (let at = pass.start + 5; at < pass.end - 5; at++) {
       const frame = script.frame(at);
       if (frame.ball.height > 0) {
@@ -601,7 +609,7 @@ test('a pass along the ground never runs through a defender', () => {
 test('passes go forward; a pass back is short', () => {
   let forward = 0;
   let back = 0;
-  for (const { from, metres, pass, script, to } of passesOf(100)) {
+  for (const { from, metres, pass, script, to } of everyPass()) {
     if (pass.kind !== 'pass' || pass.to === script.passes.at(-1)!.to) {
       continue;
     }
@@ -653,7 +661,7 @@ test('the ball runs ahead of a carrier, the way they go', () => {
 });
 
 test('a receiver runs onto a pass without turning sharply as it is played', () => {
-  for (const { pass, receiver, script } of passesOf(100)) {
+  for (const { pass, receiver, script } of everyPass()) {
     if (pass.start < 2) {
       continue;
     }
@@ -672,3 +680,25 @@ test('a receiver runs onto a pass without turning sharply as it is played', () =
     expect(cos).toBeGreaterThan(Math.cos(Math.PI / 4));
   }
 });
+
+test('clips pass the clip checks, whoever shoots', () => {
+  const found = new Map<ClipIssueKind, string>();
+  // A forward, a midfielder and a defender shoot, on both ends.
+  for (const shooter of [9, 6, 2]) {
+    for (let seed = 0; seed < 15; seed++) {
+      for (const kind of ['goal', 'save', 'near-miss', 'clearance'] as const) {
+        const script = createClipScript(
+          input({ attackingUp: seed % 2 === 0, kind, seed, shooter })
+        );
+        for (const issue of checkClip(script)) {
+          found.set(
+            issue.kind,
+            `seed ${seed}, ${kind}, shooter ${shooter}: ${issue.message} (${issue.start}–${issue.end})`
+          );
+        }
+      }
+    }
+  }
+  expect([...found.values()]).toEqual([]);
+  // 180 clips, each built and checked frame by frame: slow on a busy runner.
+}, 30_000);

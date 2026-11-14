@@ -3,6 +3,7 @@ import type { MatchFixture } from '../sim/league';
 import type { Game } from '../sim/management';
 import type { Moment } from '../sim/moments';
 import { fitClipCanvas, paintClip } from './clip-canvas';
+import { checkClip, clipIssueKinds, type ClipIssue } from './clip-checks';
 import { clipInputFor, inkColours, keeperColoursFor } from './clip-match';
 import {
   clearanceOutcomes,
@@ -55,6 +56,7 @@ const settings = {
   outcome: 'seed' as ClipOutcome | 'seed',
   path: false,
   place: 0,
+  problems: false,
   restart: 'seed' as Restart | 'seed',
   seedBase: 1,
   side: 'home' as 'away' | 'home',
@@ -143,7 +145,7 @@ const side = (
 };
 
 /** The clip the settings describe: the home side is the managed club. */
-const settingsInput = (): ClipInput => {
+const settingsInput = (seedBase = settings.seedBase): ClipInput => {
   const homeKit = inkColours[settings.homeKit]!;
   const awayKit = inkColours[settings.awayKit]!;
   const keepers = keeperColoursFor(homeKit, awayKit);
@@ -178,7 +180,7 @@ const settingsInput = (): ClipInput => {
       [
         'debug',
         settings.place,
-        settings.seedBase,
+        seedBase,
         settings.kind,
         settings.minute,
         settings.side
@@ -211,8 +213,11 @@ const playButton = element('button', { type: 'button' }, 'Pause');
 const readout = element('pre');
 const controls = element('div');
 const saveStatus = element('p');
+const problemList = element('ol', { className: 'problems' });
+const survey = element('pre');
 
 let script: ClipScript = createClipScript(settingsInput());
+let issues: ClipIssue[] = [];
 let path: { x: number; y: number }[] = [];
 let at = 0;
 let playing = true;
@@ -228,6 +233,21 @@ const rebuild = () => {
     : settingsInput();
   script = createClipScript(input);
   path = Array.from({ length: script.length }, (_, i) => script.frame(i).ball);
+  issues = checkClip(script);
+  problemList.replaceChildren(
+    ...issues.map(issue => {
+      const jump = element(
+        'button',
+        { type: 'button' },
+        `${issue.start}–${issue.end}`
+      );
+      jump.addEventListener('click', () => {
+        playing = false;
+        at = issue.start;
+      });
+      return element('li', {}, jump, ` ${issue.kind}: ${issue.message}`);
+    })
+  );
   at = 0;
   playing = true;
   scrubber.max = String(script.length - 1);
@@ -247,7 +267,9 @@ const rebuild = () => {
     ...script.passes.map(
       p =>
         `  ${String(p.start).padStart(4)}–${String(p.end).padEnd(4)} ${p.from} → ${p.to}${p.kind === 'pass' ? '' : ` (${p.kind})`}`
-    )
+    ),
+    '',
+    `problems (${issues.length})${issues.length ? '' : ': none'}`
   ].join('\n');
   renderControls();
 };
@@ -367,7 +389,24 @@ const renderControls = () => {
     labelled(
       'Ball path',
       checkbox(settings.path, value => (settings.path = value))
+    ),
+    labelled(
+      'Problems',
+      checkbox(settings.problems, value => (settings.problems = value))
     )
+  );
+  const surveyButton = element(
+    'button',
+    { type: 'button' },
+    loaded ? "Check this match's moments" : 'Check 200 seeds'
+  );
+  surveyButton.addEventListener('click', runSurvey);
+  const checks = element(
+    'fieldset',
+    {},
+    element('legend', {}, 'Checks'),
+    surveyButton,
+    survey
   );
   const autosave = element('button', { type: 'button' }, 'Load the autosave');
   autosave.addEventListener('click', () => {
@@ -434,7 +473,67 @@ const renderControls = () => {
     shape,
     seed,
     overlays,
+    checks,
     saved
+  );
+};
+
+/**
+ * Checks many clips at once: 200 seeds from the one set, with the other
+ * settings as they are, or every moment of a loaded match. It counts the
+ * clips each problem shows in, and lists the first seeds with any to open.
+ */
+const runSurvey = () => {
+  const counts = new Map(clipIssueKinds.map(kind => [kind, 0]));
+  const flagged: { open: () => void; text: string }[] = [];
+  const clips = loaded
+    ? loaded.moments.map((m, i) => ({
+        input: clipInputFor(loaded!.game, loaded!.fixture, m, i),
+        open: () => {
+          loaded!.moment = i;
+          rebuild();
+        },
+        text: `moment ${i}`
+      }))
+    : Array.from({ length: 200 }, (_, k) => {
+        const seedBase = (settings.seedBase + k) % 1_000_000;
+        return {
+          input: settingsInput(seedBase),
+          open: () => {
+            settings.seedBase = seedBase;
+            rebuild();
+          },
+          text: `seed ${seedBase}`
+        };
+      });
+  let anything = 0;
+  for (const clip of clips) {
+    const kinds = new Set(
+      checkClip(createClipScript(clip.input)).map(i => i.kind)
+    );
+    for (const kind of kinds) {
+      counts.set(kind, counts.get(kind)! + 1);
+    }
+    if (kinds.size) {
+      anything++;
+      flagged.push({
+        open: clip.open,
+        text: `${clip.text}: ${[...kinds].join(', ')}`
+      });
+    }
+  }
+  survey.replaceChildren(
+    [
+      `${anything} of ${clips.length} clips show a problem`,
+      ...[...counts]
+        .filter(([, n]) => n)
+        .map(([kind, n]) => `  ${kind.padEnd(22)} ${n}`)
+    ].join('\n'),
+    ...flagged.slice(0, 12).flatMap(({ open, text }) => {
+      const button = element('button', { type: 'button' }, 'Open');
+      button.addEventListener('click', open);
+      return ['\n', button, ` ${text}`];
+    })
   );
 };
 
@@ -506,7 +605,7 @@ root.append(
   element(
     'div',
     { className: 'debug' },
-    element('div', {}, canvas, transport, readout),
+    element('div', {}, canvas, transport, readout, problemList),
     controls
   )
 );
@@ -534,7 +633,17 @@ const tick = (now: number) => {
     fitClipCanvas(canvas),
     {
       ids: settings.ids,
-      ...(settings.path ? { path } : {})
+      ...(settings.path ? { path } : {}),
+      ...(settings.problems
+        ? {
+            problems: issues
+              .filter(i => i.start <= at && at <= i.end + 1)
+              .map(i => ({
+                players: i.players,
+                text: `${i.kind}: ${i.message}`
+              }))
+          }
+        : {})
     }
   );
   requestAnimationFrame(tick);

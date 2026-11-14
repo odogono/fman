@@ -188,8 +188,12 @@ export const createTimeline = <T extends Event>(
     get elapsedT() {
       return elapsedT;
     },
+    /** The time since the current event began, or 0 once the last has ended. */
     get endT() {
       return completedT ?? forecast().endT;
+    },
+    get eventElapsedT() {
+      return current() ? elapsedT - enteredT : 0;
     },
     get index() {
       return index;

@@ -87,6 +87,13 @@ export const createTicker = (
     get key() {
       return String(timeline.index);
     },
+    /**
+     * How long the current pause has shown, so a match resumed mid-clip
+     * picks the clip up where it was (ADR 0013); 0 outside a pause.
+     */
+    get pauseElapsedT() {
+      return timeline.current?.kind === 'pause' ? timeline.eventElapsedT : 0;
+    },
     /** The clip lengths the view handed over, if any. */
     lengths,
     /**

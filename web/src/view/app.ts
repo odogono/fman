@@ -1,9 +1,11 @@
 import type { SoundEvent } from '../sim/beeper';
+import { spectrumFrameT } from '../sim/frame-clock';
 import { createJournal, openSave, type Journal } from '../sim/journal';
 import type { Game } from '../sim/management';
 import { clubSquads } from '../sim/ruleset';
 import type { Effect, View } from '../sim/session';
 import { positions } from '../sim/squads';
+import type { Ticker } from '../sim/ticker';
 import {
   changeAmount,
   startAmount,
@@ -11,6 +13,9 @@ import {
   type AmountEntry
 } from './amount-entry';
 import { answersFor, printAccepted, type OfferedAnswer } from './answers';
+import type { ClipSides } from './clip-canvas';
+import { clipScriptsFor, stillFrameFor } from './clip-match';
+import type { ClipFrame, ClipScript } from './clips';
 import { barFor, tickerBar, type BarButton } from './context-bar';
 import { createFrameSampler } from './frame-sampler';
 import { homeFor, type Home } from './home';
@@ -87,6 +92,13 @@ export type Dom = {
   readonly hidden: boolean;
   notice: (text: string) => void;
   openMenu: () => void;
+  /**
+   * Paints a frame of Modern mode's sprite highlights (#144) on their
+   * pitch, at every animation frame while they show.
+   */
+  paintClip: (clip: Readonly<{ frame: ClipFrame; sides: ClipSides }>) => void;
+  /** The browser asks for less motion, so the highlights show the ticker. */
+  readonly reducedMotion: boolean;
   render: (screen: {
     /** The amount being entered on an amount prompt, while the bar shows. */
     amount: AmountEntry | undefined;
@@ -290,7 +302,7 @@ export const createApp = ({
       (modern() &&
         Boolean(
           pickTeamFor(view) ??
-          highlightsFor(view) ??
+          highlightsNow(view) ??
           statusFor(view) ??
           amountPromptFor(view, amountEntry) ??
           messageFor(view)
@@ -302,6 +314,122 @@ export const createApp = ({
   /** Modern mode takes typing only where a name is asked for. */
   const typingTaken = () =>
     !modern() || answersFor(journal.session.view).some(a => a.kind === 'text');
+  /**
+   * Modern mode's sprite highlights (#144): the clips of the match on
+   * show, worked out once from its moments. A match plays as clips only if
+   * the view handed the sim their lengths at kick-off.
+   */
+  let clipPlan: { scripts: ClipScript[]; ticker: Ticker } | undefined;
+  /** The ticker Skip was pressed on, so the full list shows for its final hold. */
+  let skippedTicker: Ticker | undefined;
+  const clipTicker = () => {
+    const view = journal.session.view;
+    if (
+      !modern() ||
+      view.screen !== 'highlights' ||
+      !('ticker' in view) ||
+      !view.ticker.lengths
+    ) {
+      return undefined;
+    }
+    if (clipPlan?.ticker !== view.ticker) {
+      clipPlan = {
+        scripts: clipScriptsFor(view.game, view.fixture, view.ticker.moments),
+        ticker: view.ticker
+      };
+    }
+    return {
+      scripts: clipPlan.scripts,
+      view: { ...view, ticker: view.ticker }
+    };
+  };
+  /**
+   * At kick-off, before the first frame plays, Modern mode works out every
+   * clip and hands the sim their lengths (ADR 0013), unless the browser
+   * asks for less motion.
+   */
+  const holdClips = () => {
+    const view = journal.session.view;
+    if (
+      !modern() ||
+      dom.reducedMotion ||
+      view.screen !== 'highlights' ||
+      !('ticker' in view) ||
+      view.ticker.lengths ||
+      view.ticker.elapsedT > 0
+    ) {
+      return;
+    }
+    const scripts = clipScriptsFor(
+      view.game,
+      view.fixture,
+      view.ticker.moments
+    );
+    journal.holdClips(scripts.map(script => script.length));
+  };
+  /**
+   * Where the clips have got: the clip on show and its frame, or the still
+   * pitch under the 0-0 header and the final hold; and how many moments the
+   * clips have reached, since a clip shows its moment partway through.
+   */
+  const clipState = () => {
+    const running = clipTicker();
+    if (!running) {
+      return undefined;
+    }
+    const { scripts, view } = running;
+    const { ticker } = view;
+    const count = ticker.moments.length;
+    const index = ticker.index - 2;
+    if (ticker.done || index >= count || index < 0) {
+      const end = ticker.done || index >= count;
+      const still = stillFrameFor(
+        view.game,
+        view.fixture,
+        end ? 'Full time' : 'Kick-off'
+      );
+      return {
+        clip: { frame: still.frame, sides: still.sides },
+        full: end && skippedTicker === ticker,
+        shown: end ? count : 0
+      };
+    }
+    const script = scripts[index]!;
+    const at = Math.min(
+      ticker.pauseElapsedT / spectrumFrameT,
+      script.length - 1
+    );
+    return {
+      clip: {
+        frame: script.frame(at),
+        sides: { attack: script.input.attack, defence: script.input.defence }
+      },
+      full: false,
+      shown: index + (at >= script.momentFrame ? 1 : 0)
+    };
+  };
+  let clipKey = '';
+  /** Paints the clip's frame, and the screen when the clips reach a moment. */
+  const paintClips = () => {
+    const state = clipState();
+    const key = state ? `${state.shown}:${state.full}` : '';
+    if (key !== clipKey) {
+      clipKey = key;
+      render(false);
+      return;
+    }
+    if (state) {
+      dom.paintClip(state.clip);
+    }
+  };
+  const highlightsNow = (view: View) => {
+    const state = clipState();
+    return highlightsFor(
+      view,
+      state ? { full: state.full, shown: state.shown } : undefined
+    );
+  };
+
   /** The moment-highlights ticker (#108) is still showing its moments. */
   const tickerRunning = () => {
     const view = journal.session.view;
@@ -342,7 +470,7 @@ export const createApp = ({
       dom.notice('Printing stopped. Open the menu to start a new game.');
     }
     const pickTeam = modern() ? pickTeamFor(view) : undefined;
-    const highlights = modern() ? highlightsFor(view) : undefined;
+    const highlights = modern() ? highlightsNow(view) : undefined;
     const status = modern() ? statusFor(view, home) : undefined;
     const answers = answersFor(view);
     const amountPrompt = modern()
@@ -380,6 +508,11 @@ export const createApp = ({
       typing: typingTaken(),
       view
     });
+    const state = clipState();
+    clipKey = state ? `${state.shown}:${state.full}` : '';
+    if (state) {
+      dom.paintClip(state.clip);
+    }
   };
   const syncSound = () => {
     if (!menuOpen && !dom.hidden) {
@@ -390,6 +523,7 @@ export const createApp = ({
     const session = journal.session;
     const elapsed = sampleFrames(now);
     const before = session.view.screen;
+    holdClips();
     const repaint = journal.advance(elapsed);
     syncSound();
     const changed = before !== session.view.screen;
@@ -398,6 +532,8 @@ export const createApp = ({
     }
     if (repaint) {
       render(changed);
+    } else {
+      paintClips();
     }
   };
 
@@ -702,6 +838,11 @@ export const createApp = ({
       return;
     }
     journal.skipPause();
+    const view = journal.session.view;
+    skippedTicker =
+      view.screen === 'highlights' && 'ticker' in view
+        ? view.ticker
+        : undefined;
     render();
     persist();
   };
@@ -717,6 +858,7 @@ export const createApp = ({
     }
     beeper.restart();
     const effect = send();
+    holdClips();
     persist();
     dom.notice('');
     if (effect?.type === 'copy') {

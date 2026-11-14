@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "bun --hot ./index.html",
+    "dev": "bun --hot ./index.html ./clips.html",
     "build": "bun src/site/build.ts",
     "typecheck": "tsc -p src/sim && tsc -p src/view && tsc -p src/offline && tsc -p src/site && tsc -p tsconfig.test.json",
     "test": "bun test src"

@@ -398,6 +398,30 @@ const ease = (u: number) => u * u * (3 - 2 * u);
 const perFrame = (speed: number) => speed / clipFps;
 /** Slower than this, in metres a second, a player is standing. */
 const standingSpeed = 0.5;
+/** A player's facing follows their movement over this many frames. */
+const facingWindow = 10;
+/**
+ * A player faces the way they run once faster than `start`, in metres a
+ * second, and faces the ball again once slower than `stop`.
+ */
+const facingSpeed = { start: 2.5, stop: 1.5 };
+/** Another defender must be this much nearer the ball to take over pressing it. */
+const pressingGive = 1.5;
+/** After the moment, players walk or jog back at these paces, in metres a second. */
+const walkPace = 1.5;
+const jogPace = 3.5;
+/** Hands on heads for this many of the reaction's frames. */
+const despairFrames = 60;
+/** The reaction's frame the keeper sets off for the ball in the net. */
+const fetchFrom = 30;
+/** The reaction's frame the attackers start back. */
+const turnBackFrom = 15;
+/** A header shows its contact, then its landing, this many frames each. */
+const landingFrames = 8;
+/** The longest a passer holds the final pass for the shooter to get in reach. */
+const shooterWait = clipFps;
+/** A player turns at most once in this many frames, but to kick or aim. */
+const turnFrames = 20;
 /** Slower than this, in metres a second, a player is walking. */
 const walkingSpeed = 2.5;
 
@@ -733,6 +757,10 @@ export const createClipScript = (input: ClipInput): ClipScript => {
   let camera = { d: ball.d + 8, width: cameraWide, x: ball.x };
   let cameraFocus: () => Point = () => ({ d: ball.d + 8, x: ball.x });
   let cameraWidth = cameraWide;
+  /** The frame each player last turned. */
+  const turnedAt = new Array<number>(count).fill(-Infinity);
+  /** Whether each player is running, for which way they face. */
+  const running = new Array<boolean>(count).fill(false);
   /** Where each player was at the last frame, and their step since. */
   const seen: Point[] = [];
   const steps: Point[] = [];
@@ -758,21 +786,37 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       // A player who has just played the ball faces where it went; otherwise they
       // face the way they move, or else the ball. Standing still, a runner
       // stands, and a touch shows as a kick.
-      const dx = at ? x - xs[at - 1]![i]! : 0;
-      const dy = at ? y - ys[at - 1]![i]! : 0;
-      const moving = Math.hypot(dx, dy) > perFrame(standingSpeed);
+      // Judged over the last few frames, so a player hovering around a
+      // walk doesn't flip between the way they move and the ball.
+      const back = Math.min(at, facingWindow);
+      const dx = back ? x - xs[at - back]![i]! : 0;
+      const dy = back ? y - ys[at - back]![i]! : 0;
+      const pace = back ? Math.hypot(dx, dy) / back : 0;
+      const moving = pace > perFrame(standingSpeed);
+      // Shuffling about their place, a player keeps their eye on the ball;
+      // they face the way they go once they are running, and until they
+      // have clearly slowed, so a pace near the line doesn't flip them.
+      running[i] = running[i]
+        ? pace > perFrame(facingSpeed.stop)
+        : pace > perFrame(facingSpeed.start);
       const previous = at ? facings[facingLog[at - 1]![i]!]! : undefined;
       const aim = at < aimUntil[i]! ? aims[i] : undefined;
       const [ax, ay] = aim ? toScreen(aim) : [bx, by];
-      facingLog[at]!.push(
-        facings.indexOf(
-          aim
-            ? facingFor(ax - x, ay - y, previous)
-            : moving
-              ? facingFor(dx, dy, previous)
-              : facingFor(bx - x, by - y, previous)
-        )
+      const wanted = facings.indexOf(
+        aim
+          ? facingFor(ax - x, ay - y, previous)
+          : running[i]
+            ? facingFor(dx, dy, previous)
+            : facingFor(bx - x, by - y, previous)
       );
+      // A turn waits until the last has settled, but a kick or a throw
+      // faces its aim at once.
+      const kept = at ? facingLog[at - 1]![i]! : wanted;
+      const turns = wanted !== kept && (aim || at - turnedAt[i]! >= turnFrames);
+      if (turns) {
+        turnedAt[i] = at;
+      }
+      facingLog[at]!.push(turns || !at ? wanted : kept);
       const pose =
         (mover.pose === 'run' || mover.pose === 'hold') && at < kickUntil[i]!
           ? 'kick'
@@ -858,16 +902,22 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     }
   };
 
+  /** The defender closing the ball down, as last chosen. */
+  let pressing = -1;
   // Every player not told otherwise heads for their place in the shape.
   const steer = (
     frame: number,
     held: ReadonlySet<number>,
     overrides: ReadonlyMap<number, Point> = new Map(),
     /** A pass along the ground, from the ball to where it goes. */
-    lane?: Readonly<{ from: Point; to: Point }>
+    lane?: Readonly<{ from: Point; to: Point }>,
+    /** Players who walk or jog, and how fast, in metres a second. */
+    paces: ReadonlyMap<number, number> = new Map()
   ) => {
     const line = offside ? offsideLine() - 0.5 : Infinity;
-    // The defender nearest the ball closes it down, but never tackles.
+    // The defender nearest the ball closes it down, but never tackles. The
+    // one already doing it keeps on unless another is clearly nearer, so
+    // two about as near don't take turns.
     let presser = -1;
     let nearest = Infinity;
     for (let j = 0; j < defenders.length; j++) {
@@ -875,12 +925,14 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       if (defenders[j]!.line === 'keeper') {
         continue;
       }
-      const gap = distance(movers[i]!, ball);
+      const gap =
+        distance(movers[i]!, ball) - (i === pressing ? pressingGive : 0);
       if (gap < nearest) {
         nearest = gap;
         presser = i;
       }
     }
+    pressing = presser;
     const inLine = defenders.flatMap((p, j) =>
       p.line === 'defence' && attackers.length + j !== presser
         ? [movers[attackers.length + j]!.d]
@@ -925,13 +977,14 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       // A defender out of position, such as one the ball has gone past,
       // sprints to get back.
       const speed = perFrame(
-        i < attackers.length
-          ? 6
-          : i === keeperSlot
-            ? 4
-            : gap > recoveryGap
-              ? 7.5
-              : 5.5
+        paces.get(i) ??
+          (i < attackers.length
+            ? 6
+            : i === keeperSlot
+              ? 4
+              : gap > recoveryGap
+                ? 7.5
+                : 5.5)
       );
       if (gap <= speed) {
         mover.d = goal.d;
@@ -989,11 +1042,16 @@ export const createClipScript = (input: ClipInput): ClipScript => {
   ) {
     outcome = 'claim';
   }
-  const passCount = others.length ? rng.int(2, 5) : 0;
+  const passCount = others.length ? rng.int(2, 4) : 0;
   const minBuildUp = 6 * clipFps;
-  /** Past this, no one carries the ball on; past the next, the shooter is found. */
-  const lastCarry = 11 * clipFps;
-  const maxBuildUp = 13 * clipFps;
+  /**
+   * Past this, no one carries the ball on; past the next, the shooter is
+   * found. A cross or a ball through takes time of its own after, so its
+   * build-up is cut shorter.
+   */
+  const setUp = finish === 'one-on-one' ? 3 : finish === 'header' ? 2 : 0;
+  const lastCarry = (8 - setUp) * clipFps;
+  const maxBuildUp = (9 - setUp) * clipFps;
   let frame = 0;
   let holder = starter;
   const label = (i: number) => attackers[i]!.label;
@@ -1155,11 +1213,11 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     if (receiver === shooter && !into) {
       placeFinish(end);
     }
-    if (receiver === shooter && kind === 'pass') {
+    if (receiver === shooter && kind === 'pass' && frame <= maxBuildUp) {
       const chase = new Map([[shooter, end]]);
       for (
         let f = 0;
-        f < 2 * clipFps &&
+        f < shooterWait &&
         distance(runner, end) > reach(flightTo(end, kind).frames);
         f++
       ) {
@@ -1258,7 +1316,7 @@ export const createClipScript = (input: ClipInput): ClipScript => {
    */
   const nextReceiver = () => {
     if (passesLeft() <= 1) {
-      for (let f = 0; f < 2 * clipFps && !onside(shooter); f++) {
+      for (let f = 0; f < shooterWait && !onside(shooter); f++) {
         dribble(1, { d: ball.d, x: ball.x }, 1);
       }
       return shooter;
@@ -1416,12 +1474,16 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       1.5
     );
     const towards = holder === shooter ? { d: 101, x: 34 } : shootingSpot;
-    const carries = rng.next() < 0.6 && frame < lastCarry;
+    // Before the final pass the ball is carried only as far as it must be,
+    // into range or out wide, so the holder doesn't dwell on it.
+    const final =
+      holder !== shooter && (passesLeft() <= 1 || frame > maxBuildUp);
+    const carries = rng.next() < 0.6 && frame < lastCarry && !final;
     if (carries || (holder === shooter && frame < minBuildUp)) {
       const seconds =
         holder === shooter
           ? Math.max(1, Math.min(4, (minBuildUp - frame) / clipFps))
-          : rng.between(1, 4);
+          : rng.between(1, 2.5);
       const speed = rng.between(5, 7);
       // A shooter from range carries it no nearer than they mean to shoot.
       const range =
@@ -1452,13 +1514,15 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     if (frame > maxBuildUp) {
       passesMade = Math.max(passesMade, passCount - 1);
     }
-    if (passesLeft() <= 1) {
+    // Over time, the holder plays it at once, in the air if it is long.
+    const overTime = frame > maxBuildUp;
+    if (passesLeft() <= 1 && finish !== 'header' && !overTime) {
       // Far from goal, the holder carries the ball on before the final pass.
       const mover = movers[holder]!;
       const gap = distance(mover, shootingSpot);
       if (gap > finalPassRange) {
         const speed = rng.between(5.5, 7);
-        const metres = Math.min(gap - finalPassRange + 2, 3 * speed);
+        const metres = Math.min(gap - finalPassRange + 2, 2 * speed);
         const to = {
           d: mover.d + ((shootingSpot.d - mover.d) / gap) * metres,
           x: mover.x + ((shootingSpot.x - mover.x) / gap) * metres
@@ -1495,7 +1559,8 @@ export const createClipScript = (input: ClipInput): ClipScript => {
 
   // Through on goal from further out, the shooter runs on with the ball.
   if (finish === 'one-on-one' && holder === shooter) {
-    const runOn = pitchLength - 16 - movers[shooter]!.d;
+    // At most a few seconds' run: from further out, the shot comes sooner.
+    const runOn = Math.min(pitchLength - 16 - movers[shooter]!.d, 7 * 2.5);
     if (runOn > 0) {
       dribble(
         Math.round((runOn / 7) * clipFps),
@@ -1550,7 +1615,18 @@ export const createClipScript = (input: ClipInput): ClipScript => {
   // The moment: the shot, and how it ends.
   const momentStart = frame;
   offside = false;
-  const momentFrames = 2 * clipFps;
+  /**
+   * The moment goes on this long after the ball arrives, so it settles in
+   * the net, the keeper's hands or behind, before the reaction.
+   */
+  const afterArrival = Math.round(0.8 * clipFps);
+  /** A header lands: the contact for a few frames, then the crouch. */
+  const land = (f: number, met: boolean) => {
+    const header = movers[shooter]!;
+    const contact = met ? landingFrames : 0;
+    header.pose = f <= contact + landingFrames ? 'header' : 'run';
+    header.poseFrame = f <= contact ? 2 : 0;
+  };
   const side = rng.next() < 0.5 ? -1 : 1;
   let shotFrom = { d: ball.d, x: ball.x };
   const keeper = keeperSlot >= 0 ? movers[keeperSlot]! : undefined;
@@ -1602,7 +1678,7 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     // The final pass, or the shot, is struck.
     kick(holder, meet);
     cameraFocus = () => ({ d: ball.d + 4, x: ball.x });
-    for (let f = 1; f <= momentFrames; f++) {
+    for (let f = 1; f <= flight + afterArrival; f++) {
       const defender = clearer >= 0 ? movers[clearer]! : undefined;
       if (f <= flight) {
         const u = f / flight;
@@ -1719,8 +1795,8 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       // hold it while the header lands.
       momentFrame = momentStart + claimFrame - 1;
       cameraFocus = () => ({ d: (ball.d + pitchLength) / 2, x: ball.x });
-      for (let f = 1; f <= momentFrames; f++) {
-        movers[shooter]!.pose = 'run';
+      for (let f = 1; f <= afterArrival; f++) {
+        land(f, false);
         keeper.pose = 'hold';
         Object.assign(ball, { d: keeper.d, height: 0.5, x: keeper.x });
         steer(frame, new Set([keeperSlot]));
@@ -1824,11 +1900,10 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       const scorer = movers[shooter]!;
       // A shot bends a little; a header doesn't.
       const shotBend = headed ? 0 : curl(0.2, 1);
-      for (let f = 1; f <= momentFrames; f++) {
+      for (let f = 1; f <= flight + afterArrival; f++) {
         if (headed) {
           // The forehead meets it, then the header lands and runs on.
-          scorer.pose = f <= kickFrames ? 'header' : 'run';
-          scorer.poseFrame = 2;
+          land(f, true);
         }
         if (f <= flight) {
           const u = f / flight;
@@ -1929,6 +2004,25 @@ export const createClipScript = (input: ClipInput): ClipScript => {
   const mate = mates.length ? rng.pick(mates) : -1;
   /** The reaction's frame the keeper lets it go on. */
   const release = 50;
+  // How everyone else takes it. After a goal, the defenders nearest their
+  // goal despair, they all trudge back, and the keeper fetches the ball
+  // from the net. After a save, a miss or a clearance, the attackers turn
+  // back, the shooter holding their head first after a save or a miss.
+  const conceded = outcome === 'goal';
+  const goalMouth = { d: pitchLength, x: 34 };
+  const halfway = { d: pitchLength / 2 - 7, x: 34 };
+  const despairing = conceded
+    ? defenders
+        .flatMap((p, j) => (p.line === 'keeper' ? [] : [attackers.length + j]))
+        .toSorted(
+          (a, b) =>
+            distance(movers[a]!, goalMouth) - distance(movers[b]!, goalMouth)
+        )
+        .slice(0, 2)
+    : [];
+  const rues =
+    outcomeKind(outcome) === 'save' || outcomeKind(outcome) === 'near-miss';
+  let fetched = false;
   let mateSpot: Point | undefined;
   let keeperSpot: Point | undefined;
   let outFrames = 0;
@@ -2043,7 +2137,56 @@ export const createClipScript = (input: ClipInput): ClipScript => {
           ? () => ({ d: (ball.d + pitchLength) / 2, x: ball.x })
           : () => ({ d: scorer.d + 4, x: scorer.x });
     }
-    steer(frame, reactionHeld, overrides);
+    const paces = new Map<number, number>();
+    if (conceded) {
+      for (const i of despairing) {
+        if (f < despairFrames) {
+          movers[i]!.pose = 'head';
+          reactionHeld.add(i);
+        } else if (f === despairFrames) {
+          movers[i]!.pose = 'run';
+          reactionHeld.delete(i);
+        }
+      }
+      defenders.forEach((p, j) => {
+        const i = attackers.length + j;
+        if (p.line !== 'keeper' && !reactionHeld.has(i)) {
+          overrides.set(i, target(i, halfway, frame));
+          paces.set(i, walkPace);
+        }
+      });
+      if (keeper && f >= fetchFrom) {
+        // Into the net for the ball, then out with it in their hands.
+        const to = fetched
+          ? { d: pitchLength - 4, x: 34 }
+          : { d: ball.d, x: ball.x };
+        const gap = distance(keeper, to);
+        const step = perFrame(walkPace + 1);
+        if (gap > step) {
+          keeper.d += ((to.d - keeper.d) / gap) * step;
+          keeper.x += ((to.x - keeper.x) / gap) * step;
+        }
+        fetched ||= distance(keeper, ball) < 0.6;
+        keeper.pose = fetched ? 'hold' : 'run';
+        if (fetched) {
+          Object.assign(ball, { d: keeper.d, height: 0.5, x: keeper.x });
+        }
+      }
+    } else {
+      if (rues) {
+        scorer.pose = f < despairFrames ? 'head' : 'run';
+      }
+      if (f === (rues ? despairFrames : 0)) {
+        reactionHeld.delete(shooter);
+      }
+      outfield.forEach(i => {
+        if (!reactionHeld.has(i) && !overrides.has(i) && f >= turnBackFrom) {
+          overrides.set(i, target(i, halfway, frame));
+          paces.set(i, jogPace);
+        }
+      });
+    }
+    steer(frame, reactionHeld, overrides, undefined, paces);
     record();
     frame++;
   }

@@ -31,7 +31,8 @@ export type ModernStatus = Readonly<{
   seasons: number;
 }>;
 
-const statusOf = (game: Game): ModernStatus => {
+/** The status facts alone, as shown beside the Home screen. */
+export const statusOf = (game: Game): ModernStatus => {
   const club = game.clubs[game.club - 1]!;
   return {
     cash: game.cash,
@@ -52,21 +53,9 @@ const statusOf = (game: Game): ModernStatus => {
   };
 };
 
-/**
- * The status on show: on the status prompt, or beside the Home screen while
- * the menu waits (`beside`).
- */
-export const statusFor = (
-  view: View,
-  beside = false
-): ModernStatus | undefined => {
-  if (!view.game) {
-    return undefined;
-  }
-  if (beside && view.screen === 'menu') {
-    return statusOf(view.game);
-  }
-  if (view.screen !== 'status') {
+/** The status prompt on show, with its Done button. */
+export const statusFor = (view: View): ModernStatus | undefined => {
+  if (view.screen !== 'status' || !view.game) {
     return undefined;
   }
   const id = 'status.continue';

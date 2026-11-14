@@ -21,6 +21,7 @@ import {
   type ModernTickerLine
 } from './modern-highlights';
 import type { ModernMessage } from './modern-message';
+import type { ModernScreen, ModernScreenKind } from './modern-screen';
 import type { ModernStatus } from './modern-status';
 import type { PickTeam, PickTeamRow, Strengths } from './pick-team';
 import { paintAttack, paintEmptyPitch } from './pitch';
@@ -893,10 +894,7 @@ export const createBrowserDom = (app: HTMLElement) => {
   const highlightsPane = find<HTMLElement>('#highlights');
   const statusPane = find<HTMLElement>('#status');
   const amountPane = find<HTMLElement>('#amount-prompt');
-  let amountKey_ = '';
   const messagePane = find<HTMLElement>('#message');
-  let messageKey = '';
-  let statusKey = '';
   // Modern mode's own pitch, kept between attacks as the original's is not.
   const modernPitch = document.createElement('canvas');
   modernPitch.className = 'modern-pitch';
@@ -911,10 +909,59 @@ export const createBrowserDom = (app: HTMLElement) => {
   clipPitch.setAttribute('role', 'img');
   clipPitch.setAttribute('aria-label', 'Pitch');
   const clipContext = clipPitch.getContext('2d')!;
-  let highlightsKey = '';
   let barKey = '';
   let homeKey = '';
-  let pickKey = '';
+  /**
+   * Where each kind of Modern screen is painted, and the root classes the
+   * page's layout keys on while it shows.
+   */
+  const modernPanes: {
+    [K in ModernScreenKind]: Readonly<{
+      classes: readonly string[];
+      paint: (screen: Extract<ModernScreen, { kind: K }>) => void;
+      pane: HTMLElement;
+    }>;
+  } = {
+    amount: {
+      classes: ['has-amount'],
+      paint: ({ amount }) => paintAmount(amountPane, amount),
+      pane: amountPane
+    },
+    highlights: {
+      classes: ['at-highlights'],
+      paint: ({ highlights }) =>
+        paintHighlights(highlightsPane, modernPitch, clipPitch, highlights),
+      pane: highlightsPane
+    },
+    // Beside the Home pane, the status shows while the menu waits.
+    home: {
+      classes: ['at-home', 'has-status'],
+      paint: ({ status }) => paintStatus(statusPane, status),
+      pane: statusPane
+    },
+    message: {
+      classes: ['has-amount'],
+      paint: ({ message }) => paintMessage(messagePane, message),
+      pane: messagePane
+    },
+    'pick-team': {
+      classes: ['at-pick-team'],
+      paint: ({ pickTeam }) => paintPickTeam(pickPane, pickTeam),
+      pane: pickPane
+    },
+    status: {
+      classes: ['has-status'],
+      paint: ({ status }) => paintStatus(statusPane, status),
+      pane: statusPane
+    }
+  };
+  const modernClasses = new Set(
+    Object.values(modernPanes).flatMap(({ classes }) => classes)
+  );
+  const paintModern = <K extends ModernScreenKind>(
+    screen: Extract<ModernScreen, { kind: K }>
+  ) => modernPanes[screen.kind as K].paint(screen);
+  let modernKey = '';
 
   const paintBar = (
     buttons: readonly BarButton[] | undefined,
@@ -1050,17 +1097,12 @@ export const createBrowserDom = (app: HTMLElement) => {
     },
     render: ({
       amount,
-      amountPrompt,
-      atHome,
       bar: buttons,
       clearInput,
       display,
       focus,
-      highlights,
       home,
-      message,
-      pickTeam,
-      status,
+      modern,
       title,
       typing,
       view
@@ -1072,44 +1114,23 @@ export const createBrowserDom = (app: HTMLElement) => {
         paintHome(homePane, home);
       }
       homeKey = key;
-      pickPane.hidden = !pickTeam;
-      const pick = JSON.stringify(pickTeam);
-      if (pickTeam && pick !== pickKey) {
-        paintPickTeam(pickPane, pickTeam);
+      const active = modern && modernPanes[modern.kind];
+      for (const { pane } of Object.values(modernPanes)) {
+        pane.hidden = pane !== active?.pane;
       }
-      pickKey = pick;
-      document.documentElement.classList.toggle('at-home', atHome);
-      document.documentElement.classList.toggle('at-pick-team', !!pickTeam);
-      amountPane.hidden = !amountPrompt;
-      const amountShape = JSON.stringify(amountPrompt);
-      if (amountPrompt && amountShape !== amountKey_) {
-        paintAmount(amountPane, amountPrompt);
+      const shape = JSON.stringify(modern);
+      if (modern && shape !== modernKey) {
+        paintModern(modern);
       }
-      amountKey_ = amountShape;
-      document.documentElement.classList.toggle(
-        'has-amount',
-        !!amountPrompt || !!message
-      );
-      messagePane.hidden = !message;
-      const messageShape = JSON.stringify(message);
-      if (message && messageShape !== messageKey) {
-        paintMessage(messagePane, message);
+      modernKey = shape;
+      for (const name of modernClasses) {
+        document.documentElement.classList.toggle(
+          name,
+          Boolean(active?.classes.includes(name))
+        );
       }
-      messageKey = messageShape;
-      statusPane.hidden = !status;
-      const statusShape = JSON.stringify(status);
-      if (status && statusShape !== statusKey) {
-        paintStatus(statusPane, status);
-      }
-      statusKey = statusShape;
-      highlightsPane.hidden = !highlights;
-      const highlightsShape = JSON.stringify(highlights);
-      if (highlights && highlightsShape !== highlightsKey) {
-        paintHighlights(highlightsPane, modernPitch, clipPitch, highlights);
-      }
-      highlightsKey = highlightsShape;
-      document.documentElement.classList.toggle('at-highlights', !!highlights);
-      document.documentElement.classList.toggle('has-status', !!status);
+      const highlights =
+        modern?.kind === 'highlights' ? modern.highlights : undefined;
       if (highlights?.pitch && view.screen === 'highlights') {
         paintModernPitch(view);
       }

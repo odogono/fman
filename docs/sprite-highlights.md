@@ -1,6 +1,6 @@
 # Sprite highlights
 
-[#111](https://github.com/odogono/fman/issues/111). In Modern mode, matches decided as [moments](moment-highlights.md) are shown on a top-down pitch with tiny sprites, in place of the paper-and-ink ticker. The direction and mockups are in [highlights-engine.md](highlights-engine.md). The clips play with placeholder shapes ([#144](https://github.com/odogono/fman/issues/144)); the events drawer and panel and the sprite artwork are not built yet.
+[#111](https://github.com/odogono/fman/issues/111). In Modern mode, matches decided as [moments](moment-highlights.md) are shown on a top-down pitch with tiny sprites, in place of the paper-and-ink ticker. The direction and mockups are in [highlights-engine.md](highlights-engine.md). The clips play with placeholder shapes ([#144](https://github.com/odogono/fman/issues/144)); the moments drawer and panel ([#145](https://github.com/odogono/fman/issues/145)) and the sprite artwork are not built yet.
 
 ## Scope
 
@@ -40,8 +40,10 @@ Everything moves at real speeds: passes at about 15 m/s, runs at 5 to 7 m/s, hal
 ## The screen
 
 - **Scoreboard** as on today's Modern highlights. The score, and the list of moments, change when a clip reaches its moment, never when it starts, so nothing gives the moment away.
-- **Events.** On a phone, the latest moment's ticker line sits under the pitch, with an "All events" drawer. On a wide window, a panel beside the pitch uses the space the hidden left pane leaves. Both show the ticker's lines, newest first.
-- **Keys.** A tap or keypress during a clip ends it and moves to the next moment, as a keypress ends a ticker pause. Cut short before its moment, the clip still shows the moment's score, ticker line and screen-reader line before the cut. Skip ends every remaining clip and shows the full ticker list over the pitch for the final hold; the result screen follows as now.
+- **Moments drawer (phone).** Under the pitch, the latest moment's ticker line is a button ending in "All moments" and the count of lines shown. It opens a drawer: a sheet rising from the bottom of the pitch, at most about half its height, so the clip plays on above it. The drawer lists every line shown so far, newest first, the latest included, and scrolls; it closes from its own Close button. Until the first clip reaches its moment the space under the pitch stays empty at the same height, with no button.
+- **Moments panel (wide window).** Where Modern mode shows two panes, the panel takes the left column, 360px wide, in the space the hidden Home pane leaves, with the match in the right column. It lists the same lines, newest first, and replaces the line and drawer under the pitch.
+- **Both.** Neither pauses the clip: lines arrive as each clip reaches its moment, with the drawer open or not. Whether the drawer is open is the view's alone: not saved, closed at each match's start, on resuming and when the highlights end. The button reports it as `aria-expanded`. Enter or Space on the button opens the drawer and never reaches the sim, so it doesn't end the clip. A tap on the pitch, even with the drawer open, ends the clip as before and leaves the drawer as it is. Screen readers hear each line once, when its clip reaches the moment; the drawer and panel are plain lists that announce nothing.
+- **Keys.** A tap or keypress during a clip ends it and moves to the next moment, as a keypress ends a ticker pause. Cut short before its moment, the clip still shows the moment's score, ticker line and screen-reader line before the cut. Skip ends every remaining clip. On a phone it closes the drawer, removes its button and shows the full ticker list over the pitch for the final hold; on a wide window the panel already holds the list, so the pitch shows the still "Full time" picture. The result screen follows as now.
 - **Reduced motion.** When the browser asks for less motion, the view hands the sim no clip lengths and shows the paper-and-ink ticker instead.
 - **Screen readers** hear each moment's ticker line when its clip reaches the moment.
 
@@ -57,5 +59,5 @@ A page of its own, `web/clips.html`, served by `bun run dev` at `/clips` and lef
 
 1. **Clip lengths from the view** (sim, done in [#143](https://github.com/odogono/fman/issues/143)): the ticker's timeline takes a length for each moment, saves it, and defaults to 75 frames.
 2. **The sprite view with placeholder shapes** (Modern, done in [#144](https://github.com/odogono/fman/issues/144)): the clip scripts, seeding, camera and zoom, mini-map, ends, team shapes, the goalkeeper colour, cuts, Skip, resuming mid-clip, reduced motion and screen readers. Only the latest moment's ticker line shows under the pitch. The debug page ships with it.
-3. **The events drawer and panel.**
+3. **The moments drawer and panel** ([#145](https://github.com/odogono/fman/issues/145)).
 4. **The sprite artwork**, including tiredness.

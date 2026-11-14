@@ -507,3 +507,77 @@ test('the crowd stands only in a goal’s reaction', () => {
     expect(save.frame(save.length - 1).cheer).toBeUndefined();
   }
 });
+
+/** A pass's length and pace, and where its passer and receiver are. */
+const passesOf = (seeds: number) =>
+  Array.from({ length: seeds }, (_, seed) =>
+    (['goal', 'save', 'near-miss', 'clearance'] as const).flatMap(kind => {
+      const script = createClipScript(input({ kind, seed }));
+      const labels = script.input.attack.players.map(p => p.label);
+      return script.passes.map(pass => {
+        const from = script.frame(pass.start);
+        const to = script.frame(pass.end);
+        const metres = Math.hypot(
+          to.ball.x - from.ball.x,
+          to.ball.y - from.ball.y
+        );
+        return {
+          from,
+          metres,
+          pace: metres / ((pass.end - pass.start) / clipFps),
+          pass,
+          passer: labels.indexOf(pass.from),
+          receiver: labels.indexOf(pass.to),
+          script,
+          to
+        };
+      });
+    })
+  ).flat();
+
+const facingVectors = {
+  down: [0, 1],
+  left: [-1, 0],
+  right: [1, 0],
+  up: [0, -1]
+} as const;
+
+test('a passer faces the way they play the ball', () => {
+  for (const { from, passer, to } of passesOf(100)) {
+    const player = from.players[passer]!;
+    const metres = Math.hypot(to.ball.x - player.x, to.ball.y - player.y);
+    if (metres < 2) {
+      continue;
+    }
+    const [fx, fy] = facingVectors[player.facing];
+    const along =
+      (fx * (to.ball.x - player.x) + fy * (to.ball.y - player.y)) / metres;
+    // Within about 60 degrees of the pass, never side-on or turned away.
+    expect(along).toBeGreaterThan(0.5);
+  }
+});
+
+test('a long pass goes in the air; along the ground it is 30 m at most', () => {
+  let lofted = 0;
+  for (const { metres, pass, script } of passesOf(100)) {
+    const middle = script.frame((pass.start + pass.end) / 2);
+    if (middle.ball.height > 0) {
+      lofted++;
+    } else {
+      expect(metres).toBeLessThanOrEqual(30);
+    }
+  }
+  expect(lofted).toBeGreaterThan(0);
+});
+
+test('the ball keeps a pass’s pace, and the receiver gets to it', () => {
+  for (const { metres, pace, pass, receiver, to } of passesOf(100)) {
+    if (metres >= 9) {
+      expect(pace).toBeGreaterThanOrEqual(pass.kind === 'throw-in' ? 8 : 10);
+    }
+    const player = to.players[receiver]!;
+    expect(
+      Math.hypot(player.x - to.ball.x, player.y - to.ball.y)
+    ).toBeLessThanOrEqual(1.5);
+  }
+});

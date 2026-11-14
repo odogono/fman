@@ -23,10 +23,10 @@ const kickedOff = (ruleset: Ruleset) => {
 
 const tickerView = (journal: Journal) => {
   const view = journal.session.view;
-  if (view.screen !== 'highlights' || !('ticker' in view)) {
+  if (view.screen !== 'highlights' || view.highlights.kind !== 'moments') {
     throw new Error(`No ticker on ${view.screen}`);
   }
-  return view;
+  return { ...view, highlights: view.highlights };
 };
 
 const rows = (view: MatchView) => {
@@ -92,7 +92,7 @@ test('a match under club squads names its opponent’s players', () => {
   const watched = kickedOff('enhanced-7');
   watched.advance(tickerLeadIn);
   watched.skipPause();
-  const { ticker } = tickerView(watched);
+  const ticker = tickerView(watched).highlights.timeline;
   const names = new Set(
     game.clubs[fixture.opponent - 1]!.squad!.map(p => p.name.toUpperCase())
   );
@@ -127,7 +127,7 @@ test('Classic mode shows the header and the newest moment on top', () => {
   expect(before.slice(2).every(r => r === '')).toBe(true);
   journal.skipPause();
   const after = tickerView(journal);
-  const lines = tickerLines(game, fixture, after.ticker.shown);
+  const lines = tickerLines(game, fixture, after.highlights.timeline.shown);
   const painted = rows(after);
   expect(painted.screen.slice(3, 3 + lines.length)).toEqual(
     lines.map(
@@ -135,7 +135,7 @@ test('Classic mode shows the header and the newest moment on top', () => {
         `${line.minute} ${line.word} ${line.name}${line.score ? ` ${line.score}` : ''}`
     )
   );
-  const [home, away] = after.ticker.score;
+  const [home, away] = after.highlights.timeline.score;
   expect(painted.screen[1]).toMatch(new RegExp(` ${home} .* ${away}$`));
 });
 
@@ -146,7 +146,10 @@ test('goals stand out in red inverse video', () => {
   );
   ticker.advance(tickerLeadIn);
   ticker.skipPause();
-  const { styles } = rows({ ...view, ticker });
+  const { styles } = rows({
+    ...view,
+    highlights: { ...view.highlights, timeline: ticker }
+  });
   expect(styles.get('3:4')).toMatchObject({ ink: 2, inverse: true });
 });
 
@@ -159,13 +162,17 @@ test('past the bottom row the oldest moments drop off', () => {
   const ticker = createTicker({ moments }, fixture.home);
   ticker.advance(tickerLeadIn);
   ticker.skipPause();
-  const { screen } = rows({ ...view, ticker });
+  const { screen } = rows({
+    ...view,
+    highlights: { ...view.highlights, timeline: ticker }
+  });
   expect(screen[3]).toBe(`22' SAVED: ${opponent}`);
   expect(screen[21]).toBe(` 4' SAVED: ${opponent}`);
 });
 
 test('original-rules games still show the pitch', () => {
   const original = kickedOff('original').session.view;
-  expect('playback' in original).toBe(true);
-  expect('ticker' in original).toBe(false);
+  expect(original.screen === 'highlights' && original.highlights.kind).toBe(
+    'attacks'
+  );
 });

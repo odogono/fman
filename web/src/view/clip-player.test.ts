@@ -20,10 +20,14 @@ const kickedOff = () => {
 
 const tickerOf = (journal: Journal) => {
   const view = journal.session.view;
-  if (view.screen !== 'highlights' || !('ticker' in view)) {
+  if (view.screen !== 'highlights' || view.highlights.kind !== 'moments') {
     throw new Error('No ticker');
   }
-  return view;
+  return {
+    fixture: view.fixture,
+    game: view.game,
+    ticker: view.highlights.timeline
+  };
 };
 
 /** The match kicked off with its clips' lengths handed to the sim. */

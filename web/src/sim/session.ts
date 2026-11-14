@@ -19,7 +19,11 @@ import {
   type Game,
   type SaleOffer
 } from './management';
-import { createMatchday, type Matchday } from './matchday';
+import {
+  createMatchday,
+  type MatchHighlights,
+  type Matchday
+} from './matchday';
 import { createNameEditor, type NameEditor } from './name-editor';
 import { screenPrintFault } from './name-print-fault';
 import { createPauseKeyboard, type PauseKeyboardState } from './pause-keyboard';
@@ -102,15 +106,8 @@ export type ScreenView =
   | {
       fixture: MatchFixture;
       game: Game;
-      playback: Playback;
+      highlights: MatchHighlights;
       screen: 'highlights';
-    }
-  | {
-      fixture: MatchFixture;
-      game: Game;
-      screen: 'highlights';
-      /** Under moment highlights, the ticker in place of the pitch. */
-      ticker: Ticker;
     }
   | {
       fixture: MatchFixture;
@@ -295,7 +292,7 @@ export const createSession = (
       matchday.skipPause();
       program.game = matchday.game;
     },
-    timeline: matchday.playback ?? matchday.ticker!
+    timeline: matchday.highlights!.timeline
   });
   /** The running timed screen, if one has not finished. */
   const running = () =>
@@ -364,7 +361,7 @@ export const createSession = (
     const matchday = program.matchday;
     if (
       program.screen !== 'highlights' ||
-      !matchday?.ticker ||
+      matchday?.highlights?.kind !== 'moments' ||
       !matchday.holdClips(lengths)
     ) {
       return false;
@@ -866,19 +863,12 @@ export const createSession = (
           screen
         };
       case 'highlights':
-        return matchday!.ticker
-          ? {
-              fixture: matchday!.fixture,
-              game,
-              screen,
-              ticker: matchday!.ticker
-            }
-          : {
-              fixture: matchday!.fixture,
-              game,
-              playback: matchday!.playback!,
-              screen
-            };
+        return {
+          fixture: matchday!.fixture,
+          game,
+          highlights: matchday!.highlights!,
+          screen
+        };
       case 'result':
         return {
           fixture: matchday!.fixture,

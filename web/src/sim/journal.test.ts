@@ -11,11 +11,15 @@ const state = (journal: ReturnType<typeof createJournal>) => {
   const view = journal.session.view;
   return JSON.stringify({
     ...view,
-    playback:
+    highlights:
       view.screen === 'highlights'
-        ? 'ticker' in view
-          ? [view.ticker.key, view.ticker.score, view.ticker.shown]
-          : [view.playback.key, view.playback.score]
+        ? view.highlights.kind === 'moments'
+          ? [
+              view.highlights.timeline.key,
+              view.highlights.timeline.score,
+              view.highlights.timeline.shown
+            ]
+          : [view.highlights.timeline.key, view.highlights.timeline.score]
         : undefined
   });
 };
@@ -312,10 +316,10 @@ test('version-4 saves replay their logged keypresses unchanged', () => {
 /** The ticker on screen, under moment highlights (#108). */
 const tickerOf = (journal: Journal) => {
   const view = journal.session.view;
-  if (view.screen !== 'highlights' || !('ticker' in view)) {
+  if (view.screen !== 'highlights' || view.highlights.kind !== 'moments') {
     throw new Error(`No ticker on ${view.screen}`);
   }
-  return view.ticker;
+  return view.highlights.timeline;
 };
 
 test('moment highlights show the ticker, then the result', () => {

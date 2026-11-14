@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test';
 
 import { createNewGame, type Game, type Player } from './management';
-import { createMatchday } from './matchday';
+import { createMatchday, type Matchday } from './matchday';
 import { decideMoments, type Moment } from './moments';
 import type { SquadPlayer } from './squads';
 
@@ -225,6 +225,15 @@ test('every kind of moment happens', () => {
 });
 
 /** A matchday at the first cup round, kicked off. */
+/** The moments that decided the match, and the ticker showing them. */
+const momentsOf = (matchday: Matchday) => {
+  const { highlights } = matchday;
+  if (highlights?.kind !== 'moments') {
+    throw new Error('No moments decided this match');
+  }
+  return { moments: highlights.result, ticker: highlights.timeline };
+};
+
 const cupKickOff = (seed: number) => {
   const game: Game = { ...fresh(), scheduleCounter: 2, seed };
   const matchday = createMatchday(game)!;
@@ -241,16 +250,15 @@ test('the ticker shows the moments, then the result follows', () => {
   watching.kickOff();
   // Decided at kick-off: the ticker only shows the moments (#108).
   expect(watching.stage).toBe('highlights');
-  expect(watching.score).toEqual(watching.moments!.score);
-  expect(watching.ticker!.shown).toEqual([]);
+  expect(watching.score).toEqual(momentsOf(watching).moments.score);
+  expect(momentsOf(watching).ticker.shown).toEqual([]);
   const matchday = cupKickOff(1);
   expect(matchday.fixture.kind).toBe('cup');
   expect(matchday.stage).toBe('result');
-  expect(matchday.ticker!.shown).toEqual(matchday.moments!.moments);
-  expect(matchday.playback).toBeUndefined();
-  expect(matchday.highlights).toBeUndefined();
-  expect(matchday.score).toEqual(matchday.moments!.score);
-  expect(matchday.game.seed).toBe(matchday.moments!.seed);
+  const { moments, ticker } = momentsOf(matchday);
+  expect(ticker.shown).toEqual(moments.moments);
+  expect(matchday.score).toEqual(moments.score);
+  expect(matchday.game.seed).toBe(moments.seed);
   expect(matchday.game.attackCarry).toEqual(fresh().attackCarry);
 });
 
@@ -258,7 +266,9 @@ test("under club squads, the opponent's moments name its players and leave the s
   const matchday = cupKickOff(1);
   const { squad: opponentSquad } =
     matchday.game.clubs[matchday.fixture.opponent - 1]!;
-  const opponent = matchday.moments!.moments.filter(m => m.side === 'opponent');
+  const opponent = momentsOf(matchday).moments.moments.filter(
+    m => m.side === 'opponent'
+  );
   expect(opponent.length).toBeGreaterThan(0);
   for (const moment of opponent) {
     expect(opponentSquad![moment.squadPlayer!]).toBeDefined();

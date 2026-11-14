@@ -205,7 +205,7 @@ test('an injury counts down across league matches, cup legs and replays', () => 
     expect(weeksLeft(cup)).toBe(2);
     cup.kickOff();
     cup.advance(1_000_000);
-    const score = cup.highlights!.score;
+    const score = cup.score!;
     if (score[0] !== score[1]) {
       continue;
     }

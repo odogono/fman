@@ -11,6 +11,15 @@ const cupEntry = (seed: number): Game => ({
   scheduleCounter: 2,
   seed
 });
+/** The attacks that decided the match, as the Original rules decide it. */
+const attacksOf = (matchday: Matchday) => {
+  const { highlights } = matchday;
+  if (highlights?.kind !== 'attacks') {
+    throw new Error('No attacks decided this match');
+  }
+  return highlights.result;
+};
+
 const watch = (matchday: Matchday) => {
   matchday.refresh();
   matchday.kickOff();
@@ -39,8 +48,8 @@ test('the seed and attack carry pass to the game only once the highlights finish
   expect(matchday.game.seed).toBe(before.seed);
   expect(matchday.game.attackCarry).toBe(before.attackCarry);
   matchday.advance(1_000_000);
-  expect(matchday.game.seed).toBe(matchday.highlights!.seed);
-  expect(matchday.game.attackCarry).toBe(matchday.highlights!.carry);
+  expect(matchday.game.seed).toBe(attacksOf(matchday).seed);
+  expect(matchday.game.attackCarry).toBe(attacksOf(matchday).carry);
 });
 
 test('a drawn cup tie replays with swapped grounds, continuing the seed and carry', () => {
@@ -49,14 +58,14 @@ test('a drawn cup tie replays with swapped grounds, continuing the seed and carr
   for (; seed < 2000; seed++) {
     matchday = createMatchday(cupEntry(seed))!;
     watch(matchday);
-    const score = matchday.highlights!.score;
+    const score = matchday.score!;
     if (score[0] === score[1]) {
       break;
     }
   }
   expect(seed).toBeLessThan(2000);
   const first = matchday!.fixture;
-  const firstLeg = matchday!.highlights!;
+  const firstLeg = attacksOf(matchday!);
   matchday!.settle();
   expect(matchday!.stage).toBe('replay');
   expect(matchday!.settlement).toBeUndefined();

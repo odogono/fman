@@ -4,6 +4,7 @@ import { spectrumClockHz, spectrumFrameT } from '../sim/frame-clock';
 import { createJournal } from '../sim/journal';
 import { creditLimit } from '../sim/management';
 import { latestEnhanced } from '../sim/ruleset';
+import type { View } from '../sim/session';
 import { tickerLeadIn, tickerPause, type Ticker } from '../sim/ticker';
 import { submitInput } from '../test/input';
 import type { AmountEntry } from './amount-entry';
@@ -21,6 +22,12 @@ import { createStorage, type Options } from './storage';
 const frameMs = (1000 * spectrumFrameT) / spectrumClockHz;
 
 /** The app with every browser effect replaced by an in-memory one. */
+/** The ticker on show, if moments decide the match on show. */
+const tickerIn = (view: View) =>
+  view.screen === 'highlights' && view.highlights.kind === 'moments'
+    ? view.highlights.timeline
+    : undefined;
+
 const harness = ({
   autosave,
   coarsePointer = false,
@@ -779,12 +786,7 @@ const atTicker = (autosave = momentHighlightsSave()) => {
   for (const text of ['99', '', '99']) {
     run.type(text);
   }
-  const ticker = () => {
-    const view = run.view();
-    return view.screen === 'highlights' && 'ticker' in view
-      ? view.ticker
-      : undefined;
-  };
+  const ticker = () => tickerIn(run.view());
   expect(ticker()).toBeDefined();
   return { ...run, ticker };
 };
@@ -852,10 +854,7 @@ test('reopening the page mid-ticker resumes at the same moment', () => {
     autosave: run.stored.get('fman:autosave')!,
     options: JSON.stringify({ touch: 'off' })
   });
-  const view = reopened.view();
-  expect(
-    view.screen === 'highlights' && 'ticker' in view && view.ticker.shown
-  ).toEqual(shown);
+  expect(tickerIn(reopened.view())?.shown).toEqual(shown);
 });
 
 /** An enhanced-6 game, whose clubs all own squads (#113), at the management menu. */
@@ -1315,8 +1314,8 @@ test('a finger on the pitch in a timed pause holds a key until it lifts', () => 
     const view = run.view();
     return (
       view.screen === 'highlights' &&
-      'playback' in view &&
-      view.playback.current?.frame.kind === 'pause' &&
+      view.highlights.kind === 'attacks' &&
+      view.highlights.timeline.current?.frame.kind === 'pause' &&
       run.page.highlights!.pitch!.outcome !== undefined
     );
   };
@@ -1355,11 +1354,11 @@ const modernMoments = (
     }
   }
   const ticker = () => {
-    const view = run.view();
-    if (view.screen !== 'highlights' || !('ticker' in view)) {
+    const shown = tickerIn(run.view());
+    if (!shown) {
       throw new Error('No ticker');
     }
-    return view.ticker;
+    return shown;
   };
   return { ...run, ticker };
 };
@@ -1377,13 +1376,10 @@ test('under reduced motion, Modern mode shows moment highlights as a ticker, new
   run.wait(5);
   run.app.tap('ticker.skip');
   const ticker = run.page.highlights!.ticker!;
-  const view = run.view();
-  if (view.screen !== 'highlights' || !('ticker' in view)) {
-    throw new Error('No ticker');
-  }
-  expect(ticker.lines).toHaveLength(view.ticker.shown.length);
-  expect(ticker.lines[0]!.minute).toBe(`${view.ticker.shown.at(-1)!.minute}′`);
-  expect(run.page.highlights!.score).toEqual(view.ticker.score);
+  const shown = run.ticker();
+  expect(ticker.lines).toHaveLength(shown.shown.length);
+  expect(ticker.lines[0]!.minute).toBe(`${shown.shown.at(-1)!.minute}′`);
+  expect(run.page.highlights!.score).toEqual(shown.score);
   run.wait(tickerPause + 10);
   expect(run.view().screen).toBe('result');
   expect(run.page.highlights).toBeUndefined();
@@ -1528,11 +1524,11 @@ const clipStateOf = (run: ReturnType<typeof modernMoments>) =>
 test('Modern mode hands the sim the clip lengths at kick-off and shows what the clips reach', () => {
   const run = modernMoments();
   const view = run.view();
-  if (view.screen !== 'highlights' || !('ticker' in view)) {
-    throw new Error('No ticker');
+  if (view.screen !== 'highlights') {
+    throw new Error('No highlights');
   }
   expect(run.ticker().lengths).toEqual(
-    clipScriptsFor(view.game, view.fixture, view.ticker.moments).map(
+    clipScriptsFor(view.game, view.fixture, run.ticker().moments).map(
       s => s.length
     )
   );
@@ -1592,9 +1588,7 @@ test('reopening the page mid-clip picks the clip up where it was', () => {
     options: modernOptions
   });
   reopened.wait(1);
-  expect(reopened.view()).toMatchObject({
-    ticker: { lengths: run.ticker().lengths }
-  });
+  expect(tickerIn(reopened.view())?.lengths).toEqual(run.ticker().lengths);
   expect(reopened.page.clips.at(-1)!.caption).toBe(
     run.page.clips.at(-1)!.caption
   );

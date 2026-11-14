@@ -1,4 +1,6 @@
 import { spectrumFrameT } from '../sim/frame-clock';
+import type { MatchFixture } from '../sim/league';
+import type { Game } from '../sim/management';
 import type { Moment } from '../sim/moments';
 import type { View } from '../sim/session';
 import type { Ticker } from '../sim/ticker';
@@ -31,10 +33,21 @@ export type ClipState = Readonly<{
 export const screenKey = (state: ClipState | undefined) =>
   state ? `${state.progress.shown}:${state.progress.full}` : '';
 
-type TickerView = Extract<View, { screen: 'highlights'; ticker: Ticker }>;
+type TickerView = Readonly<{
+  fixture: MatchFixture;
+  game: Game;
+  ticker: Ticker;
+}>;
 
+/** The match on show and its ticker, if moments decide it. */
 const tickerView = (view: View): TickerView | undefined =>
-  view.screen === 'highlights' && 'ticker' in view ? view : undefined;
+  view.screen === 'highlights' && view.highlights.kind === 'moments'
+    ? {
+        fixture: view.fixture,
+        game: view.game,
+        ticker: view.highlights.timeline
+      }
+    : undefined;
 
 /**
  * Modern mode's clip player: the view's whole knowledge of a match's clips.

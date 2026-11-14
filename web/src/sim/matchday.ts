@@ -25,6 +25,15 @@ import {
 import { clearances, momentHighlights } from './ruleset';
 import { createTicker, validClipLengths, type Ticker } from './ticker';
 
+/**
+ * What decides a match's goals, as the ruleset chose at kick-off: the
+ * original's attacks, played on the pitch, or moments, shown by the ticker.
+ * `timeline` plays either one out.
+ */
+export type MatchHighlights =
+  | Readonly<{ kind: 'attacks'; result: HighlightResult; timeline: Playback }>
+  | Readonly<{ kind: 'moments'; result: MomentResult; timeline: Ticker }>;
+
 export type MatchdayStage =
   'fixture' | 'team' | 'highlights' | 'result' | 'replay' | 'settled';
 export type MatchSettlement =
@@ -77,30 +86,29 @@ export const createMatchday = (initial: Game, keyboard?: PauseKeyboard) => {
     next === 'league' ? prepareLeagueMatch(initial) : prepareCupMatch(initial);
   let game = fixture.game;
   let stage: MatchdayStage = 'fixture';
-  let highlights: HighlightResult | undefined;
-  let moments: MomentResult | undefined;
-  let playback: Playback | undefined;
-  let ticker: Ticker | undefined;
+  let highlights: MatchHighlights | undefined;
   let settlement: MatchSettlement | undefined;
   const expect = (expected: MatchdayStage) => {
     if (stage !== expected) {
       throw new RangeError(`Matchday is at ${stage}, not ${expected}`);
     }
   };
-  /** The pitch playback or, under moment highlights, the ticker. */
-  const watched = () => (playback ?? ticker)!;
+  /** The highlights being played, once the match has kicked off. */
+  const watched = () => {
+    if (!highlights) {
+      throw new RangeError('The match has not kicked off');
+    }
+    return highlights;
+  };
   const finishPlayback = () => {
-    if (!watched().done) {
+    const { kind, result, timeline } = watched();
+    if (!timeline.done) {
       return;
     }
-    if (highlights) {
+    if (kind === 'attacks') {
       // The original's RNG seed and attack positions continue from the
-      // highlights only once they have been watched.
-      game = {
-        ...game,
-        attackCarry: highlights.carry,
-        seed: highlights.seed
-      };
+      // attacks only once they have been watched.
+      game = { ...game, attackCarry: result.carry, seed: result.seed };
     }
     stage = 'result';
   };
@@ -108,20 +116,20 @@ export const createMatchday = (initial: Game, keyboard?: PauseKeyboard) => {
     /** Advances highlight playback; the result follows its last frame. */
     advance: (frames: number) => {
       expect('highlights');
-      const missed = watched().advance(frames);
+      const missed = watched().timeline.advance(frames);
       finishPlayback();
       return missed;
     },
     advanceT: (t: number) => {
       expect('highlights');
-      const missed = watched().advanceT(t);
+      const missed = watched().timeline.advanceT(t);
       finishPlayback();
       return missed;
     },
     /** Plays highlights for up to `t` but not past their end. */
     advanceWithinT: (t: number) => {
       expect('highlights');
-      const played = watched().advanceWithinT(t);
+      const played = watched().timeline.advanceWithinT(t);
       finishPlayback();
       return played;
     },
@@ -131,6 +139,7 @@ export const createMatchday = (initial: Game, keyboard?: PauseKeyboard) => {
     get game() {
       return game;
     },
+    /** What decides the match, once it has kicked off. */
     get highlights() {
       return highlights;
     },
@@ -146,7 +155,7 @@ export const createMatchday = (initial: Game, keyboard?: PauseKeyboard) => {
       expect('team');
       if (momentHighlights(game.ruleset)) {
         const { squad } = game.clubs[fixture.opponent - 1]!;
-        moments = decideMoments({
+        const moments = decideMoments({
           clearances: clearances(game.ruleset),
           home: fixture.home,
           opponent: fixture.opponentStrength,
@@ -158,12 +167,16 @@ export const createMatchday = (initial: Game, keyboard?: PauseKeyboard) => {
             : {})
         });
         game = { ...game, seed: moments.seed };
-        ticker = createTicker(moments, fixture.home, keyboard);
+        highlights = {
+          kind: 'moments',
+          result: moments,
+          timeline: createTicker(moments, fixture.home, keyboard)
+        };
         stage = 'highlights';
         return;
       }
       const inks = matchInks(game, fixture);
-      highlights = simulateHighlights({
+      const attacks = simulateHighlights({
         awayInk: inks.away,
         carry: game.attackCarry,
         home: fixture.home,
@@ -172,7 +185,11 @@ export const createMatchday = (initial: Game, keyboard?: PauseKeyboard) => {
         seed: game.seed,
         strength: teamStrength(game)
       });
-      playback = createPlayback(highlights, keyboard);
+      highlights = {
+        kind: 'attacks',
+        result: attacks,
+        timeline: createPlayback(attacks, keyboard)
+      };
       stage = 'highlights';
     },
     /**
@@ -182,26 +199,28 @@ export const createMatchday = (initial: Game, keyboard?: PauseKeyboard) => {
      */
     holdClips: (lengths: readonly number[]) => {
       expect('highlights');
-      if (!ticker || ticker.elapsedT > 0 || ticker.lengths) {
+      const shown = watched();
+      if (
+        shown.kind !== 'moments' ||
+        shown.timeline.elapsedT > 0 ||
+        shown.timeline.lengths
+      ) {
         return false;
       }
-      if (!validClipLengths(lengths, moments!.moments.length)) {
+      const { result } = shown;
+      if (!validClipLengths(lengths, result.moments.length)) {
         throw new RangeError('One clip length is needed for each moment');
       }
-      ticker = createTicker(moments!, fixture.home, keyboard, [...lengths]);
+      highlights = {
+        ...shown,
+        timeline: createTicker(result, fixture.home, keyboard, [...lengths])
+      };
       return true;
-    },
-    /** The moments that decided the match, under moment highlights. */
-    get moments() {
-      return moments;
     },
     /** Adds or removes a player from the picked team. */
     pick: (id: number) => {
       expect('team');
       game = togglePickedPlayer(game, id);
-    },
-    get playback() {
-      return playback;
     },
     /** Recovers energy and draws injuries before team selection. */
     refresh: () => {
@@ -214,15 +233,12 @@ export const createMatchday = (initial: Game, keyboard?: PauseKeyboard) => {
       expect('replay');
       fixture = prepareReplay(game, fixture);
       highlights = undefined;
-      moments = undefined;
-      playback = undefined;
-      ticker = undefined;
       stage = 'fixture';
     },
     /** Credits receipts and settles the league match or cup leg. */
     settle: () => {
       expect('result');
-      const score = (moments ?? highlights)!.score;
+      const { score } = watched().result;
       if (fixture.kind === 'cup') {
         const result = settleCupLeg(game, fixture, score);
         game = result.game;
@@ -244,22 +260,18 @@ export const createMatchday = (initial: Game, keyboard?: PauseKeyboard) => {
     },
     /** The final score, home first, once the match is decided. */
     get score() {
-      return (moments ?? highlights)?.score;
+      return highlights?.result.score;
     },
     get settlement() {
       return settlement;
     },
     skipPause: () => {
       expect('highlights');
-      watched().skipPause();
+      watched().timeline.skipPause();
       finishPlayback();
     },
     get stage() {
       return stage;
-    },
-    /** The ticker showing the moments, under moment highlights. */
-    get ticker() {
-      return ticker;
     }
   };
 };

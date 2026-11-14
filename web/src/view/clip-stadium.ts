@@ -36,7 +36,8 @@ const standMetres = 4.5;
 const rowMetres = 1.6;
 const rows = 4;
 
-const netPalette: ArtPalette = { l: '#d0d0d0', o: '#141414', w: '#f4f4f4' };
+/** The net is see-through, so what is behind it shows. */
+const netPalette: ArtPalette = { l: '#f4f4f4a0', o: '#141414', w: '#f4f4f4' };
 const boardPalette: ArtPalette = {
   '1': '#d72828',
   '2': '#fac81e',

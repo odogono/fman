@@ -3,9 +3,10 @@ import { expect, test } from 'bun:test';
 import { createJournal, type Journal } from '../sim/journal';
 import type { Moment } from '../sim/moments';
 import { presentDay, type Ruleset } from '../sim/ruleset';
+import type { View } from '../sim/session';
 import { createTicker, tickerLeadIn } from '../sim/ticker';
 import { submitInput } from '../test/input';
-import { paintMatch, type MatchView } from './match-layouts';
+import { matchLayouts } from './match-layouts';
 import { tickerLines, tickerText } from './ticker-layout';
 
 /** A new game's first league match, kicked off under `ruleset`. */
@@ -29,10 +30,10 @@ const tickerView = (journal: Journal) => {
   return { ...view, highlights: view.highlights };
 };
 
-const rows = (view: MatchView) => {
+const rows = (view: Extract<View, { screen: 'highlights' }>) => {
   const screen: string[] = Array.from({ length: 22 }, () => ' '.repeat(32));
   const styles = new Map<string, object | undefined>();
-  paintMatch(view, (row, column, text, style) => {
+  matchLayouts.highlights(view, (row, column, text, style) => {
     screen[row] =
       screen[row]!.slice(0, column) +
       text +

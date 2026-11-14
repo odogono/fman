@@ -1,6 +1,7 @@
 import type { NameEditor } from '../sim/name-editor';
 import { clubSquads } from '../sim/ruleset';
 import type { Paint } from './grid';
+import type { Layouts } from './layout';
 import { createPrintScreen } from './print-screen';
 
 export const paintNames = (editor: NameEditor, put: Paint) => {
@@ -111,4 +112,9 @@ export const paintNames = (editor: NameEditor, put: Paint) => {
     }
   }
   return { label, numeric, prompt };
+};
+
+/** Changing club and player names. */
+export const nameLayouts: Layouts<'names'> = {
+  names: (view, put) => paintNames(view.nameEditor, put)
 };

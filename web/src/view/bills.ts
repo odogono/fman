@@ -1,7 +1,8 @@
 import type { View } from '../sim/session';
 import type { Paint } from './grid';
+import type { Layouts } from './layout';
 
-export const paintBills = (
+const paintBills = (
   view: Extract<View, { screen: 'bills' | 'dismissal' }>,
   put: Paint
 ) => {
@@ -32,7 +33,7 @@ export const paintBills = (
   }
 };
 
-export const paintDismissal = (
+const paintDismissal = (
   view: Extract<View, { screen: 'dismissal' }>,
   put: Paint
 ) => {
@@ -47,10 +48,18 @@ export const paintDismissal = (
   put(row + 6, 30, '+'.repeat(27), green);
   put(row + 7, 25, 'CLUB!', black);
   put(row + 7, 30, '+'.repeat(162), green);
-  put(21, 24, '(h=copy)');
   return {
+    copy: true,
     label: 'Acknowledge dismissal',
-    numeric: false,
     prompt: 'Hit ENTER to continue'
   };
+};
+
+/** The weekly bills, and the dismissal printed over them. */
+export const billsLayouts: Layouts<'bills' | 'dismissal'> = {
+  bills: (view, put) => {
+    paintBills(view, put);
+    return { copy: true, label: 'Continue', prompt: 'Hit ENTER to continue' };
+  },
+  dismissal: paintDismissal
 };

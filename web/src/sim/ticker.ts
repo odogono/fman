@@ -29,6 +29,12 @@ export const validClipLengths = (
  */
 export const tickerLeadIn = 1;
 
+/** Where a ticker has got among its moments; see `stage`. */
+export type TickerStage =
+  | Readonly<{ kind: 'full-time' }>
+  | Readonly<{ kind: 'kick-off' }>
+  | Readonly<{ index: number; kind: 'moment' }>;
+
 /**
  * The ticker (#108): a match's moments shown one at a time in minute order,
  * each held for a PAUSE that a keypress ends early, as the original's PAUSE
@@ -48,7 +54,9 @@ export const createTicker = (
   lengths?: readonly number[]
 ) => {
   const { moments } = result;
-  const finalHold = moments.length + 2;
+  /** The events before the first moment's pause: the clear and the header. */
+  const firstMoment = 2;
+  const finalHold = moments.length + firstMoment;
   const events = [
     { duration: tickerLeadIn, kind: 'clear', shown: 0 },
     ...Array.from({ length: moments.length + 2 }, (_, i) => ({
@@ -62,9 +70,14 @@ export const createTicker = (
   const timeline = createTimeline(events, keyboard, event => {
     shown = event.shown;
   });
-  const goals = (side: Moment['side']) =>
-    moments.slice(0, shown).filter(m => m.kind === 'goal' && m.side === side)
-      .length;
+  const scoreAfter = (count: number): readonly number[] => {
+    const goals = (side: Moment['side']) =>
+      moments.slice(0, count).filter(m => m.kind === 'goal' && m.side === side)
+        .length;
+    const club = goals('club');
+    const opponent = goals('opponent');
+    return home ? [club, opponent] : [opponent, club];
+  };
   return {
     advance: timeline.advance,
     advanceT: timeline.advanceT,
@@ -106,9 +119,25 @@ export const createTicker = (
     },
     /** The score so far, home first. */
     get score(): readonly number[] {
-      const club = goals('club');
-      const opponent = goals('opponent');
-      return home ? [club, opponent] : [opponent, club];
+      return scoreAfter(shown);
+    },
+    /**
+     * The score after the first `count` moments, home first. A clip shows
+     * its moment partway through the pause, so the view can be behind
+     * `score`.
+     */
+    scoreAfter,
+    /**
+     * Where the ticker has got among its moments: the lead-in and 0-0
+     * header (`kick-off`), a moment's pause (`moment`, by index), or the
+     * final hold and after (`full-time`).
+     */
+    get stage(): TickerStage {
+      const index = timeline.index - firstMoment;
+      if (timeline.done || index >= moments.length) {
+        return { kind: 'full-time' };
+      }
+      return index < 0 ? { kind: 'kick-off' } : { index, kind: 'moment' };
     },
     /** The moments shown so far, in minute order. */
     get shown(): readonly Moment[] {

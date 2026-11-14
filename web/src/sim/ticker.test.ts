@@ -46,6 +46,34 @@ test('the score counts up as goals show, home first', () => {
   expect(home.score).toEqual([1, 0]);
 });
 
+test('the stage says which moment is on show, so no caller counts events', () => {
+  const ticker = createTicker({ moments }, true, undefined, [10, 20, 30, 40]);
+  expect(ticker.stage).toEqual({ kind: 'kick-off' });
+  ticker.advance(tickerLeadIn + tickerPause - 1);
+  expect(ticker.stage).toEqual({ kind: 'kick-off' });
+  ticker.advance(1);
+  expect(ticker.stage).toEqual({ index: 0, kind: 'moment' });
+  ticker.advance(10 + 20);
+  expect(ticker.stage).toEqual({ index: 2, kind: 'moment' });
+  ticker.advance(30 + 40);
+  expect(ticker.stage).toEqual({ kind: 'full-time' });
+  ticker.advance(tickerPause);
+  expect(ticker.done).toBe(true);
+  expect(ticker.stage).toEqual({ kind: 'full-time' });
+  // Without moments, the header leads straight to the final hold.
+  const empty = createTicker({ moments: [] }, true);
+  empty.advance(tickerLeadIn + tickerPause);
+  expect(empty.stage).toEqual({ kind: 'full-time' });
+});
+
+test('the score after any number of moments, home first', () => {
+  const away = createTicker({ moments }, false);
+  expect(away.scoreAfter(0)).toEqual([0, 0]);
+  expect(away.scoreAfter(1)).toEqual([0, 1]);
+  expect(away.scoreAfter(4)).toEqual([1, 1]);
+  expect(createTicker({ moments }, true).scoreAfter(1)).toEqual([1, 0]);
+});
+
 test('a fresh keypress ends only the pause it lands in', () => {
   const keyboard = createPauseKeyboard();
   const ticker = createTicker({ moments }, true, keyboard);

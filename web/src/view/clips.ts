@@ -171,6 +171,9 @@ export type ClipPass = Readonly<{
   from: string;
   /** A pass in open play, or the restart that starts the build-up. */
   kind: 'pass' | Exclude<Restart, 'open-play'>;
+  /** The passer and receiver: indexes into `attack.players`. */
+  passer: number;
+  receiver: number;
   start: number;
   to: string;
 }>;
@@ -844,6 +847,8 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       end: frame + frames,
       from: label(holder),
       kind,
+      passer: holder,
+      receiver,
       start: frame,
       to: label(receiver)
     });

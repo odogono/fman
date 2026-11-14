@@ -76,6 +76,17 @@ A **status icon** is a small pixel-art icon floating above a player's head, afte
 
 A page of its own, `web/clips.html`, served by `bun run dev` at `/clips` and left out of the build, plays any clip the engine can make. It sets the kind, outcome and restart (or leaves them to the seed), the scoring side, the minute, both kits, the managed side's line counts with or without a goalkeeper, and the moment's place in the list, with a random-seed button. It plays, pauses, steps and scrubs frames at ¼×, 1× and 4×, shows the clip's length, moment frame and passes, and can overlay player ids and the ball's path. It sets each side's energy, to show tiredness. It can also load the autosave or a web save file and replay a moment from that match's ticker.
 
+It also checks each clip for play that looks wrong (`web/src/view/clip-checks.ts`):
+
+- passes that face away, crawl, run through a defender, go long along the ground or a long way back
+- receivers who miss the ball or turn sharply
+- a ball that trails its carrier
+- players standing inside each other
+- a scattered back line
+- a defender or keeper scoring from open play or a throw-in
+
+The clip's problems are listed under its readout, each jumping to its first frame. The Problems overlay rings the players involved and names each problem while it shows. "Check 200 seeds" counts the clips each problem shows in, over 200 seeds with the other settings as they are, or over every moment of a loaded match, and opens any of the first few with one. The clip tests hold the engine to the same checks.
+
 ## Order of work
 
 1. **Clip lengths from the view** (sim, done in [#143](https://github.com/odogono/fman/issues/143)): the ticker's timeline takes a length for each moment, saves it, and defaults to 75 frames.

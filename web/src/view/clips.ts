@@ -209,6 +209,14 @@ const reboundSettle = 3;
 const scrambleFrames = 15;
 /** The defender chasing a rebound gets no nearer the ball than this, in metres. */
 const lateBy = 2.5;
+/** The furthest from goal, in metres, an ordinary shot and one from range are struck. */
+const longestShot = 22;
+const longestLongRange = 30;
+/** A shooter found out of range carries it into range at this pace, in metres a second, done by this frame. */
+const intoRangePace = 7;
+const shooterReadyBy = 13.5 * clipFps;
+/** A shooter found late takes the ball in this many frames at most. */
+const quickTouch = 25;
 /** The nearest to goal, in metres, a shot from range is set up. */
 const longRange = 24;
 /** The deepest a high back line holds, in metres up the pitch. */
@@ -1125,8 +1133,8 @@ export const createClipScript = (input: ClipInput): ClipScript => {
    * build-up is cut shorter.
    */
   const setUp = finish === 'one-on-one' ? 3 : finish === 'header' ? 2 : 0;
-  const lastCarry = (8 - setUp) * clipFps;
-  const maxBuildUp = (9 - setUp) * clipFps;
+  const lastCarry = (7 - setUp) * clipFps;
+  const maxBuildUp = (8 - setUp) * clipFps;
   let frame = 0;
   let holder = starter;
   const label = (i: number) => attackers[i]!.label;
@@ -1593,7 +1601,12 @@ export const createClipScript = (input: ClipInput): ClipScript => {
   while (restart !== 'corner') {
     // The first touch takes the ball on the way it came, the receiver
     // slowing to it from the pace they came at.
-    const touchFrames = rng.int(25, 50);
+    // Found late, the shooter's touch is a quick one.
+    const drawnTouch = rng.int(25, 50);
+    const touchFrames =
+      holder === shooter && frame > maxBuildUp
+        ? Math.min(drawnTouch, quickTouch)
+        : drawnTouch;
     const last = steps[holder] ?? { d: 0, x: 0 };
     const touchPace = clamp(
       Math.hypot(last.d, last.x) * clipFps,
@@ -1648,6 +1661,39 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       dribble(Math.round(seconds * clipFps), to, speed);
     }
     if (holder === shooter) {
+      // Found out of range, the shooter carries it on until they are in it.
+      // With too little time left for that, they try their luck from range,
+      // carrying it only to 30 m.
+      const goal = { d: pitchLength, x: 34 };
+      const out = distance(movers[shooter]!, goal);
+      const reach =
+        perFrame(intoRangePace) *
+        Math.max(0, shooterReadyBy - frame - clipFps / 2);
+      // A blocked shot stays a shot, carried only as far as there is time.
+      const blocked = outcomeKind(outcome) === 'clearance';
+      if (finish === 'shot' && !blocked && out - reach > longestShot - 2) {
+        finish = 'long-range';
+      }
+      const furthest = finish === 'long-range' ? longestLongRange : longestShot;
+      if ((finish === 'shot' || finish === 'long-range') && out > furthest) {
+        const metres = out - (furthest - 2);
+        const way = distance(movers[shooter]!, shootingSpot) || 1;
+        // A shot from range is carried into range whatever the time.
+        const along = Math.min(metres, way, blocked ? reach : Infinity);
+        const to = {
+          d:
+            movers[shooter]!.d +
+            ((shootingSpot.d - movers[shooter]!.d) / way) * along,
+          x:
+            movers[shooter]!.x +
+            ((shootingSpot.x - movers[shooter]!.x) / way) * along
+        };
+        dribble(
+          Math.ceil((along / intoRangePace) * clipFps) + clipFps / 2,
+          to,
+          intoRangePace
+        );
+      }
       break;
     }
     if (frame > maxBuildUp) {
@@ -1699,10 +1745,11 @@ export const createClipScript = (input: ClipInput): ClipScript => {
   // Through on goal from further out, the shooter runs on with the ball.
   if (finish === 'one-on-one' && holder === shooter) {
     // At most a few seconds' run: from further out, the shot comes sooner.
-    const runOn = Math.min(pitchLength - 16 - movers[shooter]!.d, 7 * 2.5);
+    const runOn = Math.min(pitchLength - 16 - movers[shooter]!.d, 7 * 4);
     if (runOn > 0) {
+      // Time to get up to speed, too.
       dribble(
-        Math.round((runOn / 7) * clipFps),
+        Math.round((runOn / 7) * clipFps) + clipFps / 2,
         { d: pitchLength - 16, x: lerp(ball.x, 34, 0.5) },
         7
       );
@@ -1712,7 +1759,8 @@ export const createClipScript = (input: ClipInput): ClipScript => {
   // The zoom: the shooter takes a touch towards goal as the camera closes in.
   // Offside no longer matters once the shooter has the ball in range.
   const zoomStart = frame;
-  const zoomFrames = clipFps;
+  // Running late, the camera closes in quicker.
+  const zoomFrames = frame > shooterReadyBy ? clipFps / 2 : clipFps;
   // Before an interception the passer has the ball; a corner taker waits.
   // Through on goal, the shooter carries it on and the keeper comes out;
   // waiting for a cross, the shooter makes for the spot to meet it.

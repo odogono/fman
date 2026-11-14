@@ -1,5 +1,8 @@
 import {
   clipFps,
+  outcomeKind,
+  pitchLength,
+  pitchWidth,
   type ClipFrame,
   type ClipPass,
   type ClipScript,
@@ -19,6 +22,7 @@ export type ClipIssueKind =
   | 'facing-flicker'
   | 'long-back-pass'
   | 'long-ground-pass'
+  | 'long-shot'
   | 'pass-through-defender'
   | 'receiver-misses'
   | 'scattered-back-line'
@@ -35,6 +39,7 @@ export const clipIssueKinds: readonly ClipIssueKind[] = [
   'facing-flicker',
   'long-back-pass',
   'long-ground-pass',
+  'long-shot',
   'pass-through-defender',
   'receiver-misses',
   'scattered-back-line',
@@ -84,6 +89,8 @@ export const clipLimits = {
   passPace: 10,
   /** The receiver is this close to the ball as a pass arrives. */
   receiverReach: 1.5,
+  /** A shot is struck within this far of goal, in metres. */
+  longestShot: 32,
   /** The moment starts within this many frames of the clip's start. */
   momentBy: 15 * clipFps,
   /** A back line spread deeper than this, in metres, is scattered. */
@@ -428,6 +435,26 @@ export const checkClip = (script: ClipScript): ClipIssue[] => {
       message: `the moment starts ${(phases.moment / clipFps).toFixed(1)} s in`,
       players: [],
       start: clipLimits.momentBy
+    });
+  }
+
+  // A shot is struck in range; a header's moment starts with the cross.
+  const struck = frames[phases.moment]!.ball;
+  const out = Math.hypot(
+    struck.x - pitchWidth / 2,
+    struck.y - (input.attackingUp ? 0 : pitchLength)
+  );
+  if (
+    script.finish !== 'header' &&
+    outcomeKind(script.outcome) !== 'clearance' &&
+    out > clipLimits.longestShot
+  ) {
+    issues.push({
+      end: phases.moment,
+      kind: 'long-shot',
+      message: `the shot is struck ${Math.round(out)} m out`,
+      players: [input.shooter],
+      start: phases.moment
     });
   }
 

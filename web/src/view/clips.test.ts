@@ -1275,3 +1275,21 @@ test('a rebound is parried out into the box, and the shooter strikes again', () 
   }
   expect(seen).toBeGreaterThan(10);
 });
+
+test('a shot is struck in range, however the build-up goes', () => {
+  for (const shooter of [9, 6]) {
+    for (let seed = 0; seed < 60; seed++) {
+      const script = createClipScript(
+        input({ kind: seed % 2 ? 'goal' : 'save', seed, shooter })
+      );
+      if (script.finish !== 'shot' && script.finish !== 'long-range') {
+        continue;
+      }
+      const struck = script.frame(script.phases.moment).ball;
+      const out = Math.hypot(struck.x - pitchWidth / 2, struck.y);
+      // An ordinary shot within 25 m; one from range, or turned into one
+      // when the shooter was found late and deep, within about 30.
+      expect(out).toBeLessThan(script.finish === 'shot' ? 25 : 31);
+    }
+  }
+});

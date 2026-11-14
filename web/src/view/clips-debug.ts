@@ -445,7 +445,7 @@ const load = (text: string | null, from: string) => {
   }
   try {
     const view = openSave(text).session.view;
-    if (view.screen !== 'highlights' || !('ticker' in view)) {
+    if (view.screen !== 'highlights' || view.highlights.kind !== 'moments') {
       saveStatus.textContent = `${from} isn't in a match's moment highlights.`;
       return;
     }
@@ -453,7 +453,7 @@ const load = (text: string | null, from: string) => {
       fixture: view.fixture,
       game: view.game,
       moment: 0,
-      moments: view.ticker.moments
+      moments: view.highlights.timeline.moments
     };
     saveStatus.textContent = `Loaded ${from}.`;
     rebuild();

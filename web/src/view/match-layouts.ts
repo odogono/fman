@@ -148,10 +148,12 @@ export const paintMatch = (view: MatchView, put: Paint) => {
       const { away, home } = fixtureSides(game, view.fixture);
       write(0, 0, 'MATCH HIGHLIGHTS');
       output.at(1, 0);
-      if ('ticker' in view) {
-        score(view.ticker.score, home, away);
+      const { highlights } = view;
+      if (highlights.kind === 'moments') {
+        const ticker = highlights.timeline;
+        score(ticker.score, home, away);
         // Newest on top; the oldest lines leave the bottom for good.
-        tickerLines(game, view.fixture, view.ticker.shown)
+        tickerLines(game, view.fixture, ticker.shown)
           .slice(0, tickerRows)
           .forEach((line, i) => {
             write(3 + i, 0, `${line.minute} `);
@@ -166,7 +168,7 @@ export const paintMatch = (view: MatchView, put: Paint) => {
           });
         break;
       }
-      const { playback } = view;
+      const playback = highlights.timeline;
       score(playback.score, home, away);
       const current = playback.current;
       if (current && current.index >= current.attack.frames.length - 2) {

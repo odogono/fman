@@ -339,7 +339,9 @@ export const createApp = ({
   const tickerRunning = () => {
     const view = journal.session.view;
     return (
-      view.screen === 'highlights' && 'ticker' in view && !view.ticker.done
+      view.screen === 'highlights' &&
+      view.highlights.kind === 'moments' &&
+      !view.highlights.timeline.done
     );
   };
   const persist = () => {

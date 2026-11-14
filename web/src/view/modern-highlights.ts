@@ -111,23 +111,25 @@ export const highlightsFor = (
   const home = clubName(sides.home);
   const away = clubName(sides.away);
   const title = fixtureTitle(game, fixture);
-  if ('ticker' in view) {
+  const { highlights } = view;
+  if (highlights.kind === 'moments') {
+    const ticker = highlights.timeline;
     const shown = clips
-      ? view.ticker.moments.slice(0, clips.progress.shown)
-      : view.ticker.shown;
+      ? ticker.moments.slice(0, clips.progress.shown)
+      : ticker.shown;
     return {
       away,
       ...(clips ? { clip: clips.progress } : {}),
       home,
-      score: clips?.score ?? view.ticker.score,
+      score: clips?.score ?? ticker.score,
       ticker: {
         lines: tickerLines(game, fixture, shown),
-        skip: !view.ticker.done
+        skip: !ticker.done
       },
       title
     };
   }
-  const { playback } = view;
+  const playback = highlights.timeline;
   const current = playback.current;
   const score = playback.score;
   const decided = current?.attack.frames

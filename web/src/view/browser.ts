@@ -1005,10 +1005,10 @@ export const createBrowserDom = (app: HTMLElement) => {
    * the empty pitch.
    */
   const paintModernPitch = (view: View & { screen: 'highlights' }) => {
-    if (!('playback' in view)) {
+    if (view.highlights.kind !== 'attacks') {
       return;
     }
-    const { playback } = view;
+    const playback = view.highlights.timeline;
     const current = playback.current;
     const fresh = modernPitchFor !== playback;
     modernPitchFor = playback;
@@ -1149,22 +1149,22 @@ export const createBrowserDom = (app: HTMLElement) => {
         0,
         0
       );
-      const current =
-        view.screen === 'highlights' && 'playback' in view
-          ? view.playback.current
-          : undefined;
+      const match = view.screen === 'highlights' ? view.highlights : undefined;
+      const playback = match?.kind === 'attacks' ? match.timeline : undefined;
+      const ticker = match?.kind === 'moments' ? match.timeline : undefined;
+      const current = playback?.current;
       const playing = Boolean(current && !current.frame.intro);
       pitch.hidden = !playing;
       screen.hidden = playing;
       screen.classList.toggle('cleared', view.screen === 'cleared');
       screen.classList.toggle('full-screen', display.lines.length === 24);
-      if (view.screen === 'highlights' && 'playback' in view && current) {
+      if (view.screen === 'highlights' && playback && current) {
         const { away, home } = fixtureSides(view.game, view.fixture);
         paintAttack(
           pitchContext,
           current.attack,
           current.index,
-          view.playback.score,
+          playback.score,
           home,
           away,
           flashPhase(view)
@@ -1172,20 +1172,19 @@ export const createBrowserDom = (app: HTMLElement) => {
       }
       // The ticker announces each new line alone (#108), not the whole
       // screen; Modern mode's pitch announces each attack's outcome (#45).
-      const ticker = view.screen === 'highlights' && 'ticker' in view;
       transcript.setAttribute(
         'aria-live',
         ticker || highlights ? 'off' : 'polite'
       );
       // Under sprite highlights, a line is heard when its clip reaches it.
       const newest =
-        view.screen === 'highlights' && 'ticker' in view
+        view.screen === 'highlights' && ticker
           ? tickerLines(
               view.game,
               view.fixture,
               highlights?.clip
-                ? view.ticker.moments.slice(0, highlights.clip.shown)
-                : view.ticker.shown
+                ? ticker.moments.slice(0, highlights.clip.shown)
+                : ticker.shown
             )[0]
           : undefined;
       const said = newest

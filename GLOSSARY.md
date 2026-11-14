@@ -168,8 +168,12 @@ The presentation mode that reproduces the original Spectrum screens, scaled to f
 The presentation mode with screens redesigned for phones, where choices are made by tapping rather than typing.
 _Avoid_: Mobile mode, since both modes are meant to work on mobile
 
+**Modern screen**:
+A screen Modern mode draws in place of an original screen: the Home screen, pick team, highlights, status, an amount prompt or a message. Screens Modern mode has no design for show the original's, with the context bar.
+_Avoid_: Own screen or pane
+
 **Home screen**:
-Modern mode's form of the original's management menu: the club summary, the next fixture and the menu's choices.
+Modern mode's form of the original's management menu: the club summary, the next fixture and the menu's choices. On a wide window it stays beside the other screens while a game is in play, except the highlights.
 _Avoid_: Home or dashboard, since home already names the home club, gate and kit
 
 **Next fixture**:

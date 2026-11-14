@@ -13,6 +13,9 @@
 
 Each moment plays as a **clip** ([glossary](../GLOSSARY.md)): the build-up, the moment, then the reaction, all at real-world pace. The camera works like the 16-bit football games': it shows only a section of the pitch, follows the ball, and zooms in slightly for the moment.
 
+- **Camera.** The pitch runs up and down the screen on every screen. The camera shows the same patch, about 40 m across, scaled to fit, so every screen sees the same picture; for the moment it tightens to about 30 m. It looks a little ahead of the ball in the direction of play, so the goal comes into view before the shot.
+- **Mini-map.** A small overview of the whole pitch in a corner shows both sides and the ball, hidden during the zoom.
+
 | Moment    | Build-up                                | Moment                                       | Reaction                      |
 | --------- | --------------------------------------- | -------------------------------------------- | ----------------------------- |
 | Goal      | Two to five seeded passes, with carries | The shot, and the ball in the net            | The scorer celebrates         |
@@ -52,6 +55,6 @@ A page of its own, `web/clips.html`, served by `bun run dev` and left out of the
 ## Order of work
 
 1. **Clip lengths from the view** (sim): the ticker's timeline takes a length for each moment, saves it, and defaults to 75 frames.
-2. **The sprite view with placeholder shapes** (Modern): the clip scripts, seeding, camera and zoom, ends, team shapes, the goalkeeper colour, cuts, Skip, resuming mid-clip, reduced motion and screen readers. Only the latest moment's ticker line shows under the pitch. The debug page ships with it.
+2. **The sprite view with placeholder shapes** (Modern): the clip scripts, seeding, camera and zoom, mini-map, ends, team shapes, the goalkeeper colour, cuts, Skip, resuming mid-clip, reduced motion and screen readers. Only the latest moment's ticker line shows under the pitch. The debug page ships with it.
 3. **The events drawer and panel.**
 4. **The sprite artwork**, including tiredness.

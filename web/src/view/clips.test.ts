@@ -1203,3 +1203,75 @@ test('after a catch the keeper walks out with the ball as a team-mate breaks wid
     expect(depth(out.y)).toBeLessThan(depth(from.y) - 1);
   }
 });
+
+test('the seed sometimes plays a rebound, and only from close in', () => {
+  let rebounds = 0;
+  for (let seed = 0; seed < 200; seed++) {
+    const script = createClipScript(
+      input({ kind: seed % 2 ? 'goal' : 'save', seed })
+    );
+    if (script.rebound) {
+      rebounds++;
+      expect(['shot', 'header']).toContain(script.finish);
+    }
+  }
+  expect(rebounds).toBeGreaterThan(10);
+  expect(rebounds).toBeLessThan(60);
+  // Never for a clearance, nor a keeper's catch of the cross.
+  for (let seed = 0; seed < 20; seed++) {
+    expect(
+      createClipScript(input({ kind: 'clearance', rebound: true, seed }))
+        .rebound
+    ).toBe(false);
+    expect(
+      createClipScript(
+        input({ finish: 'header', outcome: 'claim', rebound: true, seed })
+      ).rebound
+    ).toBe(false);
+  }
+});
+
+test('a rebound is parried out into the box, and the shooter strikes again', () => {
+  let seen = 0;
+  for (let seed = 0; seed < 30; seed++) {
+    const kind = (['goal', 'save', 'near-miss'] as const)[seed % 3]!;
+    const script = createClipScript(input({ kind, rebound: true, seed }));
+    if (!script.rebound) {
+      continue;
+    }
+    seen++;
+    const { moment } = script.phases;
+    // The ball reaches the keeper in the goal mouth, then comes back out.
+    let parried = -1;
+    let out = -1;
+    for (let at = moment; at <= script.momentFrame; at++) {
+      const { ball } = script.frame(at);
+      const mouth = Math.abs(ball.x - pitchWidth / 2) < 5;
+      if (parried < 0 && mouth && depth(ball.y) > pitchLength - 1.5) {
+        parried = at;
+      }
+      if (parried >= 0 && depth(ball.y) < pitchLength - 4.5) {
+        out = at;
+        break;
+      }
+    }
+    expect(parried).toBeGreaterThan(0);
+    expect(out).toBeGreaterThan(parried);
+    expect(keeperOf(script.frame(parried + 2)).pose).toBe('dive');
+    // The shooter is there to strike it again.
+    const kicks = new Set<number>();
+    for (let at = out; at <= script.momentFrame; at++) {
+      if (script.frame(at).players[9]!.pose === 'kick') {
+        kicks.add(at);
+      }
+    }
+    expect(kicks.size).toBeGreaterThan(0);
+    // And it ends as the moment says: in the net after a goal.
+    const end = script.frame(script.phases.reaction - 1).ball;
+    if (kind === 'goal') {
+      expect(depth(end.y)).toBeGreaterThan(pitchLength);
+    }
+    expect(outcomeKind(script.outcome)).toBe(kind);
+  }
+  expect(seen).toBeGreaterThan(10);
+});

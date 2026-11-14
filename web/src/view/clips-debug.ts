@@ -60,6 +60,7 @@ const settings = {
   path: false,
   place: 0,
   problems: false,
+  rebound: 'seed' as 'no' | 'seed' | 'yes',
   restart: 'seed' as Restart | 'seed',
   seedBase: 1,
   side: 'home' as 'away' | 'home',
@@ -180,6 +181,9 @@ const settingsInput = (seedBase = settings.seedBase): ClipInput => {
     ...(settings.outcome === 'seed' ? {} : { outcome: settings.outcome }),
     ...(settings.restart === 'seed' ? {} : { restart: settings.restart }),
     ...(settings.finish === 'seed' ? {} : { finish: settings.finish }),
+    ...(settings.rebound === 'seed'
+      ? {}
+      : { rebound: settings.rebound === 'yes' }),
     seed: hashSeed(
       [
         'debug',
@@ -262,7 +266,7 @@ const rebuild = () => {
     `moment at   frame ${script.momentFrame}`,
     `outcome     ${script.outcome}`,
     `restart     ${script.restart}`,
-    `finish      ${script.finish}`,
+    `finish      ${script.finish}${script.rebound ? ', after a rebound' : ''}`,
     `phases      build-up 0, zoom ${zoom}, moment ${moment}, reaction ${reaction}`,
     `seed        ${input.seed}`,
     `shooter     ${input.attack.players[input.shooter]?.label ?? '-'}`,
@@ -347,6 +351,19 @@ const renderControls = () => {
         [['seed', 'From the seed'], ...finishes.map(o => [o, o] as const)],
         settings.finish,
         value => change('finish')(value as Finish | 'seed')
+      )
+    ),
+    // Only a shot or header that reaches the keeper's goal can rebound.
+    labelled(
+      'Rebound',
+      select(
+        [
+          ['seed', 'From the seed'],
+          ['yes', 'yes'],
+          ['no', 'no']
+        ],
+        settings.rebound,
+        value => change('rebound')(value as 'no' | 'seed' | 'yes')
       )
     )
   );

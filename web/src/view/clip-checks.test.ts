@@ -105,6 +105,7 @@ const clip = (
     outcome: 'goal',
     passes: [pass],
     phases: { moment: 40, reaction: 55, zoom: 38 },
+    rebound: false,
     restart: options.restart ?? 'open-play'
   };
 };

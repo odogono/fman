@@ -89,8 +89,12 @@ One decisive event in a match: a goal, a save or a near miss, at a minute, for t
 _Avoid_: Event, highlight
 
 **Ticker**:
-The list of a match's moments, shown one at a time in minute order as the match is played. Original-rules matches have no ticker; their highlights are shown on the pitch.
+The list of a match's moments, shown one at a time in minute order as the match is played. In Modern mode the moments play as clips and the ticker lists them alongside. Original-rules matches have no ticker; their highlights are shown on the pitch.
 _Avoid_: Feed, commentary
+
+**Clip**:
+The short animation of one moment in Modern mode's highlights: the build-up, the moment itself and the reaction. The clip decides how long its moment is shown. Everything in it except the moment is made up for show and changes nothing in the game.
+_Avoid_: Replay, which names a cup match; highlight
 
 **Gate receipts**:
 The income credited to the managed club for a match, including a cup replay.

@@ -15,15 +15,8 @@ import { createClipPlayer, screenKey, type ClipShot } from './clip-player';
 import { barFor, tickerBar, type BarButton } from './context-bar';
 import { createFrameSampler } from './frame-sampler';
 import { homeFor, type Home } from './home';
-import { amountPromptFor, type ModernAmount } from './modern-amount';
-import {
-  drawerIds,
-  highlightsFor,
-  type ModernHighlights
-} from './modern-highlights';
-import { messageFor, type ModernMessage } from './modern-message';
-import { statusFor, type ModernStatus } from './modern-status';
-import { pickTeamFor, type PickTeam } from './pick-team';
+import { drawerIds } from './modern-highlights';
+import { modernScreenFor, type ModernScreen } from './modern-screen';
 import {
   isRules,
   rulesChoices,
@@ -102,36 +95,22 @@ export type Dom = {
   render: (screen: {
     /** The amount being entered on an amount prompt, while the bar shows. */
     amount: AmountEntry | undefined;
-    /** Modern mode's loan, repayment or transfer bid screen. */
-    amountPrompt: ModernAmount | undefined;
-    atHome: boolean;
     /** The context bar's buttons, or `undefined` when the bar is hidden. */
     bar: readonly BarButton[] | undefined;
     clearInput: boolean;
     display: Display;
     focus: boolean;
     /**
-     * Modern mode's highlights screen, standing in for the original's
-     * highlights and the ticker's Skip button.
-     */
-    highlights: ModernHighlights | undefined;
-    /**
-     * Modern mode's Home screen, while a game is in play. `atHome`: the
-     * menu prompt waits, so the Home screen stands in for it.
+     * Modern mode's Home screen while a game is in play: the Modern screen
+     * itself on the menu, and beside the other screens on a wide window,
+     * except the highlights.
      */
     home: Home | undefined;
     /**
-     * Modern mode's pick team screen, standing in for the team and
-     * selection prompts and their bar.
+     * The Modern screen on show, or `undefined` in Classic mode and on
+     * screens Modern mode has no design for.
      */
-    /** Modern mode's message screen: a balance or a plain text message. */
-    message: ModernMessage | undefined;
-    pickTeam: PickTeam | undefined;
-    /**
-     * Modern mode's status screen: on the status prompt, or read-only beside
-     * the Home screen while the menu waits.
-     */
-    status: ModernStatus | undefined;
+    modern: ModernScreen | undefined;
     /** The name of the screen on show, for the title above it. */
     title: string;
     /**
@@ -299,23 +278,17 @@ export const createApp = ({
     modern() ||
     options.touch === 'on' ||
     (options.touch === 'auto' && dom.coarsePointer);
-  /** Modern mode shows a screen of its own, not the Spectrum's. */
-  const ownScreen = () => {
+  /** The Modern screen on show, if Modern mode has a design for it. */
+  const modernScreen = (): ModernScreen | undefined => {
+    if (!modern()) {
+      return undefined;
+    }
     const view = journal.session.view;
-    return (
-      atHome() ||
-      (modern() &&
-        Boolean(
-          pickTeamFor(view) ??
-          highlightsNow(view) ??
-          statusFor(view) ??
-          amountPromptFor(view, amountEntry) ??
-          messageFor(view)
-        ))
-    );
+    return modernScreenFor(view, {
+      amount: amountFor(answersFor(view)),
+      clips: clipState()
+    });
   };
-  /** Modern mode's Home screen stands in for the menu prompt. */
-  const atHome = () => modern() && journal.session.view.screen === 'menu';
   /** Modern mode takes typing only where a name is asked for. */
   const typingTaken = () =>
     !modern() || answersFor(journal.session.view).some(a => a.kind === 'text');
@@ -352,7 +325,6 @@ export const createApp = ({
       dom.paintClip(state.shot);
     }
   };
-  const highlightsNow = (view: View) => highlightsFor(view, clipState());
   /** Opens or closes the moments drawer; it presses no key. */
   const showDrawer = (open: boolean) => {
     if (menuOpen) {
@@ -387,10 +359,10 @@ export const createApp = ({
 
   const render = (clearInput = true) => {
     const view = journal.session.view;
-    const home = atHome();
+    const screen = modernScreen();
     // Beside the Home screen, two panes show Status while the menu waits.
     const display =
-      home && view.screen === 'menu'
+      screen?.kind === 'home' && view.screen === 'menu'
         ? { ...makeScreen({ ...view, screen: 'status' }), prompt: '' }
         : makeScreen(view);
     if (view.screen === 'cleared') {
@@ -402,41 +374,23 @@ export const createApp = ({
     ) {
       dom.notice('Printing stopped. Open the menu to start a new game.');
     }
-    const pickTeam = modern() ? pickTeamFor(view) : undefined;
-    const highlights = modern() ? highlightsNow(view) : undefined;
-    const status = modern() ? statusFor(view, home) : undefined;
     const answers = answersFor(view);
-    const amountPrompt = modern()
-      ? amountPromptFor(view, amountFor(answers))
-      : undefined;
-    const message = modern() ? messageFor(view) : undefined;
-    const bar =
-      barShown() &&
-      !home &&
-      !pickTeam &&
-      !highlights &&
-      !status &&
-      !amountPrompt &&
-      !message;
+    const highlights = screen?.kind === 'highlights';
+    const bar = barShown() && !screen;
     const ticking = tickerRunning() && !highlights;
     const buttons = ticking ? tickerBar : bar ? barFor(answers) : undefined;
     dom.render({
       amount: bar ? amountFor(answers) : undefined,
-      amountPrompt,
-      atHome: home,
       bar: buttons && modern() ? withoutKeys(buttons) : buttons,
       clearInput,
       display,
       focus: !display.paused && !menuOpen && !barShown(),
-      highlights,
       home:
         // The highlights stand alone, without the Home pane beside them.
         modern() && view.game && !highlights
           ? homeFor({ ...view, game: view.game })
           : undefined,
-      message,
-      pickTeam,
-      status,
+      modern: screen,
       title: screenTitle(view),
       typing: typingTaken(),
       view
@@ -521,7 +475,7 @@ export const createApp = ({
             'Print screen',
             printScreen,
             // Modern mode's own screens are not the Spectrum's to copy.
-            !printAccepted(journal.session.view) || ownScreen()
+            !printAccepted(journal.session.view) || Boolean(modernScreen())
           ),
           button('Save', () => showMenu('save'), !storageWorks),
           button('Load', () => showMenu('load')),

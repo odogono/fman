@@ -14,10 +14,7 @@ import { createClipPlayer } from './clip-player';
 import type { ClipFrame } from './clips';
 import type { BarButton } from './context-bar';
 import type { Home } from './home';
-import type { ModernAmount } from './modern-amount';
-import type { ModernHighlights } from './modern-highlights';
-import type { ModernMessage } from './modern-message';
-import type { ModernStatus } from './modern-status';
+import type { ModernScreen } from './modern-screen';
 import type { PickTeam } from './pick-team';
 import { createStorage, type Options } from './storage';
 
@@ -62,28 +59,49 @@ const harness = ({
   }
   const page = {
     amount: undefined as AmountEntry | undefined,
-    amountPrompt: undefined as ModernAmount | undefined,
+    /** Modern mode's loan, repayment or transfer bid screen. */
+    get amountPrompt() {
+      return this.modern?.kind === 'amount' ? this.modern.amount : undefined;
+    },
     applied: [] as Options[],
-    /** The sprite highlights' frames painted, latest last. */
-    atHome: false,
+    get atHome() {
+      return this.modern?.kind === 'home';
+    },
     bar: undefined as readonly BarButton[] | undefined,
+    /** The sprite highlights' frames painted, latest last. */
     clips: [] as ClipFrame[],
     downloads: [] as { data: string; name: string }[],
     filesChosen: 0,
     fit: false,
     focused: 0,
     hidden: false,
-    highlights: undefined as ModernHighlights | undefined,
+    get highlights() {
+      return this.modern?.kind === 'highlights'
+        ? this.modern.highlights
+        : undefined;
+    },
     home: undefined as Home | undefined,
     inputFocus: false,
     menu: undefined as Menu | undefined,
     menuOpen: false,
-    message: undefined as ModernMessage | undefined,
+    get message() {
+      return this.modern?.kind === 'message' ? this.modern.message : undefined;
+    },
+    modern: undefined as ModernScreen | undefined,
     notice: '',
-    pickTeam: undefined as PickTeam | undefined,
+    get pickTeam() {
+      return this.modern?.kind === 'pick-team'
+        ? this.modern.pickTeam
+        : undefined;
+    },
     printed: 0,
     rendered: 0,
-    status: undefined as ModernStatus | undefined,
+    /** On the status prompt, or read-only beside the Home screen. */
+    get status() {
+      return this.modern?.kind === 'status' || this.modern?.kind === 'home'
+        ? this.modern.status
+        : undefined;
+    },
     title: '',
     typing: true
   };
@@ -113,27 +131,9 @@ const harness = ({
       page.clips.push(frame);
     },
     reducedMotion,
-    render: ({
-      amount,
-      amountPrompt,
-      atHome,
-      bar,
-      focus,
-      highlights,
-      home,
-      message,
-      pickTeam,
-      status,
-      title,
-      typing
-    }) => {
-      page.status = status;
-      page.amountPrompt = amountPrompt;
-      page.message = message;
+    render: ({ amount, bar, focus, home, modern, title, typing }) => {
+      page.modern = modern;
       page.amount = amount;
-      page.highlights = highlights;
-      page.pickTeam = pickTeam;
-      page.atHome = atHome;
       page.home = home;
       page.typing = typing;
       page.title = title;

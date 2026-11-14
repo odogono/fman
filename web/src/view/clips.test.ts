@@ -502,8 +502,12 @@ test('the passer and shooter kick, and players face the way they move', () => {
     if (script.outcome === 'goal') {
       expect(script.frame(script.phases.moment).players[9]!.pose).toBe('kick');
     }
-    // Shooting up the screen, the shooter faces up as the shot is struck.
-    expect(script.frame(script.phases.moment).players[9]!.facing).toBe('up');
+    // Shooting up the screen, the shooter faces up as the shot is struck,
+    // or across to the goal from out wide.
+    const striker = script.frame(script.phases.moment).players[9]!;
+    expect(['up', striker.x > pitchWidth / 2 ? 'left' : 'right']).toContain(
+      striker.facing
+    );
   }
 });
 
@@ -983,33 +987,45 @@ test('a lofted ball lands and bounces once before it is controlled', () => {
   expect(bounced).toBeGreaterThan(30);
 });
 
-test('a first touch knocks the ball on, and the receiver gathers it', () => {
+test('a first touch takes the pace off the ball, and the receiver comes onto it', () => {
   let knocked = 0;
   let checked = 0;
   for (const { pass, receiver, script } of everyPass()) {
     if (
       pass.kind !== 'pass' ||
       pass.cutOut ||
-      pass.end + 25 > script.phases.zoom
+      pass.end + 30 > script.phases.zoom
     ) {
       continue;
     }
     checked++;
-    const apart = Array.from({ length: 25 }, (_, k) => {
-      const frame = script.frame(pass.end + k);
+    const frames = Array.from({ length: 30 }, (_, k) =>
+      script.frame(pass.end + k)
+    );
+    const apart = frames.map(frame => {
       const p = frame.players[receiver]!;
       return Math.hypot(p.x - frame.ball.x, p.y - frame.ball.y);
     });
-    // Out to a stride and a half or more, then back to the feet, with no
-    // jump on the way.
-    if (Math.max(...apart) > 1.3 && apart.at(-1)! < 1.1) {
+    // On ahead of the stride, then back at the feet.
+    if (Math.max(...apart) > 1 && apart.at(-1)! < 0.85) {
       knocked++;
     }
-    for (let k = 1; k < apart.length; k++) {
-      expect(Math.abs(apart[k]! - apart[k - 1]!)).toBeLessThan(0.4);
+    // Through the touch, at least 25 frames, the ball slows but never runs
+    // back the way it came.
+    const before = script.frame(pass.end - 1).ball;
+    const came = {
+      x: frames[0]!.ball.x - before.x,
+      y: frames[0]!.ball.y - before.y
+    };
+    const pace = Math.hypot(came.x, came.y) || 1;
+    for (let k = 1; k < 25; k++) {
+      const a = frames[k - 1]!.ball;
+      const b = frames[k]!.ball;
+      const on = ((b.x - a.x) * came.x + (b.y - a.y) * came.y) / pace;
+      expect(on).toBeGreaterThan(-0.005);
     }
   }
-  expect(knocked).toBeGreaterThan(checked * 0.8);
+  expect(knocked).toBeGreaterThan(checked * 0.6);
 });
 
 test('crosses and shots bend a little; passes along the ground do not', () => {

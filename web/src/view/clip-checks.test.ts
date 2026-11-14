@@ -25,12 +25,14 @@ const player = (side: 'attack' | 'defence', spot: Spot): FramePlayer => ({
 
 /**
  * A clip of `length` frames: the passer at (30, 60) plays the ball 10 m up
- * to the receiver over frames 10 to 30, with one defender well wide.
- * `change` moves anyone at any frame.
+ * to the receiver over frames 10 to 30, with one defender well wide. The
+ * receiver's touch takes the pace off it, or with `deadStop` it stops at
+ * once. `change` moves anyone at any frame.
  */
 const clip = (
   options: {
     change?: (at: number, players: FramePlayer[]) => void;
+    deadStop?: boolean;
     lines?: readonly Line[];
     pass?: Partial<ClipPass>;
     restart?: Restart;
@@ -53,10 +55,16 @@ const clip = (
       1,
       Math.max(0, (at - pass.start) / (pass.end - pass.start))
     );
+    // Off the touch it slows by 15% a frame.
+    const pace = 10 / (pass.end - pass.start);
+    const since = Math.max(0, at - pass.end);
+    const runOn = options.deadStop
+      ? 0
+      : (pace * 0.85 * (1 - 0.85 ** since)) / 0.15;
     const ball = {
       height: 0,
       x: 30,
-      y: at < pass.start ? 59.2 : 59.2 - 10 * u
+      y: at < pass.start ? 59.2 : 59.2 - 10 * u - runOn
     };
     const players = [
       player('attack', { x: 30, y: 60 }),
@@ -105,6 +113,14 @@ const kinds = (script: ClipScript) => checkClip(script).map(i => i.kind);
 
 test('a clean clip shows no problems', () => {
   expect(checkClip(clip())).toEqual([]);
+});
+
+test('a ball that stops dead at the receiver jumps', () => {
+  const found = checkClip(clip({ deadStop: true })).filter(
+    i => i.kind === 'ball-jumps'
+  );
+  expect(found).toHaveLength(1);
+  expect(found[0]).toMatchObject({ players: [1], start: 31 });
 });
 
 /** The defender stands on the passer from frame 2, for `frames` frames. */

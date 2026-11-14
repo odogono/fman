@@ -167,9 +167,28 @@ export const headHeight = 0.8;
 const jumpFrames = 16;
 /** A clearance runs on this far, in metres, after it bounces. */
 const clearRunOn = 4;
-/** A first touch knocks the ball this far on, gathered in this many frames. */
-const firstTouchMetres = 1;
-const firstTouchFrames = 20;
+/**
+ * A first touch takes the pace off the ball this fast, in metres a frame
+ * each frame, and the receiver closes on it at this share of their pace.
+ */
+const touchDrag = 0.02;
+const gatherShare = 0.7;
+/** The fastest a first touch sends the ball on from the receiver, in metres a second. */
+const touchSpring = 6;
+/** A carrier turns the ball round at most this far a frame, in radians. */
+const ballTurn = 0.1;
+/** The ball's turn round a carrier quickens or eases by this, in radians a frame each frame. */
+const ballSpinUp = 0.02;
+/** A carrier this near, in metres, where they are going holds their way. */
+const holdingGap = 0.5;
+/**
+ * A carrier speeds up and slows down by at most these, in metres a frame
+ * each frame: about 6 and 10 metres a second each second.
+ */
+const carrierPickUp = 6 / clipFps / clipFps;
+const carrierBrake = 10 / clipFps / clipFps;
+/** A receiver takes their first touch at no less, nor more, than this pace, in metres a second. */
+const firstTouchPace = [1.5, 3.5] as const;
 /** How far off their line, in metres, a keeper stands: ball near, and far. */
 const keeperOffLine = [1.5, 8] as const;
 /** The share of saves from a cross where the keeper comes to catch it. */
@@ -343,6 +362,14 @@ const clamp = (value: number, low: number, high: number) =>
   Math.min(high, Math.max(low, value));
 const distance = (a: Point, b: Point) => Math.hypot(a.d - b.d, a.x - b.x);
 const lerp = (a: number, b: number, u: number) => a + (b - a) * u;
+/** A unit direction turned by `angle` radians. */
+const rotated = (from: Point, angle: number): Point => ({
+  d: from.d * Math.cos(angle) - from.x * Math.sin(angle),
+  x: from.d * Math.sin(angle) + from.x * Math.cos(angle)
+});
+/** The signed angle, in radians, from one unit direction to another. */
+const angleBetween = (from: Point, to: Point) =>
+  Math.atan2(from.d * to.x - from.x * to.d, from.d * to.d + from.x * to.x);
 /**
  * A lofted ball's height `u` of the way along: up to `peak`, landing at
  * `landsAt` of the way, then bouncing once, a fifth as high.
@@ -436,8 +463,6 @@ const landingFrames = 8;
 const shooterWait = clipFps;
 /** A player turns at most once in this many frames, but to kick or aim. */
 const turnFrames = 20;
-/** Slower than this, in metres a second, a player is walking. */
-const walkingSpeed = 2.5;
 
 /**
  * The facing for a heading on the screen: along its larger part, keeping
@@ -1078,10 +1103,17 @@ export const createClipScript = (input: ClipInput): ClipScript => {
   let holder = starter;
   const label = (i: number) => attackers[i]!.label;
 
-  /** The frame the latest pass was received, for the first touch. */
-  let touchedAt = -Infinity;
+  /**
+   * The first touch of the latest pass: how far the ball has run on ahead
+   * of the receiver's stride, and how fast it still runs away from them, in
+   * metres a frame.
+   */
+  let firstTouch: { ahead: number; away: number } | undefined;
   /** The way the holder carries the ball, smoothed over a few frames. */
   let carrying: Point = { d: 1, x: 0 };
+  /** The carrier's pace, in metres a frame, and the ball's turn round them, in radians a frame. */
+  let carryPace = 0;
+  let ballSpin = 0;
   /** The holder keeps the ball at their feet, a stride ahead the way they go. */
   const dribble = (
     frames: number,
@@ -1093,39 +1125,59 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     for (let f = 0; f < frames; f++) {
       const mover = movers[holder]!;
       const gap = distance(mover, to);
-      if (gap > step) {
-        const heading = {
-          d: (to.d - mover.d) / gap,
-          x: (to.x - mover.x) / gap
-        };
-        // From a walk the carrier turns with the ball at once; at a run the
-        // ball comes round over a few frames, and they slow to turn with it.
-        const last = steps[holder];
-        const walking =
-          !last || Math.hypot(last.d, last.x) < perFrame(walkingSpeed);
-        const along = carrying.d * heading.d + carrying.x * heading.x;
-        const pace = walking ? step : step * clamp(along, 0.3, 1);
-        mover.d += heading.d * pace;
-        mover.x += heading.x * pace;
-        const turn = walking ? 1 : 0.5;
-        const turned = {
-          d: lerp(carrying.d, heading.d, turn),
-          x: lerp(carrying.x, heading.x, turn)
-        };
-        const length = Math.hypot(turned.d, turned.x);
-        if (length > 0.01) {
-          carrying = { d: turned.d / length, x: turned.x / length };
+      // Holding about where they are, they keep the way they were going.
+      const heading =
+        gap > holdingGap
+          ? { d: (to.d - mover.d) / gap, x: (to.x - mover.x) / gap }
+          : carrying;
+      // The carrier picks up speed and slows down over a few strides, and
+      // slows to turn while the ball comes round with them, so it never
+      // trails nor jumps to the other side of their feet. They ease up
+      // before where they are going rather than stop dead.
+      const along = carrying.d * heading.d + carrying.x * heading.x;
+      const wanted = Math.min(
+        step * Math.max(0.1, along) ** 2,
+        Math.sqrt(2 * carrierBrake * gap)
+      );
+      carryPace = clamp(
+        wanted,
+        carryPace - carrierBrake,
+        carryPace + carrierPickUp
+      );
+      // The ball's swing round them eases in and out, and they run the way
+      // it goes, so they curve round rather than turn on the spot; holding
+      // where they are, they coast to a stop.
+      const swing = angleBetween(carrying, heading);
+      const spinWanted =
+        Math.sign(swing) *
+        Math.min(ballTurn, Math.sqrt(2 * ballSpinUp * Math.abs(swing)));
+      ballSpin = clamp(
+        spinWanted,
+        ballSpin - ballSpinUp,
+        ballSpin + ballSpinUp
+      );
+      carrying =
+        Math.abs(swing) <= Math.abs(ballSpin) && swing * ballSpin >= 0
+          ? heading
+          : rotated(carrying, ballSpin);
+      const moved = carryPace;
+      mover.d += carrying.d * moved;
+      mover.x += carrying.x * moved;
+      // Off the first touch the ball runs on ahead, slowing, and the
+      // receiver comes onto it: it never runs back to them.
+      if (firstTouch) {
+        firstTouch.ahead = Math.max(0, firstTouch.ahead + firstTouch.away);
+        firstTouch.away = Math.max(
+          -gatherShare * moved,
+          firstTouch.away - touchDrag
+        );
+        if (firstTouch.ahead === 0 && firstTouch.away <= 0) {
+          firstTouch = undefined;
         }
       }
-      // A first touch knocks the ball on a little, and the receiver
-      // gathers it.
-      const since = frame - touchedAt;
-      const knock =
-        since >= 0 && since < firstTouchFrames
-          ? firstTouchMetres * Math.sin((Math.PI * since) / firstTouchFrames)
-          : 0;
-      ball.d = mover.d + carrying.d * (stride + knock);
-      ball.x = mover.x + carrying.x * (stride + knock);
+      const ahead = stride + (firstTouch?.ahead ?? 0);
+      ball.d = mover.d + carrying.d * ahead;
+      ball.x = mover.x + carrying.x * ahead;
       const overrides = new Map<number, Point>(chase);
       if (holder !== shooter && passesLeft() <= 1) {
         overrides.set(shooter, shootingSpot);
@@ -1288,10 +1340,14 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     // bounces before it is controlled; one along the ground runs straight.
     const thrown = kind === 'throw-in';
     const bend = lofted && !thrown ? curl(0.3, 1) : 0;
+    /** How far the ball came in the last frame, along the way it came. */
+    let arriving = 0;
     for (let f = 1; f <= frames; f++) {
       const u = f / frames;
+      const before = { d: ball.d, x: ball.x };
       const rolled = lofted ? u : u * (1.3 - 0.3 * u);
       Object.assign(ball, bent(from, end, rolled, bend));
+      arriving = (ball.d - before.d) * way.d + (ball.x - before.x) * way.x;
       ball.height = !lofted
         ? 0
         : thrown
@@ -1316,9 +1372,22 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     }
     ball.height = 0;
     holder = receiver;
-    touchedAt = frame;
-    // The receiver takes the ball on the way it came.
+    // The receiver takes the ball on the way it came, and the touch takes
+    // the pace off it. A lofted ball has bounced, and comes down dead.
+    const running = steps[receiver] ?? { d: 0, x: 0 };
+    firstTouch = {
+      ahead: 0,
+      away: lofted
+        ? 0
+        : clamp(
+            arriving - (running.d * way.d + running.x * way.x),
+            0,
+            perFrame(touchSpring)
+          )
+    };
     carrying = way;
+    carryPace = Math.min(Math.hypot(running.d, running.x), perFrame(8));
+    ballSpin = 0;
     passesMade++;
   };
 
@@ -1472,7 +1541,9 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       .toSorted(
         (a, b) => distance(movers[a]!, wing) - distance(movers[b]!, wing)
       );
-    if (gap > widestCarry && near.length) {
+    // Over time, only a short carry: otherwise it goes out there at once.
+    const carryUpTo = frame > maxBuildUp ? widestCarry / 2 : widestCarry;
+    if (gap > carryUpTo && near.length) {
       pass(near[0]!, 'pass', wing);
       dribble(
         rng.int(15, 30),
@@ -1480,8 +1551,11 @@ export const createClipScript = (input: ClipInput): ClipScript => {
         1.5
       );
     } else {
+      // With no one to find, they carry it no further than they would
+      // otherwise, and cross from there.
       const speed = rng.between(5.5, 7);
-      dribble(Math.max(1, Math.round((gap / speed) * clipFps)), wing, speed);
+      const metres = Math.min(gap, carryUpTo);
+      dribble(Math.max(1, Math.round((metres / speed) * clipFps)), wing, speed);
     }
   };
 
@@ -1489,11 +1563,26 @@ export const createClipScript = (input: ClipInput): ClipScript => {
   // on, then passes; the last pass reaches the shooter in shooting range.
   // A corner's cross has already found the shooter.
   while (restart !== 'corner') {
-    // The first touch takes the ball on the way it came.
+    // The first touch takes the ball on the way it came, the receiver
+    // slowing to it from the pace they came at.
+    const touchFrames = rng.int(25, 50);
+    const last = steps[holder] ?? { d: 0, x: 0 };
+    const touchPace = clamp(
+      Math.hypot(last.d, last.x) * clipFps,
+      ...firstTouchPace
+    );
+    // Far enough on that they ease down to it, however fast they came.
+    const touchRun = Math.max(
+      (touchPace * touchFrames) / clipFps + 1,
+      carryPace ** 2 / (2 * carrierBrake) + 1
+    );
     dribble(
-      rng.int(25, 50),
-      { d: ball.d + carrying.d, x: ball.x + carrying.x },
-      1.5
+      touchFrames,
+      {
+        d: ball.d + carrying.d * touchRun,
+        x: ball.x + carrying.x * touchRun
+      },
+      touchPace
     );
     const towards = holder === shooter ? { d: 101, x: 34 } : shootingSpot;
     // Before the final pass the ball is carried only as far as it must be,

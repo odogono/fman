@@ -13,6 +13,7 @@ import {
 
 export type ClipIssueKind =
   | 'ball-behind-carrier'
+  | 'ball-jumps'
   | 'crowded'
   | 'facing-away'
   | 'facing-flicker'
@@ -28,6 +29,7 @@ export type ClipIssueKind =
 
 export const clipIssueKinds: readonly ClipIssueKind[] = [
   'ball-behind-carrier',
+  'ball-jumps',
   'crowded',
   'facing-away',
   'facing-flicker',
@@ -54,6 +56,11 @@ export type ClipIssue = Readonly<{
 
 /** The limits the checks hold a clip to. */
 export const clipLimits = {
+  /**
+   * Off a pass's flight, the ball's speed changes by no more than this in a
+   * frame, in metres a second: more, and it jumps at a player's feet.
+   */
+  ballJump: 6,
   /** A ball carried at a run is within this angle of the way they go. */
   carrierAngle: Math.PI / 4,
   /** A carrier is running at this pace or more, in metres a second. */
@@ -291,6 +298,33 @@ export const checkClip = (script: ClipScript): ClipIssue[] => {
       ...run,
       kind: 'ball-behind-carrier',
       message: 'the ball trails the way its carrier runs',
+      players: [carrier(run.start)!]
+    });
+  }
+
+  // At a player's feet the ball changes speed smoothly: it never stops dead
+  // as a pass arrives, springs back to the receiver or jumps round them.
+  const inFlight = (at: number) =>
+    passes.some(p => at >= p.start - 1 && at <= p.end);
+  const ballStep = (at: number) => ({
+    x: frames[at]!.ball.x - frames[at - 1]!.ball.x,
+    y: frames[at]!.ball.y - frames[at - 1]!.ball.y
+  });
+  const jumps = (at: number) => {
+    if (at < 2 || inFlight(at) || carrier(at) === undefined) {
+      return false;
+    }
+    const now = ballStep(at);
+    const was = ballStep(at - 1);
+    return (
+      Math.hypot(now.x - was.x, now.y - was.y) * clipFps > clipLimits.ballJump
+    );
+  };
+  for (const run of runs(2, phases.moment - 1, jumps, 1)) {
+    issues.push({
+      ...run,
+      kind: 'ball-jumps',
+      message: 'the ball jumps at its carrier’s feet',
       players: [carrier(run.start)!]
     });
   }

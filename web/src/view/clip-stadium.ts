@@ -37,7 +37,14 @@ const rowMetres = 1.6;
 const rows = 4;
 
 /** The net is see-through, so what is behind it shows. */
-const netPalette: ArtPalette = { l: '#f4f4f4a0', o: '#141414', w: '#f4f4f4' };
+const netPalette: ArtPalette = {
+  l: '#f4f4f4',
+  m: '#a8a8a8',
+  o: '#141414',
+  w: '#f4f4f4'
+};
+/** Shadows darken what they fall on, every other pixel. */
+export const shadowPalette: ArtPalette = { x: '#000000a0' };
 const boardPalette: ArtPalette = {
   '1': '#d72828',
   '2': '#fac81e',
@@ -51,10 +58,28 @@ const boardBackPalette: ArtPalette = Object.fromEntries(
   Object.keys(boardPalette).map(k => [k, k === 'o' ? '#141414' : '#5a5a5a'])
 );
 
-/** The goals: each a net and a frame, placed apart in depth. */
+/** The goals: each a net and a frame, placed apart in depth, and shadows. */
 export const goalPieces = (): GroundPiece[] => {
   const x = pitchWidth / 2;
+  // A shadow's grid is placed by its top-left corner, at the left of the
+  // goal's footprint; it is drawn before anything stands on it.
+  const shadowAt = (top: number) => {
+    const grid = goalArt.shadow;
+    const left = x - (goalArt.top.frame[0]!.length * artPixelMetres) / 2;
+    return {
+      at: {
+        x: left + (grid[0]!.length * artPixelMetres) / 2,
+        y: top + grid.length * artPixelMetres
+      },
+      depth: -Infinity,
+      grid,
+      mirrored: false,
+      palette: shadowPalette
+    };
+  };
   return [
+    shadowAt(-netDepthMetres),
+    shadowAt(pitchLength),
     // The top goal is seen from the front: its net behind the line.
     {
       at: { x, y: 0 },

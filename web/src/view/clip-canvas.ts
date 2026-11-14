@@ -1,4 +1,4 @@
-import { netDepthMetres, type ArtGrid } from './assets/clip-sprites';
+import { shadowArt, type ArtGrid } from './assets/clip-sprites';
 import {
   artPixelSize,
   ballHeld,
@@ -15,6 +15,7 @@ import {
   boardPieces,
   crowdPieces,
   goalPieces,
+  shadowPalette,
   terraceFrom,
   terraceRow
 } from './clip-stadium';
@@ -217,27 +218,6 @@ export const paintClip = (
   const { ball } = frame;
   const lift = ball.height * 2.5;
   const held = ballHeld(frame.players, ball);
-  // Shadows on the grass, the light a little to the left: under each goal,
-  // and at each player's feet.
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.22)';
-  for (const [y, depth] of [
-    [-netDepthMetres, netDepthMetres],
-    [pitchLength, netDepthMetres]
-  ] as const) {
-    ctx.fillRect(pitchWidth / 2 - 3.66 + 0.4, y, 7.32 + 0.2, depth);
-  }
-  for (const player of frame.players) {
-    ctx.beginPath();
-    ctx.ellipse(player.x + 0.25, player.y, 0.55, 0.22, 0, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  if (!held) {
-    // The ball's shadow on the grass.
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-    ctx.beginPath();
-    ctx.ellipse(ball.x + lift * 0.3, ball.y, 0.35, 0.22, 0, 0, Math.PI * 2);
-    ctx.fill();
-  }
   ctx.restore();
 
   // The sprites, in device pixels, from the far side of the ground to the
@@ -278,6 +258,30 @@ export const paintClip = (
         });
       }
     });
+  }
+  // Shadows first, lit from the top left like the goals', so everything
+  // stands on them.
+  const shadow = (grid: ArtGrid, x: number, y: number) =>
+    draws.push({
+      depth: -Infinity,
+      draw: () => {
+        const [sx, sy] = onScreen(x, y);
+        drawSprite(ctx, grid, shadowPalette, {
+          size: pixel,
+          x: sx! * ratio,
+          y: sy! * ratio
+        });
+      }
+    });
+  for (const player of frame.players) {
+    shadow(shadowArt.player, player.x + 0.3, player.y + 0.12);
+  }
+  if (!held) {
+    shadow(
+      shadowArt.ball,
+      ball.x + 0.15 + lift * 0.5,
+      ball.y + 0.08 + lift * 0.2
+    );
   }
   frame.players.forEach((player, i) => {
     draws.push({

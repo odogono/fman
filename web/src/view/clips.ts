@@ -64,7 +64,12 @@ const restartNames: Record<Restart, string> = {
 
 /** Where a player lines up. */
 export type Line = 'attack' | 'defence' | 'keeper' | 'midfield';
-export type ClipPlayer = Readonly<{ label: string; line: Line }>;
+export type ClipPlayer = Readonly<{
+  /** Readiness to play, 1 to 20; a player without one is never tired. */
+  energy?: number;
+  label: string;
+  line: Line;
+}>;
 /** One side in a clip: its kit, its goalkeeper's colour and its 11 or fewer. */
 export type ClipSide = Readonly<{
   keeper: string;
@@ -90,15 +95,38 @@ export type ClipInput = Readonly<{
 }>;
 
 /** What a player is doing, for the drawing. */
-export type Pose = 'celebrate' | 'dive' | 'head' | 'hold' | 'run';
-const poses: readonly Pose[] = ['run', 'dive', 'celebrate', 'head', 'hold'];
+export type Pose =
+  'celebrate' | 'dive' | 'head' | 'hold' | 'kick' | 'run' | 'stand';
+const poses: readonly Pose[] = [
+  'run',
+  'dive',
+  'celebrate',
+  'head',
+  'hold',
+  'kick',
+  'stand'
+];
+/** Which way a player faces on the screen. */
+export type Facing = 'down' | 'left' | 'right' | 'up';
+const facings: readonly Facing[] = ['up', 'down', 'left', 'right'];
+/**
+ * A state shown by a status icon over a player's head, in the zoomed view
+ * only (#146). Only tiredness so far.
+ */
+export type Status = 'tired';
+/** The most players a side shows tired in one clip. */
+export const tiredPerSide = 3;
+/** A kick shows for this many frames from the touch. */
+const kickFrames = 10;
 
 export type ClipPhase = 'build-up' | 'moment' | 'reaction' | 'zoom';
 
 export type FramePlayer = Readonly<{
+  facing: Facing;
   keeper: boolean;
   pose: Pose;
   side: 'attack' | 'defence';
+  status?: Status;
   x: number;
   y: number;
 }>;
@@ -220,6 +248,24 @@ const lerp = (a: number, b: number, u: number) => a + (b - a) * u;
 const ease = (u: number) => u * u * (3 - 2 * u);
 /** Metres a frame from metres a second. */
 const perFrame = (speed: number) => speed / clipFps;
+/** Slower than this, in metres a second, a player is standing. */
+const standingSpeed = 0.5;
+
+/**
+ * The facing for a heading on the screen: along its larger part, keeping
+ * the facing before unless the heading has clearly turned.
+ */
+const facingFor = (dx: number, dy: number, previous?: Facing): Facing => {
+  const across: Facing = dx < 0 ? 'left' : 'right';
+  const along: Facing = dy < 0 ? 'up' : 'down';
+  if (previous === across && Math.abs(dx) * 1.5 >= Math.abs(dy)) {
+    return across;
+  }
+  if (previous === along && Math.abs(dy) * 1.5 >= Math.abs(dx)) {
+    return along;
+  }
+  return Math.abs(dx) > Math.abs(dy) ? across : along;
+};
 
 const lineOrder: readonly Line[] = ['keeper', 'defence', 'midfield', 'attack'];
 
@@ -236,6 +282,36 @@ const lateralSpots = (players: readonly ClipPlayer[]) => {
     });
   }
   return spots;
+};
+
+/**
+ * Who shows tired in a clip: each player with a chance of
+ * `(1 - energy / 20) * minute / 90`, so more often late on and when
+ * spent, and at most three a side. It draws from a stream of its own off
+ * the clip's seed, so the rest of the clip plays as it would without it.
+ */
+const tiredPlayers = (input: ClipInput) => {
+  const rng = createClipRng(hashSeed(`${input.seed}|tired`));
+  const late = clamp(input.minute / 90, 0, 1);
+  const tired = new Set<number>();
+  let offset = 0;
+  for (const side of [input.attack, input.defence]) {
+    const rolled = side.players.flatMap((p, i) => {
+      const roll = rng.next();
+      if (p.energy === undefined) {
+        return [];
+      }
+      const chance = (1 - clamp(p.energy, 0, 20) / 20) * late;
+      return roll < chance ? [{ i: offset + i, margin: roll / chance }] : [];
+    });
+    for (const { i } of rolled
+      .toSorted((a, b) => a.margin - b.margin)
+      .slice(0, tiredPerSide)) {
+      tired.add(i);
+    }
+    offset += side.players.length;
+  }
+  return tired;
 };
 
 /**
@@ -394,10 +470,19 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     });
   }
 
-  // Frames are written as they play: x and y on the screen, then poses.
+  // Frames are written as they play: x and y on the screen, then poses
+  // and facings.
   const xs: number[][] = [];
   const ys: number[][] = [];
   const poseLog: number[][] = [];
+  const facingLog: number[][] = [];
+  /** The frame each player's latest kick shows until. */
+  const kickUntil = new Array<number>(count).fill(-1);
+  const kick = (i: number) => {
+    if (i >= 0) {
+      kickUntil[i] = frame + kickFrames;
+    }
+  };
   const balls: [number, number, number][] = [];
   const cameraTrack: [number, number, number][] = [];
   const toScreen = (p: Point): [number, number] =>
@@ -409,14 +494,34 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     xs.push([]);
     ys.push([]);
     poseLog.push([]);
+    facingLog.push([]);
     const at = xs.length - 1;
-    for (const mover of movers) {
+    const [bx, by] = toScreen(ball);
+    movers.forEach((mover, i) => {
       const [x, y] = toScreen(mover);
       xs[at]!.push(x);
       ys[at]!.push(y);
-      poseLog[at]!.push(poses.indexOf(mover.pose));
-    }
-    const [bx, by] = toScreen(ball);
+      // A player faces the way they move, or else the ball; standing
+      // still, a runner stands, and a touch shows as a kick.
+      const dx = at ? x - xs[at - 1]![i]! : 0;
+      const dy = at ? y - ys[at - 1]![i]! : 0;
+      const moving = Math.hypot(dx, dy) > perFrame(standingSpeed);
+      const previous = at ? facings[facingLog[at - 1]![i]!]! : undefined;
+      facingLog[at]!.push(
+        facings.indexOf(
+          moving
+            ? facingFor(dx, dy, previous)
+            : facingFor(bx - x, by - y, previous)
+        )
+      );
+      const pose =
+        (mover.pose === 'run' || mover.pose === 'hold') && at < kickUntil[i]!
+          ? 'kick'
+          : mover.pose === 'run' && !moving
+            ? 'stand'
+            : mover.pose;
+      poseLog[at]!.push(poses.indexOf(pose));
+    });
     balls.push([bx, by, ball.height]);
     const focus = cameraFocus();
     const halfWidth = cameraWidth / 2;
@@ -588,13 +693,18 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       to: label(receiver)
     });
     const thrower = holder;
+    if (kind !== 'throw-in') {
+      kick(thrower);
+    }
     for (let f = 1; f <= frames; f++) {
       const u = f / frames;
       const rolled = lofted ? u : u * (1.3 - 0.3 * u);
       ball.d = lerp(from.d, end.d, rolled);
       ball.x = lerp(from.x, end.x, rolled);
       ball.height = lofted ? Math.sin(Math.PI * u) * 0.5 : 0;
-      movers[thrower]!.pose = 'run';
+      // A throw is let go with the ball still held over the head.
+      movers[thrower]!.pose =
+        kind === 'throw-in' && f <= kickFrames ? 'hold' : 'run';
       runner.d = lerp(runFrom.d, end.d - 0.8, u);
       runner.x = lerp(runFrom.x, end.x, u);
       const overrides = new Map<number, Point>();
@@ -834,6 +944,8 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       ? meet
       : { d: meet.d - rng.between(3, 6), x: meet.x + rng.between(-4, 4) };
     const held = new Set([holder, shooter, clearer]);
+    // The final pass, or the shot, is struck.
+    kick(holder);
     cameraFocus = () => ({ d: ball.d + 4, x: ball.x });
     for (let f = 1; f <= momentFrames; f++) {
       const defender = clearer >= 0 ? movers[clearer]! : undefined;
@@ -950,6 +1062,7 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       outcome === 'parry' ||
       (outcome === 'goal' && Math.abs(aim.x - (keeperFrom?.x ?? 34)) > 1.5);
     cameraFocus = () => ({ d: (ball.d + pitchLength) / 2, x: ball.x });
+    kick(shooter);
     for (let f = 1; f <= momentFrames; f++) {
       if (f <= flight) {
         const u = f / flight;
@@ -1045,6 +1158,9 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       cameraFocus = () => ({ d: scorer.d, x: scorer.x });
     } else if (outcomeKind(outcome) === 'clearance') {
       scorer.pose = 'run';
+      if (f === 25) {
+        kick(clearer);
+      }
       if (f >= 25 && f < 25 + clearFrames) {
         const u = (f - 25) / clearFrames;
         ball.d = lerp(ballAtRest.d, cleared.d, u);
@@ -1062,6 +1178,9 @@ export const createClipScript = (input: ClipInput): ClipScript => {
         if (outcome !== 'parry' && f >= 50 && f < 80) {
           // The keeper plays it out to a team-mate.
           const u = ease((f - 50) / 30);
+          if (f === 50) {
+            kick(keeperSlot);
+          }
           keeper.pose = 'run';
           ball.d = lerp(ballAtRest.d, outlet.d, u);
           ball.x = lerp(ballAtRest.x, outlet.x, u);
@@ -1100,24 +1219,28 @@ export const createClipScript = (input: ClipInput): ClipScript => {
           ? 'moment'
           : 'reaction';
   const shooterLabel = attackers[shooter]?.label ?? '';
+  const tired = tiredPlayers(input);
 
   const frameAt = (at: number): ClipFrame => {
     const clamped = clamp(at, 0, length - 1);
     const low = Math.floor(clamped);
     const high = Math.min(length - 1, low + 1);
     const u = clamped - low;
+    const [cx0, cy0, cw0] = cameraTrack[low]!;
+    const [cx1, cy1, cw1] = cameraTrack[high]!;
+    const width = lerp(cw0, cw1, u);
+    const zoomed = width < cameraWide - 0.01;
     const players = sides.map((side, i): FramePlayer => ({
+      facing: facings[facingLog[low]![i]!]!,
       keeper: keepers.has(i),
       pose: poses[poseLog[low]![i]!]!,
       side,
+      ...(zoomed && tired.has(i) ? { status: 'tired' as const } : {}),
       x: lerp(xs[low]![i]!, xs[high]![i]!, u),
       y: lerp(ys[low]![i]!, ys[high]![i]!, u)
     }));
     const [bx0, by0, bh0] = balls[low]!;
     const [bx1, by1, bh1] = balls[high]!;
-    const [cx0, cy0, cw0] = cameraTrack[low]!;
-    const [cx1, cy1, cw1] = cameraTrack[high]!;
-    const width = lerp(cw0, cw1, u);
     const named = players[shooter];
     return {
       ball: {
@@ -1133,10 +1256,10 @@ export const createClipScript = (input: ClipInput): ClipScript => {
               .join(' ')
           }
         : {}),
-      ...(named && width < cameraWide - 0.01
+      ...(named && zoomed
         ? { label: { text: shooterLabel, x: named.x, y: named.y } }
         : {}),
-      minimap: width >= cameraWide - 0.01,
+      minimap: !zoomed,
       phase: phaseAt(low),
       players
     };
@@ -1175,8 +1298,9 @@ export const kickOffFrame = (
       const d = depths[p.line];
       const x = pitchWidth * spots[i]!;
       return {
+        facing: up ? 'up' : 'down',
         keeper: p.line === 'keeper',
-        pose: 'run',
+        pose: 'stand',
         side: team,
         x: up ? x : pitchWidth - x,
         y: up ? pitchLength - d : d

@@ -7,12 +7,14 @@ import {
   clearanceOutcomes,
   clipFps,
   createClipScript,
+  kickOffFrame,
   missOutcomes,
   outcomeKind,
   pitchLength,
   restarts,
   saveOutcomes,
   seededOutcome,
+  tiredPerSide,
   type ClipInput,
   type ClipSide,
   type Line
@@ -384,4 +386,114 @@ test('the defender clears upfield or into touch', () => {
   }
   expect(upfield).toBeGreaterThan(20);
   expect(touch).toBeGreaterThan(20);
+});
+
+const spent = (kit: string, energy: number): ClipSide => {
+  const plain = side(kit);
+  return { ...plain, players: plain.players.map(p => ({ ...p, energy })) };
+};
+
+test("energy shows only as status, never changing the clip's play", () => {
+  for (let seed = 0; seed < 20; seed++) {
+    const fresh = createClipScript(input({ minute: 88, seed }));
+    const tired = createClipScript(
+      input({
+        attack: spent('#d70000', 1),
+        defence: spent('#0000d7', 1),
+        minute: 88,
+        seed
+      })
+    );
+    expect(tired.length).toBe(fresh.length);
+    for (const at of [0, fresh.momentFrame, fresh.length - 1]) {
+      const strip = (frame: ReturnType<typeof fresh.frame>) =>
+        frame.players.map(({ status: _, ...p }) => p);
+      expect(strip(tired.frame(at))).toEqual(strip(fresh.frame(at)));
+    }
+  }
+});
+
+test('tired players show it only in the zoomed view, at most three a side', () => {
+  const script = createClipScript(
+    input({
+      attack: spent('#d70000', 1),
+      defence: spent('#0000d7', 1),
+      minute: 90
+    })
+  );
+  const zoomed = script.frame(script.momentFrame);
+  for (const side of ['attack', 'defence'] as const) {
+    expect(
+      zoomed.players.filter(p => p.side === side && p.status === 'tired')
+    ).toHaveLength(tiredPerSide);
+  }
+  expect(script.frame(0).players.some(p => p.status)).toBe(false);
+  expect(script.frame(script.length - 1).players.some(p => p.status)).toBe(
+    false
+  );
+});
+
+test('fresh players, players without energy, and the first minute show no tiredness', () => {
+  for (let seed = 0; seed < 50; seed++) {
+    const cases = [
+      input({ seed }),
+      input({ attack: spent('#d70000', 20), seed }),
+      input({ attack: spent('#d70000', 1), minute: 0, seed })
+    ];
+    for (const clip of cases) {
+      const script = createClipScript(clip);
+      expect(script.frame(script.momentFrame).players.some(p => p.status)).toBe(
+        false
+      );
+    }
+  }
+});
+
+/** How many players show tired over 200 clips. */
+const tiredCount = (energy: number, minute: number) => {
+  let tired = 0;
+  for (let seed = 0; seed < 200; seed++) {
+    const script = createClipScript(
+      input({ attack: spent('#d70000', energy), minute, seed })
+    );
+    tired += script
+      .frame(script.momentFrame)
+      .players.filter(p => p.status).length;
+  }
+  return tired;
+};
+
+test('tiredness comes more often later in the match and with less energy', () => {
+  expect(tiredCount(10, 80)).toBeGreaterThan(tiredCount(10, 20));
+  expect(tiredCount(4, 60)).toBeGreaterThan(tiredCount(16, 60));
+});
+
+test('the passer and shooter kick, and players face the way they move', () => {
+  for (let seed = 0; seed < 20; seed++) {
+    const script = createClipScript(input({ restart: 'open-play', seed }));
+    const first = script.passes[0]!;
+    const passer = Number(first.from.split(' ')[1]);
+    expect(script.frame(first.start).players[passer]!.pose).toBe('kick');
+    if (script.outcome === 'goal') {
+      expect(script.frame(script.phases.moment).players[9]!.pose).toBe('kick');
+    }
+    // Shooting up the screen, the shooter faces up as the shot is struck.
+    expect(script.frame(script.phases.moment).players[9]!.facing).toBe('up');
+  }
+});
+
+test('players stand when still, and line up facing the way their side attacks', () => {
+  const still = kickOffFrame(side('#d70000'), side('#0000d7'), 'Kick-off');
+  expect(still.players.every(p => p.pose === 'stand')).toBe(true);
+  expect(
+    still.players.filter(p => p.side === 'attack').every(p => p.facing === 'up')
+  ).toBe(true);
+  expect(
+    still.players
+      .filter(p => p.side === 'defence')
+      .every(p => p.facing === 'down')
+  ).toBe(true);
+  // A defender waiting at a free kick stands.
+  const script = createClipScript(input({ restart: 'free-kick' }));
+  expect(script.frame(30).players.some(p => p.pose === 'stand')).toBe(true);
 });

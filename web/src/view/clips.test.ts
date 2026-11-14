@@ -12,6 +12,7 @@ import {
   pitchLength,
   restarts,
   saveOutcomes,
+  seededOutcome,
   type ClipInput,
   type ClipSide,
   type Line
@@ -296,10 +297,16 @@ test('a corner is crossed from the flag to the shooter in the box', () => {
 
 test('a near miss goes wide most often, rarely off the post', () => {
   const counts: Record<string, number> = {};
-  const runs = 2000;
+  const runs = 20_000;
   for (let seed = 0; seed < runs; seed++) {
-    const { outcome } = createClipScript(input({ kind: 'near-miss', seed }));
+    const outcome = seededOutcome(seed, 'near-miss');
     counts[outcome] = (counts[outcome] ?? 0) + 1;
+  }
+  // A clip plays the outcome its seed picks.
+  for (let seed = 0; seed < 20; seed++) {
+    expect(createClipScript(input({ kind: 'near-miss', seed })).outcome).toBe(
+      seededOutcome(seed, 'near-miss')
+    );
   }
   const share = (outcome: string) => (counts[outcome] ?? 0) / runs;
   expect(share('wide-left') + share('wide-right')).toBeCloseTo(0.6, 1);

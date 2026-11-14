@@ -196,6 +196,10 @@ const drawOutcome = (rng: ClipRng, kind: Moment['kind']): ClipOutcome =>
         ? rng.pick(clearanceOutcomes)
         : drawMiss(rng);
 
+/** The outcome a clip's seed picks for a kind: the clip's first draw. */
+export const seededOutcome = (seed: number, kind: Moment['kind']) =>
+  drawOutcome(createClipRng(seed), kind);
+
 /** The kind of moment an outcome plays. */
 export const outcomeKind = (outcome: ClipOutcome): Moment['kind'] =>
   outcome === 'goal'

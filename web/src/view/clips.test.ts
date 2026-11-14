@@ -107,7 +107,7 @@ test('the seed picks each outcome of a save, a clearance and a near miss', () =>
     }
   }
   expect([...seen].sort()).toEqual(
-    [...saveOutcomes, ...clearanceOutcomes, ...missOutcomes].sort()
+    [...saveOutcomes, 'claim', ...clearanceOutcomes, ...missOutcomes].sort()
   );
   expect(
     createClipScript(input({ kind: 'save', outcome: 'parry' })).outcome
@@ -592,6 +592,10 @@ test('a long pass goes in the air; along the ground it is 30 m at most', () => {
 
 test('the ball keeps a pass’s pace, and the receiver gets to it', () => {
   for (const { metres, pace, pass, receiver, to } of everyPass()) {
+    // A cross the keeper came and caught never reaches the header.
+    if (pass.cutOut) {
+      continue;
+    }
     if (metres >= 9) {
       expect(pace).toBeGreaterThanOrEqual(pass.kind === 'throw-in' ? 8 : 10);
     }
@@ -755,6 +759,9 @@ test('the seed picks every finish; corners and defenders head it, clearances sho
 
 test('a header meets a cross at head height, with a crouch and a leap first', () => {
   for (const script of finished('header')) {
+    if (script.outcome === 'claim') {
+      continue;
+    }
     const cross = script.passes.at(-1)!;
     expect(['corner', 'cross']).toContain(cross.kind);
     expect(cross.receiver).toBe(9);
@@ -817,4 +824,243 @@ test('players count the ground they cover, for their stride', () => {
     );
   });
   expect(Math.max(...last.players.map(p => p.travelled))).toBeGreaterThan(20);
+});
+
+test('a keeper comes off their line to catch a cross before it is headed', () => {
+  let claims = 0;
+  for (let seed = 0; seed < 60; seed++) {
+    const script = createClipScript(
+      input({ finish: 'header', kind: 'save', seed })
+    );
+    if (script.outcome !== 'claim') {
+      continue;
+    }
+    claims++;
+    const cross = script.passes.at(-1)!;
+    expect(cross.cutOut).toBe(true);
+    // Caught in the air, off the line, and before the header gets there.
+    const caught = script.frame(script.momentFrame);
+    const keeper = caught.players.find(p => p.side === 'defence' && p.keeper)!;
+    expect(keeper.pose).toBe('hold');
+    expect(depth(keeper.y)).toBeLessThan(pitchLength - 2);
+    expect(
+      Math.hypot(keeper.x - caught.ball.x, keeper.y - caught.ball.y)
+    ).toBeLessThan(0.5);
+    expect(script.momentFrame).toBeLessThan(cross.end);
+    // The header never gets their forehead to it.
+    for (let at = script.momentFrame; at < script.phases.reaction; at++) {
+      expect(script.frame(at).players[9]!.poseFrame).not.toBe(2);
+    }
+  }
+  // About a third of saves from a cross.
+  expect(claims).toBeGreaterThan(8);
+  expect(claims).toBeLessThan(35);
+  // Forced, a claim brings its cross.
+  const forced = createClipScript(input({ kind: 'save', outcome: 'claim' }));
+  expect([forced.outcome, forced.finish]).toEqual(['claim', 'header']);
+});
+
+/** How far `p` is from the line from `a` to `b`, all on the screen. */
+const offLine = (
+  p: { x: number; y: number },
+  a: { x: number; y: number },
+  b: { x: number; y: number }
+) => {
+  const length = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+  return (
+    Math.abs((b.x - a.x) * (a.y - p.y) - (a.x - p.x) * (b.y - a.y)) / length
+  );
+};
+
+test('a keeper stands on the angle, further off their line the further off the ball', () => {
+  const near: number[] = [];
+  const far: number[] = [];
+  const misses: number[] = [];
+  for (let seed = 0; seed < 20; seed++) {
+    const script = createClipScript(input({ seed }));
+    // Shooting up the screen, the defending goal's middle is at the top.
+    const goal = { x: 34, y: 0 };
+    for (let at = 50; at < script.phases.zoom; at += 10) {
+      const frame = script.frame(at);
+      const keeper = frame.players.find(p => p.side === 'defence' && p.keeper)!;
+      misses.push(offLine(keeper, goal, frame.ball));
+      const out = Math.hypot(keeper.x - goal.x, keeper.y - goal.y);
+      const ball = Math.hypot(frame.ball.x - goal.x, frame.ball.y - goal.y);
+      (ball > 50 ? far : ball < 30 ? near : []).push(out);
+    }
+  }
+  const median = (list: number[]) =>
+    list.toSorted((a, b) => a - b)[Math.floor(list.length / 2)]!;
+  expect(median(misses)).toBeLessThan(1);
+  expect(median(far)).toBeGreaterThan(median(near) + 1.5);
+  expect(Math.max(...near, ...far)).toBeLessThan(9);
+});
+
+/** The defending keeper in a frame. */
+const keeperOf = (
+  frame: ReturnType<ReturnType<typeof createClipScript>['frame']>
+) => frame.players.find(p => p.side === 'defence' && p.keeper)!;
+
+test('after a catch the keeper throws or rolls it to a team-mate, or kicks it long', () => {
+  const seen = new Set<string>();
+  for (let seed = 0; seed < 60; seed++) {
+    const script = createClipScript(
+      input({ kind: 'save', outcome: seed % 2 ? 'hold' : 'dive', seed })
+    );
+    let release = -1;
+    for (let at = script.phases.reaction; at < script.length; at++) {
+      const frame = script.frame(at);
+      const keeper = keeperOf(script.frame(at));
+      if (Math.hypot(frame.ball.x - keeper.x, frame.ball.y - keeper.y) > 1.5) {
+        release = at;
+        break;
+      }
+    }
+    expect(release).toBeGreaterThan(0);
+    const heights: number[] = [];
+    let reached = -1;
+    for (let at = release; at < script.length; at++) {
+      const frame = script.frame(at);
+      heights.push(frame.ball.height);
+      // A team-mate gathers it at their feet.
+      const mate = frame.players.findIndex(
+        p =>
+          p.side === 'defence' &&
+          !p.keeper &&
+          Math.hypot(p.x - frame.ball.x, p.y - frame.ball.y) < 1.2 &&
+          frame.ball.height === 0
+      );
+      if (mate >= 0 && at > release + 10) {
+        reached = at;
+        break;
+      }
+    }
+    const top = Math.max(...heights);
+    const way =
+      reached < 0 ? 'kick' : top === 0 ? 'roll' : top < 0.45 ? 'throw' : 'kick';
+    seen.add(way);
+    if (way !== 'kick') {
+      // Thrown from over the head, or bowled from the hands.
+      expect(keeperOf(script.frame(release - 2)).pose).toBe(
+        way === 'throw' ? 'hold' : 'kick'
+      );
+    }
+  }
+  expect([...seen].sort()).toEqual(['kick', 'roll', 'throw']);
+});
+
+test('a lofted ball lands and bounces once before it is controlled', () => {
+  let bounced = 0;
+  for (let seed = 0; seed < 40; seed++) {
+    const script = createClipScript(input({ restart: 'goal-kick', seed }));
+    const kick = script.passes[0]!;
+    expect(kick.kind).toBe('goal-kick');
+    const heights = Array.from(
+      { length: kick.end - kick.start },
+      (_, k) => script.frame(kick.start + k).ball.height
+    );
+    const landed = heights.findIndex((h, k) => k > 3 && h < 0.02);
+    if (
+      landed > 0 &&
+      landed < heights.length - 3 &&
+      Math.max(...heights.slice(landed)) > 0.03
+    ) {
+      bounced++;
+    }
+  }
+  expect(bounced).toBeGreaterThan(30);
+});
+
+test('a first touch knocks the ball on, and the receiver gathers it', () => {
+  let knocked = 0;
+  let checked = 0;
+  for (const { pass, receiver, script } of everyPass()) {
+    if (
+      pass.kind !== 'pass' ||
+      pass.cutOut ||
+      pass.end + 25 > script.phases.zoom
+    ) {
+      continue;
+    }
+    checked++;
+    const apart = Array.from({ length: 25 }, (_, k) => {
+      const frame = script.frame(pass.end + k);
+      const p = frame.players[receiver]!;
+      return Math.hypot(p.x - frame.ball.x, p.y - frame.ball.y);
+    });
+    // Out to a stride and a half or more, then back to the feet, with no
+    // jump on the way.
+    if (Math.max(...apart) > 1.3 && apart.at(-1)! < 1.1) {
+      knocked++;
+    }
+    for (let k = 1; k < apart.length; k++) {
+      expect(Math.abs(apart[k]! - apart[k - 1]!)).toBeLessThan(0.4);
+    }
+  }
+  expect(knocked).toBeGreaterThan(checked * 0.8);
+});
+
+test('crosses and shots bend a little; passes along the ground do not', () => {
+  let crosses = 0;
+  let curled = 0;
+  for (let seed = 0; seed < 30; seed++) {
+    const script = createClipScript(
+      input({ finish: 'header', kind: 'goal', seed })
+    );
+    const cross = script.passes.at(-1)!;
+    const from = script.frame(cross.start).ball;
+    const to = script.frame(cross.end).ball;
+    const middle = script.frame(Math.round((cross.start + cross.end) / 2)).ball;
+    crosses++;
+    if (offLine(middle, from, to) > 0.4) {
+      curled++;
+    }
+  }
+  expect(curled).toBeGreaterThan(crosses * 0.8);
+  for (const { pass, script } of everyPass()) {
+    const middle = script.frame(Math.round((pass.start + pass.end) / 2));
+    if (pass.kind !== 'pass' || middle.ball.height > 0) {
+      continue;
+    }
+    const from = script.frame(pass.start).ball;
+    const to = script.frame(pass.end).ball;
+    expect(offLine(middle.ball, from, to)).toBeLessThan(0.05);
+  }
+});
+
+test('a clearance lands, bounces and runs on before it stops', () => {
+  for (let seed = 0; seed < 20; seed++) {
+    const script = createClipScript(input({ kind: 'clearance', seed }));
+    const balls = Array.from(
+      { length: script.length - script.phases.reaction },
+      (_, k) => script.frame(script.phases.reaction + k).ball
+    );
+    const top = balls.findIndex(b => b.height > 0.3);
+    expect(top).toBeGreaterThanOrEqual(0);
+    // Down near the grass after its peak, then up again: a bounce.
+    const h = balls.map(b => b.height);
+    const bounce = h.some(
+      (height, k) =>
+        k > top &&
+        height < 0.06 &&
+        height < h[k - 1]! &&
+        (h[k + 1] ?? 0) > height
+    );
+    expect(bounce).toBe(true);
+    // Along the grass it runs on a few metres and stops, if the clip lasts
+    // long enough to see it: a long one can still be rolling as it ends.
+    const settled = balls.findLastIndex(b => b.height > 0) + 1;
+    if (balls.length - settled > 30) {
+      const runOn = Math.hypot(
+        balls[settled + 30]!.x - balls[settled]!.x,
+        balls[settled + 30]!.y - balls[settled]!.y
+      );
+      expect(runOn).toBeGreaterThan(2);
+      const stopped = balls[settled + 30]!;
+      const after = balls[settled + 29]!;
+      expect(Math.hypot(stopped.x - after.x, stopped.y - after.y)).toBeLessThan(
+        0.01
+      );
+    }
+  }
 });

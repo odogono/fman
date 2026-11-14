@@ -19,3 +19,15 @@ Original-ROM PRINT observations validate pixel hashes independently; they are
 not the asset source. See [glyph-raster-fidelity.md](../../../../docs/glyph-raster-fidelity.md)
 for capture commands, comparisons and coverage limits. The TTF is retained for
 native input/caret metrics; visible game glyphs use the bitmap atlas.
+
+# Sprite highlights artwork
+
+`clip-sprites.ts` holds the sprites of Modern mode's sprite highlights
+([#146](https://github.com/odogono/fman/issues/146),
+[sprite-highlights.md](../../../../docs/sprite-highlights.md#artwork)): the
+players' poses, the ball's spin and the status icons, as pixel grids of
+characters. They were drawn for this project, by hand in that file, with the
+generated mockups in [highlights-engine.md](../../../../docs/highlights-engine.md)
+as direction only; nothing is traced or taken from the original game or any
+other. They are dedicated to the public domain under
+[CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/).

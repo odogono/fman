@@ -128,6 +128,14 @@ const finalPassRange = 30;
 const passMinimum = 0.6;
 /** How fast a receiver runs onto a pass, in metres a second. */
 const receiverSpeed = 7;
+/** A defender this close to a pass's path, in metres, blocks it. */
+const laneWidth = 2;
+/** Defenders keep at least this far from a pass along the ground. */
+const laneClearance = 1;
+/** The longest pass back, in metres, from the receiver's spot. */
+const longestBackPass = 11;
+/** The ball is this far ahead of a carrier's feet, in metres. */
+const stride = 0.8;
 
 export type ClipPhase = 'build-up' | 'moment' | 'reaction' | 'zoom';
 
@@ -257,11 +265,40 @@ const clamp = (value: number, low: number, high: number) =>
   Math.min(high, Math.max(low, value));
 const distance = (a: Point, b: Point) => Math.hypot(a.d - b.d, a.x - b.x);
 const lerp = (a: number, b: number, u: number) => a + (b - a) * u;
+/** The nearest point to `p` on the line from `a` to `b`. */
+const nearestOnLine = (p: Point, a: Point, b: Point): Point => {
+  const length = distance(a, b) ** 2;
+  const u = length
+    ? clamp(
+        ((p.d - a.d) * (b.d - a.d) + (p.x - a.x) * (b.x - a.x)) / length,
+        0,
+        1
+      )
+    : 0;
+  return { d: lerp(a.d, b.d, u), x: lerp(a.x, b.x, u) };
+};
+/** Moves `p` out to `gap` from the line from `a` to `b`, square to it. */
+const standOff = (p: Point, a: Point, b: Point, gap: number) => {
+  const near = nearestOnLine(p, a, b);
+  const now = distance(p, near);
+  if (now >= gap) {
+    return;
+  }
+  // Exactly on the line, step to its left.
+  const length = distance(a, b) || 1;
+  const [ud, ux] = now
+    ? [(p.d - near.d) / now, (p.x - near.x) / now]
+    : [-(b.x - a.x) / length, (b.d - a.d) / length];
+  p.d = near.d + ud * gap;
+  p.x = near.x + ux * gap;
+};
 const ease = (u: number) => u * u * (3 - 2 * u);
 /** Metres a frame from metres a second. */
 const perFrame = (speed: number) => speed / clipFps;
 /** Slower than this, in metres a second, a player is standing. */
 const standingSpeed = 0.5;
+/** Slower than this, in metres a second, a player is walking. */
+const walkingSpeed = 2.5;
 
 /**
  * The facing for a heading on the screen: along its larger part, keeping
@@ -514,7 +551,15 @@ export const createClipScript = (input: ClipInput): ClipScript => {
   let camera = { d: ball.d + 8, width: cameraWide, x: ball.x };
   let cameraFocus: () => Point = () => ({ d: ball.d + 8, x: ball.x });
   let cameraWidth = cameraWide;
+  /** Where each player was at the last frame, and their step since. */
+  const seen: Point[] = [];
+  const steps: Point[] = [];
   const record = () => {
+    movers.forEach((mover, i) => {
+      const last = seen[i] ?? mover;
+      steps[i] = { d: mover.d - last.d, x: mover.x - last.x };
+      seen[i] = { d: mover.d, x: mover.x };
+    });
     xs.push([]);
     ys.push([]);
     poseLog.push([]);
@@ -588,7 +633,9 @@ export const createClipScript = (input: ClipInput): ClipScript => {
   const steer = (
     frame: number,
     held: ReadonlySet<number>,
-    overrides: ReadonlyMap<number, Point> = new Map()
+    overrides: ReadonlyMap<number, Point> = new Map(),
+    /** A pass along the ground, from the ball to where it goes. */
+    lane?: Readonly<{ from: Point; to: Point }>
   ) => {
     const line = offside ? offsideLine() - 0.5 : Infinity;
     // The defender nearest the ball closes it down, but never tackles.
@@ -621,8 +668,14 @@ export const createClipScript = (input: ClipInput): ClipScript => {
         if (mover.d > line) {
           goal.x = mover.x;
         }
-      } else if (keepAway && i !== keeperSlot) {
-        standBack(goal, keepAway);
+      } else {
+        if (keepAway && i !== keeperSlot) {
+          standBack(goal, keepAway);
+        }
+        // Defenders never cut out a pass: they keep out of its way.
+        if (lane) {
+          standOff(goal, lane.from, lane.to, laneWidth);
+        }
       }
       const speed = perFrame(
         i < attackers.length ? 6 : i === keeperSlot ? 4 : 5.5
@@ -637,6 +690,9 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       }
       if (keepAway && i >= attackers.length && i !== keeperSlot) {
         standBack(mover, keepAway);
+      }
+      if (lane && i >= attackers.length) {
+        standOff(mover, lane.from, lane.to, laneClearance);
       }
     });
   };
@@ -660,7 +716,9 @@ export const createClipScript = (input: ClipInput): ClipScript => {
   let holder = starter;
   const label = (i: number) => attackers[i]!.label;
 
-  /** The holder keeps the ball at their feet, a stride ahead. */
+  /** The way the holder carries the ball, smoothed over a few frames. */
+  let carrying: Point = { d: 1, x: 0 };
+  /** The holder keeps the ball at their feet, a stride ahead the way they go. */
   const dribble = (
     frames: number,
     to: Point,
@@ -674,9 +732,23 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       if (gap > step) {
         mover.d += ((to.d - mover.d) / gap) * step;
         mover.x += ((to.x - mover.x) / gap) * step;
+        // From a walk the carrier turns with the ball at once; at a run the
+        // ball comes round over a few frames.
+        const last = steps[holder];
+        const walking =
+          !last || Math.hypot(last.d, last.x) < perFrame(walkingSpeed);
+        const turn = walking ? 1 : 0.5;
+        const turned = {
+          d: lerp(carrying.d, (to.d - mover.d) / gap, turn),
+          x: lerp(carrying.x, (to.x - mover.x) / gap, turn)
+        };
+        const length = Math.hypot(turned.d, turned.x);
+        if (length > 0.01) {
+          carrying = { d: turned.d / length, x: turned.x / length };
+        }
       }
-      ball.d = mover.d + 0.8;
-      ball.x = mover.x;
+      ball.d = mover.d + carrying.d * stride;
+      ball.x = mover.x + carrying.x * stride;
       const overrides = new Map<number, Point>(chase);
       if (holder !== shooter && passesLeft() === 1) {
         overrides.set(shooter, shootingSpot);
@@ -735,7 +807,7 @@ export const createClipScript = (input: ClipInput): ClipScript => {
         distance(runner, end) > reach(flightTo(end, kind).frames);
         f++
       ) {
-        dribble(1, { d: ball.d - 0.8, x: ball.x }, 1, chase);
+        dribble(1, { d: movers[holder]!.d, x: movers[holder]!.x }, 1, chase);
       }
     }
     // Played into space the receiver can't reach in time, the ball goes
@@ -752,6 +824,22 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     const from = { d: ball.d, x: ball.x };
     const runFrom = { d: runner.d, x: runner.x };
     const { frames, lofted } = flightTo(end, kind);
+    // The receiver meets the ball a stride behind it, the way it came.
+    const came = distance(from, end);
+    const way = came
+      ? { d: (end.d - from.d) / came, x: (end.x - from.x) / came }
+      : { d: 1, x: 0 };
+    const runTo = { d: end.d - way.d * stride, x: end.x - way.x * stride };
+    // The receiver bends their run out of the stride they are in, so they
+    // don't turn sharply as the ball is played.
+    const step = steps[receiver] ?? { d: 0, x: 0 };
+    const ahead = Math.hypot(step.d, step.x) * (frames / 2);
+    const most = distance(runFrom, runTo) / 2;
+    const bend = ahead > most ? most / ahead : 1;
+    const bendAt = {
+      d: runFrom.d + step.d * (frames / 2) * bend,
+      x: runFrom.x + step.x * (frames / 2) * bend
+    };
     passes.push({
       end: frame + frames,
       from: label(holder),
@@ -774,26 +862,49 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       // A throw is let go with the ball still held over the head.
       movers[thrower]!.pose =
         kind === 'throw-in' && f <= kickFrames ? 'hold' : 'run';
-      runner.d = lerp(runFrom.d, end.d - 0.8, u);
-      runner.x = lerp(runFrom.x, end.x, u);
+      runner.d = lerp(
+        lerp(runFrom.d, bendAt.d, u),
+        lerp(bendAt.d, runTo.d, u),
+        u
+      );
+      runner.x = lerp(
+        lerp(runFrom.x, bendAt.x, u),
+        lerp(bendAt.x, runTo.x, u),
+        u
+      );
       const overrides = new Map<number, Point>();
       if (receiver !== shooter && passesLeft() <= 2) {
         overrides.set(shooter, shootingSpot);
       }
-      steer(frame, new Set([receiver]), overrides);
+      steer(
+        frame,
+        new Set([receiver]),
+        overrides,
+        lofted ? undefined : { from: { d: ball.d, x: ball.x }, to: end }
+      );
       record();
       frame++;
     }
     ball.height = 0;
     holder = receiver;
+    // The receiver takes the ball on the way it came.
+    carrying = way;
     passesMade++;
   };
 
   const onside = (i: number) => movers[i]!.d <= offsideLine();
 
+  /** A defender stands within `laneWidth` of the way from the ball to `to`. */
+  const blocked = (to: Point) =>
+    movers
+      .slice(attackers.length)
+      .some(m => distance(m, nearestOnLine(m, ball, to)) < laneWidth);
+
   /**
-   * The next to receive: onside, and ahead of the ball and within reach if
-   * anyone is. The shooter, last, may need a moment to get back onside.
+   * The next to receive: onside, ahead of the ball, within reach and in an
+   * open lane if anyone is. A pass back goes only a short way, to the
+   * holder's own line or the one behind. The shooter, last, may need a
+   * moment to get back onside.
    */
   const nextReceiver = () => {
     if (passesLeft() <= 1) {
@@ -806,15 +917,28 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     if (!choices.length) {
       return shooter;
     }
+    const holderLine = lineOrder.indexOf(attackers[holder]!.line);
     const weights = choices.map(i => {
       const gap = distance(movers[i]!, ball);
       const ahead = movers[i]!.d - ball.d;
-      return (gap > 6 && gap < 35 ? 3 : 0.5) * (ahead > -5 ? 2 : 0.5);
+      const back =
+        ahead > -5
+          ? 2
+          : gap <= longestBackPass &&
+              holderLine - lineOrder.indexOf(attackers[i]!.line) <= 1
+            ? 0.4
+            : 0;
+      return (
+        (gap > 6 && gap < 35 ? 3 : 0.5) *
+        back *
+        (blocked(movers[i]!) ? 0.15 : 1)
+      );
     });
-    let roll = rng.between(
-      0,
-      weights.reduce((a, b) => a + b, 0)
-    );
+    const total = weights.reduce((a, b) => a + b, 0);
+    if (!total) {
+      return shooter;
+    }
+    let roll = rng.between(0, total);
     for (const [k, weight] of weights.entries()) {
       roll -= weight;
       if (roll <= 0) {

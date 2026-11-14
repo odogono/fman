@@ -416,6 +416,20 @@ const despairFrames = 60;
 const fetchFrom = 30;
 /** The reaction's frame the attackers start back. */
 const turnBackFrom = 15;
+/** A scorer's arms go up this many frames before they wheel away. */
+const leapFrames = 15;
+/** A scorer wheels away at this pace, in metres a second. */
+const celebrationPace = 8;
+/** A scorer celebrates where they wheel to for at least this many frames. */
+const celebrateFor = 30;
+/** The furthest a scorer wheels away, in metres, so team-mates catch them. */
+const longestWheel = 12;
+/** Team-mates crowd a celebrating scorer this close, in metres. */
+const huddleGap = 1.1;
+/** A keeper down after a save is up again after this many frames. */
+const getUpFrames = 25;
+/** A keeper with the ball walks out at this pace, in metres a second. */
+const keeperStride = 2;
 /** A header shows its contact, then its landing, this many frames each. */
 const landingFrames = 8;
 /** The longest a passer holds the final pass for the shooter to get in reach. */
@@ -738,10 +752,13 @@ export const createClipScript = (input: ClipInput): ClipScript => {
   const kickUntil = new Array<number>(count).fill(-1);
   const aimUntil = new Array<number>(count).fill(-1);
   const aims: (Point | undefined)[] = new Array(count);
-  const aimAt = (i: number, aim: Point) => {
+  /** Whether a player's aim is only where they look, to turn in their time. */
+  const looking = new Array<boolean>(count).fill(false);
+  const aimAt = (i: number, aim: Point, look = false) => {
     if (i >= 0) {
       aimUntil[i] = frame + kickFrames;
       aims[i] = { ...aim };
+      looking[i] = look;
     }
   };
   const kick = (i: number, aim: Point) => {
@@ -756,6 +773,7 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     input.attackingUp ? [p.x, pitchLength - p.d] : [pitchWidth - p.x, p.d];
   let camera = { d: ball.d + 8, width: cameraWide, x: ball.x };
   let cameraFocus: () => Point = () => ({ d: ball.d + 8, x: ball.x });
+  let keepInShot: () => Point = () => ball;
   let cameraWidth = cameraWide;
   /** The frame each player last turned. */
   const turnedAt = new Array<number>(count).fill(-Infinity);
@@ -812,7 +830,9 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       // A turn waits until the last has settled, but a kick or a throw
       // faces its aim at once.
       const kept = at ? facingLog[at - 1]![i]! : wanted;
-      const turns = wanted !== kept && (aim || at - turnedAt[i]! >= turnFrames);
+      const turns =
+        wanted !== kept &&
+        ((aim && !looking[i]) || at - turnedAt[i]! >= turnFrames);
       if (turns) {
         turnedAt[i] = at;
       }
@@ -830,10 +850,12 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     const focus = cameraFocus();
     const halfWidth = cameraWidth / 2;
     const halfLength = (cameraWidth * cameraAspect) / 2;
-    // The camera eases after its focus, but never lets the ball out of shot.
+    // The camera eases after its focus, but never lets the ball, or after
+    // a goal the scorer, out of shot.
+    const subject = keepInShot();
     const inShot = (p: Point): Point => ({
-      d: clamp(p.d, ball.d - halfLength + 3, ball.d + halfLength - 3),
-      x: clamp(p.x, ball.x - halfWidth + 3, ball.x + halfWidth - 3)
+      d: clamp(p.d, subject.d - halfLength + 3, subject.d + halfLength - 3),
+      x: clamp(p.x, subject.x - halfWidth + 3, subject.x + halfWidth - 3)
     });
     camera = {
       ...inShot({
@@ -2022,6 +2044,63 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     : [];
   const rues =
     outcomeKind(outcome) === 'save' || outcomeKind(outcome) === 'near-miss';
+  // The scorer wheels away towards the corner flag, to the fans behind the
+  // goal, or back to their team-mates, as the seed picks, going only as far
+  // as leaves them time to celebrate there. The nearest team-mates chase
+  // them down and pile in.
+  const awayFrom = scorer.x < 34 ? -1 : 1;
+  const wheelsTo = rng.pick(['corner', 'fans', 'mates'] as const);
+  const wheelRange = Math.min(
+    longestWheel,
+    perFrame(celebrationPace) * (reactionFrames - leapFrames - celebrateFor)
+  );
+  const wheelTowards: Point =
+    wheelsTo === 'corner'
+      ? corner
+      : wheelsTo === 'fans'
+        ? { d: pitchLength - 1, x: 34 + awayFrom * rng.between(9, 14) }
+        : { d: scorer.d - rng.between(8, 12), x: lerp(scorer.x, 34, 0.3) };
+  const wheel = Math.min(1, wheelRange / (distance(scorer, wheelTowards) || 1));
+  const celebrateAt: Point = {
+    d: lerp(scorer.d, wheelTowards.d, wheel),
+    x: lerp(scorer.x, wheelTowards.x, wheel)
+  };
+  /** Where the scorer turns to celebrate: to the fans, or their team. */
+  const salute: Point =
+    wheelsTo === 'corner'
+      ? { d: corner.d + 4, x: corner.x + awayFrom * 6 }
+      : wheelsTo === 'fans'
+        ? { d: pitchLength + 6, x: celebrateAt.x }
+        : { d: celebrateAt.d - 6, x: celebrateAt.x };
+  const joiners = conceded
+    ? others
+        .toSorted(
+          (a, b) => distance(movers[a]!, scorer) - distance(movers[b]!, scorer)
+        )
+        .slice(0, 3)
+    : [];
+  // After a catch, the team-mate the keeper looks for breaks wide, and the
+  // rest push up the pitch. After a parry the keeper gets up and back to
+  // their line, and an attacker goes to take the corner.
+  const wideFor =
+    mate >= 0
+      ? {
+          d: (keeper?.d ?? pitchLength) - 16,
+          x: movers[mate]!.x < 34 ? 18 : pitchWidth - 18
+        }
+      : undefined;
+  const pushUp = { d: pitchLength - 35, x: 34 };
+  const flag = {
+    d: pitchLength - 0.5,
+    x: ball.x < 34 ? 0.5 : pitchWidth - 0.5
+  };
+  const cornerTaker =
+    outcome === 'parry'
+      ? (others.toSorted(
+          (a, b) => distance(movers[a]!, flag) - distance(movers[b]!, flag)
+        )[0] ?? -1)
+      : -1;
+  const huddled = new Set<number>();
   let fetched = false;
   let mateSpot: Point | undefined;
   let keeperSpot: Point | undefined;
@@ -2032,23 +2111,43 @@ export const createClipScript = (input: ClipInput): ClipScript => {
         ? cameraZoomed
         : lerp(cameraZoomed, cameraWide, ease(Math.min(1, (f - 50) / 50)));
     const overrides = new Map<number, Point>();
+    const paces = new Map<number, number>();
     if (outcome === 'goal') {
-      scorer.pose = 'celebrate';
-      const gap = distance(scorer, corner);
-      const step = perFrame(6);
-      if (gap > step) {
-        scorer.d += ((corner.d - scorer.d) / gap) * step;
-        scorer.x += ((corner.x - scorer.x) / gap) * step;
+      // Arms up where they scored, then away, then arms up again there.
+      const gap = distance(scorer, celebrateAt);
+      const step = perFrame(celebrationPace);
+      const off = f >= leapFrames && gap > step;
+      if (off) {
+        scorer.d += ((celebrateAt.d - scorer.d) / gap) * step;
+        scorer.x += ((celebrateAt.x - scorer.x) / gap) * step;
+      } else if (f >= leapFrames) {
+        Object.assign(scorer, celebrateAt);
+        aimAt(shooter, salute, true);
       }
-      outfield.forEach((i, k) => {
-        if (i !== shooter) {
-          overrides.set(i, {
-            d: scorer.d - 2 - (k % 3),
-            x: scorer.x + ((k % 5) - 2) * 1.2
-          });
-        }
+      scorer.pose = off ? 'run' : 'celebrate';
+      joiners.forEach((i, k) => {
+        const angle = Math.PI * (0.25 + (k * 2) / 3);
+        // They make for where the scorer is going, to meet them there.
+        overrides.set(i, {
+          d: celebrateAt.d - Math.sin(angle) * huddleGap,
+          x: celebrateAt.x + Math.cos(angle) * huddleGap
+        });
+        paces.set(i, celebrationPace);
       });
+      // The rest jog over and applaud from a few metres off.
+      for (const i of others) {
+        if (!joiners.includes(i)) {
+          const from = movers[i]!;
+          const gap = distance(from, scorer) || 1;
+          overrides.set(i, {
+            d: scorer.d + ((from.d - scorer.d) / gap) * 4,
+            x: scorer.x + ((from.x - scorer.x) / gap) * 4
+          });
+          paces.set(i, jogPace);
+        }
+      }
       cameraFocus = () => ({ d: scorer.d, x: scorer.x });
+      keepInShot = () => scorer;
     } else if (outcomeKind(outcome) === 'clearance') {
       scorer.pose = 'run';
       if (f === 25) {
@@ -2075,27 +2174,47 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       scorer.pose = outcomeKind(outcome) === 'near-miss' ? 'head' : 'run';
       if (keeper && outcomeKind(outcome) === 'save') {
         if (outcome === 'parry') {
-          keeper.pose = f < 25 ? 'dive' : 'run';
+          // Up off the ground, and back to the line for the corner.
+          keeper.pose = f < getUpFrames ? 'dive' : 'run';
+          if (f === getUpFrames) {
+            reactionHeld.delete(keeperSlot);
+          }
+          if (f >= getUpFrames) {
+            overrides.set(keeperSlot, { d: pitchLength - 1, x: 34 });
+            paces.set(keeperSlot, walkPace);
+          }
+          if (cornerTaker >= 0 && f >= turnBackFrom) {
+            overrides.set(cornerTaker, flag);
+          }
         } else if (f < release) {
-          // Held: down after a dive, then up in the hands, or ready to bowl.
-          keeper.pose =
-            f < 25 && outcome === 'dive'
-              ? 'dive'
-              : playOut === 'roll' && f >= release - 8
-                ? 'kick'
-                : 'hold';
+          // Held: down after a dive, then up in the hands, or ready to bowl,
+          // coming out a few steps as the team spreads to take it.
+          const down = outcome === 'dive' && f < getUpFrames;
+          keeper.pose = down
+            ? 'dive'
+            : playOut === 'roll' && f >= release - 8
+              ? 'kick'
+              : 'hold';
+          if (!down) {
+            keeper.d -= perFrame(keeperStride);
+          }
           ball.d = keeper.d;
           ball.x = keeper.x;
+          if (wideFor) {
+            overrides.set(mate, wideFor);
+            paces.set(mate, 5);
+          }
         } else if (playOut === 'kick') {
           // Kicked long, to land and bounce in midfield.
           if (f === release) {
             kick(keeperSlot, outlet);
+            keeperSpot = { d: keeper.d, x: keeper.x };
           }
           keeper.pose = 'run';
           if (f < release + 30) {
             const u = ease((f - release) / 30);
-            ball.d = lerp(ballAtRest.d, outlet.d, u);
-            ball.x = lerp(ballAtRest.x, outlet.x, u);
+            ball.d = lerp(keeperSpot!.d, outlet.d, u);
+            ball.x = lerp(keeperSpot!.x, outlet.x, u);
             ball.height = loftedHeight(u, 0.5);
           } else {
             ball.height = 0;
@@ -2137,7 +2256,6 @@ export const createClipScript = (input: ClipInput): ClipScript => {
           ? () => ({ d: (ball.d + pitchLength) / 2, x: ball.x })
           : () => ({ d: scorer.d + 4, x: scorer.x });
     }
-    const paces = new Map<number, number>();
     if (conceded) {
       for (const i of despairing) {
         if (f < despairFrames) {
@@ -2179,14 +2297,43 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       if (f === (rues ? despairFrames : 0)) {
         reactionHeld.delete(shooter);
       }
+      // Waiting on a corner, the attackers stay up.
       outfield.forEach(i => {
-        if (!reactionHeld.has(i) && !overrides.has(i) && f >= turnBackFrom) {
+        if (
+          outcome !== 'parry' &&
+          !reactionHeld.has(i) &&
+          !overrides.has(i) &&
+          f >= turnBackFrom
+        ) {
           overrides.set(i, target(i, halfway, frame));
           paces.set(i, jogPace);
         }
       });
+      if (caughtIt && f >= turnBackFrom) {
+        defenders.forEach((p, j) => {
+          const i = attackers.length + j;
+          if (p.line !== 'keeper' && !overrides.has(i)) {
+            overrides.set(i, target(i, pushUp, frame));
+            paces.set(i, jogPace);
+          }
+        });
+      }
     }
     steer(frame, reactionHeld, overrides, undefined, paces);
+    for (const i of joiners) {
+      // Once both are there, they throw their arms up and stay.
+      if (
+        f >= leapFrames &&
+        distance(scorer, celebrateAt) < 0.01 &&
+        distance(movers[i]!, scorer) < huddleGap + 0.8
+      ) {
+        huddled.add(i);
+        reactionHeld.add(i);
+      }
+      // Chasing or arrived, they look at the scorer.
+      movers[i]!.pose = huddled.has(i) ? 'celebrate' : 'run';
+      aimAt(i, scorer, true);
+    }
     record();
     frame++;
   }

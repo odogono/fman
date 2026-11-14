@@ -74,7 +74,7 @@ A **status icon** is a small pixel-art icon floating above a player's head, afte
 
 ## Debug page
 
-A page of its own, `web/clips.html`, served by `bun run dev` at `/clips` and left out of the build, plays any clip the engine can make. It sets the kind, outcome and restart (or leaves them to the seed), the scoring side, the minute, both kits, the managed side's line counts with or without a goalkeeper, and the moment's place in the list, with a random-seed button. It plays, pauses, steps and scrubs frames at ¼×, 1× and 4×, shows the clip's length, moment frame and passes, and can overlay player ids and the ball's path. It sets each side's energy, to show tiredness. It can also load the autosave or a web save file and replay a moment from that match's ticker.
+A page of its own, `web/clips.html`, served by `bun run dev` at `/clips` and published beside the game at `clips.html` (left out of the offline cache), plays any clip the engine can make. It sets the kind, outcome and restart (or leaves them to the seed), the scoring side, the minute, both kits, the managed side's line counts with or without a goalkeeper, and the moment's place in the list, with a random-seed button. It plays, pauses, steps and scrubs frames at ¼×, 1× and 4×, shows the clip's length, moment frame and passes, and can overlay player ids and the ball's path. It sets each side's energy, to show tiredness. It can also load the autosave or a web save file and replay a moment from that match's ticker.
 
 It also checks each clip for play that looks wrong (`web/src/view/clip-checks.ts`):
 

@@ -37,8 +37,15 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Every page load is the game's one page; built files come from the cache.
-// Anything else goes to the network as usual.
+/**
+ * A page other than the game's, such as the clip debugger at `clips.html`
+ * or `clips`, left uncached: the game is its folder or `index.html`.
+ */
+const otherPage = (url: URL) =>
+  !url.pathname.endsWith('/') && !url.pathname.endsWith('/index.html');
+
+// Every page load is the game's page, unless it names another page;
+// built files come from the cache. Anything else goes to the network.
 self.addEventListener('fetch', event => {
   const { request } = event;
   if (request.method !== 'GET') {
@@ -47,7 +54,7 @@ self.addEventListener('fetch', event => {
   const url = new URL(request.url);
   url.hash = '';
   url.search = '';
-  const key = request.mode === 'navigate' ? start : url.href;
+  const key = request.mode === 'navigate' && !otherPage(url) ? start : url.href;
   if (!precached.has(key)) {
     return;
   }

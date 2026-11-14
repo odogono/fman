@@ -8,7 +8,7 @@ import { icons } from './icons';
 
 const outdir = await mkdtemp(join(tmpdir(), 'fman-site-'));
 afterAll(() => rm(outdir, { force: true, recursive: true }));
-const { precache } = await buildSite({ base: '/fman/', outdir });
+const { debug, precache } = await buildSite({ base: '/fman/', outdir });
 const read = (file: string) => Bun.file(join(outdir, file));
 
 /** The cache a built service worker names. */
@@ -55,8 +55,18 @@ test('each icon is a PNG of its size', async () => {
   }
 });
 
-test('the service worker caches every file the build wrote', async () => {
-  const written = (await readdir(outdir)).filter(file => file !== 'sw.js');
+test('the clip debugger is published, its script under the base', async () => {
+  expect(debug).toContain('clips.html');
+  const html = await read('clips.html').text();
+  expect(html).toContain('<title>Clip debugger</title>');
+  expect(html).toMatch(/src="\/fman\/[^"]+\.js"/);
+});
+
+test('the service worker caches every file of the game the build wrote', async () => {
+  const written = (await readdir(outdir)).filter(
+    file => file !== 'sw.js' && !debug.includes(file)
+  );
+  expect(precache).not.toContain('clips.html');
   expect(precache.toSorted()).toEqual(
     written.map(file => (file === 'index.html' ? './' : file)).toSorted()
   );

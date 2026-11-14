@@ -1,6 +1,7 @@
 import { expect, test } from 'bun:test';
 
 import { finishPrompt, submitInput } from '../test/input';
+import { spectrumFrameT } from './frame-clock';
 import { createJournal, openSave, type Journal } from './journal';
 import { presentDay, type Ruleset } from './ruleset';
 import { encodeSave, saveVersion } from './save';
@@ -382,6 +383,7 @@ test('clip lengths are kept in the journal, and resume mid-clip', () => {
   expect(tickerOf(restored).lengths).toEqual(clips);
   expect(state(restored)).toBe(state(journal));
   expect(tickerOf(restored).elapsedT).toBe(tickerOf(journal).elapsedT);
+  expect(tickerOf(restored).pauseElapsedT).toBe(40 * spectrumFrameT);
   journal.advance(clips[0]! - 41);
   restored.advance(clips[0]! - 41);
   expect(tickerOf(journal).shown).toHaveLength(1);

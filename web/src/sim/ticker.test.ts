@@ -1,5 +1,6 @@
 import { expect, test } from 'bun:test';
 
+import { spectrumFrameT } from './frame-clock';
 import type { Moment } from './moments';
 import { createPauseKeyboard } from './pause-keyboard';
 import {
@@ -129,6 +130,21 @@ test("clip lengths replace each moment's pause; the header and final hold keep 7
   expect(ticker.done).toBe(false);
   ticker.advance(1);
   expect(ticker.done).toBe(true);
+});
+
+test('the ticker tells how far into the current pause it is', () => {
+  const ticker = createTicker({ moments }, true, createPauseKeyboard(), clips);
+  expect(ticker.pauseElapsedT).toBe(0);
+  ticker.advance(tickerLeadIn + 30);
+  expect(ticker.pauseElapsedT).toBe(30 * spectrumFrameT);
+  ticker.advance(tickerPause - 30 + 42);
+  expect(ticker.shown).toHaveLength(1);
+  expect(ticker.pauseElapsedT).toBe(42 * spectrumFrameT);
+  ticker.skipPause();
+  expect(ticker.pauseElapsedT).toBe(0);
+  ticker.advance(tickerPause);
+  expect(ticker.done).toBe(true);
+  expect(ticker.pauseElapsedT).toBe(0);
 });
 
 test('without clip lengths every pause keeps 75 frames', () => {

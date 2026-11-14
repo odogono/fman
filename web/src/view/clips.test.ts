@@ -82,7 +82,12 @@ test('clips run at real-world pace, within what the sim holds', () => {
       expect(Number.isInteger(script.length)).toBe(true);
       // The build-up, the zoom, the moment, then the reaction, in order.
       const { moment, reaction, zoom } = script.phases;
-      expect(zoom).toBeGreaterThanOrEqual((corner ? 3 : 6) * clipFps);
+      // At least a few seconds' build-up, and the moment within 15 s. A
+      // cross can come quickly, as on the break; a shot is worked for.
+      expect(zoom).toBeGreaterThanOrEqual(
+        (corner ? 3 : script.finish === 'header' ? 3.5 : 6) * clipFps
+      );
+      expect(moment).toBeLessThanOrEqual(15 * clipFps);
       expect(zoom).toBeLessThan(moment);
       expect(script.momentFrame).toBeGreaterThan(moment);
       expect(script.momentFrame).toBeLessThan(reaction);
@@ -1062,5 +1067,57 @@ test('a clearance lands, bounces and runs on before it stops', () => {
         0.01
       );
     }
+  }
+});
+
+test('after a save or a miss the shooter holds their head, then all turn back', () => {
+  for (let seed = 0; seed < 30; seed++) {
+    const kind = seed % 2 ? 'save' : 'near-miss';
+    const script = createClipScript(input({ kind, seed }));
+    const { reaction } = script.phases;
+    expect(script.frame(reaction + 10).players[9]!.pose).toBe('head');
+    // By the end the attackers have headed back up their own half.
+    const start = script.frame(reaction);
+    const end = script.frame(script.length - 1);
+    const back = start.players.filter(
+      (p, i) =>
+        p.side === 'attack' &&
+        !p.keeper &&
+        depth(end.players[i]!.y) < depth(p.y) - 2
+    );
+    expect(back.length).toBeGreaterThanOrEqual(5);
+  }
+});
+
+test('after a goal a defender despairs and the keeper fetches the ball', () => {
+  for (let seed = 0; seed < 20; seed++) {
+    const script = createClipScript(input({ kind: 'goal', seed }));
+    const { reaction } = script.phases;
+    const despair = script
+      .frame(reaction + 30)
+      .players.filter(p => p.side === 'defence' && p.pose === 'head');
+    expect(despair.length).toBeGreaterThanOrEqual(1);
+    const end = script.frame(script.length - 1);
+    const keeper = end.players.find(p => p.side === 'defence' && p.keeper)!;
+    expect(keeper.pose).toBe('hold');
+    expect(
+      Math.hypot(keeper.x - end.ball.x, keeper.y - end.ball.y)
+    ).toBeLessThan(1);
+  }
+});
+
+test('no one freezes once the ball arrives', () => {
+  for (let seed = 0; seed < 30; seed++) {
+    const kind = (['goal', 'save', 'near-miss', 'clearance'] as const)[
+      seed % 4
+    ]!;
+    const script = createClipScript(input({ kind, seed }));
+    const from = script.frame(script.momentFrame);
+    const to = script.frame(script.momentFrame + clipFps);
+    const moved = from.players.filter((p, i) => {
+      const q = to.players[i]!;
+      return Math.hypot(q.x - p.x, q.y - p.y) > 1;
+    });
+    expect(moved.length).toBeGreaterThanOrEqual(5);
   }
 });

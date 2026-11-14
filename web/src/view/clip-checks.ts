@@ -15,12 +15,14 @@ export type ClipIssueKind =
   | 'ball-behind-carrier'
   | 'crowded'
   | 'facing-away'
+  | 'facing-flicker'
   | 'long-back-pass'
   | 'long-ground-pass'
   | 'pass-through-defender'
   | 'receiver-misses'
   | 'scattered-back-line'
   | 'sharp-turn'
+  | 'slow-build-up'
   | 'slow-pass'
   | 'unlikely-scorer';
 
@@ -28,12 +30,14 @@ export const clipIssueKinds: readonly ClipIssueKind[] = [
   'ball-behind-carrier',
   'crowded',
   'facing-away',
+  'facing-flicker',
   'long-back-pass',
   'long-ground-pass',
   'pass-through-defender',
   'receiver-misses',
   'scattered-back-line',
   'sharp-turn',
+  'slow-build-up',
   'slow-pass',
   'unlikely-scorer'
 ];
@@ -62,6 +66,9 @@ export const clipLimits = {
   defenderClearance: 0.9,
   /** A passer faces within this angle of the pass. */
   facingAngle: Math.PI / 3,
+  /** A player who turns this many times within the frames after flickers. */
+  flickerFrames: clipFps / 2,
+  flickerTurns: 3,
   /** The longest pass back, in metres, and how far back makes it one. */
   longestBackPass: 15,
   longestGroundPass: 30,
@@ -70,6 +77,8 @@ export const clipLimits = {
   passPace: 10,
   /** The receiver is this close to the ball as a pass arrives. */
   receiverReach: 1.5,
+  /** The moment starts within this many frames of the clip's start. */
+  momentBy: 15 * clipFps,
   /** A back line spread deeper than this, in metres, is scattered. */
   scattered: 6,
   /** For at least this many frames. */
@@ -346,6 +355,46 @@ export const checkClip = (script: ClipScript): ClipIssue[] => {
         players: backLine
       });
     }
+  }
+
+  // No one turns back and forth: three turns within half a second flicker.
+  // A turn to kick the ball is meant, so it doesn't count.
+  for (let i = 0; i < count; i++) {
+    const turns: number[] = [];
+    for (let at = 1; at < frames.length; at++) {
+      const player = frames[at]!.players[i]!;
+      if (
+        player.pose !== 'kick' &&
+        player.facing !== frames[at - 1]!.players[i]!.facing
+      ) {
+        turns.push(at);
+      }
+    }
+    const last = clipLimits.flickerTurns - 1;
+    for (let k = last; k < turns.length; k++) {
+      if (turns[k]! - turns[k - last]! <= clipLimits.flickerFrames) {
+        const side = i < attackers ? 'attack' : 'defence';
+        issues.push({
+          end: turns[k]!,
+          kind: 'facing-flicker',
+          message: `${side} #${i < attackers ? i : i - attackers} turns ${clipLimits.flickerTurns} times in half a second`,
+          players: [i],
+          start: turns[k - last]!
+        });
+        break;
+      }
+    }
+  }
+
+  // The build-up gets to the point: the moment starts within 15 s.
+  if (phases.moment > clipLimits.momentBy) {
+    issues.push({
+      end: phases.moment,
+      kind: 'slow-build-up',
+      message: `the moment starts ${(phases.moment / clipFps).toFixed(1)} s in`,
+      players: [],
+      start: clipLimits.momentBy
+    });
   }
 
   // Defenders and keepers score mostly from set pieces.

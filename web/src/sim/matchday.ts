@@ -22,7 +22,7 @@ import {
   type HighlightResult,
   type Playback
 } from './playback';
-import { momentHighlights } from './ruleset';
+import { clearances, momentHighlights } from './ruleset';
 import { createTicker, validClipLengths, type Ticker } from './ticker';
 
 export type MatchdayStage =
@@ -147,6 +147,7 @@ export const createMatchday = (initial: Game, keyboard?: PauseKeyboard) => {
       if (momentHighlights(game.ruleset)) {
         const { squad } = game.clubs[fixture.opponent - 1]!;
         moments = decideMoments({
+          clearances: clearances(game.ruleset),
           home: fixture.home,
           opponent: fixture.opponentStrength,
           players: game.players,

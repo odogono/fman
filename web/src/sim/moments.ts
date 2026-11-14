@@ -3,13 +3,13 @@ import { createRng, type Rng } from './rng';
 import { playerCategory, positionCategory, type SquadPlayer } from './squads';
 
 /**
- * One decisive event in a match (#107): a goal, a save or a near miss, at a
- * minute, for the side that made the chance. It names the player who shot:
+ * One decisive event in a match (#107): a goal, a save, a clearance (#150)
+ * or a near miss, at a minute, for the side that made the chance. It names the player who shot:
  * for the managed club the picked player's place (`player`), and for an
  * opponent with a squad (#124) the player's index in it (`squadPlayer`).
  */
 export type Moment = Readonly<{
-  kind: 'goal' | 'near-miss' | 'save';
+  kind: 'clearance' | 'goal' | 'near-miss' | 'save';
   minute: number;
   player?: number;
   side: 'club' | 'opponent';
@@ -24,6 +24,13 @@ export type Moment = Readonly<{
 const goalRoll = 55;
 /** Of the rest, a save up to this roll and a near miss above it. */
 const saveRoll = 77;
+/**
+ * With clearances (#150), the rest split as the original's missed attacks
+ * end: a save (off the keeper, about 25% of them) up to the first roll, a
+ * clearance (off a defender, about 37%) up to the second, and a near miss
+ * (untouched, or off an attacker) above it.
+ */
+const clearanceRolls = { clearance: 83, save: 66 } as const;
 
 /** How much more often each playing category is named: defence to attack. */
 const categoryWeight = [1, 2, 4] as const;
@@ -78,6 +85,8 @@ const pickSquadShooter = (rng: Rng, squad: readonly SquadPlayer[]) =>
  * them, and only the names change.
  */
 export const decideMoments = (input: {
+  /** Some chances that aren't goals are clearances (#150). */
+  clearances?: boolean;
   home: boolean;
   opponent: readonly number[];
   opponentSquad?: readonly SquadPlayer[];
@@ -95,8 +104,18 @@ export const decideMoments = (input: {
   const drawn: Moment[] = [];
   const chance = (side: Moment['side']) => {
     const roll = rng.int(1, 100);
-    const kind =
-      roll <= goalRoll ? 'goal' : roll <= saveRoll ? 'save' : 'near-miss';
+    const kind: Moment['kind'] =
+      roll <= goalRoll
+        ? 'goal'
+        : input.clearances
+          ? roll <= clearanceRolls.save
+            ? 'save'
+            : roll <= clearanceRolls.clearance
+              ? 'clearance'
+              : 'near-miss'
+          : roll <= saveRoll
+            ? 'save'
+            : 'near-miss';
     const minute = rng.int(1, 90);
     const player =
       side === 'club' ? pickShooter(rng, input.players) : undefined;

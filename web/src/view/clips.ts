@@ -22,10 +22,18 @@ export const cameraAspect = 5 / 4;
 export const captionFrames = 25;
 
 export type SaveOutcome = 'dive' | 'hold' | 'parry';
+export type ClearanceOutcome = 'block' | 'interception';
 export type MissOutcome = 'over' | 'post' | 'wide-left' | 'wide-right';
-/** How a moment plays out: a goal, a kind of save or a kind of near miss. */
-export type ClipOutcome = 'goal' | MissOutcome | SaveOutcome;
+/**
+ * How a moment plays out: a goal, a kind of save, a kind of clearance
+ * (#150) or a kind of near miss.
+ */
+export type ClipOutcome = 'goal' | ClearanceOutcome | MissOutcome | SaveOutcome;
 export const saveOutcomes: readonly SaveOutcome[] = ['dive', 'hold', 'parry'];
+export const clearanceOutcomes: readonly ClearanceOutcome[] = [
+  'interception',
+  'block'
+];
 export const missOutcomes: readonly MissOutcome[] = [
   'post',
   'wide-left',
@@ -163,13 +171,34 @@ const createClipRng = (seed: number) => {
 };
 type ClipRng = ReturnType<typeof createClipRng>;
 
-/** The outcome the seed picks for a kind, each equally likely. */
+/**
+ * A near miss goes wide most often, as in the original, where only a few
+ * hit the post (#150): wide 60%, split by side, over the bar 25%, post 15%.
+ */
+const drawMiss = (rng: ClipRng): MissOutcome => {
+  const roll = rng.next();
+  return roll < 0.3
+    ? 'wide-left'
+    : roll < 0.6
+      ? 'wide-right'
+      : roll < 0.85
+        ? 'over'
+        : 'post';
+};
+
+/** The outcome the seed picks for a kind. */
 const drawOutcome = (rng: ClipRng, kind: Moment['kind']): ClipOutcome =>
   kind === 'goal'
     ? 'goal'
     : kind === 'save'
       ? rng.pick(saveOutcomes)
-      : rng.pick(missOutcomes);
+      : kind === 'clearance'
+        ? rng.pick(clearanceOutcomes)
+        : drawMiss(rng);
+
+/** The outcome a clip's seed picks for a kind: the clip's first draw. */
+export const seededOutcome = (seed: number, kind: Moment['kind']) =>
+  drawOutcome(createClipRng(seed), kind);
 
 /** The kind of moment an outcome plays. */
 export const outcomeKind = (outcome: ClipOutcome): Moment['kind'] =>
@@ -177,7 +206,9 @@ export const outcomeKind = (outcome: ClipOutcome): Moment['kind'] =>
     ? 'goal'
     : (saveOutcomes as readonly string[]).includes(outcome)
       ? 'save'
-      : 'near-miss';
+      : (clearanceOutcomes as readonly string[]).includes(outcome)
+        ? 'clearance'
+        : 'near-miss';
 
 type Point = { d: number; x: number };
 type Mover = Point & { pose: Pose };
@@ -214,7 +245,7 @@ const lateralSpots = (players: readonly ClipPlayer[]) => {
  */
 export const createClipScript = (input: ClipInput): ClipScript => {
   const rng = createClipRng(input.seed);
-  const outcome = input.outcome ?? drawOutcome(rng, input.kind);
+  const drawnOutcome = input.outcome ?? drawOutcome(rng, input.kind);
   const attackers = input.attack.players;
   const defenders = input.defence.players;
   const count = attackers.length + defenders.length;
@@ -279,6 +310,10 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     p.line === 'keeper' && i !== shooter ? [] : [i]
   );
   const others = outfield.filter(i => i !== shooter);
+  // An interception needs someone to make the final pass; alone, the
+  // shooter is blocked instead.
+  let outcome: ClipOutcome =
+    drawnOutcome === 'interception' && !others.length ? 'block' : drawnOutcome;
   const deep = others.filter(i => attackers[i]!.line !== 'attack');
   let starter = others.length ? rng.pick(deep.length ? deep : others) : shooter;
   // Of the build-ups, 40% start in open play, 20% each from a free kick and
@@ -665,16 +700,18 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     const long = others.filter(
       i => onside(i) && movers[i]!.d > 30 && movers[i]!.d < 75
     );
-    pass(
-      restart === 'corner'
-        ? shooter
-        : restart === 'throw-in' && near.length
-          ? rng.pick(near)
-          : restart === 'goal-kick' && long.length
-            ? rng.pick(long)
-            : nextReceiver(),
-      restart
-    );
+    if (restart !== 'corner' || outcome !== 'interception') {
+      pass(
+        restart === 'corner'
+          ? shooter
+          : restart === 'throw-in' && near.length
+            ? rng.pick(near)
+            : restart === 'goal-kick' && long.length
+              ? rng.pick(long)
+              : nextReceiver(),
+        restart
+      );
+    }
   }
 
   // The build-up: each player takes the ball under control, may carry it
@@ -713,17 +750,39 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     if (frame > maxBuildUp) {
       passesMade = Math.max(passesMade, passCount - 1);
     }
-    pass(nextReceiver());
+    const receiver = nextReceiver();
+    if (receiver === shooter && outcome === 'interception') {
+      // The final pass is the one cut out.
+      break;
+    }
+    pass(receiver);
+  }
+  if (holder === shooter && outcome === 'interception') {
+    outcome = 'block';
   }
 
   // The zoom: the shooter takes a touch towards goal as the camera closes in.
   // Offside no longer matters once the shooter has the ball in range.
   const zoomStart = frame;
   const zoomFrames = clipFps;
-  const touch = { d: Math.min(movers[shooter]!.d + 1.5, 100), x: ball.x };
+  // Before an interception the passer has the ball; a corner taker waits.
+  const touch =
+    holder === shooter
+      ? { d: Math.min(movers[shooter]!.d + 1.5, 100), x: ball.x }
+      : restart === 'corner'
+        ? { d: movers[holder]!.d, x: movers[holder]!.x }
+        : { d: Math.min(movers[holder]!.d + 1, 100), x: ball.x };
+  const waiting = restart === 'corner' && holder !== shooter;
   for (let f = 0; f < zoomFrames; f++) {
     cameraWidth = lerp(cameraWide, cameraZoomed, ease(f / zoomFrames));
-    dribble(1, touch, 1.5);
+    if (waiting) {
+      // The ball stays on the corner spot until it is crossed.
+      steer(frame, new Set([holder]));
+      record();
+      frame++;
+    } else {
+      dribble(1, touch, 1.5);
+    }
   }
   cameraWidth = cameraZoomed;
 
@@ -734,107 +793,198 @@ export const createClipScript = (input: ClipInput): ClipScript => {
   const side = rng.next() < 0.5 ? -1 : 1;
   const shotFrom = { d: ball.d, x: ball.x };
   const keeper = keeperSlot >= 0 ? movers[keeperSlot]! : undefined;
-  let aim: Point;
-  let rest: Point;
-  let stopsAtKeeper = false;
-  switch (outcome) {
-    case 'goal': {
-      const x = 34 + side * rng.between(0.6, goalHalf - 0.4);
-      aim = { d: pitchLength, x };
-      rest = { d: pitchLength + 1.8, x: x + side * 0.4 };
-      break;
+  let momentFrame: number;
+  /** For a clearance, the defender who meets the ball and clears it. */
+  let clearer = -1;
+  if (outcomeKind(outcome) === 'clearance') {
+    // The final pass cut out, or the shot blocked by a defender stepping
+    // into its line; the clip reaches its moment as they meet the ball.
+    const interception = outcome === 'interception';
+    const runner = movers[shooter]!;
+    const towards = interception
+      ? { d: Math.min(runner.d + 2, 100), x: runner.x }
+      : { d: pitchLength, x: 34 + side * rng.between(0, goalHalf - 0.5) };
+    const along = interception
+      ? rng.between(0.45, 0.7)
+      : rng.between(0.3, 0.55);
+    const meet = {
+      d: lerp(shotFrom.d, towards.d, along),
+      x: lerp(shotFrom.x, towards.x, along)
+    };
+    let nearest = Infinity;
+    defenders.forEach((p, j) => {
+      const i = attackers.length + j;
+      const gap = distance(movers[i]!, meet);
+      if (p.line !== 'keeper' && gap < nearest) {
+        nearest = gap;
+        clearer = i;
+      }
+    });
+    if (clearer < 0) {
+      clearer = keeperSlot;
     }
-    case 'hold':
-    case 'dive':
-    case 'parry': {
-      const x =
-        34 +
-        side *
-          (outcome === 'hold'
-            ? rng.between(0, 1.2)
-            : rng.between(2, goalHalf - 0.3));
-      aim = { d: pitchLength - 0.8, x };
-      stopsAtKeeper = true;
-      rest =
-        outcome === 'parry'
-          ? { d: pitchLength + 2, x: 34 + side * rng.between(8, 12) }
-          : aim;
-      break;
+    const flight = Math.max(
+      10,
+      Math.ceil(distance(shotFrom, meet) / perFrame(interception ? 15 : 25))
+    );
+    momentFrame = momentStart + flight - 1;
+    const from = clearer >= 0 ? { ...movers[clearer]! } : undefined;
+    // Off a block the ball runs loose, back the way it came.
+    const loose = interception
+      ? meet
+      : { d: meet.d - rng.between(3, 6), x: meet.x + rng.between(-4, 4) };
+    const held = new Set([holder, shooter, clearer]);
+    cameraFocus = () => ({ d: ball.d + 4, x: ball.x });
+    for (let f = 1; f <= momentFrames; f++) {
+      const defender = clearer >= 0 ? movers[clearer]! : undefined;
+      if (f <= flight) {
+        const u = f / flight;
+        ball.d = lerp(shotFrom.d, meet.d, u);
+        ball.x = lerp(shotFrom.x, meet.x, u);
+        ball.height = interception ? 0 : Math.sin(Math.PI * u) * 0.25;
+        if (defender && from) {
+          defender.d = lerp(from.d, meet.d + 0.6, u);
+          defender.x = lerp(from.x, meet.x, u);
+        }
+        if (interception) {
+          const gap = distance(runner, towards);
+          const step = perFrame(6);
+          if (gap > step) {
+            runner.d += ((towards.d - runner.d) / gap) * step;
+            runner.x += ((towards.x - runner.x) / gap) * step;
+          }
+        }
+      } else {
+        const settle = Math.min(1, (f - flight) / 30);
+        const u = 1 - (1 - settle) * (1 - settle);
+        ball.d = lerp(meet.d, loose.d, u);
+        ball.x = lerp(meet.x, loose.x, u);
+        ball.height = 0;
+        if (defender) {
+          // The defender gets to the ball, facing upfield.
+          const to = { d: ball.d + 0.6, x: ball.x };
+          const gap = distance(defender, to);
+          const step = perFrame(5);
+          if (gap > step) {
+            defender.d += ((to.d - defender.d) / gap) * step;
+            defender.x += ((to.x - defender.x) / gap) * step;
+          }
+        }
+      }
+      steer(frame, held, new Map());
+      record();
+      frame++;
     }
-    case 'post': {
-      const x = 34 + side * goalHalf;
-      aim = { d: pitchLength, x };
-      rest = { d: pitchLength - rng.between(7, 10), x: x - side * 3 };
-      break;
-    }
-    case 'wide-left':
-    case 'wide-right': {
-      const out = outcome === 'wide-left' ? -1 : 1;
-      const x = 34 + out * (goalHalf + rng.between(0.8, 3.5));
-      aim = { d: pitchLength, x };
-      rest = { d: pitchLength + 5, x: x + out * 1.5 };
-      break;
-    }
-    case 'over': {
-      const x = 34 + side * rng.between(0, goalHalf - 0.5);
-      aim = { d: pitchLength, x };
-      rest = { d: pitchLength + 5, x };
-      break;
-    }
-  }
-  const flight = Math.max(
-    10,
-    Math.ceil(distance(shotFrom, aim) / perFrame(25))
-  );
-  // The frame the ball arrives: the moment's frames are recorded from 0.
-  const momentFrame = momentStart + flight - 1;
-  const keeperFrom = keeper ? { d: keeper.d, x: keeper.x } : undefined;
-  const keeperTo =
-    keeper && keeperFrom
-      ? stopsAtKeeper
-        ? { d: aim.d, x: aim.x }
-        : outcome === 'goal'
-          ? {
-              d: pitchLength - 0.5,
-              x: lerp(keeperFrom.x, aim.x, 0.55)
-            }
-          : keeperFrom
-      : undefined;
-  const dives =
-    outcome === 'dive' ||
-    outcome === 'parry' ||
-    (outcome === 'goal' && Math.abs(aim.x - (keeperFrom?.x ?? 34)) > 1.5);
-  cameraFocus = () => ({ d: (ball.d + pitchLength) / 2, x: ball.x });
-  for (let f = 1; f <= momentFrames; f++) {
-    if (f <= flight) {
-      const u = f / flight;
-      ball.d = lerp(shotFrom.d, aim.d, u);
-      ball.x = lerp(shotFrom.x, aim.x, u);
-      ball.height =
-        outcome === 'over' ? 0.4 + 0.6 * u : Math.sin(Math.PI * u) * 0.35;
-    } else {
-      const after = f - flight;
-      const settle = Math.min(1, after / 40);
-      const u = 1 - (1 - settle) * (1 - settle);
-      ball.d = lerp(aim.d, rest.d, u);
-      ball.x = lerp(aim.x, rest.x, u);
-      ball.height =
-        outcome === 'over' ? Math.max(0, 1 - settle) : stopsAtKeeper ? 0.2 : 0;
-    }
-    if (keeper && keeperFrom && keeperTo) {
-      const u = Math.min(1, f / Math.max(1, flight - 2));
-      keeper.d = lerp(keeperFrom.d, keeperTo.d, ease(u));
-      keeper.x = lerp(keeperFrom.x, keeperTo.x, ease(u));
-      keeper.pose = dives && f > flight * 0.4 ? 'dive' : 'run';
-      if (stopsAtKeeper && f > flight && outcome !== 'parry') {
-        keeper.pose = 'hold';
-        ball.d = keeper.d;
-        ball.x = keeper.x;
+  } else {
+    let aim: Point;
+    let rest: Point;
+    let stopsAtKeeper = false;
+    switch (outcome) {
+      case 'goal': {
+        const x = 34 + side * rng.between(0.6, goalHalf - 0.4);
+        aim = { d: pitchLength, x };
+        rest = { d: pitchLength + 1.8, x: x + side * 0.4 };
+        break;
+      }
+      case 'hold':
+      case 'dive':
+      case 'parry': {
+        const x =
+          34 +
+          side *
+            (outcome === 'hold'
+              ? rng.between(0, 1.2)
+              : rng.between(2, goalHalf - 0.3));
+        aim = { d: pitchLength - 0.8, x };
+        stopsAtKeeper = true;
+        rest =
+          outcome === 'parry'
+            ? { d: pitchLength + 2, x: 34 + side * rng.between(8, 12) }
+            : aim;
+        break;
+      }
+      case 'post': {
+        const x = 34 + side * goalHalf;
+        aim = { d: pitchLength, x };
+        rest = { d: pitchLength - rng.between(7, 10), x: x - side * 3 };
+        break;
+      }
+      case 'wide-left':
+      case 'wide-right': {
+        const out = outcome === 'wide-left' ? -1 : 1;
+        const x = 34 + out * (goalHalf + rng.between(0.8, 3.5));
+        aim = { d: pitchLength, x };
+        rest = { d: pitchLength + 5, x: x + out * 1.5 };
+        break;
+      }
+      case 'block':
+      case 'interception':
+        throw new Error('A clearance plays above');
+      case 'over': {
+        const x = 34 + side * rng.between(0, goalHalf - 0.5);
+        aim = { d: pitchLength, x };
+        rest = { d: pitchLength + 5, x };
+        break;
       }
     }
-    steer(frame, new Set([shooter, keeperSlot]), new Map());
-    record();
-    frame++;
+    const flight = Math.max(
+      10,
+      Math.ceil(distance(shotFrom, aim) / perFrame(25))
+    );
+    // The frame the ball arrives: the moment's frames are recorded from 0.
+    momentFrame = momentStart + flight - 1;
+    const keeperFrom = keeper ? { d: keeper.d, x: keeper.x } : undefined;
+    const keeperTo =
+      keeper && keeperFrom
+        ? stopsAtKeeper
+          ? { d: aim.d, x: aim.x }
+          : outcome === 'goal'
+            ? {
+                d: pitchLength - 0.5,
+                x: lerp(keeperFrom.x, aim.x, 0.55)
+              }
+            : keeperFrom
+        : undefined;
+    const dives =
+      outcome === 'dive' ||
+      outcome === 'parry' ||
+      (outcome === 'goal' && Math.abs(aim.x - (keeperFrom?.x ?? 34)) > 1.5);
+    cameraFocus = () => ({ d: (ball.d + pitchLength) / 2, x: ball.x });
+    for (let f = 1; f <= momentFrames; f++) {
+      if (f <= flight) {
+        const u = f / flight;
+        ball.d = lerp(shotFrom.d, aim.d, u);
+        ball.x = lerp(shotFrom.x, aim.x, u);
+        ball.height =
+          outcome === 'over' ? 0.4 + 0.6 * u : Math.sin(Math.PI * u) * 0.35;
+      } else {
+        const after = f - flight;
+        const settle = Math.min(1, after / 40);
+        const u = 1 - (1 - settle) * (1 - settle);
+        ball.d = lerp(aim.d, rest.d, u);
+        ball.x = lerp(aim.x, rest.x, u);
+        ball.height =
+          outcome === 'over'
+            ? Math.max(0, 1 - settle)
+            : stopsAtKeeper
+              ? 0.2
+              : 0;
+      }
+      if (keeper && keeperFrom && keeperTo) {
+        const u = Math.min(1, f / Math.max(1, flight - 2));
+        keeper.d = lerp(keeperFrom.d, keeperTo.d, ease(u));
+        keeper.x = lerp(keeperFrom.x, keeperTo.x, ease(u));
+        keeper.pose = dives && f > flight * 0.4 ? 'dive' : 'run';
+        if (stopsAtKeeper && f > flight && outcome !== 'parry') {
+          keeper.pose = 'hold';
+          ball.d = keeper.d;
+          ball.x = keeper.x;
+        }
+      }
+      steer(frame, new Set([shooter, keeperSlot]), new Map());
+      record();
+      frame++;
+    }
   }
 
   // The reaction: the scorer celebrates, the keeper plays the ball out, or
@@ -851,7 +1001,25 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     x: rng.between(12, 56)
   };
   const ballAtRest = { d: ball.d, x: ball.x };
+  // A clearance goes long upfield or into touch, as the seed picks.
+  const upfield = rng.next() < 0.5;
+  const cleared = upfield
+    ? {
+        d: clamp(ball.d - rng.between(30, 45), 5, 100),
+        x: rng.between(8, 60)
+      }
+    : {
+        d: clamp(ball.d - rng.between(5, 20), 5, 100),
+        x: ball.x < 34 ? -3 : pitchWidth + 3
+      };
+  const clearFrames = Math.max(
+    20,
+    Math.ceil(distance(ballAtRest, cleared) / perFrame(20))
+  );
   const reactionHeld = new Set([shooter, keeperSlot]);
+  if (clearer >= 0) {
+    reactionHeld.add(clearer);
+  }
   for (let f = 0; f < reactionFrames; f++) {
     cameraWidth =
       f < 50
@@ -875,6 +1043,19 @@ export const createClipScript = (input: ClipInput): ClipScript => {
         }
       });
       cameraFocus = () => ({ d: scorer.d, x: scorer.x });
+    } else if (outcomeKind(outcome) === 'clearance') {
+      scorer.pose = 'run';
+      if (f >= 25 && f < 25 + clearFrames) {
+        const u = (f - 25) / clearFrames;
+        ball.d = lerp(ballAtRest.d, cleared.d, u);
+        ball.x = lerp(ballAtRest.x, cleared.x, u);
+        ball.height = Math.sin(Math.PI * u) * 0.6;
+      } else if (f >= 25 + clearFrames) {
+        ball.height = 0;
+        // Cleared, the defender is free to rejoin the shape.
+        reactionHeld.delete(clearer);
+      }
+      cameraFocus = () => ({ d: ball.d, x: ball.x });
     } else {
       scorer.pose = outcomeKind(outcome) === 'near-miss' ? 'head' : 'run';
       if (keeper && outcomeKind(outcome) === 'save') {

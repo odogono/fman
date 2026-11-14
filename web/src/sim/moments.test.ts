@@ -21,6 +21,7 @@ const fresh = (seed = 0): Game =>
 const decide = (
   seed: number,
   options: {
+    clearances?: boolean;
     home?: boolean;
     opponent?: readonly number[];
     opponentSquad?: readonly SquadPlayer[];
@@ -30,6 +31,7 @@ const decide = (
   } = {}
 ) =>
   decideMoments({
+    ...(options.clearances ? { clearances: true } : {}),
     home: options.home ?? true,
     opponent: options.opponent ?? even,
     players: options.players ?? fresh().players,
@@ -276,4 +278,43 @@ test('a drawn cup tie is replayed', () => {
   expect(matchday.stage).toBe('fixture');
   expect(matchday.fixture.kind).toBe('cup');
   expect(matchday.fixture.home).toBe(!home);
+});
+
+test('with clearances, the chances that are not goals split as the original’s misses end', () => {
+  const kinds = { clearance: 0, goal: 0, 'near-miss': 0, save: 0 };
+  for (let seed = 0; seed < 20_000; seed += 1) {
+    for (const moment of decide(seed, { clearances: true }).moments) {
+      kinds[moment.kind]++;
+    }
+  }
+  const total = Object.values(kinds).reduce((a, b) => a + b);
+  const share = (kind: keyof typeof kinds) => kinds[kind] / total;
+  // A save on 56–66, a clearance on 67–83, a near miss on 84–100.
+  expect(share('goal')).toBeCloseTo(0.55, 1);
+  expect(share('save')).toBeCloseTo(0.11, 1);
+  expect(share('clearance')).toBeCloseTo(0.17, 1);
+  expect(share('near-miss')).toBeCloseTo(0.17, 1);
+  expect(share('clearance')).toBeGreaterThan(share('save'));
+});
+
+test('clearances change no goal, minute, name or draw', () => {
+  for (const seed of seeds) {
+    const plain = decide(seed, { opponentSquad: squad });
+    const cleared = decide(seed, { clearances: true, opponentSquad: squad });
+    expect(cleared.score).toEqual(plain.score);
+    expect(cleared.seed).toBe(plain.seed);
+    expect(cleared.moments.map(({ kind: _, ...rest }) => rest)).toEqual(
+      plain.moments.map(({ kind: _, ...rest }) => rest)
+    );
+    // Only saves and near misses become clearances.
+    plain.moments.forEach((moment, i) => {
+      const kind = cleared.moments[i]!.kind;
+      if (moment.kind === 'goal') {
+        expect(kind).toBe('goal');
+      } else {
+        expect(kind).not.toBe('goal');
+      }
+    });
+    expect(plain.moments.some(m => m.kind === 'clearance')).toBe(false);
+  }
 });

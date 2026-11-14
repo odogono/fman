@@ -4,6 +4,7 @@ import { longestClip } from '../sim/ticker';
 import {
   cameraWide,
   captionFrames,
+  clearanceOutcomes,
   clipFps,
   createClipScript,
   missOutcomes,
@@ -11,6 +12,7 @@ import {
   pitchLength,
   restarts,
   saveOutcomes,
+  seededOutcome,
   type ClipInput,
   type ClipSide,
   type Line
@@ -84,16 +86,18 @@ test('clips run at real-world pace, within what the sim holds', () => {
   }
 });
 
-test('the seed picks each outcome of a save and a near miss', () => {
+test('the seed picks each outcome of a save, a clearance and a near miss', () => {
   const seen = new Set<string>();
   for (let seed = 0; seed < 200; seed++) {
-    for (const kind of ['save', 'near-miss'] as const) {
+    for (const kind of ['save', 'clearance', 'near-miss'] as const) {
       const { outcome } = createClipScript(input({ kind, seed }));
       expect(outcomeKind(outcome)).toBe(kind);
       seen.add(outcome);
     }
   }
-  expect([...seen].sort()).toEqual([...saveOutcomes, ...missOutcomes].sort());
+  expect([...seen].sort()).toEqual(
+    [...saveOutcomes, ...clearanceOutcomes, ...missOutcomes].sort()
+  );
   expect(
     createClipScript(input({ kind: 'save', outcome: 'parry' })).outcome
   ).toBe('parry');
@@ -289,4 +293,95 @@ test('a corner is crossed from the flag to the shooter in the box', () => {
     expect(depth(met.y)).toBeGreaterThan(pitchLength - 16.5);
     expect(Math.abs(met.x - 34)).toBeLessThan(20.16);
   }
+});
+
+test('a near miss goes wide most often, rarely off the post', () => {
+  const counts: Record<string, number> = {};
+  const runs = 20_000;
+  for (let seed = 0; seed < runs; seed++) {
+    const outcome = seededOutcome(seed, 'near-miss');
+    counts[outcome] = (counts[outcome] ?? 0) + 1;
+  }
+  // A clip plays the outcome its seed picks.
+  for (let seed = 0; seed < 20; seed++) {
+    expect(createClipScript(input({ kind: 'near-miss', seed })).outcome).toBe(
+      seededOutcome(seed, 'near-miss')
+    );
+  }
+  const share = (outcome: string) => (counts[outcome] ?? 0) / runs;
+  expect(share('wide-left') + share('wide-right')).toBeCloseTo(0.6, 1);
+  expect(share('over')).toBeCloseTo(0.25, 1);
+  expect(share('post')).toBeCloseTo(0.15, 1);
+});
+
+test('a clearance reaches its moment as a defender meets the ball', () => {
+  for (let seed = 0; seed < 100; seed++) {
+    for (const outcome of clearanceOutcomes) {
+      const script = createClipScript(
+        input({ kind: 'clearance', outcome, seed })
+      );
+      expect(script.outcome).toBe(outcome);
+      const { moment, reaction } = script.phases;
+      expect(script.momentFrame).toBeGreaterThan(moment);
+      expect(script.momentFrame).toBeLessThan(reaction);
+      const met = script.frame(script.momentFrame);
+      const gap = Math.min(
+        ...met.players
+          .filter(p => p.side === 'defence')
+          .map(p => Math.hypot(p.x - met.ball.x, p.y - met.ball.y))
+      );
+      expect(gap).toBeLessThan(1.5);
+      // The ball never reaches the goal.
+      for (let at = script.momentFrame; at < script.length; at += 5) {
+        expect(depth(script.frame(at).ball.y)).toBeLessThan(pitchLength - 1);
+      }
+    }
+  }
+});
+
+test('an interception cuts out the final pass; a block stops the shot', () => {
+  for (let seed = 0; seed < 50; seed++) {
+    const cut = createClipScript(
+      input({
+        kind: 'clearance',
+        outcome: 'interception',
+        restart: 'open-play',
+        seed
+      })
+    );
+    // The shooter never receives: the pass to them is the one cut out.
+    expect(cut.passes.every(p => p.to !== '#d70000 9')).toBe(true);
+    const blocked = createClipScript(
+      input({ kind: 'clearance', outcome: 'block', restart: 'open-play', seed })
+    );
+    expect(blocked.passes.at(-1)!.to).toBe('#d70000 9');
+  }
+  // Alone, the shooter has no one to pass, so is blocked instead.
+  const alone = createClipScript(
+    input({
+      attack: side('#d70000', ['attack']),
+      kind: 'clearance',
+      outcome: 'interception',
+      shooter: 0
+    })
+  );
+  expect(alone.outcome).toBe('block');
+});
+
+test('the defender clears upfield or into touch', () => {
+  let upfield = 0;
+  let touch = 0;
+  for (let seed = 0; seed < 100; seed++) {
+    const script = createClipScript(input({ kind: 'clearance', seed }));
+    const meet = script.frame(script.momentFrame).ball;
+    const end = script.frame(script.length - 1).ball;
+    if (end.x < 0 || end.x > 68) {
+      touch++;
+    } else {
+      expect(depth(meet.y) - depth(end.y)).toBeGreaterThan(25);
+      upfield++;
+    }
+  }
+  expect(upfield).toBeGreaterThan(20);
+  expect(touch).toBeGreaterThan(20);
 });

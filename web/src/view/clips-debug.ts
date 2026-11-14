@@ -5,6 +5,7 @@ import type { Moment } from '../sim/moments';
 import { fitClipCanvas, paintClip } from './clip-canvas';
 import { clipInputFor, inkColours, keeperColoursFor } from './clip-match';
 import {
+  clearanceOutcomes,
   clipFps,
   createClipScript,
   hashSeed,
@@ -179,7 +180,13 @@ const settingsInput = (): ClipInput => {
 };
 
 const outcomesFor = (kind: Moment['kind']): readonly ClipOutcome[] =>
-  kind === 'goal' ? ['goal'] : kind === 'save' ? saveOutcomes : missOutcomes;
+  kind === 'goal'
+    ? ['goal']
+    : kind === 'save'
+      ? saveOutcomes
+      : kind === 'clearance'
+        ? clearanceOutcomes
+        : missOutcomes;
 
 // The page: the pitch and transport on the left, the controls on the right.
 const canvas = element('canvas', { className: 'clip-pitch' });
@@ -254,6 +261,7 @@ const renderControls = () => {
         [
           ['goal', 'Goal'],
           ['save', 'Save'],
+          ['clearance', 'Clearance'],
           ['near-miss', 'Near miss']
         ],
         settings.kind,

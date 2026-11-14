@@ -4,8 +4,9 @@ import type { Moment } from '../sim/moments';
 
 /** The word that opens each kind of moment's line. */
 const kindWords: Record<Moment['kind'], string> = {
+  clearance: 'CLEARED:',
   goal: 'GOAL!',
-  'near-miss': 'POST!',
+  'near-miss': 'MISSED:',
   save: 'SAVED:'
 };
 

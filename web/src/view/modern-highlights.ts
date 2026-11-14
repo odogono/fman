@@ -49,8 +49,9 @@ export type ModernHighlights = Readonly<{
 }>;
 
 const words: Record<Moment['kind'], string> = {
+  clearance: 'Cleared',
   goal: 'Goal!',
-  'near-miss': 'Post!',
+  'near-miss': 'Missed',
   save: 'Saved'
 };
 

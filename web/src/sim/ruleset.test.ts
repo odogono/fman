@@ -5,7 +5,13 @@ import { prepareCupMatch } from './cup';
 import { createJournal, openSave } from './journal';
 import { prepareLeagueMatch } from './league';
 import { createNewGame } from './management';
-import { lastingSkill, opponentBonus, type Ruleset } from './ruleset';
+import {
+  clearances,
+  lastingSkill,
+  latestEnhanced,
+  opponentBonus,
+  type Ruleset
+} from './ruleset';
 import { decodeSave, encodeSave, saveVersion } from './save';
 import { createSession } from './session';
 
@@ -185,4 +191,11 @@ test('saves keep the ruleset, and saves from before rulesets play the original',
     );
   }
   expect(() => openSave(JSON.stringify(older))).toThrow(RangeError);
+});
+
+test('clearances join Enhanced in version 8, which new Enhanced games start with', () => {
+  expect(clearances('enhanced-7')).toBe(false);
+  expect(clearances('original')).toBe(false);
+  expect(clearances('enhanced-8')).toBe(true);
+  expect(latestEnhanced).toBe('enhanced-8');
 });

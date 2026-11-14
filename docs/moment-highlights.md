@@ -12,7 +12,7 @@ Under `enhanced-7` (and `moment-highlights` before it), kicking off decides the 
 
 - **Chances.** Each side gets the original's tests. For each of the five team strengths, the managed club and then its opponent win two chances when `R(100) + 5 × difference ≥ 75`. If no goal has come from them, home and then away get one more chance each. So a side gets as many chances as the original gives it attacks.
 - **Moments.** Every chance becomes one **moment**, drawn in this order:
-  1. **Outcome**: one `R(100)`. A goal on 55 or less, a save on 56–77, a near miss above that. Like the original's collision checks, it ignores the strengths.
+  1. **Outcome**: one `R(100)`. A goal on 55 or less, a save on 56–77, a near miss above that. From `enhanced-8`, a save on 56–66, a [clearance](clearances.md) on 67–83 and a near miss above that. Like the original's collision checks, it ignores the strengths.
   2. **Minute**: `R(90)`.
   3. **Player**, for the managed club. One of the picked players, weighted by skill × 1 for defence, 2 for midfield and 4 for attack. The moment names the player who shot, whatever its outcome. With no picked players, the managed club's moments name no one.
 - **Opponent's players** ([#124](https://github.com/odogono/fman/issues/124)). Under `enhanced-7`, where every club owns a [squad](club-squads.md), an opponent's moment names one of its squad, weighted as the managed club's are, with a goalkeeper counting as defence. Other clubs don't pick a team, so the whole squad is eligible. These draws come from a stream of their own, seeded from the [squad seed](club-squads.md#random-draws) and the game's seed at kick-off, and neither seed advances. So the outcomes, minutes and every later draw are as they would be without them, and only the names change. Under `moment-highlights`, which has no squads, an opponent's moments name only the club.
@@ -30,7 +30,7 @@ In place of the pitch, the highlights screen lists the moments one at a time in 
 - **Pace.** After a one-frame clear, the 0-0 header shows for one pause, then each moment appears and holds for one pause of 75 frames (1.5 s). A final hold of one more pause keeps the full list on screen before the result screen, which is unchanged. The sim runs the pauses, so resuming a saved session mid-ticker returns to the same moment ([ADR 0004](adr/0004-resume-exact-session.md)).
 - **Keys.** Each pause follows the original's PAUSE: a fresh key or tap ends it, and a held key repeats, so holding one runs through the list ([ADR 0006](adr/0006-taps-reproduce-keypresses.md)). The clear forgets the Enter that kicked off, as CLS does.
 - **Skip.** A Skip button in the context bar, shown during the ticker even with touch controls off, or the S key, ends every remaining moment's pause at once but keeps the final hold. It presses no key, so it can't also end the hold.
-- **Lines.** Each line opens with the minute and the kind (`GOAL!`, `SAVED:`, `POST!`), then names the player who shot, or the club when no player is named. A goal ends with the score after it, home first. The score under the title counts up as goals appear.
+- **Lines.** Each line opens with the minute and the kind (`GOAL!`, `SAVED:`, `CLEARED:`, `MISSED:`; Modern mode words them `Goal!`, `Saved`, `Cleared`, `Missed`), then names the player who shot, or the club when no player is named. A goal ends with the score after it, home first. The score under the title counts up as goals appear.
 - **Classic mode.** `MATCH HIGHLIGHTS` and the original's score line head the screen. Lines are capitals in 32 columns, newest on top from row 3; past row 21 the oldest drop off for good. A name too long for its line is cut, keeping the minute and score. `GOAL!` is red inverse video. Screen readers hear each new line alone.
 - **Modern mode** isn't built yet; its highlights screen ([#45](https://github.com/odogono/fman/issues/45)) will show the ticker in its paper-and-ink style.
 
@@ -38,7 +38,7 @@ The ticker adds frames before the next reseed, so later draws differ from the [b
 
 ## How the numbers were chosen
 
-With even strengths, the original averages about 5.4 attacks a match, and 55% of them end in a goal (3,000 matches with `simulateHighlights`, carrying the attack positions between them). Its outcome depends only on where the players stand, never on the strengths. With the same chances and the same goal rate, the moments should score as the original does. They do, so 55% needed no tuning. The split of the rest between saves and near misses changes no result, so it isn't measured.
+With even strengths, the original averages about 5.4 attacks a match, and 55% of them end in a goal (3,000 matches with `simulateHighlights`, carrying the attack positions between them). Its outcome depends only on where the players stand, never on the strengths. With the same chances and the same goal rate, the moments should score as the original does. They do, so 55% needed no tuning. The split of the rest changes no result. [clearances.md](clearances.md) measures how the original's misses end and splits them to match.
 
 ## Result
 

@@ -14,7 +14,7 @@ import {
  * carries one change alone while it is measured against the original, and
  * is retired once the change joins Enhanced (`even-difficulty`,
  * `grace-period`, `lasting-skill`, `steep-difficulty`, `tiring-injuries`,
- * `club-squads`, `moment-highlights`).
+ * `club-squads`, `moment-highlights`, `clearances`).
  */
 export const rulesets = [
   'original',
@@ -24,12 +24,13 @@ export const rulesets = [
   'enhanced-4',
   'enhanced-5',
   'enhanced-6',
-  'enhanced-7'
+  'enhanced-7',
+  'enhanced-8'
 ] as const;
 export type Ruleset = (typeof rulesets)[number];
 
 /** The Enhanced version every new Enhanced game starts with. */
-export const latestEnhanced = 'enhanced-7' satisfies Ruleset;
+export const latestEnhanced = 'enhanced-8' satisfies Ruleset;
 
 export const isRuleset = (value: unknown): value is Ruleset =>
   rulesets.includes(value as Ruleset);
@@ -41,6 +42,7 @@ type Difficulty = 'original' | 'smooth' | 'steep';
 const changes: Record<
   Ruleset,
   {
+    clearances: boolean;
     clubSquads: boolean;
     difficulty: Difficulty;
     gracePeriod: boolean;
@@ -51,6 +53,7 @@ const changes: Record<
   }
 > = {
   'enhanced-1': {
+    clearances: false,
     clubSquads: false,
     difficulty: 'smooth',
     gracePeriod: false,
@@ -60,6 +63,7 @@ const changes: Record<
     tiringInjuries: false
   },
   'enhanced-2': {
+    clearances: false,
     clubSquads: false,
     difficulty: 'smooth',
     gracePeriod: true,
@@ -69,6 +73,7 @@ const changes: Record<
     tiringInjuries: false
   },
   'enhanced-3': {
+    clearances: false,
     clubSquads: false,
     difficulty: 'smooth',
     gracePeriod: true,
@@ -78,6 +83,7 @@ const changes: Record<
     tiringInjuries: false
   },
   'enhanced-4': {
+    clearances: false,
     clubSquads: false,
     difficulty: 'steep',
     gracePeriod: true,
@@ -87,6 +93,7 @@ const changes: Record<
     tiringInjuries: false
   },
   'enhanced-5': {
+    clearances: false,
     clubSquads: false,
     difficulty: 'steep',
     gracePeriod: true,
@@ -96,6 +103,7 @@ const changes: Record<
     tiringInjuries: true
   },
   'enhanced-6': {
+    clearances: false,
     clubSquads: true,
     difficulty: 'steep',
     gracePeriod: true,
@@ -105,6 +113,17 @@ const changes: Record<
     tiringInjuries: true
   },
   'enhanced-7': {
+    clearances: false,
+    clubSquads: true,
+    difficulty: 'steep',
+    gracePeriod: true,
+    lastingSkill: true,
+    momentHighlights: true,
+    presentDay: true,
+    tiringInjuries: true
+  },
+  'enhanced-8': {
+    clearances: true,
     clubSquads: true,
     difficulty: 'steep',
     gracePeriod: true,
@@ -114,6 +133,7 @@ const changes: Record<
     tiringInjuries: true
   },
   original: {
+    clearances: false,
     clubSquads: false,
     difficulty: 'original',
     gracePeriod: false,
@@ -214,3 +234,11 @@ export const momentHighlights = (ruleset: Ruleset) =>
  * `club-squads` on top of `enhanced-5`, then part of `enhanced-6`). Squads don't change how matches play.
  */
 export const clubSquads = (ruleset: Ruleset) => changes[ruleset].clubSquads;
+
+/**
+ * Whether some chances that aren't goals are clearances: a defender
+ * intercepts the final pass or blocks the shot, and clears (#150, measured
+ * as `clearances` against `enhanced-7`, then part of `enhanced-8`). The goal rate and the draws don't change; the save and
+ * near-miss shares shrink to make room, as the original's misses divide.
+ */
+export const clearances = (ruleset: Ruleset) => changes[ruleset].clearances;

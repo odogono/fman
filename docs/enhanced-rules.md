@@ -21,6 +21,7 @@ Enhanced rules are released in versions, stored as `enhanced-1`, `enhanced-2` an
 | `enhanced-5` | Version 4, plus [injuries that depend on energy and last](tiring-injuries.md)                                                       | `tiring-injuries` ([#98](https://github.com/odogono/fman/issues/98))                                                                           |
 | `enhanced-6` | Version 5, plus [a squad of invented players for every club](club-squads.md), with transfers from free agents                       | `club-squads` ([#113](https://github.com/odogono/fman/issues/113))                                                                             |
 | `enhanced-7` | Version 6, plus [matches decided as moments](moment-highlights.md), shown as a ticker in place of the pitch                         | `moment-highlights` ([#107](https://github.com/odogono/fman/issues/107), [#109](https://github.com/odogono/fman/issues/109))                   |
+| `enhanced-8` | Version 7, plus [clearances](clearances.md) among the moments                                                                       | `clearances` ([#150](https://github.com/odogono/fman/issues/150))                                                                              |
 
 Starting clubs and players are part of a ruleset too ([ADR 0011](adr/0011-rulesets-carry-starting-clubs-and-players.md)). A change that leaves every rule alone, as `enhanced-3`'s, needs no experimental ruleset: its baseline must match the previous version's.
 

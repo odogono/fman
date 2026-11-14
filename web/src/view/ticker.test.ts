@@ -55,13 +55,15 @@ test('each line opens with the minute and the kind, newest first', () => {
     { kind: 'save', minute: 9, player: 23, side: 'club' },
     { kind: 'goal', minute: 34, side: 'opponent' },
     { kind: 'near-miss', minute: 67, side: 'opponent' },
+    { kind: 'clearance', minute: 75, player: 20, side: 'club' },
     { kind: 'goal', minute: 88, player: 17, side: 'club' }
   ];
   const lines = tickerLines(game, fixture, moments).map(tickerText);
   const [homeGoals, awayGoals] = fixture.home ? ['1-1', '0-1'] : ['1-1', '1-0'];
   expect(lines).toEqual([
     `88' GOAL! ${player(17)} ${homeGoals}`,
-    `67' POST! ${opponent}`,
+    `75' CLEARED: ${player(20)}`,
+    `67' MISSED: ${opponent}`,
     `34' GOAL! ${opponent} ${awayGoals}`,
     `9' SAVED: ${player(23)}`
   ]);

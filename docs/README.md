@@ -34,6 +34,7 @@ Rulesets ([ADR-0007](adr/0007-experimental-rules-as-rulesets.md), [ADR-0009](adr
 - [tiring-injuries.md](tiring-injuries.md): tired players are likelier to be injured, for up to three weeks (Enhanced version 5)
 - [club-squads.md](club-squads.md): every club owns a squad of invented players, with transfers from free agents (Enhanced version 6)
 - [moment-highlights.md](moment-highlights.md): a match decided as a list of goals, saves and near misses, shown as a ticker in place of the pitch (Enhanced version 7)
+- [clearances.md](clearances.md): defenders intercepting or blocking a chance and clearing it, as a moment of its own (Enhanced version 8)
 - [sprite-highlights.md](sprite-highlights.md): Modern mode shows moments as clips on a top-down pitch with tiny sprites ([ADR-0013](adr/0013-clips-set-their-own-length.md))
 
 Gameplay baseline: [gameplay-baseline.md](gameplay-baseline.md): automated runs by strategy and difficulty level, and how to compare rulesets against [the original's baseline](baseline/original.md).

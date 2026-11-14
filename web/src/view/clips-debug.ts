@@ -42,8 +42,10 @@ const inkNames = [
 
 const settings = {
   attack: 2,
+  awayEnergy: 20,
   awayKit: 1,
   defence: 4,
+  homeEnergy: 20,
   homeKit: 2,
   ids: false,
   keeper: true,
@@ -128,7 +130,8 @@ const checkbox = (checked: boolean, change: (checked: boolean) => void) => {
 const side = (
   counts: Readonly<Record<'attack' | 'defence' | 'midfield', number>>,
   keeper: boolean,
-  name: string
+  name: string,
+  energy: number
 ): ClipPlayer[] => {
   const lines: Line[] = [
     ...(keeper ? (['keeper'] as const) : []),
@@ -136,7 +139,7 @@ const side = (
     ...Array<Line>(counts.midfield).fill('midfield'),
     ...Array<Line>(counts.attack).fill('attack')
   ];
-  return lines.map((line, i) => ({ label: `${name} ${i + 1}`, line }));
+  return lines.map((line, i) => ({ energy, label: `${name} ${i + 1}`, line }));
 };
 
 /** The clip the settings describe: the home side is the managed club. */
@@ -147,12 +150,17 @@ const settingsInput = (): ClipInput => {
   const home = {
     keeper: keepers.home,
     kit: homeKit,
-    players: side(settings, settings.keeper, 'Home')
+    players: side(settings, settings.keeper, 'Home', settings.homeEnergy)
   };
   const away = {
     keeper: keepers.away,
     kit: awayKit,
-    players: side({ attack: 2, defence: 4, midfield: 4 }, true, 'Away')
+    players: side(
+      { attack: 2, defence: 4, midfield: 4 },
+      true,
+      'Away',
+      settings.awayEnergy
+    )
   };
   const attack = settings.side === 'home' ? home : away;
   const forward = attack.players.findIndex(p => p.line === 'attack');
@@ -317,6 +325,14 @@ const renderControls = () => {
       select(kits, String(settings.awayKit), v => change('awayKit')(Number(v)))
     )
   );
+  // Tiredness shows in the zoomed view, more often late on (#146).
+  const energySet = element(
+    'fieldset',
+    { disabled: Boolean(loaded) },
+    element('legend', {}, 'Energy'),
+    labelled('Home', number(settings.homeEnergy, 1, 20, change('homeEnergy'))),
+    labelled('Away', number(settings.awayEnergy, 1, 20, change('awayEnergy')))
+  );
   const shape = element(
     'fieldset',
     { disabled: Boolean(loaded) },
@@ -410,7 +426,15 @@ const renderControls = () => {
     });
     saved.append(back);
   }
-  controls.replaceChildren(moment, kitsSet, shape, seed, overlays, saved);
+  controls.replaceChildren(
+    moment,
+    kitsSet,
+    energySet,
+    shape,
+    seed,
+    overlays,
+    saved
+  );
 };
 
 const load = (text: string | null, from: string) => {

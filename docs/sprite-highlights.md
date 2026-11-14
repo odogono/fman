@@ -1,6 +1,6 @@
 # Sprite highlights
 
-[#111](https://github.com/odogono/fman/issues/111). In Modern mode, matches decided as [moments](moment-highlights.md) are shown on a top-down pitch with tiny sprites, in place of the paper-and-ink ticker. The direction and mockups are in [highlights-engine.md](highlights-engine.md). The clips play with placeholder shapes ([#144](https://github.com/odogono/fman/issues/144)), with the moments drawer and panel ([#145](https://github.com/odogono/fman/issues/145)); the sprite artwork ([#146](https://github.com/odogono/fman/issues/146)) is not built yet.
+[#111](https://github.com/odogono/fman/issues/111). In Modern mode, matches decided as [moments](moment-highlights.md) are shown on a top-down pitch with tiny sprites, in place of the paper-and-ink ticker. The direction and mockups are in [highlights-engine.md](highlights-engine.md). The clips play with sprites ([#144](https://github.com/odogono/fman/issues/144), [#146](https://github.com/odogono/fman/issues/146)), with the moments drawer and panel ([#145](https://github.com/odogono/fman/issues/145)).
 
 ## Scope
 
@@ -56,7 +56,7 @@ New sprites drawn for this view, larger than the original's 8×8 characters: abo
 - **Pitch.** The markings stay drawn as lines, over mown stripes. The mini-map keeps its dots; the kick-off and full-time stills use the stand pose.
 - **Source.** The sprites are pixel grids written as text in `web/src/view/assets`. They began as reference images made for this project with ChatGPT's image tool, which were converted to grids in the sprites' palette and cleaned up by hand; only the grids are kept, with their provenance in the assets README. The original's characters stay with the original pitch, and the mockups in [highlights-engine.md](highlights-engine.md) are for direction only.
 
-The clip engine ships first with placeholder shapes: a kit-coloured circle per player, a white dot for the ball and lines for the markings, with the named player's label spelled as on the ticker line.
+The clip engine shipped first with placeholder shapes, a kit-coloured circle per player and a white dot for the ball ([#144](https://github.com/odogono/fman/issues/144)); the sprites replaced them in [#146](https://github.com/odogono/fman/issues/146). The named player's label is spelled as on the ticker line, above their head and any status icon. A held ball is drawn in the holder's hands, not on its own. A runner's frame, and the ball's spin, change with the ground covered, so they keep pace with the speed.
 
 ### Status icons
 
@@ -71,4 +71,4 @@ A page of its own, `web/clips.html`, served by `bun run dev` at `/clips` and lef
 1. **Clip lengths from the view** (sim, done in [#143](https://github.com/odogono/fman/issues/143)): the ticker's timeline takes a length for each moment, saves it, and defaults to 75 frames.
 2. **The sprite view with placeholder shapes** (Modern, done in [#144](https://github.com/odogono/fman/issues/144)): the clip scripts, seeding, camera and zoom, mini-map, ends, team shapes, the goalkeeper colour, cuts, Skip, resuming mid-clip, reduced motion and screen readers. Only the latest moment's ticker line shows under the pitch. The debug page ships with it.
 3. **The moments drawer and panel** (Modern, done in [#145](https://github.com/odogono/fman/issues/145)).
-4. **The sprite artwork** ([#146](https://github.com/odogono/fman/issues/146)): the sprites, facing, the new poses and the tired status icon.
+4. **The sprite artwork** (done in [#146](https://github.com/odogono/fman/issues/146)): the sprites, facing, the new poses and the tired status icon.

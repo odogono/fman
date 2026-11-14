@@ -148,6 +148,7 @@ const settingsInput = (): ClipInput => {
   const awayKit = inkColours[settings.awayKit]!;
   const keepers = keeperColoursFor(homeKit, awayKit);
   const home = {
+    home: true,
     keeper: keepers.home,
     kit: homeKit,
     players: side(settings, settings.keeper, 'Home', settings.homeEnergy)

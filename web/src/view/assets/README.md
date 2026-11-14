@@ -34,3 +34,11 @@ cleaned up by hand, the ball removed from the kicks and the dive, and the ball's
 spin drawn by hand. The images themselves are not kept. The grids are dedicated
 to the public domain under
 [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/).
+
+The goals and the advertising boards in `clip-sprites.ts`
+([#157](https://github.com/odogono/fman/issues/157)) were drawn to scale as
+pixel grids by a script written for this project. Reference images made with
+ChatGPT's image tool set their look but were not converted. The boards' panels
+are plain colours and shapes, chosen to look like no flag or brand. The crowd
+reuses the players' poses. These grids are also dedicated to the public domain
+under [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/).

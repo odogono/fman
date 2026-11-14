@@ -6,6 +6,9 @@
 //   d  shorts and socks, a darker shade of the kit
 //   f  skin           h  hair            w  white
 //   c  the sweat drop of the tired icon
+//   l  the goal net's roof    m  the back of the net
+//   x  a shadow
+//   1 to 4  the advertising boards' colours
 //
 // A player's frame stands on its bottom row, centred. Players are drawn
 // facing down the screen, up it, or left; facing right is left mirrored.
@@ -13,7 +16,23 @@
 export type ArtGrid = readonly string[];
 
 /** Every character a grid may use. */
-export const artColours = ['.', 'o', 's', 'd', 'f', 'h', 'w', 'c'] as const;
+export const artColours = [
+  '.',
+  'o',
+  's',
+  'd',
+  'f',
+  'h',
+  'w',
+  'c',
+  'l',
+  'm',
+  'x',
+  '1',
+  '2',
+  '3',
+  '4'
+] as const;
 
 export type ArtFacing = 'down' | 'left' | 'up';
 
@@ -572,10 +591,10 @@ export const playerArt: PlayerArt = {
 
 /** The ball's spin, a frame at a time as it rolls. */
 export const ballArt: readonly ArtGrid[] = [
-  ['.ooo.', 'oowwo', 'owwwo', 'owwwo', '.ooo.'],
-  ['.ooo.', 'owwoo', 'owwwo', 'owwwo', '.ooo.'],
-  ['.ooo.', 'owwwo', 'owwwo', 'owwoo', '.ooo.'],
-  ['.ooo.', 'owwwo', 'owwwo', 'oowwo', '.ooo.']
+  ['..ooo..', '.owwwo.', 'owoowwo', 'owoowwo', 'owwwwwo', '.owwwo.', '..ooo..'],
+  ['..ooo..', '.owwwo.', 'owwoowo', 'owwwowo', 'owwwwwo', '.owwwo.', '..ooo..'],
+  ['..ooo..', '.owwwo.', 'owwwwwo', 'owwoowo', 'owwoowo', '.owwwo.', '..ooo..'],
+  ['..ooo..', '.owwwo.', 'owwwwwo', 'owowwwo', 'owoowwo', '.owwwo.', '..ooo..']
 ];
 
 /** Status icons, floating over a player's head; its tail points down at them. */
@@ -594,3 +613,241 @@ export const statusArt: Readonly<{ tired: ArtGrid }> = {
     '....o.....'
   ]
 };
+
+/**
+ * The goals (#157), at the players' scale: 11 art pixels to the metre on
+ * the ground and upwards alike. Each is a frame (posts and crossbar) and a
+ * net, drawn apart so a player can stand between them. Every grid's bottom
+ * row is the goal line, except the bottom goal's net, whose bottom row is
+ * the back of the net on the ground, 2 m behind the line.
+ */
+export const goalArt = {
+  bottom: {
+    frame: [
+      'ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo',
+      'owwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwo',
+      'owwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwo',
+      'owwooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooowwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo'
+    ],
+    net: [
+      '.........................................................................................',
+      '....l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l....',
+      '....m...............................................................................m....',
+      '....l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l....',
+      '....m...............................................................................m....',
+      '....l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l....',
+      '....m...............................................................................m....',
+      '....l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l....',
+      '....m...............................................................................m....',
+      '....l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l....',
+      '....m...............................................................................m....',
+      '....l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l....',
+      '....m...............................................................................m....',
+      '....l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l....',
+      '....m...............................................................................m....',
+      '....l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l....',
+      '....m...............................................................................m....',
+      '....l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l....',
+      '....m...............................................................................m....',
+      '....l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l....',
+      '....m...............................................................................m....',
+      '....l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l....',
+      '....m...............................................................................m....',
+      '....l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l....',
+      '....m...............................................................................m....',
+      '....l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l....',
+      '....m...............................................................................m....',
+      '....l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l....',
+      '....m...............................................................................m....',
+      '....l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l....',
+      '....m...............................................................................m....',
+      '....l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l.l....',
+      '....m...............................................................................m....',
+      '....ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo....',
+      '....om.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.mo....',
+      '....o.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.o....',
+      '....om.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.mo....',
+      '....o.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.o....',
+      '....om.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.mo....',
+      '....o.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.o....',
+      '....om.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.mo....',
+      '....o.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.o....',
+      '....om.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.mo....',
+      '....o.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.o....',
+      '....om.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.mo....',
+      '....o.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.o....',
+      '....om.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.mo....',
+      '....o.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.o....',
+      '....om.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.mo....',
+      '....o.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.o....',
+      '....om.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.mo....'
+    ]
+  },
+  /**
+   * A goal's shadow, lit from the top left: its footprint on the ground
+   * swept down and to the right by its height. The top-left corner is the
+   * net's back corner on the ground for the top goal, the goal line's for
+   * the bottom one.
+   */
+  shadow: [
+    '....x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x..................',
+    '...x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x...............',
+    '....x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x............',
+    '...x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x...........',
+    '....x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x........',
+    '...x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.....',
+    '....x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x....',
+    '...x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x...',
+    '....x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x....',
+    '...x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x...',
+    '....x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x....',
+    '...x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x...',
+    '....x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x....',
+    '...x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x...',
+    '....x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x....',
+    '...x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x...',
+    '....x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x....',
+    '...x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x...',
+    '....x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x....',
+    '...x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x...',
+    '....x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x....',
+    '...x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x...',
+    '....x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x....',
+    '.....x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x...',
+    '......x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x....',
+    '.........x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x...',
+    '............x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x....',
+    '.............x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x...',
+    '................x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x....'
+  ],
+  top: {
+    frame: [
+      'ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo',
+      'owwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwo',
+      'owwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwo',
+      'owwooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooowwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo',
+      'owwo.................................................................................owwo'
+    ],
+    net: [
+      '.........................................................................................',
+      '....ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo....',
+      '....lmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlml....',
+      '....m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m....',
+      '....lmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlml....',
+      '....m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m....',
+      '....lmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlml....',
+      '....m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m....',
+      '....lmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlml....',
+      '....m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m....',
+      '....lmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlml....',
+      '....m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m....',
+      '....lmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlmlml....',
+      '....m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m....',
+      '....mm.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.mm....',
+      '....m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m....',
+      '....mm.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.mm....',
+      '....m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m....',
+      '....mm.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.m.mm....',
+      '.........................................................................................',
+      '.........................................................................................',
+      '.........................................................................................',
+      '.........................................................................................',
+      '.........................................................................................',
+      '.........................................................................................',
+      '.........................................................................................',
+      '.........................................................................................',
+      '.........................................................................................',
+      '.........................................................................................',
+      '.........................................................................................',
+      '.........................................................................................',
+      '.........................................................................................',
+      '.........................................................................................',
+      '.........................................................................................',
+      '.........................................................................................',
+      '.........................................................................................',
+      '.........................................................................................',
+      '.........................................................................................',
+      '.........................................................................................',
+      '.........................................................................................',
+      '.........................................................................................'
+    ]
+  }
+} as const;
+
+/** Shadows at a player's and the ball's feet, dithered like the goals'. */
+export const shadowArt = {
+  ball: ['x.x.x.', '.x.x.x'],
+  player: ['..x.x.x.x...', '.x.x.x.x.x.x', 'x.x.x.x.x.x.', '...x.x.x.x..']
+} as const;
+
+/** How far the bottom goal's net reaches behind the line, in metres. */
+export const netDepthMetres = 2;
+
+/** A run of advertising boards: plain panels, no text or brands. */
+export const boardArt: ArtGrid = [
+  'oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo',
+  'o1111111111111111111111oow33333www33333www33333oo3332333333323333333233oo444w4444444w4444444w44oowwwwwwwwwwwwwwwwwwwwwwoo4111114441111144411111o',
+  'o1111111111221111111111oo33333www33333www33333woo3323233333232333332323oo44w4w44444w4w44444w4w4oo333wwww3333wwww3333wwwoo1111144411111444111114o',
+  'o1111111122222211111111oo3333www33333www33333wwoo3233323332333233323332oo4w444w444w444w444w444woo333wwww3333wwww3333wwwoo1111444111114441111144o',
+  'o1111112222222222111111oo333www33333www33333wwwoo2333332323333323233333oow44444w4w44444w4w44444oowww3333wwww3333wwww333oo1114441111144411111444o',
+  'o1111112222222222111111oo33www33333www33333www3oo3333333233333332333333oo4444444w4444444w444444oowww3333wwww3333wwww333oo1144411111444111114441o',
+  'o1111111122222211111111oo3www33333www33333www33oo3332333333323333333233oo444w4444444w4444444w44oowww3333wwww3333wwww333oo1444111114441111144411o',
+  'o1111111111221111111111oowww33333www33333www333oo3323233333232333332323oo44w4w44444w4w44444w4w4oowww3333wwww3333wwww333oo4441111144411111444111o',
+  'o1111111111111111111111ooww33333www33333www3333oo3233323332333233323332oo4w444w444w444w444w444woowwwwwwwwwwwwwwwwwwwwwwoo4411111444111114441111o',
+  'oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo'
+];

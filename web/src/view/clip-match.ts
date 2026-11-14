@@ -254,11 +254,13 @@ const sidesFor = (
   const clubSide = (fixture.home ? 'home' : 'away') as 'away' | 'home';
   const sides = {
     club: {
+      ...(clubSide === 'home' ? { home: true } : {}),
       keeper: keepers[clubSide],
       kit: clubSide === 'home' ? homeKit : awayKit,
       players: club
     },
     opponent: {
+      ...(clubSide === 'home' ? {} : { home: true }),
       keeper: keepers[clubSide === 'home' ? 'away' : 'home'],
       kit: clubSide === 'home' ? awayKit : homeKit,
       players: opponent

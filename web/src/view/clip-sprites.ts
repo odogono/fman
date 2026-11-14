@@ -61,7 +61,10 @@ export const kitColours = (shirt: string) => {
   };
 };
 
-/** What each character of a grid is painted in; clear is left out. */
+/**
+ * What each character of a grid is painted in, as `#rrggbb` or, partly
+ * see-through, `#rrggbbaa`; clear is left out.
+ */
 export type ArtPalette = Readonly<Record<string, string>>;
 
 export const playerPalette = (shirt: string, looks: Looks): ArtPalette => {
@@ -152,7 +155,10 @@ export const rasterise = (
         continue;
       }
       const [r, g, b] = channels(colour);
-      data.set([r, g, b, 255], (y * width + x) * 4);
+      // An eight-digit colour carries its own opacity, as the net does.
+      const alpha =
+        colour.length === 9 ? Number.parseInt(colour.slice(7), 16) : 255;
+      data.set([r, g, b, alpha], (y * width + x) * 4);
     }
   });
   return { data, height, width };

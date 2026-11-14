@@ -4,6 +4,24 @@ import { createTimeline } from './timeline';
 
 /** How long each moment shows before the next: 1.5 s at 50 frames a second. */
 export const tickerPause = 75;
+/** The longest clip the sim accepts: a minute at 50 frames a second. */
+export const longestClip = 3000;
+
+/**
+ * Whether `lengths` can stand in for the pauses of `count` moments: one
+ * whole, positive length in frames each, none longer than `longestClip`.
+ */
+export const validClipLengths = (
+  lengths: readonly unknown[],
+  count: number
+): lengths is readonly number[] =>
+  lengths.length === count &&
+  lengths.every(
+    length =>
+      Number.isInteger(length) &&
+      (length as number) > 0 &&
+      (length as number) <= longestClip
+  );
 /**
  * The frame before the first pause in which the screen clears. The Enter
  * that kicked off is scanned there, then the clear forgets it, as CLS
@@ -17,11 +35,17 @@ export const tickerLeadIn = 1;
  * does. The first pause shows the empty 0-0 header; after the last moment a
  * final hold keeps the full list on screen before the result. Skipping ends
  * every moment's pause at once but keeps the final hold.
+ *
+ * Under sprite highlights (#111) each moment plays as a clip whose length
+ * only the view knows (ADR 0013): `lengths`, one per moment in frames, then
+ * replace the pauses that show each moment. The 0-0 header and the final
+ * hold keep `tickerPause`.
  */
 export const createTicker = (
   result: { moments: readonly Moment[] },
   home: boolean,
-  keyboard?: PauseKeyboard
+  keyboard?: PauseKeyboard,
+  lengths?: readonly number[]
 ) => {
   const { moments } = result;
   const finalHold = moments.length + 2;
@@ -29,7 +53,7 @@ export const createTicker = (
     { duration: tickerLeadIn, kind: 'clear', shown: 0 },
     ...Array.from({ length: moments.length + 2 }, (_, i) => ({
       clearKey: i === 0,
-      duration: tickerPause,
+      duration: (i >= 1 && lengths?.[i - 1]) || tickerPause,
       kind: 'pause',
       shown: Math.min(i, moments.length)
     }))
@@ -63,6 +87,13 @@ export const createTicker = (
     get key() {
       return String(timeline.index);
     },
+    /** The clip lengths the view handed over, if any. */
+    lengths,
+    /**
+     * Every moment of the match, in minute order, so the view can work out
+     * each clip at kick-off. What shows so far is `shown`.
+     */
+    moments,
     get remainingT() {
       return timeline.remainingT;
     },

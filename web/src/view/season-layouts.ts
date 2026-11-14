@@ -1,16 +1,17 @@
 import { decodeName } from '../sim/names';
 import type { View } from '../sim/session';
 import type { Paint } from './grid';
+import type { LayoutResult, Layouts } from './layout';
 import { paintLeagueTable } from './league-table';
 import { createPrintScreen } from './print-screen';
 
-export const paintSeason = (
+const paintSeason = (
   view: Extract<
     View,
     { screen: 'end-season' | 'season-table' | 'season-summary' }
   >,
   put: Paint
-) => {
+): LayoutResult => {
   switch (view.screen) {
     case 'end-season':
       put(0, 0, '****End of Season****', { ink: 2, inverse: true });
@@ -58,8 +59,14 @@ export const paintSeason = (
       break;
     }
   }
-  if (!view.printFault) {
-    put(21, 24, '(h=copy)');
-  }
-  return { label: 'Continue', numeric: false, prompt: 'Hit ENTER to continue' };
+  return { copy: true, label: 'Continue', prompt: 'Hit ENTER to continue' };
+};
+
+/** The season's end: the banner, the final table and the summary. */
+export const seasonLayouts: Layouts<
+  'end-season' | 'season-table' | 'season-summary'
+> = {
+  'end-season': paintSeason,
+  'season-summary': paintSeason,
+  'season-table': paintSeason
 };

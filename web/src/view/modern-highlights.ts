@@ -23,6 +23,12 @@ export type ModernTickerLine = Readonly<{
  */
 export type ModernHighlights = Readonly<{
   away: ClubName;
+  /**
+   * Under sprite highlights (#144), the moments play as clips on a pitch of
+   * their own. `shown`: the moments whose clips have reached the moment.
+   * `full`: after Skip, the whole ticker shows over the pitch.
+   */
+  clip?: Readonly<{ full: boolean; shown: number }>;
   home: ClubName;
   pitch?: Readonly<{
     /** The club whose attack is on the pitch, if one is. */
@@ -73,7 +79,23 @@ const tickerLines = (
     .reverse();
 };
 
-export const highlightsFor = (view: View): ModernHighlights | undefined => {
+/** The score after `shown`, home first, as the ticker keeps it. */
+const scoreAfter = (fixture: MatchFixture, shown: readonly Moment[]) => {
+  const goals = (side: Moment['side']) =>
+    shown.filter(m => m.kind === 'goal' && m.side === side).length;
+  const club = goals('club');
+  const opponent = goals('opponent');
+  return fixture.home ? [club, opponent] : [opponent, club];
+};
+
+/**
+ * `clip`: under sprite highlights, how far the clips have got, which the
+ * ticker alone can't tell, since a clip shows its moment partway through.
+ */
+export const highlightsFor = (
+  view: View,
+  clip?: Readonly<{ full: boolean; shown: number }>
+): ModernHighlights | undefined => {
   if (view.screen !== 'highlights') {
     return undefined;
   }
@@ -83,12 +105,16 @@ export const highlightsFor = (view: View): ModernHighlights | undefined => {
   const away = clubName(sides.away);
   const title = fixtureTitle(game, fixture);
   if ('ticker' in view) {
+    const shown = clip
+      ? view.ticker.moments.slice(0, clip.shown)
+      : view.ticker.shown;
     return {
       away,
+      ...(clip ? { clip } : {}),
       home,
-      score: view.ticker.score,
+      score: clip ? scoreAfter(fixture, shown) : view.ticker.score,
       ticker: {
-        lines: tickerLines(game, fixture, view.ticker.shown),
+        lines: tickerLines(game, fixture, shown),
         skip: !view.ticker.done
       },
       title

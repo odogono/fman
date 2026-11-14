@@ -4,11 +4,13 @@ import { spectrumClockHz, spectrumFrameT } from '../sim/frame-clock';
 import { createJournal } from '../sim/journal';
 import { creditLimit } from '../sim/management';
 import { latestEnhanced } from '../sim/ruleset';
-import { tickerPause } from '../sim/ticker';
+import { tickerLeadIn, tickerPause, type Ticker } from '../sim/ticker';
 import { submitInput } from '../test/input';
 import type { AmountEntry } from './amount-entry';
 import { answersFor } from './answers';
 import { createApp, type Dom, type Menu, type MenuControl } from './app';
+import { clipScriptsFor } from './clip-match';
+import type { ClipFrame } from './clips';
 import type { BarButton } from './context-bar';
 import type { Home } from './home';
 import type { ModernAmount } from './modern-amount';
@@ -27,6 +29,7 @@ const harness = ({
   downloadFails = false,
   firstVisit = false,
   options,
+  reducedMotion = false,
   storageFails = false
 }: {
   autosave?: string;
@@ -39,6 +42,8 @@ const harness = ({
    * unless they name a presentation mode.
    */
   options?: string;
+  /** The browser asks for less motion. */
+  reducedMotion?: boolean;
   storageFails?: boolean;
 } = {}) => {
   const stored = new Map<string, string>();
@@ -58,8 +63,10 @@ const harness = ({
     amount: undefined as AmountEntry | undefined,
     amountPrompt: undefined as ModernAmount | undefined,
     applied: [] as Options[],
+    /** The sprite highlights' frames painted, latest last. */
     atHome: false,
     bar: undefined as readonly BarButton[] | undefined,
+    clips: [] as ClipFrame[],
     downloads: [] as { data: string; name: string }[],
     filesChosen: 0,
     fit: false,
@@ -101,6 +108,10 @@ const harness = ({
     openMenu: () => {
       page.menuOpen = true;
     },
+    paintClip: ({ frame }) => {
+      page.clips.push(frame);
+    },
+    reducedMotion,
     render: ({
       amount,
       amountPrompt,
@@ -167,7 +178,8 @@ const harness = ({
   /** Lets animation frames run until the game takes input again. */
   const settle = () => {
     for (let frame = 0; view().paused; frame++) {
-      if (frame > 2000) {
+      // Modern mode's clips run at real-world pace: a match can take minutes.
+      if (frame > 50_000) {
         throw new Error(`Still paused on ${view().screen}`);
       }
       now += frameMs;
@@ -1322,10 +1334,14 @@ test('a finger on the pitch in a timed pause holds a key until it lifts', () => 
   expect(run.page.highlights).toBeUndefined();
 });
 
-test('Modern mode shows moment highlights as a ticker, newest first, with Skip', () => {
+/** Kicks off a moment-highlights match in Modern mode. */
+const modernMoments = (
+  setup: Parameters<typeof harness>[0] = {}
+): ReturnType<typeof harness> & { ticker: () => Ticker } => {
   const run = harness({
     autosave: momentHighlightsSave(),
-    options: modernOptions
+    options: modernOptions,
+    ...setup
   });
   for (const id of ['menu.play', 'team.kick-off']) {
     run.settle();
@@ -1337,8 +1353,23 @@ test('Modern mode shows moment highlights as a ticker, newest first, with Skip',
       run.app.pointerUp();
     }
   }
+  const ticker = () => {
+    const view = run.view();
+    if (view.screen !== 'highlights' || !('ticker' in view)) {
+      throw new Error('No ticker');
+    }
+    return view.ticker;
+  };
+  return { ...run, ticker };
+};
+
+test('under reduced motion, Modern mode shows moment highlights as a ticker, newest first, with Skip', () => {
+  const run = modernMoments({ reducedMotion: true });
+  expect(run.ticker().lengths).toBeUndefined();
   run.wait(1);
   expect(run.view().screen).toBe('highlights');
+  expect(run.page.highlights!.clip).toBeUndefined();
+  expect(run.page.clips).toEqual([]);
   expect(run.page.bar).toBeUndefined();
   expect(run.page.highlights!.pitch).toBeUndefined();
   expect(run.page.highlights!.ticker!.skip).toBe(true);
@@ -1487,4 +1518,137 @@ test('Classic mode keeps the original loan screen and its bar', () => {
   expect(run.page.amountPrompt).toBeUndefined();
   expect(run.page.message).toBeUndefined();
   expect(run.labels()).toEqual(['Cancel (0)', 'Take loan']);
+});
+
+/** The clips of the match on show, as the view worked them out. */
+const clipsOf = (run: ReturnType<typeof modernMoments>) => {
+  const view = run.view();
+  if (view.screen !== 'highlights' || !('ticker' in view)) {
+    throw new Error('No ticker');
+  }
+  return clipScriptsFor(view.game, view.fixture, view.ticker.moments);
+};
+
+test('Modern mode plays each moment as a clip, handing the sim their lengths at kick-off', () => {
+  const run = modernMoments();
+  const scripts = clipsOf(run);
+  expect(scripts.length).toBeGreaterThan(0);
+  expect(run.ticker().lengths).toEqual(scripts.map(s => s.length));
+  expect(run.ticker().elapsedT).toBe(0);
+  // The 0-0 header shows both sides in shape under "Kick-off".
+  run.wait(tickerLeadIn + 5);
+  expect(run.page.highlights!.clip).toEqual({ full: false, shown: 0 });
+  expect(run.page.clips.at(-1)!.caption).toBe('Kick-off');
+  run.wait(tickerPause - 5);
+  // The first clip opens under its minute; nothing gives the moment away.
+  const first = scripts[0]!;
+  expect(run.page.clips.at(-1)!.caption).toBe(
+    `${run.ticker().moments[0]!.minute}′`
+  );
+  expect(run.page.highlights!.score).toEqual([0, 0]);
+  expect(run.page.highlights!.ticker!.lines).toEqual([]);
+  run.wait(first.momentFrame - 1);
+  expect(run.page.highlights!.clip!.shown).toBe(0);
+  run.wait(1);
+  // The clip reaches its moment: the score and the latest line change.
+  expect(run.page.highlights!.clip!.shown).toBe(1);
+  expect(run.page.highlights!.ticker!.lines).toHaveLength(1);
+  const moment = run.ticker().moments[0]!;
+  const goals = moment.kind === 'goal' ? 1 : 0;
+  expect(run.page.highlights!.score.reduce((a, b) => a + b)).toBe(goals);
+  expect(run.ticker().shown).toHaveLength(1);
+});
+
+test('a tap ends the clip, showing its moment first, and the next clip starts', () => {
+  const run = modernMoments();
+  if (run.ticker().moments.length < 2) {
+    throw new Error('Needs two moments');
+  }
+  run.wait(tickerLeadIn + tickerPause + 30);
+  expect(run.page.highlights!.clip!.shown).toBe(0);
+  run.app.pressScreen();
+  run.wait(2);
+  run.app.pointerUp();
+  expect(run.ticker().shown).toHaveLength(2);
+  expect(run.page.highlights!.clip!.shown).toBe(1);
+  expect(run.page.highlights!.ticker!.lines[0]!.minute).toBe(
+    `${run.ticker().moments[0]!.minute}′`
+  );
+  expect(run.page.clips.at(-1)!.caption).toBe(
+    `${run.ticker().moments[1]!.minute}′`
+  );
+});
+
+test('Skip ends every clip and shows the whole ticker for the final hold', () => {
+  const run = modernMoments();
+  run.wait(tickerLeadIn + tickerPause + 30);
+  run.app.tap('ticker.skip');
+  const count = run.ticker().moments.length;
+  expect(run.page.highlights!.clip).toEqual({ full: true, shown: count });
+  expect(run.page.highlights!.ticker!.lines).toHaveLength(count);
+  expect(run.page.highlights!.score).toEqual(run.ticker().score);
+  expect(run.page.highlights!.ticker!.skip).toBe(true);
+  run.wait(tickerPause + 10);
+  expect(run.view().screen).toBe('result');
+  expect(run.page.highlights).toBeUndefined();
+});
+
+test('left to play, the clips run to the "Full time" hold and the result', () => {
+  const run = modernMoments();
+  const scripts = clipsOf(run);
+  const total = scripts.reduce((sum, s) => sum + s.length, 0);
+  run.wait(tickerLeadIn + tickerPause + total + 5);
+  expect(run.page.highlights!.clip).toEqual({
+    full: false,
+    shown: scripts.length
+  });
+  expect(run.page.clips.at(-1)!.caption).toBe('Full time');
+  run.settle();
+  expect(run.view().screen).toBe('result');
+});
+
+test('reopening the page mid-clip picks the clip up at the same frame', () => {
+  const run = modernMoments();
+  const into = 400;
+  run.wait(tickerLeadIn + tickerPause + into);
+  run.app.pageHide();
+  const painted = run.page.clips.at(-1)!;
+  const reopened = harness({
+    autosave: run.stored.get('fman:autosave')!,
+    options: modernOptions
+  });
+  reopened.wait(1);
+  const view = reopened.view();
+  if (view.screen !== 'highlights' || !('ticker' in view)) {
+    throw new Error('No ticker');
+  }
+  expect(view.ticker.lengths).toEqual(clipsOf(run).map(s => s.length));
+  const resumed = reopened.page.clips.at(-1)!;
+  // The same clip, a frame or two on from where it was hidden.
+  expect(resumed.caption).toBe(painted.caption);
+  expect(Math.abs(resumed.ball.x - painted.ball.x)).toBeLessThan(1);
+  expect(Math.abs(resumed.ball.y - painted.ball.y)).toBeLessThan(1);
+  expect(reopened.page.highlights!.clip!.shown).toBe(
+    run.page.highlights!.clip!.shown
+  );
+});
+
+test('a match kicked off without clips keeps the ticker to the end', () => {
+  const run = modernMoments({ reducedMotion: true });
+  run.wait(tickerLeadIn + tickerPause + 10);
+  run.app.pageHide();
+  // Reopened where motion is welcome, it still has no clip lengths.
+  const reopened = harness({
+    autosave: run.stored.get('fman:autosave')!,
+    options: modernOptions
+  });
+  reopened.wait(1);
+  expect(reopened.page.highlights!.clip).toBeUndefined();
+  expect(reopened.page.highlights!.ticker!.lines).toHaveLength(1);
+});
+
+test('Classic mode hands the sim no clip lengths', () => {
+  const run = atTicker();
+  expect(run.ticker()!.lengths).toBeUndefined();
+  expect(run.page.clips).toEqual([]);
 });

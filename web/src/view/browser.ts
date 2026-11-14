@@ -10,6 +10,7 @@ import {
   type AmountEntry
 } from './amount-entry';
 import type { App, Dom, MenuControl } from './app';
+import { fitClipCanvas, paintClip } from './clip-canvas';
 import type { BarButton } from './context-bar';
 import { rasterText, rasterizeCells } from './glyphs';
 import type { ClubName, Home } from './home';
@@ -392,9 +393,32 @@ const actionButton = (
 const paintHighlights = (
   pane: HTMLElement,
   pitch: HTMLCanvasElement,
+  clipPitch: HTMLCanvasElement,
   highlights: ModernHighlights
 ) => {
   const parts: HTMLElement[] = [scoreboard(highlights)];
+  if (highlights.clip && highlights.ticker) {
+    // Sprite highlights (#144): the clip's pitch, with the latest moment's
+    // line under it, or after Skip the whole ticker over it.
+    const stage = document.createElement('div');
+    stage.className = 'clip-stage';
+    stage.append(clipPitch);
+    if (highlights.clip.full) {
+      stage.append(tickerList(highlights.ticker));
+    }
+    const actions = document.createElement('div');
+    actions.className = 'pick-actions';
+    actions.append(
+      actionButton('Skip', 'ticker.skip', 'skip', highlights.ticker.skip)
+    );
+    const latest = tickerList({
+      ...highlights.ticker,
+      lines: highlights.clip.full ? [] : highlights.ticker.lines.slice(0, 1)
+    });
+    latest.classList.add('latest-moment');
+    pane.replaceChildren(...parts, stage, latest, actions);
+    return;
+  }
   if (highlights.pitch) {
     pitch.setAttribute(
       'aria-label',
@@ -786,6 +810,12 @@ export const createBrowserDom = (app: HTMLElement) => {
   modernPitch.setAttribute('role', 'img');
   const modernPitchContext = modernPitch.getContext('2d')!;
   let modernPitchFor: unknown;
+  // The sprite highlights' pitch (#144), at the screen's resolution.
+  const clipPitch = document.createElement('canvas');
+  clipPitch.className = 'clip-pitch';
+  clipPitch.setAttribute('role', 'img');
+  clipPitch.setAttribute('aria-label', 'Pitch');
+  const clipContext = clipPitch.getContext('2d')!;
   let highlightsKey = '';
   let barKey = '';
   let homeKey = '';
@@ -915,6 +945,14 @@ export const createBrowserDom = (app: HTMLElement) => {
       notice.textContent = text;
     },
     openMenu: () => menu.showModal(),
+    paintClip: ({ frame, sides }) => {
+      if (clipPitch.isConnected) {
+        paintClip(clipContext, frame, sides, fitClipCanvas(clipPitch));
+      }
+    },
+    get reducedMotion() {
+      return matchMedia('(prefers-reduced-motion: reduce)').matches;
+    },
     render: ({
       amount,
       amountPrompt,
@@ -972,7 +1010,7 @@ export const createBrowserDom = (app: HTMLElement) => {
       highlightsPane.hidden = !highlights;
       const highlightsShape = JSON.stringify(highlights);
       if (highlights && highlightsShape !== highlightsKey) {
-        paintHighlights(highlightsPane, modernPitch, highlights);
+        paintHighlights(highlightsPane, modernPitch, clipPitch, highlights);
       }
       highlightsKey = highlightsShape;
       document.documentElement.classList.toggle('at-highlights', !!highlights);
@@ -1023,9 +1061,16 @@ export const createBrowserDom = (app: HTMLElement) => {
         'aria-live',
         ticker || highlights ? 'off' : 'polite'
       );
+      // Under sprite highlights, a line is heard when its clip reaches it.
       const newest =
         view.screen === 'highlights' && 'ticker' in view
-          ? tickerLines(view.game, view.fixture, view.ticker.shown)[0]
+          ? tickerLines(
+              view.game,
+              view.fixture,
+              highlights?.clip
+                ? view.ticker.moments.slice(0, highlights.clip.shown)
+                : view.ticker.shown
+            )[0]
           : undefined;
       const said = newest
         ? tickerText(newest)
@@ -1172,6 +1217,7 @@ export const createBrowserDom = (app: HTMLElement) => {
     });
     machine.addEventListener('pointerdown', target.pressScreen);
     modernPitch.addEventListener('pointerdown', target.pressScreen);
+    clipPitch.addEventListener('pointerdown', target.pressScreen);
     addEventListener('pointerup', target.pointerUp);
     addEventListener('pointercancel', target.pointerUp);
     document.addEventListener('keyup', target.keyUp);

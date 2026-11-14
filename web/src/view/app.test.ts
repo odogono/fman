@@ -1542,7 +1542,7 @@ test('Modern mode plays each moment as a clip, handing the sim their lengths at 
   run.wait(tickerPause - 5);
   // The first clip opens under its minute; nothing gives the moment away.
   const first = scripts[0]!;
-  expect(run.page.clips.at(-1)!.caption).toBe(
+  expect(run.page.clips.at(-1)!.caption).toStartWith(
     `${run.ticker().moments[0]!.minute}′`
   );
   expect(run.page.highlights!.score).toEqual([0, 0]);
@@ -1574,7 +1574,7 @@ test('a tap ends the clip, showing its moment first, and the next clip starts', 
   expect(run.page.highlights!.ticker!.lines[0]!.minute).toBe(
     `${run.ticker().moments[0]!.minute}′`
   );
-  expect(run.page.clips.at(-1)!.caption).toBe(
+  expect(run.page.clips.at(-1)!.caption).toStartWith(
     `${run.ticker().moments[1]!.minute}′`
   );
 });

@@ -33,6 +33,19 @@ export const missOutcomes: readonly MissOutcome[] = [
   'over'
 ];
 
+/** How the build-up starts: in open play, or from a free kick or a throw-in. */
+export type Restart = 'free-kick' | 'open-play' | 'throw-in';
+export const restarts: readonly Restart[] = [
+  'open-play',
+  'free-kick',
+  'throw-in'
+];
+const restartNames: Record<Restart, string> = {
+  'free-kick': 'Free kick',
+  'open-play': '',
+  'throw-in': 'Throw-in'
+};
+
 /** Where a player lines up. */
 export type Line = 'attack' | 'defence' | 'keeper' | 'midfield';
 export type ClipPlayer = Readonly<{ label: string; line: Line }>;
@@ -53,6 +66,8 @@ export type ClipInput = Readonly<{
   minute: number;
   /** Forces the outcome, for the debug page; the seed picks it otherwise. */
   outcome?: ClipOutcome;
+  /** Forces how the build-up starts, for the debug page. */
+  restart?: Restart;
   seed: number;
   /** The named player: an index into `attack.players`. */
   shooter: number;
@@ -90,6 +105,8 @@ export type ClipFrame = Readonly<{
 export type ClipPass = Readonly<{
   end: number;
   from: string;
+  /** A pass in open play, or the restart that starts the build-up. */
+  kind: 'free-kick' | 'pass' | 'throw-in';
   start: number;
   to: string;
 }>;
@@ -105,6 +122,7 @@ export type ClipScript = Readonly<{
   passes: readonly ClipPass[];
   /** The frames each phase after the build-up starts. */
   phases: Readonly<{ moment: number; reaction: number; zoom: number }>;
+  restart: Restart;
 }>;
 
 /** FNV-1a over a string: the clip's seed. */
@@ -257,13 +275,60 @@ export const createClipScript = (input: ClipInput): ClipScript => {
   const starter = others.length
     ? rng.pick(deep.length ? deep : others)
     : shooter;
+  // About half the build-ups start in open play, a quarter each from a
+  // free kick and a throw-in.
+  const restartRoll = rng.next();
+  const restart: Restart = !others.length
+    ? 'open-play'
+    : (input.restart ??
+      (restartRoll < 0.5
+        ? 'open-play'
+        : restartRoll < 0.75
+          ? 'free-kick'
+          : 'throw-in'));
+  const touchline = rng.next() < 0.5 ? 0 : pitchWidth;
+  if (restart === 'throw-in') {
+    ballStart.d = rng.between(20, 80);
+    ballStart.x = touchline;
+  } else if (restart === 'free-kick') {
+    ballStart.d = rng.between(30, 70);
+    ballStart.x = rng.between(12, 56);
+  }
   const movers: Mover[] = Array.from({ length: count }, (_, i) => ({
     ...target(i, ballStart, 0),
     pose: 'run'
   }));
-  movers[starter]!.d = ballStart.d - 0.8;
-  movers[starter]!.x = ballStart.x;
+  movers[starter]!.d = ballStart.d - (restart === 'free-kick' ? 1.5 : 0.8);
+  movers[starter]!.x =
+    restart === 'throw-in'
+      ? touchline + (touchline === 0 ? -0.8 : 0.8)
+      : ballStart.x;
   const ball = { ...ballStart, height: 0 };
+  /** Defenders stand back this far from a free kick while it is set. */
+  let keepAway: Point | undefined;
+  /** Attackers stay onside until the shot. */
+  let offside = true;
+
+  /**
+   * How far up the pitch an attacker may wait without being offside: level
+   * with the second-last defender, the ball, or halfway, whichever is
+   * furthest forward. Only a run onto a pass already played goes beyond it.
+   */
+  const offsideLine = () => {
+    const depths = movers
+      .slice(attackers.length)
+      .map(m => m.d)
+      .sort((a, b) => b - a);
+    return Math.max(pitchLength / 2, ball.d, depths[1] ?? 0);
+  };
+  {
+    const line = offsideLine();
+    movers.forEach((mover, i) => {
+      if (i < attackers.length && i !== starter) {
+        mover.d = Math.min(mover.d, line - 0.5);
+      }
+    });
+  }
 
   // Frames are written as they play: x and y on the screen, then poses.
   const xs: number[][] = [];
@@ -312,12 +377,22 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     cameraTrack.push([cx, cy, cameraWidth]);
   };
 
+  /** Moves `point` out to 9.15 m from a free kick at `spot`. */
+  const standBack = (point: Point, spot: Point) => {
+    const gap = distance(point, spot);
+    if (gap < 9.15) {
+      point.d = spot.d + (gap ? (point.d - spot.d) / gap : 1) * 9.15;
+      point.x = spot.x + (gap ? (point.x - spot.x) / gap : 0) * 9.15;
+    }
+  };
+
   // Every player not told otherwise heads for their place in the shape.
   const steer = (
     frame: number,
     held: ReadonlySet<number>,
     overrides: ReadonlyMap<number, Point> = new Map()
   ) => {
+    const line = offside ? offsideLine() - 0.5 : Infinity;
     // The defender nearest the ball closes it down, but never tackles.
     let presser = -1;
     let nearest = Infinity;
@@ -336,11 +411,21 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       if (held.has(i)) {
         return;
       }
-      const goal =
-        overrides.get(i) ??
-        (i === presser
-          ? { d: ball.d + 3, x: ball.x + (34 - ball.x) * 0.05 }
-          : target(i, ball, frame));
+      const goal = {
+        ...(overrides.get(i) ??
+          (i === presser
+            ? { d: ball.d + 3, x: ball.x + (34 - ball.x) * 0.05 }
+            : target(i, ball, frame)))
+      };
+      if (i < attackers.length) {
+        goal.d = Math.min(goal.d, line);
+        // Caught beyond the line, a player first drops straight back.
+        if (mover.d > line) {
+          goal.x = mover.x;
+        }
+      } else if (keepAway && i !== keeperSlot) {
+        standBack(goal, keepAway);
+      }
       const speed = perFrame(
         i < attackers.length ? 6 : i === keeperSlot ? 4 : 5.5
       );
@@ -351,6 +436,9 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       } else {
         mover.d += ((goal.d - mover.d) / gap) * speed;
         mover.x += ((goal.x - mover.x) / gap) * speed;
+      }
+      if (keepAway && i >= attackers.length && i !== keeperSlot) {
+        standBack(mover, keepAway);
       }
     });
   };
@@ -393,21 +481,28 @@ export const createClipScript = (input: ClipInput): ClipScript => {
   let passesMade = 0;
   const passesLeft = () => passCount - passesMade;
 
-  /** A pass along the ground to a receiver running onto it. */
-  const pass = (receiver: number) => {
+  /**
+   * A pass to a receiver running onto it: along the ground, or in the air
+   * for a throw-in or a long free kick.
+   */
+  const pass = (receiver: number, kind: ClipPass['kind'] = 'pass') => {
     const runner = movers[receiver]!;
+    const lead = kind === 'throw-in' ? rng.between(0.5, 2) : rng.between(2, 6);
     const end =
       receiver === shooter
         ? { ...shootingSpot }
         : {
-            d: clamp(runner.d + rng.between(2, 6), 10, 95),
+            d: clamp(runner.d + lead, 10, 95),
             x: clamp(runner.x + rng.between(-3, 3), 3, pitchWidth - 3)
           };
     const from = { d: ball.d, x: ball.x };
     const runFrom = { d: runner.d, x: runner.x };
+    const lofted =
+      kind === 'throw-in' || (kind === 'free-kick' && distance(from, end) > 25);
+    const speed = kind === 'throw-in' ? 12 : lofted ? 18 : 15;
     const frames = Math.ceil(
       Math.max(
-        distance(from, end) / perFrame(15),
+        distance(from, end) / perFrame(speed),
         distance(runFrom, end) / perFrame(7),
         clipFps * 0.6
       )
@@ -415,14 +510,18 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     passes.push({
       end: frame + frames,
       from: label(holder),
+      kind,
       start: frame,
       to: label(receiver)
     });
+    const thrower = holder;
     for (let f = 1; f <= frames; f++) {
       const u = f / frames;
-      const rolled = u * (1.3 - 0.3 * u);
+      const rolled = lofted ? u : u * (1.3 - 0.3 * u);
       ball.d = lerp(from.d, end.d, rolled);
       ball.x = lerp(from.x, end.x, rolled);
+      ball.height = lofted ? Math.sin(Math.PI * u) * 0.5 : 0;
+      movers[thrower]!.pose = 'run';
       runner.d = lerp(runFrom.d, end.d - 0.8, u);
       runner.x = lerp(runFrom.x, end.x, u);
       const overrides = new Map<number, Point>();
@@ -433,16 +532,25 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       record();
       frame++;
     }
+    ball.height = 0;
     holder = receiver;
     passesMade++;
   };
 
-  /** The next to receive: ahead of the ball and within reach, if anyone is. */
+  const onside = (i: number) => movers[i]!.d <= offsideLine();
+
+  /**
+   * The next to receive: onside, and ahead of the ball and within reach if
+   * anyone is. The shooter, last, may need a moment to get back onside.
+   */
   const nextReceiver = () => {
     if (passesLeft() <= 1) {
+      for (let f = 0; f < 2 * clipFps && !onside(shooter); f++) {
+        dribble(1, { d: ball.d, x: ball.x }, 1);
+      }
       return shooter;
     }
-    const choices = others.filter(i => i !== holder);
+    const choices = others.filter(i => i !== holder && onside(i));
     if (!choices.length) {
       return shooter;
     }
@@ -463,6 +571,41 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     }
     return choices.at(-1)!;
   };
+
+  // A restart: the thrower holds the ball over their head, or the taker
+  // waits with the defenders back, while both sides set; then the ball is
+  // played to a team-mate.
+  let captionEnd = captionFrames;
+  if (restart !== 'open-play') {
+    const waits = restart === 'throw-in' ? rng.int(50, 80) : rng.int(75, 110);
+    captionEnd = Math.max(captionFrames, waits);
+    keepAway = restart === 'free-kick' ? { d: ball.d, x: ball.x } : undefined;
+    if (keepAway) {
+      // The clip opens with the defenders already back.
+      for (let i = attackers.length; i < count; i++) {
+        if (i !== keeperSlot) {
+          standBack(movers[i]!, keepAway);
+        }
+      }
+    }
+    const taker = movers[holder]!;
+    for (let f = 0; f < waits; f++) {
+      taker.pose = restart === 'throw-in' ? 'hold' : 'run';
+      ball.height = restart === 'throw-in' ? 0.3 : 0;
+      steer(frame, new Set([holder]));
+      record();
+      frame++;
+    }
+    keepAway = undefined;
+    const near = others.filter(i => {
+      const gap = distance(movers[i]!, ball);
+      return i !== holder && gap > 6 && gap < 20;
+    });
+    pass(
+      restart === 'throw-in' && near.length ? rng.pick(near) : nextReceiver(),
+      restart
+    );
+  }
 
   // The build-up: each player takes the ball under control, may carry it
   // on, then passes; the last pass reaches the shooter in shooting range.
@@ -503,6 +646,7 @@ export const createClipScript = (input: ClipInput): ClipScript => {
   }
 
   // The zoom: the shooter takes a touch towards goal as the camera closes in.
+  // Offside no longer matters once the shooter has the ball in range.
   const zoomStart = frame;
   const zoomFrames = clipFps;
   const touch = { d: Math.min(movers[shooter]!.d + 1.5, 100), x: ball.x };
@@ -514,6 +658,7 @@ export const createClipScript = (input: ClipInput): ClipScript => {
 
   // The moment: the shot, and how it ends.
   const momentStart = frame;
+  offside = false;
   const momentFrames = 2 * clipFps;
   const side = rng.next() < 0.5 ? -1 : 1;
   const shotFrom = { d: ball.d, x: ball.x };
@@ -729,7 +874,13 @@ export const createClipScript = (input: ClipInput): ClipScript => {
         y: lerp(by0, by1, u)
       },
       camera: { width, x: lerp(cx0, cx1, u), y: lerp(cy0, cy1, u) },
-      ...(low < captionFrames ? { caption: `${input.minute}′` } : {}),
+      ...(low < captionEnd
+        ? {
+            caption: [`${input.minute}′`, restartNames[restart]]
+              .filter(Boolean)
+              .join(' ')
+          }
+        : {}),
       ...(named && width < cameraWide - 0.01
         ? { label: { text: shooterLabel, x: named.x, y: named.y } }
         : {}),
@@ -746,7 +897,8 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     momentFrame,
     outcome,
     passes,
-    phases: { moment: momentStart, reaction: reactionStart, zoom: zoomStart }
+    phases: { moment: momentStart, reaction: reactionStart, zoom: zoomStart },
+    restart
   };
 };
 

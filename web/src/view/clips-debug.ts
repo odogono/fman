@@ -9,12 +9,14 @@ import {
   createClipScript,
   hashSeed,
   missOutcomes,
+  restarts,
   saveOutcomes,
   type ClipInput,
   type ClipOutcome,
   type ClipPlayer,
   type ClipScript,
-  type Line
+  type Line,
+  type Restart
 } from './clips';
 import { named } from './ticker-layout';
 
@@ -50,6 +52,7 @@ const settings = {
   outcome: 'seed' as ClipOutcome | 'seed',
   path: false,
   place: 0,
+  restart: 'seed' as Restart | 'seed',
   seedBase: 1,
   side: 'home' as 'away' | 'home',
   speed: 1
@@ -160,6 +163,7 @@ const settingsInput = (): ClipInput => {
     kind: settings.kind,
     minute: settings.minute,
     ...(settings.outcome === 'seed' ? {} : { outcome: settings.outcome }),
+    ...(settings.restart === 'seed' ? {} : { restart: settings.restart }),
     seed: hashSeed(
       [
         'debug',
@@ -216,6 +220,7 @@ const rebuild = () => {
     `length      ${script.length} frames (${(script.length / clipFps).toFixed(2)} s)`,
     `moment at   frame ${script.momentFrame}`,
     `outcome     ${script.outcome}`,
+    `restart     ${script.restart}`,
     `phases      build-up 0, zoom ${zoom}, moment ${moment}, reaction ${reaction}`,
     `seed        ${input.seed}`,
     `shooter     ${input.attack.players[input.shooter]?.label ?? '-'}`,
@@ -225,7 +230,7 @@ const rebuild = () => {
     `passes (${script.passes.length})`,
     ...script.passes.map(
       p =>
-        `  ${String(p.start).padStart(4)}–${String(p.end).padEnd(4)} ${p.from} → ${p.to}`
+        `  ${String(p.start).padStart(4)}–${String(p.end).padEnd(4)} ${p.from} → ${p.to}${p.kind === 'pass' ? '' : ` (${p.kind})`}`
     )
   ].join('\n');
   renderControls();
@@ -281,7 +286,15 @@ const renderControls = () => {
         value => change('side')(value as 'away' | 'home')
       )
     ),
-    labelled('Minute', number(settings.minute, 1, 90, change('minute')))
+    labelled('Minute', number(settings.minute, 1, 90, change('minute'))),
+    labelled(
+      'Restart',
+      select(
+        [['seed', 'From the seed'], ...restarts.map(o => [o, o] as const)],
+        settings.restart,
+        value => change('restart')(value as Restart | 'seed')
+      )
+    )
   );
   const kitsSet = element(
     'fieldset',

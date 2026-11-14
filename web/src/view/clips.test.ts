@@ -9,6 +9,7 @@ import {
   missOutcomes,
   outcomeKind,
   pitchLength,
+  restarts,
   saveOutcomes,
   type ClipInput,
   type ClipSide,
@@ -132,7 +133,7 @@ test('the sides change ends at half-time', () => {
 });
 
 test('the minute shows over the first half second; the label only zoomed in', () => {
-  const script = createClipScript(input());
+  const script = createClipScript(input({ restart: 'open-play' }));
   expect(script.frame(0).caption).toBe('34′');
   expect(script.frame(captionFrames - 1).caption).toBe('34′');
   expect(script.frame(captionFrames).caption).toBeUndefined();
@@ -182,4 +183,71 @@ test('a side picked short plays short, and a lone player shoots alone', () => {
     })
   );
   expect(keeperless.length).toBeGreaterThan(0);
+});
+
+/** How far up the pitch a frame's player is, in the attacking side's terms. */
+const depth = (y: number) => pitchLength - y;
+
+test('no one receives a pass from an offside position', () => {
+  for (let seed = 0; seed < 150; seed++) {
+    const script = createClipScript(input({ seed }));
+    const labels = script.input.attack.players.map(p => p.label);
+    for (const pass of script.passes) {
+      if (pass.kind === 'throw-in' || pass.start === 0) {
+        continue;
+      }
+      // As the ball is played: the receiver, the ball and the defenders.
+      const frame = script.frame(pass.start - 1);
+      const receiver = frame.players[labels.indexOf(pass.to)]!;
+      const defenders = frame.players
+        .filter(p => p.side === 'defence')
+        .map(p => depth(p.y))
+        .sort((a, b) => b - a);
+      const line = Math.max(
+        pitchLength / 2,
+        depth(frame.ball.y),
+        defenders[1] ?? 0
+      );
+      expect(depth(receiver.y)).toBeLessThanOrEqual(line + 0.3);
+    }
+  }
+});
+
+test('build-ups start in open play, from a free kick or from a throw-in', () => {
+  const seen = new Set<string>();
+  for (let seed = 0; seed < 100; seed++) {
+    const script = createClipScript(input({ seed }));
+    seen.add(script.restart);
+    if (script.restart !== 'open-play') {
+      expect(script.passes[0]!.kind).toBe(script.restart);
+    }
+  }
+  expect([...seen].sort()).toEqual([...restarts].sort());
+});
+
+test('a throw-in is taken from beyond the touchline, with the ball held', () => {
+  const script = createClipScript(input({ restart: 'throw-in' }));
+  const start = script.frame(0);
+  expect(start.caption).toBe('34′ Throw-in');
+  expect([0, 68]).toContain(start.ball.x);
+  expect(start.ball.height).toBeGreaterThan(0);
+  const thrower = start.players.find(p => p.pose === 'hold')!;
+  expect(thrower.x < 0 || thrower.x > 68).toBe(true);
+  expect(script.passes[0]!.kind).toBe('throw-in');
+});
+
+test('defenders stand back from a free kick until it is taken', () => {
+  for (let seed = 0; seed < 30; seed++) {
+    const script = createClipScript(input({ restart: 'free-kick', seed }));
+    expect(script.frame(0).caption).toBe('34′ Free kick');
+    const taken = script.passes[0]!;
+    expect(taken.kind).toBe('free-kick');
+    const set = script.frame(taken.start - 1);
+    for (const p of set.players) {
+      if (p.side === 'defence' && !p.keeper) {
+        const gap = Math.hypot(p.x - set.ball.x, p.y - set.ball.y);
+        expect(gap).toBeGreaterThan(8.5);
+      }
+    }
+  }
 });

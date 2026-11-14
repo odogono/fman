@@ -84,6 +84,10 @@ _Avoid_: Replay when referring to highlights; a cup replay is another match
 One opportunity for a side to score in a match, won through a team-strength test.
 _Avoid_: Attack when not referring to the original's displayed sequence
 
+**Attack**:
+One attacking sequence of the original's highlights, played out on the pitch. Original-rules matches are decided by attacks; other rulesets decide them by moments.
+_Avoid_: Chance, which is the strength test behind either
+
 **Moment**:
 One decisive event in a match: a goal, a save, a clearance or a near miss, at a minute, for the side that made the chance. It names the player who shot: for the managed club one of its picked players, and, when clubs own squads, for an opponent one of its squad.
 _Avoid_: Event, highlight

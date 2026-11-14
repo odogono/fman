@@ -6,6 +6,19 @@ import { clubName, fixtureTitle, type ClubName } from './home';
 import { strengthsFor, type Strengths } from './pick-team';
 import { named } from './ticker-layout';
 
+/** How far the sprite highlights' clips have got, and the drawer. */
+export type ClipProgress = Readonly<{
+  drawer: boolean;
+  full: boolean;
+  shown: number;
+}>;
+
+/** The moments drawer's buttons (#145), which press no key. */
+export const drawerIds = {
+  close: 'moments.close',
+  open: 'moments.open'
+} as const;
+
 /** One moment as a line of Modern mode's ticker. */
 export type ModernTickerLine = Readonly<{
   kind: Moment['kind'];
@@ -26,9 +39,10 @@ export type ModernHighlights = Readonly<{
   /**
    * Under sprite highlights (#144), the moments play as clips on a pitch of
    * their own. `shown`: the moments whose clips have reached the moment.
-   * `full`: after Skip, the whole ticker shows over the pitch.
+   * `full`: after Skip, the whole ticker shows over the pitch. `drawer`: on
+   * a phone, the moments drawer (#145) is open over the pitch.
    */
-  clip?: Readonly<{ full: boolean; shown: number }>;
+  clip?: ClipProgress;
   home: ClubName;
   pitch?: Readonly<{
     /** The club whose attack is on the pitch, if one is. */
@@ -95,7 +109,7 @@ const scoreAfter = (fixture: MatchFixture, shown: readonly Moment[]) => {
  */
 export const highlightsFor = (
   view: View,
-  clip?: Readonly<{ full: boolean; shown: number }>
+  clip?: ClipProgress
 ): ModernHighlights | undefined => {
   if (view.screen !== 'highlights') {
     return undefined;

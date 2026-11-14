@@ -1537,7 +1537,11 @@ test('Modern mode plays each moment as a clip, handing the sim their lengths at 
   expect(run.ticker().elapsedT).toBe(0);
   // The 0-0 header shows both sides in shape under "Kick-off".
   run.wait(tickerLeadIn + 5);
-  expect(run.page.highlights!.clip).toEqual({ full: false, shown: 0 });
+  expect(run.page.highlights!.clip).toEqual({
+    drawer: false,
+    full: false,
+    shown: 0
+  });
   expect(run.page.clips.at(-1)!.caption).toBe('Kick-off');
   run.wait(tickerPause - 5);
   // The first clip opens under its minute; nothing gives the moment away.
@@ -1584,7 +1588,11 @@ test('Skip ends every clip and shows the whole ticker for the final hold', () =>
   run.wait(tickerLeadIn + tickerPause + 30);
   run.app.tap('ticker.skip');
   const count = run.ticker().moments.length;
-  expect(run.page.highlights!.clip).toEqual({ full: true, shown: count });
+  expect(run.page.highlights!.clip).toEqual({
+    drawer: false,
+    full: true,
+    shown: count
+  });
   expect(run.page.highlights!.ticker!.lines).toHaveLength(count);
   expect(run.page.highlights!.score).toEqual(run.ticker().score);
   expect(run.page.highlights!.ticker!.skip).toBe(true);
@@ -1599,6 +1607,7 @@ test('left to play, the clips run to the "Full time" hold and the result', () =>
   const total = scripts.reduce((sum, s) => sum + s.length, 0);
   run.wait(tickerLeadIn + tickerPause + total + 5);
   expect(run.page.highlights!.clip).toEqual({
+    drawer: false,
     full: false,
     shown: scripts.length
   });
@@ -1645,6 +1654,101 @@ test('a match kicked off without clips keeps the ticker to the end', () => {
   reopened.wait(1);
   expect(reopened.page.highlights!.clip).toBeUndefined();
   expect(reopened.page.highlights!.ticker!.lines).toHaveLength(1);
+});
+
+/** Plays a Modern match's clips until the first reaches its moment. */
+const toFirstMoment = () => {
+  const run = modernMoments();
+  if (run.ticker().moments.length < 2) {
+    throw new Error('Needs two moments');
+  }
+  run.wait(tickerLeadIn + tickerPause + clipsOf(run)[0]!.momentFrame + 1);
+  expect(run.page.highlights!.clip!.shown).toBe(1);
+  return run;
+};
+
+test('the moments drawer opens over the clip, which plays on as lines arrive', () => {
+  const run = toFirstMoment();
+  expect(run.page.highlights!.clip!.drawer).toBe(false);
+  run.app.tap('moments.open');
+  run.app.pointerUp();
+  expect(run.page.highlights!.clip!.drawer).toBe(true);
+  // Opening it pressed no key: the first clip is still on show.
+  expect(run.ticker().shown).toHaveLength(1);
+  const [first, second] = clipsOf(run);
+  run.wait(first!.length - first!.momentFrame + second!.momentFrame + 2);
+  expect(run.page.highlights!.clip).toMatchObject({ drawer: true, shown: 2 });
+  expect(run.page.highlights!.ticker!.lines).toHaveLength(2);
+  run.app.tap('moments.close');
+  run.app.pointerUp();
+  expect(run.page.highlights!.clip!.drawer).toBe(false);
+});
+
+test('a tap on the pitch ends the clip and leaves the drawer open', () => {
+  const run = toFirstMoment();
+  run.app.tap('moments.open');
+  run.app.pointerUp();
+  run.app.pressScreen();
+  run.wait(2);
+  run.app.pointerUp();
+  expect(run.ticker().shown).toHaveLength(2);
+  expect(run.page.highlights!.clip!.drawer).toBe(true);
+});
+
+test('Enter on the drawer button opens it without ending the clip', () => {
+  const run = toFirstMoment();
+  const enter = {
+    code: 'Enter',
+    inputFocused: false,
+    key: 'Enter',
+    modified: false,
+    repeat: false,
+    viewControlFocused: true
+  };
+  // The browser's own click on the button follows the key.
+  expect(run.app.keyDown(enter)).toBe(false);
+  run.app.tap('moments.open', false);
+  expect(run.app.journal.session.timingState.keyboard.key).not.toBe('Enter');
+  run.wait(2);
+  run.app.keyUp();
+  expect(run.ticker().shown).toHaveLength(1);
+  expect(run.page.highlights!.clip).toMatchObject({ drawer: true, shown: 1 });
+});
+
+test('the drawer has nothing to open before the first moment', () => {
+  const run = modernMoments();
+  run.wait(tickerLeadIn + tickerPause + 5);
+  run.app.tap('moments.open');
+  run.app.pointerUp();
+  run.wait(clipsOf(run)[0]!.momentFrame);
+  expect(run.page.highlights!.clip).toMatchObject({ drawer: false, shown: 1 });
+});
+
+test('Skip closes the drawer for the full list', () => {
+  const run = toFirstMoment();
+  run.app.tap('moments.open');
+  run.app.pointerUp();
+  run.app.tap('ticker.skip');
+  expect(run.page.highlights!.clip).toMatchObject({
+    drawer: false,
+    full: true
+  });
+});
+
+test('the drawer is not saved: a resumed match opens with it closed', () => {
+  const run = toFirstMoment();
+  run.app.tap('moments.open');
+  run.app.pointerUp();
+  run.app.pageHide();
+  const reopened = harness({
+    autosave: run.stored.get('fman:autosave')!,
+    options: modernOptions
+  });
+  reopened.wait(1);
+  expect(reopened.page.highlights!.clip).toMatchObject({
+    drawer: false,
+    shown: 1
+  });
 });
 
 test('Classic mode hands the sim no clip lengths', () => {

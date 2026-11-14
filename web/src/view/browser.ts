@@ -15,7 +15,11 @@ import type { BarButton } from './context-bar';
 import { rasterText, rasterizeCells } from './glyphs';
 import type { ClubName, Home } from './home';
 import type { BidPlayer, ModernAmount } from './modern-amount';
-import type { ModernHighlights } from './modern-highlights';
+import {
+  drawerIds,
+  type ModernHighlights,
+  type ModernTickerLine
+} from './modern-highlights';
 import type { ModernMessage } from './modern-message';
 import type { ModernStatus } from './modern-status';
 import type { PickTeam, PickTeamRow, Strengths } from './pick-team';
@@ -349,6 +353,14 @@ const scoreboard = (highlights: ModernHighlights) => {
   return board;
 };
 
+/** One ticker line's cells: minute, word, name and score. */
+const tickerCells = (line: ModernTickerLine) => [
+  cell('ticker-minute', line.minute),
+  cell('ticker-word', line.word),
+  cell('ticker-name', line.name),
+  cell('ticker-score', line.score ?? '')
+];
+
 /** Modern mode's ticker (#108, #45): newest on top, with Skip below. */
 const tickerList = (ticker: NonNullable<ModernHighlights['ticker']>) => {
   const list = document.createElement('ol');
@@ -358,17 +370,81 @@ const tickerList = (ticker: NonNullable<ModernHighlights['ticker']>) => {
     ...ticker.lines.map(line => {
       const item = document.createElement('li');
       item.className = line.kind;
-      item.append(
-        cell('ticker-minute', line.minute),
-        cell('ticker-word', line.word),
-        cell('ticker-name', line.name),
-        cell('ticker-score', line.score ?? '')
-      );
+      item.append(...tickerCells(line));
       return item;
     })
   );
   return list;
 };
+
+/**
+ * Under the clip's pitch on a phone (#145): the latest moment's line, as the
+ * button that opens the moments drawer; empty, at the same height, until the
+ * first clip reaches its moment or after Skip.
+ */
+const latestMoment = (
+  lines: readonly ModernTickerLine[],
+  open: boolean,
+  shown: boolean
+) => {
+  const latest = lines[0];
+  if (!latest || !shown) {
+    const empty = document.createElement('div');
+    empty.className = 'latest-moment';
+    return empty;
+  }
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = `latest-moment ${latest.kind}`;
+  // A second tap closes the drawer it opened.
+  button.dataset.id = open ? drawerIds.close : drawerIds.open;
+  button.dataset.viewControl = 'latest';
+  button.setAttribute('aria-expanded', String(open));
+  button.setAttribute('aria-controls', 'moments-drawer');
+  button.append(
+    ...tickerCells(latest),
+    cell('latest-all', `All moments (${lines.length}) ›`)
+  );
+  return button;
+};
+
+/** The phone's moments drawer (#145): every line so far, over the pitch. */
+const momentsDrawer = (ticker: NonNullable<ModernHighlights['ticker']>) => {
+  const drawer = document.createElement('section');
+  drawer.className = 'moments-drawer';
+  drawer.id = 'moments-drawer';
+  drawer.setAttribute('aria-label', 'All moments');
+  const header = document.createElement('div');
+  header.className = 'moments-header';
+  const title = document.createElement('h3');
+  title.textContent = 'All moments';
+  const close = document.createElement('button');
+  close.type = 'button';
+  close.textContent = 'Close';
+  close.dataset.id = drawerIds.close;
+  close.dataset.viewControl = 'close';
+  header.append(title, close);
+  drawer.append(header, tickerList(ticker));
+  return drawer;
+};
+
+/** The wide window's moments panel (#145), beside the clip's pitch. */
+const momentsPanel = (ticker: NonNullable<ModernHighlights['ticker']>) => {
+  const panel = document.createElement('section');
+  panel.className = 'moments-panel';
+  panel.setAttribute('aria-label', 'Moments');
+  const title = document.createElement('h3');
+  title.textContent = 'Moments';
+  panel.append(title, tickerList(ticker));
+  return panel;
+};
+
+/**
+ * The drawer control to focus after a repaint, given the one focused
+ * before: the same one, or the latest line once the drawer has closed.
+ */
+const focusAfter = (before: string | undefined, drawer: boolean) =>
+  before === 'close' && !drawer ? 'latest' : before;
 
 const actionButton = (
   label: string,
@@ -399,24 +475,43 @@ const paintHighlights = (
   const parts: HTMLElement[] = [scoreboard(highlights)];
   if (highlights.clip && highlights.ticker) {
     // Sprite highlights (#144): the clip's pitch, with the latest moment's
-    // line under it, or after Skip the whole ticker over it.
+    // line under it, or after Skip the whole ticker over it. The moments
+    // (#145) are in a drawer on a phone and a panel on a wide window.
+    const { clip, ticker } = highlights;
     const stage = document.createElement('div');
     stage.className = 'clip-stage';
-    stage.append(clipPitch);
-    if (highlights.clip.full) {
-      stage.append(tickerList(highlights.ticker));
+    // The drawer rises from the pitch's own foot, not the stage's.
+    const frame = document.createElement('div');
+    frame.className = 'clip-frame';
+    frame.append(clipPitch);
+    if (clip.drawer && !clip.full) {
+      frame.append(momentsDrawer(ticker));
+    }
+    stage.append(frame);
+    if (clip.full) {
+      const overlay = tickerList(ticker);
+      overlay.classList.add('full-ticker');
+      stage.append(overlay);
     }
     const actions = document.createElement('div');
     actions.className = 'pick-actions';
-    actions.append(
-      actionButton('Skip', 'ticker.skip', 'skip', highlights.ticker.skip)
+    actions.append(actionButton('Skip', 'ticker.skip', 'skip', ticker.skip));
+    const before = document.activeElement?.closest<HTMLElement>(
+      '[data-view-control]'
+    )?.dataset.viewControl;
+    pane.replaceChildren(
+      momentsPanel(ticker),
+      ...parts,
+      stage,
+      latestMoment(ticker.lines, clip.drawer, !clip.full),
+      actions
     );
-    const latest = tickerList({
-      ...highlights.ticker,
-      lines: highlights.clip.full ? [] : highlights.ticker.lines.slice(0, 1)
-    });
-    latest.classList.add('latest-moment');
-    pane.replaceChildren(...parts, stage, latest, actions);
+    const focus = focusAfter(before, clip.drawer);
+    if (focus) {
+      pane
+        .querySelector<HTMLElement>(`button[data-view-control="${focus}"]`)
+        ?.focus({ preventScroll: true });
+    }
     return;
   }
   if (highlights.pitch) {
@@ -1149,7 +1244,10 @@ export const createBrowserDom = (app: HTMLElement) => {
           inputFocused: document.activeElement === input,
           key: event.key,
           modified: event.metaKey || event.ctrlKey || event.altKey,
-          repeat: event.repeat
+          repeat: event.repeat,
+          viewControlFocused: !!document.activeElement?.closest(
+            '[data-view-control]'
+          )
         })
       ) {
         event.preventDefault();

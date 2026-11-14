@@ -10,20 +10,21 @@ For a change to see in the real app (layout, touch controls, the game menu, the 
 
 ## Driving the page
 
-| Element                         | Use                                                                                                            |
-| ------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `#entry` form, `#command` input | Answer a prompt: set `#command`'s value, then `form.requestSubmit()`. Hidden while no prompt is waiting.       |
-| `#screen-title`                 | The screen's name ("Main menu", "Transfer market"): wait on it to know where play is.                          |
-| `#transcript`                   | The screen's text, as a screen reader hears it.                                                                |
-| `#menu-button`, `#game-menu`    | The game menu dialog; its controls are `#game-menu button`, matched by text.                                   |
-| `#context-bar`                  | Classic mode's touch answers.                                                                                  |
-| `#home`                         | Modern mode's Home screen; its choices are `#home button[data-id]`.                                            |
-| `#pick-team`                    | Modern mode's pick team screen; its live rows and actions are `#pick-team button[data-id]`.                    |
-| `#highlights`                   | Modern mode's highlights screen: scoreboard, then the pitch or the ticker and its Skip button.                 |
-| `.clip-pitch`                   | Modern mode's sprite highlights (#144): a tap on it ends the clip; the latest line is `.latest-moment`.        |
-| `#status`                       | Modern mode's status screen; on the status prompt its Done button is `#status button[data-id]`.                |
-| `#amount-prompt`                | Modern mode's loan, repayment and transfer bid screen; amount buttons carry `data-action`, the rest `data-id`. |
-| `#message`                      | Modern mode's messages: the balance after a loan, and plain text messages, with Continue.                      |
+| Element                             | Use                                                                                                            |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `#entry` form, `#command` input     | Answer a prompt: set `#command`'s value, then `form.requestSubmit()`. Hidden while no prompt is waiting.       |
+| `#screen-title`                     | The screen's name ("Main menu", "Transfer market"): wait on it to know where play is.                          |
+| `#transcript`                       | The screen's text, as a screen reader hears it.                                                                |
+| `#menu-button`, `#game-menu`        | The game menu dialog; its controls are `#game-menu button`, matched by text.                                   |
+| `#context-bar`                      | Classic mode's touch answers.                                                                                  |
+| `#home`                             | Modern mode's Home screen; its choices are `#home button[data-id]`.                                            |
+| `#pick-team`                        | Modern mode's pick team screen; its live rows and actions are `#pick-team button[data-id]`.                    |
+| `#highlights`                       | Modern mode's highlights screen: scoreboard, then the pitch or the ticker and its Skip button.                 |
+| `.clip-pitch`                       | Modern mode's sprite highlights (#144): a tap on it ends the clip; the latest line is `.latest-moment`.        |
+| `.moments-drawer`, `.moments-panel` | The moments (#145): `button.latest-moment` opens the phone's drawer; the panel shows on a wide window.         |
+| `#status`                           | Modern mode's status screen; on the status prompt its Done button is `#status button[data-id]`.                |
+| `#amount-prompt`                    | Modern mode's loan, repayment and transfer bid screen; amount buttons carry `data-action`, the rest `data-id`. |
+| `#message`                          | Modern mode's messages: the balance after a loan, and plain text messages, with Continue.                      |
 
 Storage keys (`web/src/view/storage.ts`): `fman:options` holds `{ presentation, rules, scale, sound, touch }`, `fman:autosave` the session the page resumes on load, `fman:slot:<n>` the save slots. Set options, then `location.reload()`; `sound: false` keeps prompts quiet, and `touch: 'on'` forces the context bar, and `presentation: 'classic'` turns off Modern mode, the default.
 

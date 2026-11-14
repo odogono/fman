@@ -98,9 +98,9 @@ const cell = (x: number, y: number, step: number) =>
 
 /**
  * The art for a player: the pose's grid for their facing, right being left
- * mirrored. A runner's frame changes with the ground they cover, so the
- * stride keeps pace with their speed; a header shows the frame the clip
- * names.
+ * mirrored. A runner's frame, arms up or not, changes with the ground they
+ * cover, so the stride keeps pace with their speed; a header or a jump for
+ * joy shows the frame the clip names.
  */
 export const spriteFor = (
   player: Pick<FramePlayer, 'facing' | 'pose' | 'poseFrame' | 'travelled'>
@@ -112,22 +112,25 @@ export const spriteFor = (
   const drawn: 'down' | 'left' | 'up' = facing === 'right' ? 'left' : facing;
   const mirrored = facing === 'right';
   const art: Record<
-    Exclude<Pose, 'dive' | 'header' | 'run'>,
+    Exclude<Pose, 'cheer' | 'dive' | 'header' | 'jump' | 'run'>,
     typeof playerArt.stand
   > = {
     celebrate: playerArt.celebrate,
     head: playerArt.head,
     hold: playerArt.hold,
     kick: playerArt.kick,
+    slide: playerArt.slide,
     stand: playerArt.stand
   };
-  if (pose === 'run') {
-    const frames = playerArt.run[drawn];
+  // A run, with arms up or not, strides with the ground covered.
+  if (pose === 'run' || pose === 'cheer') {
+    const frames = playerArt[pose][drawn];
     const at = Math.floor(player.travelled / strideMetres);
     return { grid: frames[at % frames.length]!, mirrored };
   }
-  if (pose === 'header') {
-    const frames = playerArt.header[drawn];
+  // A header and a jump for joy show the frame the clip names.
+  if (pose === 'header' || pose === 'jump') {
+    const frames = playerArt[pose][drawn];
     const at = Math.min(frames.length - 1, Math.max(0, player.poseFrame ?? 0));
     return { grid: frames[at]!, mirrored };
   }

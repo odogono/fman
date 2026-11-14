@@ -8,13 +8,16 @@ import {
   type ArtGrid
 } from './assets/clip-sprites';
 import {
+  artPixelMetres,
   artPixelSize,
   ballHeld,
+  ballLiftMetres,
   kitColours,
   looksFor,
   rasterise,
   spriteFor
 } from './clip-sprites';
+import { headHeight } from './clips';
 
 const everyGrid = (): [string, ArtGrid][] => [
   ...Object.entries(playerArt).flatMap(([pose, facings]) =>
@@ -46,18 +49,27 @@ test('players are about 14 by 22 art pixels, larger than the original 8 by 8 cha
   for (const [name, grid] of everyGrid().filter(
     ([name]) => !/^(ball|tired|dive)/.test(name)
   )) {
+    // Clear rows under the feet lift a frame off the ground: a stride's
+    // bounce by a row, a header's leap by a few. Everything else stands on
+    // its bottom row.
+    const lift = grid.length - 1 - grid.findLastIndex(row => /[^.]/.test(row));
+    const body = grid.length - lift;
+    expect(lift, name).toBeLessThanOrEqual(
+      name.startsWith('header') ? 6 : name.startsWith('run') ? 1 : 0
+    );
     expect(grid[0]!.length, name).toBeGreaterThanOrEqual(11);
-    expect(grid[0]!.length, name).toBeLessThanOrEqual(20);
-    expect(grid.length, name).toBeGreaterThanOrEqual(19);
-    expect(grid.length, name).toBeLessThanOrEqual(26);
-    // A player stands on their bottom row.
-    expect(grid.at(-1)!.replaceAll('.', ''), name).not.toBe('');
+    // A header's arms reach out a little wider.
+    expect(grid[0]!.length, name).toBeLessThanOrEqual(
+      name.startsWith('header') ? 22 : 20
+    );
+    expect(body, name).toBeGreaterThanOrEqual(19);
+    expect(body, name).toBeLessThanOrEqual(26);
   }
 });
 
-test('the run cycles through more than one frame each way', () => {
+test('the run cycles through four frames each way: two strides', () => {
   for (const frames of Object.values(playerArt.run)) {
-    expect(frames.length).toBeGreaterThan(1);
+    expect(frames).toHaveLength(4);
   }
 });
 
@@ -70,21 +82,36 @@ test('a player looks the same in every clip, picked by their name', () => {
 });
 
 test('facing right draws the left art mirrored, and a runner strides as they go', () => {
-  const at = { pose: 'run', x: 10, y: 10 } as const;
+  const at = { pose: 'run', travelled: 0 } as const;
   const left = spriteFor({ ...at, facing: 'left' });
   const right = spriteFor({ ...at, facing: 'right' });
   expect(right.grid).toBe(left.grid);
   expect([left.mirrored, right.mirrored]).toEqual([false, true]);
-  const strides = new Set(
-    Array.from(
-      { length: 10 },
-      (_, i) => spriteFor({ ...at, facing: 'down', x: 10 + i * 0.5 }).grid
-    )
-  );
-  expect(strides.size).toBe(2);
+  // Every frame of the cycle in turn, one for each 0.8 m covered, whichever
+  // way they run.
+  for (const facing of ['down', 'left', 'up'] as const) {
+    const cycle = playerArt.run[facing];
+    const seen = Array.from(
+      { length: cycle.length * 2 },
+      (_, k) => spriteFor({ ...at, facing, travelled: k * 0.8 + 0.4 }).grid
+    );
+    expect(seen).toEqual([...cycle, ...cycle]);
+  }
   expect(spriteFor({ ...at, facing: 'up', pose: 'stand' }).grid).toBe(
     playerArt.stand.up
   );
+});
+
+test('a header shows its crouch, its leap and its contact', () => {
+  for (const facing of ['down', 'left', 'up'] as const) {
+    const frames = playerArt.header[facing];
+    expect(frames).toHaveLength(3);
+    frames.forEach((grid, poseFrame) =>
+      expect(
+        spriteFor({ facing, pose: 'header', poseFrame, travelled: 0 }).grid
+      ).toBe(grid)
+    );
+  }
 });
 
 test('art pixels cover whole device pixels', () => {
@@ -111,4 +138,17 @@ test('a grid becomes RGBA pixels, mirrored when asked', () => {
   expect([...data]).toEqual([255, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 0]);
   const flipped = rasterise(['so.'], { o: '#000000', s: '#ff0000' }, true);
   expect(Array.from(flipped.data).slice(8)).toEqual([255, 0, 0, 255]);
+});
+
+test('a header meets the ball with the forehead, as the ball is drawn', () => {
+  // The ball's height at the header, drawn as a lift above the ground, is
+  // where the contact frame's forehead is: near the top of the head, above
+  // the lift of the leap.
+  const drawn = headHeight * ballLiftMetres;
+  for (const facing of ['down', 'left', 'up'] as const) {
+    const grid = playerArt.header[facing][2]!;
+    const top = grid.findIndex(row => /[^.]/.test(row));
+    const forehead = (grid.length - top - 3) * artPixelMetres;
+    expect(Math.abs(forehead - drawn), facing).toBeLessThan(0.35);
+  }
 });

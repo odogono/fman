@@ -356,6 +356,22 @@ export const createSession = (
       promptSound(run.timeline.elapsedT % spectrumFrameT);
     }
   };
+  /**
+   * Under moment highlights, the view hands over one clip length per moment
+   * at kick-off (ADR 0013). Returns whether the ticker took them.
+   */
+  const holdClips = (lengths: readonly number[]) => {
+    const matchday = program.matchday;
+    if (
+      program.screen !== 'highlights' ||
+      !matchday?.ticker ||
+      !matchday.holdClips(lengths)
+    ) {
+      return false;
+    }
+    program.timed = highlightsRun(matchday);
+    return true;
+  };
   const skipPause = () => {
     const run = running();
     if (!run || run.skip === 'none') {
@@ -911,6 +927,7 @@ export const createSession = (
     running() !== undefined;
   return {
     advance,
+    holdClips,
     load: (data: string) => {
       const saved = decodeSave(data);
       clearProgram();

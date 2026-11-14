@@ -23,7 +23,7 @@ import {
   type Playback
 } from './playback';
 import { momentHighlights } from './ruleset';
-import { createTicker, type Ticker } from './ticker';
+import { createTicker, validClipLengths, type Ticker } from './ticker';
 
 export type MatchdayStage =
   'fixture' | 'team' | 'highlights' | 'result' | 'replay' | 'settled';
@@ -173,6 +173,22 @@ export const createMatchday = (initial: Game, keyboard?: PauseKeyboard) => {
       });
       playback = createPlayback(highlights, keyboard);
       stage = 'highlights';
+    },
+    /**
+     * Hands the ticker one clip length per moment, in frames, in place of
+     * its 75-frame pauses (ADR 0013). Only at kick-off, before the ticker
+     * has played a frame; returns whether the lengths were taken.
+     */
+    holdClips: (lengths: readonly number[]) => {
+      expect('highlights');
+      if (!ticker || ticker.elapsedT > 0 || ticker.lengths) {
+        return false;
+      }
+      if (!validClipLengths(lengths, moments!.moments.length)) {
+        throw new RangeError('One clip length is needed for each moment');
+      }
+      ticker = createTicker(moments!, fixture.home, keyboard, [...lengths]);
+      return true;
     },
     /** The moments that decided the match, under moment highlights. */
     get moments() {

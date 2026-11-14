@@ -2,7 +2,13 @@ import { expect, test } from 'bun:test';
 
 import type { Moment } from './moments';
 import { createPauseKeyboard } from './pause-keyboard';
-import { createTicker, tickerLeadIn, tickerPause } from './ticker';
+import {
+  createTicker,
+  longestClip,
+  tickerLeadIn,
+  tickerPause,
+  validClipLengths
+} from './ticker';
 
 const moments: readonly Moment[] = [
   { kind: 'goal', minute: 10, player: 23, side: 'club' },
@@ -102,4 +108,68 @@ test('skipping does nothing before the first pause, and ends the final hold', ()
   ticker.skipPause();
   ticker.skipPause();
   expect(ticker.done).toBe(true);
+});
+
+const clips = [120, 200, 160, 300];
+
+test("clip lengths replace each moment's pause; the header and final hold keep 75", () => {
+  const ticker = createTicker({ moments }, true, createPauseKeyboard(), clips);
+  ticker.advance(tickerLeadIn + tickerPause - 1);
+  expect(ticker.shown).toEqual([]);
+  ticker.advance(1);
+  for (let i = 1; i <= moments.length; i++) {
+    expect(ticker.shown).toEqual(moments.slice(0, i));
+    ticker.advance(clips[i - 1]! - 1);
+    expect(ticker.shown).toEqual(moments.slice(0, i));
+    expect(ticker.done).toBe(false);
+    ticker.advance(1);
+  }
+  expect(ticker.shown).toEqual(moments);
+  ticker.advance(tickerPause - 1);
+  expect(ticker.done).toBe(false);
+  ticker.advance(1);
+  expect(ticker.done).toBe(true);
+});
+
+test('without clip lengths every pause keeps 75 frames', () => {
+  const plain = createTicker({ moments }, true);
+  expect(plain.lengths).toBeUndefined();
+  expect(plain.endT).toBe(
+    createTicker({ moments }, true, undefined, [75, 75, 75, 75]).endT
+  );
+});
+
+test('a keypress ends a clip early and moves to the next moment', () => {
+  const keyboard = createPauseKeyboard();
+  const ticker = createTicker({ moments }, true, keyboard, clips);
+  ticker.advance(tickerLeadIn + tickerPause + 10);
+  expect(ticker.shown).toHaveLength(1);
+  keyboard.set('Space');
+  ticker.advance(1);
+  expect(ticker.shown).toHaveLength(2);
+  keyboard.set('');
+  ticker.advance(clips[1]! - 1);
+  expect(ticker.shown).toHaveLength(2);
+  ticker.advance(1);
+  expect(ticker.shown).toHaveLength(3);
+});
+
+test('skipping ends every clip but keeps the 75-frame final hold', () => {
+  const ticker = createTicker({ moments }, true, createPauseKeyboard(), clips);
+  ticker.advance(tickerLeadIn + tickerPause + 10);
+  ticker.skipPause();
+  expect(ticker.shown).toEqual(moments);
+  ticker.advance(tickerPause - 1);
+  expect(ticker.done).toBe(false);
+  ticker.advance(1);
+  expect(ticker.done).toBe(true);
+});
+
+test('clip lengths are whole, positive and bounded, one per moment', () => {
+  expect(validClipLengths(clips, 4)).toBe(true);
+  expect(validClipLengths(clips, 3)).toBe(false);
+  expect(validClipLengths([1, longestClip], 2)).toBe(true);
+  for (const bad of [0, -5, 1.5, longestClip + 1, Number.NaN, '75']) {
+    expect(validClipLengths([75, bad], 2)).toBe(false);
+  }
 });

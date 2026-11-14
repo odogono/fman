@@ -363,3 +363,93 @@ test('skipping the ticker is kept in the journal', () => {
   expect(journal.session.view.screen).toBe('result');
   expect(state(restored)).toBe(state(journal));
 });
+
+/** One clip length per moment, as a view hands over at kick-off. */
+const clipsFor = (journal: Journal) =>
+  tickerOf(journal).moments.map((_, i) => 100 + 37 * i);
+
+test('clip lengths are kept in the journal, and resume mid-clip', () => {
+  const journal = setup('enhanced-7');
+  toHighlights(journal);
+  const clips = clipsFor(journal);
+  expect(clips.length).toBeGreaterThan(1);
+  expect(journal.holdClips(clips)).toBe(true);
+  expect(tickerOf(journal).lengths).toEqual(clips);
+  // Into the first clip, partway.
+  journal.advance(tickerLeadIn + tickerPause + 40);
+  expect(tickerOf(journal).shown).toHaveLength(1);
+  const restored = openSave(journal.snapshot());
+  expect(tickerOf(restored).lengths).toEqual(clips);
+  expect(state(restored)).toBe(state(journal));
+  expect(tickerOf(restored).elapsedT).toBe(tickerOf(journal).elapsedT);
+  journal.advance(clips[0]! - 41);
+  restored.advance(clips[0]! - 41);
+  expect(tickerOf(journal).shown).toHaveLength(1);
+  journal.advance(1);
+  restored.advance(1);
+  expect(tickerOf(journal).shown).toHaveLength(2);
+  expect(state(restored)).toBe(state(journal));
+  const rest = clips.slice(1).reduce((a, b) => a + b, 0) + tickerPause;
+  journal.advance(rest - 1);
+  restored.advance(rest - 1);
+  expect(journal.session.view.screen).toBe('highlights');
+  journal.advance(1);
+  restored.advance(1);
+  expect(journal.session.view.screen).toBe('result');
+  expect(state(restored)).toBe(state(journal));
+});
+
+test('clip lengths are taken only at kick-off, one per moment', () => {
+  const journal = setup('enhanced-7');
+  expect(journal.holdClips([75])).toBe(false);
+  toHighlights(journal);
+  const clips = clipsFor(journal);
+  expect(() => journal.holdClips(clips.slice(1))).toThrow(RangeError);
+  journal.advance(1);
+  expect(journal.holdClips(clips)).toBe(false);
+  expect(tickerOf(journal).lengths).toBeUndefined();
+  expect(JSON.parse(journal.snapshot()).inputs).not.toContainEqual([
+    'clips',
+    clips
+  ]);
+});
+
+test('skipping after clip lengths still keeps the final hold', () => {
+  const journal = setup('enhanced-7');
+  toHighlights(journal);
+  journal.holdClips(clipsFor(journal));
+  journal.advance(10);
+  journal.skipPause();
+  const restored = openSave(journal.snapshot());
+  expect(state(restored)).toBe(state(journal));
+  journal.advance(tickerPause - 1);
+  expect(journal.session.view.screen).toBe('highlights');
+  journal.advance(1);
+  expect(journal.session.view.screen).toBe('result');
+});
+
+test('saves reject clip lengths that do not fit the match', () => {
+  const journal = setup('enhanced-7');
+  toHighlights(journal);
+  const clips = clipsFor(journal);
+  journal.holdClips(clips);
+  const data = JSON.parse(journal.snapshot());
+  const withClips = (lengths: unknown, version = saveVersion) =>
+    JSON.stringify({
+      ...data,
+      inputs: data.inputs.map((input: unknown[]) =>
+        input[0] === 'clips' ? ['clips', lengths] : input
+      ),
+      version
+    });
+  expect(() => openSave(withClips(clips))).not.toThrow();
+  for (const bad of [
+    clips.slice(1),
+    [...clips, 75],
+    [0, ...clips.slice(1)],
+    'x'
+  ]) {
+    expect(() => openSave(withClips(bad))).toThrow(RangeError);
+  }
+  expect(() => openSave(withClips(clips, 11))).toThrow(RangeError);
+});

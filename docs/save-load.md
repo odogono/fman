@@ -74,7 +74,10 @@ one week left, as every injury in an earlier game does. Version 11 adds
 [club squads](club-squads.md): each player's position, every other club's
 squad, the free agents and the squads' own random seed. It also raises the
 largest save accepted from 100,000 to 200,000 characters, since a game with
-squads holds 872 more players.
+squads holds 872 more players. Version 12 adds a `clips` input to journals:
+the clip lengths the view hands the sim at kick-off under
+[sprite highlights](sprite-highlights.md) ([ADR 0013](adr/0013-clips-set-their-own-length.md)),
+so a match resumed mid-clip keeps the lengths it started with.
 Fractional browser phase is not stored; restoring starts a fresh phase and
 does not simulate time spent with the page closed.
 

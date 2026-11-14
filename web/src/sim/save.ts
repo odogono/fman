@@ -15,7 +15,9 @@ import { positions } from './squads';
 // under club squads (#113), whose 872 players outside the places are saved too.
 export const saveLimit = 200_000;
 /** The version every save is written with. */
-export const saveVersion = 11;
+export const saveVersion = 12;
+/** The first save version whose journals carry clip lengths (ADR 0013). */
+export const clipsSaveVersion = 12;
 /** The first save version whose games name their ruleset. */
 export const rulesetSaveVersion = 6;
 /** The first save version whose title-screen journals name their ruleset. */

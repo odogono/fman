@@ -3,6 +3,7 @@ import type { Game } from './management';
 import type { PauseKeyboardState } from './pause-keyboard';
 import { isRuleset, type Ruleset } from './ruleset';
 import {
+  clipsSaveVersion,
   keptVersion,
   saveLimit,
   saveVersion,
@@ -10,6 +11,7 @@ import {
   titleRulesetSaveVersion
 } from './save';
 import { createSession, type Effect, type Session } from './session';
+import { validClipLengths } from './ticker';
 
 /**
  * An input that changed the session. Consecutive advances are merged:
@@ -24,7 +26,8 @@ export type JournalInput =
   | ['let-go']
   | ['skip']
   | ['saved']
-  | ['reload'];
+  | ['reload']
+  | ['clips', number[]];
 
 type Base =
   | {
@@ -43,6 +46,8 @@ type Base =
 export type Hold = 'brief' | 'held';
 
 const maxInputs = 5000;
+/** More moments than any match has, to bound a saved list of clip lengths. */
+const maxMoments = 100;
 const invalid = () => new RangeError('Invalid Football Manager web save');
 const record = (v: unknown): v is Record<string, unknown> =>
   typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -151,6 +156,17 @@ export const createJournal = (
       }
       return frames > 0 ? step(frames) || repaint : repaint;
     },
+    /**
+     * Hands the ticker one clip length per moment at kick-off (ADR 0013);
+     * returns whether it took them.
+     */
+    holdClips: (lengths: readonly number[]) => {
+      const done = session.holdClips(lengths);
+      if (done) {
+        log(['clips', [...lengths]]);
+      }
+      return done;
+    },
     letGo,
     /** A key goes down, replacing any key already down. */
     press,
@@ -226,6 +242,14 @@ const validInput = (v: unknown, version: number): v is JournalInput => {
       );
     case 'let-go':
       return version >= 5 && v.length === 1;
+    case 'clips':
+      return (
+        version >= clipsSaveVersion &&
+        v.length === 2 &&
+        Array.isArray(v[1]) &&
+        v[1].length <= maxMoments &&
+        validClipLengths(v[1], v[1].length)
+      );
     case 'skip':
     case 'saved':
     case 'reload':
@@ -383,6 +407,11 @@ export const openSave = (data: string): Journal => {
           break;
         case 'reload':
           journal.reload();
+          break;
+        case 'clips':
+          if (!journal.holdClips(input[1])) {
+            throw invalid();
+          }
           break;
       }
     }

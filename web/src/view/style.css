@@ -874,22 +874,149 @@ button.pick-row:focus-visible {
   min-height: 0;
   container-type: size;
 }
+.clip-frame {
+  position: relative;
+  width: min(100cqw, 80cqh);
+}
 .clip-pitch {
   display: block;
-  width: min(100cqw, 80cqh);
+  width: 100%;
   aspect-ratio: 4 / 5;
   touch-action: manipulation;
   user-select: none;
   -webkit-user-select: none;
 }
-.clip-stage .modern-ticker {
+.clip-stage .full-ticker {
   position: absolute;
   inset: 0;
   background: color-mix(in srgb, var(--normal-7) 92%, transparent);
 }
-.modern-ticker.latest-moment {
-  overflow: visible;
+/* The latest moment's line (#145): the button that opens the drawer. */
+.latest-moment {
   min-height: 37px;
+}
+button.latest-moment {
+  display: grid;
+  grid-template-columns: 40px 56px minmax(0, 1fr) auto auto;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  padding: 0 4px;
+  border: 0;
+  border-bottom: 1px solid var(--normal-0);
+  background: var(--bright-7);
+  color: var(--normal-2);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+button.latest-moment:focus-visible,
+.moments-header button:focus-visible {
+  outline: 3px solid var(--normal-0);
+  outline-offset: -3px;
+}
+.latest-moment .ticker-minute {
+  text-align: right;
+}
+.latest-moment .ticker-word {
+  font-weight: 600;
+}
+.latest-moment.goal .ticker-word {
+  background: var(--normal-2);
+  color: var(--bright-7);
+  text-align: center;
+}
+.latest-moment .ticker-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.latest-all {
+  color: var(--normal-1);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+/* On a phone, the drawer rises over the lower half of the pitch. */
+.moments-drawer {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  max-height: 50%;
+  border-top: 2px solid var(--normal-0);
+  background: var(--paper, var(--normal-7));
+  box-shadow: 0 -4px 12px rgb(0 0 0 / 25%);
+}
+.moments-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 0 0 8px;
+  background: var(--normal-0);
+  color: var(--bright-7);
+}
+.moments-drawer h3,
+.moments-panel h3 {
+  margin: 0;
+  font-family: Spectrum, monospace;
+  font-size: 16px;
+  font-weight: normal;
+  font-synthesis: none;
+  line-height: 24px;
+}
+.moments-header button {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 0;
+  background: transparent;
+  color: var(--bright-7);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+/* The wide window's panel shows only where there is room beside the pitch. */
+.moments-panel {
+  display: none;
+}
+@media (min-width: 900px) and (min-aspect-ratio: 1) {
+  .modern-highlights:has(.clip-stage) {
+    grid-template-columns: 360px 480px;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    column-gap: 36px;
+    max-width: 876px;
+  }
+  .modern-highlights:has(.clip-stage) > * {
+    grid-column: 2;
+  }
+  .modern-highlights .moments-panel {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-column: 1;
+    grid-row: 1 / -1;
+    min-height: 0;
+  }
+  .moments-panel h3 {
+    padding: 4px 8px;
+    background: var(--normal-0);
+    color: var(--bright-7);
+  }
+  /* The panel holds the moments, so none show under or over the pitch. */
+  .modern-highlights .latest-moment,
+  .modern-highlights .moments-drawer,
+  .clip-stage .full-ticker {
+    display: none;
+  }
+  :root.modern.at-highlights:has(.clip-stage) .top-bar {
+    max-width: 876px;
+  }
 }
 .highlights-strengths .pick-strengths {
   width: 100%;

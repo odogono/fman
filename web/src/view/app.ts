@@ -20,7 +20,11 @@ import { barFor, tickerBar, type BarButton } from './context-bar';
 import { createFrameSampler } from './frame-sampler';
 import { homeFor, type Home } from './home';
 import { amountPromptFor, type ModernAmount } from './modern-amount';
-import { highlightsFor, type ModernHighlights } from './modern-highlights';
+import {
+  drawerIds,
+  highlightsFor,
+  type ModernHighlights
+} from './modern-highlights';
 import { messageFor, type ModernMessage } from './modern-message';
 import { statusFor, type ModernStatus } from './modern-status';
 import { pickTeamFor, type PickTeam } from './pick-team';
@@ -175,6 +179,11 @@ export type KeyDown = {
   key: string;
   modified: boolean;
   repeat: boolean;
+  /**
+   * A control the view handles alone has focus, such as the moments
+   * drawer's button: Enter and Space activate it and press no key.
+   */
+  viewControlFocused?: boolean;
 };
 
 const saveFileName = 'football.fman.json';
@@ -322,6 +331,11 @@ export const createApp = ({
   let clipPlan: { scripts: ClipScript[]; ticker: Ticker } | undefined;
   /** The ticker Skip was pressed on, so the full list shows for its final hold. */
   let skippedTicker: Ticker | undefined;
+  /**
+   * The ticker whose moments drawer (#145) is open. The view's alone: it
+   * isn't saved, and a new match or a resumed one starts with it closed.
+   */
+  let drawerTicker: Ticker | undefined;
   const clipTicker = () => {
     const view = journal.session.view;
     if (
@@ -426,8 +440,32 @@ export const createApp = ({
     const state = clipState();
     return highlightsFor(
       view,
-      state ? { full: state.full, shown: state.shown } : undefined
+      state
+        ? {
+            drawer:
+              !state.full &&
+              state.shown > 0 &&
+              drawerTicker !== undefined &&
+              drawerTicker === clipPlan?.ticker,
+            full: state.full,
+            shown: state.shown
+          }
+        : undefined
     );
+  };
+  /** Opens or closes the moments drawer; it presses no key. */
+  const showDrawer = (open: boolean) => {
+    if (menuOpen) {
+      return;
+    }
+    advanceTo(clock.now());
+    const state = clipState();
+    // There is nothing to list before the first moment, or after Skip.
+    drawerTicker =
+      open && state && state.shown > 0 && !state.full
+        ? clipPlan?.ticker
+        : undefined;
+    render(false);
   };
 
   /** The moment-highlights ticker (#108) is still showing its moments. */
@@ -917,6 +955,12 @@ export const createApp = ({
       if (menuOpen) {
         return false;
       }
+      if (
+        event.viewControlFocused &&
+        (event.key === 'Enter' || event.key === ' ')
+      ) {
+        return false;
+      }
       unlockSound();
       advanceTo(clock.now());
       if (modern() && amountEntry?.typing !== undefined && !event.modified) {
@@ -1022,6 +1066,10 @@ export const createApp = ({
      * button submits the amount entered, closing the keypad first.
      */
     tap: (id: string, pressEnter = true) => {
+      if (id === drawerIds.open || id === drawerIds.close) {
+        showDrawer(id === drawerIds.open);
+        return;
+      }
       if (id === tickerBar[0]!.answer.id) {
         skip();
         return;

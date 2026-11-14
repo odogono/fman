@@ -60,12 +60,12 @@ The clip engine shipped first with placeholder shapes, a kit-coloured circle per
 
 ### Goals and stadium
 
-The ground is drawn in the same art at the same scale ([#157](https://github.com/odogono/fman/issues/157)). The camera keeps up to 8 m beyond the lines in view, so only the edge of the stadium shows.
+The ground is drawn in the same art at the same scale, 11 art pixels to the metre ([#157](https://github.com/odogono/fman/issues/157)). The stands' concrete is plain grey, with a step for each row of fans. The camera keeps up to 8 m beyond the lines in view, so only the edge of the stadium shows.
 
 - **Goals.** Posts, crossbar and a meshed net, drawn twice: the top goal seen from the front, its net rising behind the crossbar, and the bottom goal seen from behind, its net in front. Players and the ball stand in front of or behind a goal by their depth on the screen.
 - **Around the pitch.** A strip of grass, then pitch-side advertising boards about 3 m beyond the touchlines and goal lines, then stands with a crowd. The boards are plain colour panels with stripes and shapes, without text or brands.
 - **Crowd.** A repeating block of fans, mostly in the home side's kit. In a goal's reaction it stands and raises its arms; at all other times it sits. The cheer follows the clip's phase and outcome, so it draws nothing from the seed.
-- **Source.** As the players': tiles converted from generated references and cleaned up by hand.
+- **Source.** Generated references set the look. The goals and boards are drawn to scale as pixel grids by script: a goal mouth is 81 art pixels, 7.32 m. The fans are the players' own stand and celebrate poses cut at the waist, in each stand's facing: towards the camera behind the top goal, backs turned behind the bottom one, and side-on along the touchlines. Each seat's shirt, skin and hair come from a hash of its place.
 
 ### Status icons
 
@@ -81,4 +81,4 @@ A page of its own, `web/clips.html`, served by `bun run dev` at `/clips` and lef
 2. **The sprite view with placeholder shapes** (Modern, done in [#144](https://github.com/odogono/fman/issues/144)): the clip scripts, seeding, camera and zoom, mini-map, ends, team shapes, the goalkeeper colour, cuts, Skip, resuming mid-clip, reduced motion and screen readers. Only the latest moment's ticker line shows under the pitch. The debug page ships with it.
 3. **The moments drawer and panel** (Modern, done in [#145](https://github.com/odogono/fman/issues/145)).
 4. **The sprite artwork** (done in [#146](https://github.com/odogono/fman/issues/146)): the sprites, facing, the new poses and the tired status icon.
-5. **Goals and stadium** ([#157](https://github.com/odogono/fman/issues/157)): the goals, boards and crowd, and a larger ball.
+5. **Goals and stadium** (done in [#157](https://github.com/odogono/fman/issues/157)): the goals, boards and crowd, and a larger ball.

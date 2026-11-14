@@ -72,6 +72,8 @@ export type ClipPlayer = Readonly<{
 }>;
 /** One side in a clip: its kit, its goalkeeper's colour and its 11 or fewer. */
 export type ClipSide = Readonly<{
+  /** The home side, whose fans fill most of the stands (#157). */
+  home?: boolean;
   keeper: string;
   kit: string;
   players: readonly ClipPlayer[];
@@ -138,6 +140,8 @@ export type ClipFrame = Readonly<{
   /** The middle of the patch on show, and its width. */
   camera: Readonly<{ width: number; x: number; y: number }>;
   caption?: string;
+  /** The crowd is on its feet, after a goal (#157). */
+  cheer?: boolean;
   /** The named player's label, in the zoomed view only. */
   label?: Readonly<{ text: string; x: number; y: number }>;
   /** The overview of the whole pitch shows, except while zoomed in. */
@@ -1249,6 +1253,7 @@ export const createClipScript = (input: ClipInput): ClipScript => {
         y: lerp(by0, by1, u)
       },
       camera: { width, x: lerp(cx0, cx1, u), y: lerp(cy0, cy1, u) },
+      ...(outcome === 'goal' && low >= reactionStart ? { cheer: true } : {}),
       ...(low < captionEnd
         ? {
             caption: [`${input.minute}′`, restartNames[restart]]

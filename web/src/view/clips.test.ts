@@ -497,3 +497,13 @@ test('players stand when still, and line up facing the way their side attacks', 
   const script = createClipScript(input({ restart: 'free-kick' }));
   expect(script.frame(30).players.some(p => p.pose === 'stand')).toBe(true);
 });
+
+test('the crowd stands only in a goal’s reaction', () => {
+  for (let seed = 0; seed < 10; seed++) {
+    const goal = createClipScript(input({ outcome: 'goal', seed }));
+    expect(goal.frame(goal.phases.reaction - 1).cheer).toBeUndefined();
+    expect(goal.frame(goal.phases.reaction + 1).cheer).toBe(true);
+    const save = createClipScript(input({ kind: 'save', seed }));
+    expect(save.frame(save.length - 1).cheer).toBeUndefined();
+  }
+});

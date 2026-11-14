@@ -12,6 +12,13 @@ import {
   type ArtPalette
 } from './clip-sprites';
 import {
+  boardPieces,
+  crowdPieces,
+  goalPieces,
+  terraceFrom,
+  terraceRow
+} from './clip-stadium';
+import {
   cameraAspect,
   pitchLength,
   pitchWidth,
@@ -92,14 +99,38 @@ const markings = (ctx: CanvasRenderingContext2D) => {
       top ? 0.8 * Math.PI : 1.8 * Math.PI
     );
     ctx.stroke();
-    // The goal and its net, behind the line.
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
-    ctx.fillRect(pitchWidth / 2 - 3.66, top ? -2 : pitchLength, 7.32, 2);
-    ctx.lineWidth = 0.25;
-    ctx.strokeStyle = '#fff';
-    ctx.strokeRect(pitchWidth / 2 - 3.66, top ? -2 : pitchLength, 7.32, 2);
-    ctx.lineWidth = 0.15;
-    ctx.strokeStyle = line;
+  }
+};
+
+/** The stands' concrete, a step for each row of the crowd. */
+const terraces = (ctx: CanvasRenderingContext2D) => {
+  const far = 40;
+  const regions = [
+    [-far, -far, pitchWidth + 2 * far, far - terraceFrom],
+    [-far, pitchLength + terraceFrom, pitchWidth + 2 * far, far],
+    [-far, -terraceFrom, far - terraceFrom, pitchLength + 2 * terraceFrom],
+    [pitchWidth + terraceFrom, -terraceFrom, far, pitchLength + 2 * terraceFrom]
+  ] as const;
+  ctx.fillStyle = '#8c8c8c';
+  for (const [x, y, w, h] of regions) {
+    ctx.fillRect(x, y, w, h);
+  }
+  ctx.fillStyle = '#7a7a7a';
+  for (let out = terraceFrom; out < far; out += terraceRow) {
+    ctx.fillRect(-far, -out - 0.25, pitchWidth + 2 * far, 0.25);
+    ctx.fillRect(-far, pitchLength + out, pitchWidth + 2 * far, 0.25);
+    ctx.fillRect(
+      -out - 0.25,
+      -terraceFrom,
+      0.25,
+      pitchLength + 2 * terraceFrom
+    );
+    ctx.fillRect(
+      pitchWidth + out,
+      -terraceFrom,
+      0.25,
+      pitchLength + 2 * terraceFrom
+    );
   }
 };
 
@@ -172,6 +203,7 @@ export const paintClip = (
     ctx.fillStyle = grass[(y / 5) % 2]!;
     ctx.fillRect(0, y, pitchWidth, Math.min(5, pitchLength - y));
   }
+  terraces(ctx);
   markings(ctx);
   if (overlays.path && overlays.path.length > 1) {
     ctx.strokeStyle = 'rgba(255, 230, 0, 0.8)';
@@ -194,8 +226,9 @@ export const paintClip = (
   }
   ctx.restore();
 
-  // The sprites, in device pixels: players from the top of the screen
-  // down, so the nearer stands in front, then the ball.
+  // The sprites, in device pixels, from the far side of the ground to the
+  // near: the stands, boards and goals with the players and the ball, so
+  // the nearer stands in front.
   const onScreen = (x: number, y: number) => [
     width / 2 + (x - camera.x) * scale,
     height / 2 + (y - camera.y) * scale
@@ -206,38 +239,79 @@ export const paintClip = (
   const attackers = sides.attack.players.length;
   /** The top of each player's sprite and icon, in CSS pixels. */
   const tops = new Map<ClipFrame['players'][number], number>();
-  const order = frame.players
-    .map((player, i) => ({ i, player }))
-    .toSorted((a, b) => a.player.y - b.player.y);
-  for (const { i, player } of order) {
-    const side = sides[player.side];
-    const place = i < attackers ? i : i - attackers;
-    const looks = looksFor(side.players[place]?.label ?? '', place);
-    const [x, y] = onScreen(player.x, player.y);
-    const sprite = spriteFor(player);
-    let top = drawSprite(
-      ctx,
-      sprite.grid,
-      playerPalette(colourOf(sides, player), looks),
-      { mirrored: sprite.mirrored, size: pixel, x: x! * ratio, y: y! * ratio }
-    );
-    if (player.status) {
-      top = drawSprite(ctx, statusSprite(player.status), iconPalette, {
-        size: pixel,
-        x: x! * ratio,
-        y: top - pixel
-      });
+  const draws: { depth: number; draw: () => void }[] = [];
+  const reach = camera.width;
+  for (const piece of [
+    ...goalPieces(),
+    ...boardPieces(),
+    ...crowdPieces(sides, frame.cheer ?? false)
+  ]) {
+    if (
+      Math.abs(piece.at.x - camera.x) > reach ||
+      Math.abs(piece.at.y - camera.y) > reach * cameraAspect
+    ) {
+      continue;
     }
-    tops.set(player, top / ratio);
-  }
-  if (!held) {
-    const [x, y] = onScreen(ball.x, ball.y - lift);
-    const grid = ballSprite(ball.x, ball.y);
-    drawSprite(ctx, grid, iconPalette, {
-      size: pixel,
-      x: x! * ratio,
-      y: y! * ratio + (grid.length * pixel) / 2
+    draws.push({
+      depth: piece.depth,
+      draw: () => {
+        const [x, y] = onScreen(piece.at.x, piece.at.y);
+        drawSprite(ctx, piece.grid, piece.palette, {
+          mirrored: piece.mirrored,
+          size: pixel,
+          x: x! * ratio,
+          y: y! * ratio
+        });
+      }
     });
+  }
+  frame.players.forEach((player, i) => {
+    draws.push({
+      depth: player.y,
+      draw: () => {
+        const side = sides[player.side];
+        const place = i < attackers ? i : i - attackers;
+        const looks = looksFor(side.players[place]?.label ?? '', place);
+        const [x, y] = onScreen(player.x, player.y);
+        const sprite = spriteFor(player);
+        let top = drawSprite(
+          ctx,
+          sprite.grid,
+          playerPalette(colourOf(sides, player), looks),
+          {
+            mirrored: sprite.mirrored,
+            size: pixel,
+            x: x! * ratio,
+            y: y! * ratio
+          }
+        );
+        if (player.status) {
+          top = drawSprite(ctx, statusSprite(player.status), iconPalette, {
+            size: pixel,
+            x: x! * ratio,
+            y: top - pixel
+          });
+        }
+        tops.set(player, top / ratio);
+      }
+    });
+  });
+  if (!held) {
+    draws.push({
+      depth: ball.y,
+      draw: () => {
+        const [x, y] = onScreen(ball.x, ball.y - lift);
+        const grid = ballSprite(ball.x, ball.y);
+        drawSprite(ctx, grid, iconPalette, {
+          size: pixel,
+          x: x! * ratio,
+          y: y! * ratio + (grid.length * pixel) / 2
+        });
+      }
+    });
+  }
+  for (const { draw } of draws.toSorted((a, b) => a.depth - b.depth)) {
+    draw();
   }
   ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
 

@@ -572,10 +572,10 @@ export const playerArt: PlayerArt = {
 
 /** The ball's spin, a frame at a time as it rolls. */
 export const ballArt: readonly ArtGrid[] = [
-  ['.ooo.', 'oowwo', 'owwwo', 'owwwo', '.ooo.'],
-  ['.ooo.', 'owwoo', 'owwwo', 'owwwo', '.ooo.'],
-  ['.ooo.', 'owwwo', 'owwwo', 'owwoo', '.ooo.'],
-  ['.ooo.', 'owwwo', 'owwwo', 'oowwo', '.ooo.']
+  ['..ooo..', '.owwwo.', 'owoowwo', 'owoowwo', 'owwwwwo', '.owwwo.', '..ooo..'],
+  ['..ooo..', '.owwwo.', 'owwoowo', 'owwwowo', 'owwwwwo', '.owwwo.', '..ooo..'],
+  ['..ooo..', '.owwwo.', 'owwwwwo', 'owwoowo', 'owwoowo', '.owwwo.', '..ooo..'],
+  ['..ooo..', '.owwwo.', 'owwwwwo', 'owowwwo', 'owoowwo', '.owwwo.', '..ooo..']
 ];
 
 /** Status icons, floating over a player's head; its tail points down at them. */

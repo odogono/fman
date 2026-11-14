@@ -112,6 +112,8 @@ export type ClipInput = Readonly<{
   minute: number;
   /** Forces the outcome, for the debug page; the seed picks it otherwise. */
   outcome?: ClipOutcome;
+  /** Forces a rebound, or none, for the debug page. */
+  rebound?: boolean;
   /** Forces how the build-up starts, for the debug page. */
   restart?: Restart;
   seed: number;
@@ -193,6 +195,20 @@ const firstTouchPace = [1.5, 3.5] as const;
 const keeperOffLine = [1.5, 8] as const;
 /** The share of saves from a cross where the keeper comes to catch it. */
 const claimShare = 0.35;
+/** The share of shots and headers parried back out for the shooter to strike again. */
+const reboundShare = 0.2;
+/** A parry runs out into the box at this pace, in metres a second. */
+const spillPace = 9;
+/** A shooter follows in for the rebound at this pace, in metres a second. */
+const followPace = 7;
+/** A rebound needs the first effort from within this far of goal, in metres. */
+const reboundRange = 20;
+/** Frames the ball sits loose before the rebound is struck. */
+const reboundSettle = 3;
+/** Frames a keeper lies down after the parry before scrambling up. */
+const scrambleFrames = 15;
+/** The defender chasing a rebound gets no nearer the ball than this, in metres. */
+const lateBy = 2.5;
 /** The nearest to goal, in metres, a shot from range is set up. */
 const longRange = 24;
 /** The deepest a high back line holds, in metres up the pitch. */
@@ -282,6 +298,8 @@ export type ClipScript = Readonly<{
   passes: readonly ClipPass[];
   /** The frames each phase after the build-up starts. */
   phases: Readonly<{ moment: number; reaction: number; zoom: number }>;
+  /** The first effort was parried back into the box, and the shooter struck again. */
+  rebound: boolean;
   restart: Restart;
 }>;
 
@@ -1089,6 +1107,16 @@ export const createClipScript = (input: ClipInput): ClipScript => {
   ) {
     outcome = 'claim';
   }
+  // Of the shots and headers that reach the keeper's goal, some are first
+  // parried back out for the shooter to strike again, from a stream of
+  // their own so every other clip plays as before.
+  const reboundRng = createClipRng(hashSeed(`${input.seed}|rebound`));
+  let rebound =
+    (finish === 'shot' || finish === 'header') &&
+    keeperSlot >= 0 &&
+    outcome !== 'claim' &&
+    outcomeKind(outcome) !== 'clearance' &&
+    (input.rebound ?? reboundRng.next() < reboundShare);
   const passCount = others.length ? rng.int(2, 4) : 0;
   const minBuildUp = 6 * clipFps;
   /**
@@ -1842,7 +1870,9 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     let crossFrames = 0;
     /** For a claim, the frame of the cross the keeper catches it on. */
     let claimFrame = 0;
-    const headed = finish === 'header';
+    let headed = finish === 'header';
+    /** The frames the first effort and the rebound take. */
+    let reboundFrames = 0;
     if (headed) {
       const crosser = holder;
       const headAt = { ...shootingSpot };
@@ -1915,14 +1945,139 @@ export const createClipScript = (input: ClipInput): ClipScript => {
         frame++;
       }
     } else {
+      // Only a chance from close in comes back to the shooter.
+      rebound &&=
+        keeper !== undefined &&
+        distance(shotFrom, { d: pitchLength, x: 34 }) < reboundRange;
+      if (rebound && keeper) {
+        // The keeper gets down to the first effort but only pushes it back
+        // out into the box. The shooter follows in, beating the nearest
+        // defender to it, as the keeper scrambles up.
+        const striker = movers[shooter]!;
+        const firstAim = {
+          d: pitchLength - 0.8,
+          x: 34 + side * reboundRng.between(1.5, goalHalf - 0.4)
+        };
+        const firstFlight = Math.max(
+          10,
+          Math.ceil(distance(shotFrom, firstAim) / perFrame(headed ? 14 : 25))
+        );
+        const spill = {
+          d: pitchLength - reboundRng.between(5, 8),
+          x: clamp(
+            lerp(firstAim.x, striker.x, reboundRng.between(0.3, 0.7)) +
+              reboundRng.between(-2.5, 2.5),
+            34 - 9,
+            34 + 9
+          )
+        };
+        const spillFrames = Math.ceil(
+          distance(firstAim, spill) / perFrame(spillPace)
+        );
+        // The shooter strikes from just behind the ball, once a header has
+        // landed.
+        const strikeSpot = { d: spill.d - 0.6, x: spill.x };
+        const setOff = headed ? 2 * landingFrames : kickFrames;
+        const followFrames =
+          setOff +
+          Math.ceil(distance(striker, strikeSpot) / perFrame(followPace));
+        reboundFrames =
+          Math.max(firstFlight + spillFrames, followFrames) + reboundSettle;
+        const keeperFrom = { d: keeper.d, x: keeper.x };
+        const recover = {
+          d: pitchLength - 0.8,
+          x: lerp(firstAim.x, 34, 0.6)
+        };
+        let chaser = -1;
+        let nearest = Infinity;
+        defenders.forEach((p, j) => {
+          const i = attackers.length + j;
+          const gap = distance(movers[i]!, spill);
+          if (p.line !== 'keeper' && gap < nearest) {
+            nearest = gap;
+            chaser = i;
+          }
+        });
+        const firstBend = headed ? 0 : curl(0.2, 1);
+        if (headed) {
+          aimAt(shooter, firstAim);
+        } else {
+          kick(shooter, firstAim);
+        }
+        const wasHeaded = headed;
+        for (let f = 1; f <= reboundFrames; f++) {
+          if (wasHeaded) {
+            land(f, true);
+          }
+          if (f <= firstFlight) {
+            const u = f / firstFlight;
+            Object.assign(ball, bent(shotFrom, firstAim, u, firstBend));
+            ball.height = wasHeaded
+              ? headHeight * (1 - u) + Math.sin(Math.PI * u) * 0.12
+              : Math.sin(Math.PI * u) * 0.35;
+            const k = ease(Math.min(1, f / Math.max(1, firstFlight - 2)));
+            keeper.d = lerp(keeperFrom.d, firstAim.d, k);
+            keeper.x = lerp(keeperFrom.x, firstAim.x, k);
+            keeper.pose = f > firstFlight * 0.4 ? 'dive' : 'run';
+          } else {
+            // Off the keeper it pops up and runs out, and stops.
+            const u = Math.min(1, (f - firstFlight) / spillFrames);
+            const out = 1 - (1 - u) * (1 - u);
+            ball.d = lerp(firstAim.d, spill.d, out);
+            ball.x = lerp(firstAim.x, spill.x, out);
+            ball.height = Math.sin(Math.PI * u) * 0.5;
+            if (f - firstFlight > scrambleFrames) {
+              keeper.pose = 'run';
+              const gap = distance(keeper, recover);
+              const step = perFrame(5);
+              if (gap > step) {
+                keeper.d += ((recover.d - keeper.d) / gap) * step;
+                keeper.x += ((recover.x - keeper.x) / gap) * step;
+              }
+            }
+          }
+          if (f > setOff) {
+            if (!wasHeaded) {
+              striker.pose = 'run';
+            }
+            // Eyes on goal, they come back for it rather than turn about.
+            aimAt(shooter, firstAim, true);
+            const gap = distance(striker, strikeSpot);
+            const step = perFrame(followPace);
+            if (gap > step) {
+              striker.d += ((strikeSpot.d - striker.d) / gap) * step;
+              striker.x += ((strikeSpot.x - striker.x) / gap) * step;
+            } else {
+              Object.assign(striker, strikeSpot);
+            }
+          }
+          // The defender chases, but is too late.
+          const overrides = new Map<number, Point>();
+          if (chaser >= 0) {
+            const at = movers[chaser]!;
+            const gap = distance(at, spill) || 1;
+            overrides.set(chaser, {
+              d: spill.d + ((at.d - spill.d) / gap) * lateBy,
+              x: spill.x + ((at.x - spill.x) / gap) * lateBy
+            });
+          }
+          steer(frame, new Set([shooter, keeperSlot]), overrides);
+          record();
+          frame++;
+        }
+        shotFrom = { d: ball.d, x: ball.x };
+        headed = false;
+      }
       // Through on goal, the keeper has come out to meet the shooter.
       const outFor = finish === 'one-on-one' && keeper ? keeper : undefined;
       let aim: Point;
       let rest: Point;
       let stopsAtKeeper = false;
+      // A rebound scored goes in the side the keeper has left.
+      const shotSide = rebound && keeper ? (keeper.x <= 34 ? 1 : -1) : side;
       switch (outcome) {
         case 'goal': {
-          const x = 34 + side * rng.between(0.6, goalHalf - 0.4);
+          const x = 34 + shotSide * rng.between(0.6, goalHalf - 0.4);
           aim = { d: pitchLength, x };
           rest = { d: pitchLength + 1.8, x: x + side * 0.4 };
           break;
@@ -1982,7 +2137,7 @@ export const createClipScript = (input: ClipInput): ClipScript => {
         Math.ceil(distance(shotFrom, aim) / perFrame(pace))
       );
       // The frame the ball arrives, the cross's frames included.
-      momentFrame = momentStart + crossFrames + flight - 1;
+      momentFrame = momentStart + crossFrames + reboundFrames + flight - 1;
       const keeperFrom = keeper ? { d: keeper.d, x: keeper.x } : undefined;
       const keeperTo =
         keeper && keeperFrom
@@ -2504,6 +2659,7 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     outcome,
     passes,
     phases: { moment: momentStart, reaction: reactionStart, zoom: zoomStart },
+    rebound,
     restart
   };
 };

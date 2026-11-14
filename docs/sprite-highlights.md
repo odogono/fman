@@ -49,18 +49,18 @@ Everything moves at real speeds: passes at about 15 m/s, runs at 5 to 7 m/s, hal
 
 ## Artwork
 
-New sprites drawn for this view, a little taller than the original's 8×8 characters: about 8 by 12 art pixels, in a three-quarter view as in the 16-bit football games. Each faces one of four directions, with up, down and left drawn and right mirrored. The clip records each player's facing, from their movement or towards the ball. The poses are stand, run (a cycle of frames), kick (for both passing and shooting), dive, hold (the ball held up, by a keeper or a thrower), head (hands on head after a near miss) and celebrate. The ball has a few spin frames and its shadow.
+New sprites drawn for this view, larger than the original's 8×8 characters: about 14 by 22 art pixels, with a big head and a face, in a three-quarter view as in the 16-bit football games. Each faces one of four directions, with up, down and left drawn and right mirrored. The clip records each player's facing, from their movement or towards the ball. The poses are stand, run (a cycle of frames), kick (for both passing and shooting), dive, hold (the ball held up, by a keeper or a thrower), head (hands on head after a near miss) and celebrate. The ball has a few spin frames and its shadow.
 
 - **Drawn on a canvas** of its own at the screen's resolution. Each art pixel covers a whole number of device pixels, rounded from the camera's scale, and sprites sit on whole device pixels, so the art stays crisp. Through the zoom a sprite steps up one size rather than growing smoothly.
 - **Tinted when drawn.** The shirt takes the kit colour, the shorts and socks a fixed darker shade of it, with a dark outline. A keeper's shirt takes the goalkeeper colour. Skin and hair come from small palettes, picked by a hash of the player's name, so a player looks the same in every clip and match. Nothing about looks is stored.
 - **Pitch.** The markings stay drawn as lines, over mown stripes. The mini-map keeps its dots; the kick-off and full-time stills use the stand pose.
-- **Source.** The sprites are pixel grids written as text in `web/src/view/assets`, authored for this project and dedicated to the public domain, as noted in its README. The original's characters stay with the original pitch, and the generated mockups are for direction only.
+- **Source.** The sprites are pixel grids written as text in `web/src/view/assets`. They began as reference images made for this project with ChatGPT's image tool, which were converted to grids in the sprites' palette and cleaned up by hand; only the grids are kept, with their provenance in the assets README. The original's characters stay with the original pitch, and the mockups in [highlights-engine.md](highlights-engine.md) are for direction only.
 
 The clip engine ships first with placeholder shapes: a kit-coloured circle per player, a white dot for the ball and lines for the markings, with the named player's label spelled as on the ticker line.
 
 ### Status icons
 
-A **status icon** is a small pixel-art icon floating above a player's head, after the thought bubbles of _The Sims_, at the sprites' scale. It shows only in the zoomed view: in the wide view it would be too small to read. A player shows at most one; when more than one applies, a fixed order picks it. The sprite artwork brings only the tired icon. Later states, such as injuries during the match ([#110](https://github.com/odogono/fman/issues/110)), take the same place.
+A **status icon** is a small pixel-art icon floating above a player's head, after the thought bubbles of _The Sims_, at the sprites' scale. It shows only in the zoomed view: in the wide view it would be too small to read. A player shows at most one; when more than one applies, a fixed order picks it. The sprite artwork brings only the tired icon: a blue sweat drop in a white thought bubble. Later states, such as injuries during the match ([#110](https://github.com/odogono/fman/issues/110)), take the same place.
 
 ## Debug page
 

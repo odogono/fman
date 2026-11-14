@@ -34,13 +34,14 @@ test('every grid is a rectangle drawn in the palette', () => {
   }
 });
 
-test('players are a little taller than the original 8 by 8 characters', () => {
+test('players are about 14 by 22 art pixels, larger than the original 8 by 8 characters', () => {
   for (const [name, grid] of everyGrid().filter(
     ([name]) => !/^(ball|tired|dive)/.test(name)
   )) {
-    expect(grid[0]!.length, name).toBe(8);
-    expect(grid.length, name).toBeGreaterThanOrEqual(12);
-    expect(grid.length, name).toBeLessThanOrEqual(15);
+    expect(grid[0]!.length, name).toBeGreaterThanOrEqual(11);
+    expect(grid[0]!.length, name).toBeLessThanOrEqual(20);
+    expect(grid.length, name).toBeGreaterThanOrEqual(19);
+    expect(grid.length, name).toBeLessThanOrEqual(26);
     // A player stands on their bottom row.
     expect(grid.at(-1)!.replaceAll('.', ''), name).not.toBe('');
   }

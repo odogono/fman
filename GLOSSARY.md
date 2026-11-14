@@ -85,8 +85,12 @@ One opportunity for a side to score in a match, won through a team-strength test
 _Avoid_: Attack when not referring to the original's displayed sequence
 
 **Moment**:
-One decisive event in a match: a goal, a save or a near miss, at a minute, for the side that made the chance. It names the player who shot: for the managed club one of its picked players, and, when clubs own squads, for an opponent one of its squad.
+One decisive event in a match: a goal, a save, a clearance or a near miss, at a minute, for the side that made the chance. It names the player who shot: for the managed club one of its picked players, and, when clubs own squads, for an opponent one of its squad.
 _Avoid_: Event, highlight
+
+**Clearance**:
+A moment in which a defender stops a chance before it reaches goal, by intercepting the final pass or blocking the shot, and clears the ball. It names the attacker the chance fell to.
+_Avoid_: Tackle or interception as the name of the moment
 
 **Ticker**:
 The list of a match's moments, shown one at a time in minute order as the match is played. In Modern mode the moments play as clips and the ticker lists them alongside. Original-rules matches have no ticker; their highlights are shown on the pitch.

@@ -63,12 +63,12 @@ Phone: the whole pitch upright with an "all events" drawer, and the camera zoome
 1. **The engine.** Produces moments from the team strengths and the picked players, headless in [`web/src/sim`](../web/src/sim) and tested, with no view yet. Measured as the experimental ruleset [`moment-highlights`](moment-highlights.md).
 2. **Balance.** The bots in `tools/bots/` play whole seasons on the new engine ([gameplay-baseline.md](gameplay-baseline.md)). Tune how often each moment happens until scores, tables and cup runs sit close to [the original's baseline](baseline/original.md), then give it its Enhanced version.
 3. **The ticker.** A teletext-style list of moments, shipped in both presentation modes ([built for Classic mode](moment-highlights.md#the-ticker)). Text fits the reproduced Spectrum screen with little change ([ADR 0010](adr/0010-enhanced-rules-speak-on-the-original-screens.md)), so this is the point where players get the new engine.
-4. **The sprite view.** Modern mode only. Each moment plays as a scripted clip of a few seconds: build-up, the moment itself, the reaction. Nothing simulates the whole match underneath. The ticker stays as the summary shown when the manager skips.
+4. **The sprite view.** Modern mode only. Each moment plays as a scripted clip of a few seconds: build-up, the moment itself, the reaction. Nothing simulates the whole match underneath. The ticker stays as the summary shown when the manager skips. Settled in [sprite-highlights.md](sprite-highlights.md).
 
 ## Open questions
 
 - **How moments are drawn.** The probability of each kind of moment, and how team strengths and individual players' skill and energy set it. The aim is final scores in a range close to the original's, so that the league and cup stay balanced.
 - **Injuries during the match.** The original draws injuries before selection. Either the existing draw moves into the match, or a new one is added; each changes the baseline differently.
 - **Who scores.** Weighting by skill, and which playing category (defence, midfield or attack) a scorer comes from.
-- **Kits.** A tiny-sprite view no longer forbids yellow or green kits, but the Original rules' highlights still do, and the present-day clubs share one kit list between both.
-- **Classic mode after the ticker.** Classic mode gets the ticker. Whether it ever gets a Spectrum-styled version of the sprite view is open.
+
+Kits and Classic mode were settled for the sprite view in [sprite-highlights.md](sprite-highlights.md#scope): kits stay as they are, and Classic mode keeps the ticker.

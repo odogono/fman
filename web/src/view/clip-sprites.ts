@@ -12,7 +12,12 @@ import { hashSeed, type FramePlayer, type Pose } from './clips';
 
 /** One art pixel covers about this much pitch, so a player stands about 2 m. */
 export const artPixelMetres = 0.09;
-/** A run frame changes each time a player covers this much ground. */
+/** The ball is drawn this far up for each unit of its `height`, in metres. */
+export const ballLiftMetres = 2.5;
+/**
+ * A run frame changes each time a player covers this much ground, so a
+ * cycle of four frames is two strides.
+ */
 const strideMetres = 0.8;
 /** The ball turns a spin frame each time it rolls this far. */
 const spinMetres = 0.4;
@@ -94,10 +99,11 @@ const cell = (x: number, y: number, step: number) =>
 /**
  * The art for a player: the pose's grid for their facing, right being left
  * mirrored. A runner's frame changes with the ground they cover, so the
- * stride keeps pace with their speed.
+ * stride keeps pace with their speed; a header shows the frame the clip
+ * names.
  */
 export const spriteFor = (
-  player: Pick<FramePlayer, 'facing' | 'pose' | 'x' | 'y'>
+  player: Pick<FramePlayer, 'facing' | 'pose' | 'poseFrame' | 'travelled'>
 ): Sprite => {
   const { facing, pose } = player;
   if (pose === 'dive') {
@@ -105,7 +111,10 @@ export const spriteFor = (
   }
   const drawn: 'down' | 'left' | 'up' = facing === 'right' ? 'left' : facing;
   const mirrored = facing === 'right';
-  const art: Record<Exclude<Pose, 'dive' | 'run'>, typeof playerArt.stand> = {
+  const art: Record<
+    Exclude<Pose, 'dive' | 'header' | 'run'>,
+    typeof playerArt.stand
+  > = {
     celebrate: playerArt.celebrate,
     head: playerArt.head,
     hold: playerArt.hold,
@@ -114,8 +123,13 @@ export const spriteFor = (
   };
   if (pose === 'run') {
     const frames = playerArt.run[drawn];
-    const at = cell(player.x, player.y, strideMetres);
-    return { grid: frames[Math.abs(at) % frames.length]!, mirrored };
+    const at = Math.floor(player.travelled / strideMetres);
+    return { grid: frames[at % frames.length]!, mirrored };
+  }
+  if (pose === 'header') {
+    const frames = playerArt.header[drawn];
+    const at = Math.min(frames.length - 1, Math.max(0, player.poseFrame ?? 0));
+    return { grid: frames[at]!, mirrored };
   }
   return { grid: art[pose][drawn], mirrored };
 };

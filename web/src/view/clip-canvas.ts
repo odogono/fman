@@ -2,6 +2,7 @@ import { shadowArt, type ArtGrid } from './assets/clip-sprites';
 import {
   artPixelSize,
   ballHeld,
+  ballLiftMetres,
   ballSprite,
   iconPalette,
   looksFor,
@@ -221,7 +222,7 @@ export const paintClip = (
     ctx.stroke();
   }
   const { ball } = frame;
-  const lift = ball.height * 2.5;
+  const lift = ball.height * ballLiftMetres;
   const held = ballHeld(frame.players, ball);
   ctx.restore();
 

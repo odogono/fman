@@ -62,6 +62,19 @@ const restartNames: Record<Restart, string> = {
   'throw-in': 'Throw-in'
 };
 
+/**
+ * How the chance is finished: a shot from the edge of the box, a header
+ * from a cross or a corner, a shot from long range, or a run through on
+ * the keeper.
+ */
+export type Finish = 'header' | 'long-range' | 'one-on-one' | 'shot';
+export const finishes: readonly Finish[] = [
+  'shot',
+  'header',
+  'long-range',
+  'one-on-one'
+];
+
 /** Where a player lines up. */
 export type Line = 'attack' | 'defence' | 'keeper' | 'midfield';
 export type ClipPlayer = Readonly<{
@@ -85,6 +98,8 @@ export type ClipInput = Readonly<{
   /** The attacking side shoots up the screen. */
   attackingUp: boolean;
   defence: ClipSide;
+  /** Forces how the chance is finished, for the debug page. */
+  finish?: Finish;
   kind: Moment['kind'];
   minute: number;
   /** Forces the outcome, for the debug page; the seed picks it otherwise. */
@@ -98,9 +113,10 @@ export type ClipInput = Readonly<{
 
 /** What a player is doing, for the drawing. */
 export type Pose =
-  'celebrate' | 'dive' | 'head' | 'hold' | 'kick' | 'run' | 'stand';
+  'celebrate' | 'dive' | 'head' | 'header' | 'hold' | 'kick' | 'run' | 'stand';
 const poses: readonly Pose[] = [
   'run',
+  'header',
   'dive',
   'celebrate',
   'head',
@@ -134,6 +150,21 @@ const laneWidth = 2;
 const laneClearance = 1;
 /** The longest pass back, in metres, from the receiver's spot. */
 const longestBackPass = 11;
+/**
+ * The ball's height at a leaping header's forehead, as a frame's `height`
+ * measures it: about 2 m up, just under the bar.
+ */
+export const headHeight = 0.8;
+/** A header's crouch and leap take this many frames before the ball arrives. */
+const jumpFrames = 16;
+/** The nearest to goal, in metres, a shot from range is set up. */
+const longRange = 24;
+/** The deepest a high back line holds, in metres up the pitch. */
+const highLine = 86;
+/** How far off their line, in metres, a keeper comes to meet a one-on-one. */
+const keeperRushes = 6;
+/** The furthest, in metres, a player carries the ball out wide to cross it. */
+const widestCarry = 25;
 /** The ball is this far ahead of a carrier's feet, in metres. */
 const stride = 0.8;
 /**
@@ -154,11 +185,20 @@ export type FramePlayer = Readonly<{
   facing: Facing;
   keeper: boolean;
   pose: Pose;
+  /**
+   * Which of a header's frames shows: crouching to jump, in the air, then
+   * meeting the ball.
+   */
+  poseFrame?: number;
   side: 'attack' | 'defence';
   status?: Status;
+  /** The ground they have covered in the clip so far, in metres. */
+  travelled: number;
   x: number;
   y: number;
 }>;
+/** A header's frames: crouching, in the air, meeting the ball. */
+export const headerFrames = 3;
 
 /** One frame of a clip, in metres on a pitch whose top edge is y = 0. */
 export type ClipFrame = Readonly<{
@@ -180,8 +220,11 @@ export type ClipFrame = Readonly<{
 export type ClipPass = Readonly<{
   end: number;
   from: string;
-  /** A pass in open play, or the restart that starts the build-up. */
-  kind: 'pass' | Exclude<Restart, 'open-play'>;
+  /**
+   * A pass in open play, the restart that starts the build-up, or a cross
+   * from wide for a header.
+   */
+  kind: 'cross' | 'pass' | Exclude<Restart, 'open-play'>;
   /** The passer and receiver: indexes into `attack.players`. */
   passer: number;
   receiver: number;
@@ -190,6 +233,7 @@ export type ClipPass = Readonly<{
 }>;
 
 export type ClipScript = Readonly<{
+  finish: Finish;
   frame: (at: number) => ClipFrame;
   input: ClipInput;
   /** The clip's length in frames, as the sim holds it. */
@@ -273,7 +317,7 @@ export const outcomeKind = (outcome: ClipOutcome): Moment['kind'] =>
         : 'near-miss';
 
 type Point = { d: number; x: number };
-type Mover = Point & { pose: Pose };
+type Mover = Point & { pose: Pose; poseFrame?: number };
 
 const clamp = (value: number, low: number, high: number) =>
   Math.min(high, Math.max(low, value));
@@ -403,13 +447,19 @@ export const createClipScript = (input: ClipInput): ClipScript => {
   const keeperSlot = defenceKeeper < 0 ? -1 : attackers.length + defenceKeeper;
 
   /** Where the back line wants to stand, given the ball. */
-  const backLineFor = (ball: Point) => clamp(ball.d + 14, 55, 99);
+  const backLineFor = (ball: Point) =>
+    // Caught by a ball through, the defence was playing a high line.
+    finish === 'one-on-one'
+      ? clamp(ball.d + 8, 50, highLine)
+      : clamp(ball.d + 14, 55, 99);
   /**
    * The depth the back line holds while play goes on: where it wants to be,
    * but never more than `backLineGive` from any of its players but the one
    * closing the ball down, so it moves as one and waits for a laggard.
    */
   let backLineDepth: number | undefined;
+  /** A ball played through has beaten the defence, for a one-on-one. */
+  let beaten = false;
   // Where each player wants to be, given the ball.
   const target = (i: number, ball: Point, frame: number): Point => {
     const quirk = quirks[i]!;
@@ -436,12 +486,14 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     if (line === 'keeper') {
       return { d: 104, x: 34 + (ball.x - 34) * 0.15 };
     }
-    const depth =
+    const shape =
       line === 'defence'
         ? (backLineDepth ?? backLineFor(ball))
         : line === 'midfield'
           ? clamp(ball.d + 2, 40, 90)
           : clamp(ball.d - 12, 30, 75);
+    // Beaten by a ball through, everyone chases from behind the shooter.
+    const depth = beaten ? Math.min(shape, movers[shooter]!.d - 2) : shape;
     const across =
       34 + (pitchWidth * defenceSpots[j]! - 34) * 0.75 + 0.35 * (ball.x - 34);
     return {
@@ -494,6 +546,39 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     !others.length || (drawn === 'goal-kick' && goalKicker < 0)
       ? 'open-play'
       : drawn;
+
+  // How the chance is finished, from a stream of its own so a shot plays
+  // as it would without the others. Every corner, and a defender's or
+  // keeper's free kick, is headed in; a clearance and a lone player always
+  // shoot.
+  const finishRng = createClipRng(hashSeed(`${input.seed}|finish`));
+  const finishRoll = finishRng.next();
+  const odds: readonly (readonly [Finish, number])[] =
+    attackers[shooter]?.line === 'attack'
+      ? [
+          ['header', 0.25],
+          ['one-on-one', 0.2],
+          ['long-range', 0.05]
+        ]
+      : [
+          ['header', 0.15],
+          ['one-on-one', 0.1],
+          ['long-range', 0.3]
+        ];
+  let roll = finishRoll;
+  const drawnFinish: Finish =
+    restart === 'corner' || setPiece
+      ? 'header'
+      : (odds.find(([, chance]) => (roll -= chance) < 0)?.[0] ?? 'shot');
+  let finish: Finish =
+    outcomeKind(outcome) === 'clearance'
+      ? 'shot'
+      : restart === 'corner'
+        ? 'header'
+        : (input.finish ?? drawnFinish);
+  if (finish === 'header' && !others.length) {
+    finish = 'shot';
+  }
   const touchline = rng.next() < 0.5 ? 0 : pitchWidth;
   if (restart === 'throw-in') {
     ballStart.d = rng.between(20, 80);
@@ -557,6 +642,10 @@ export const createClipScript = (input: ClipInput): ClipScript => {
   const ys: number[][] = [];
   const poseLog: number[][] = [];
   const facingLog: number[][] = [];
+  /** A header's frame, or -1; and the ground each player has covered. */
+  const poseFrameLog: number[][] = [];
+  const travelLog: number[][] = [];
+  const travelled = new Array<number>(count).fill(0);
   /**
    * The frame each player's latest kick shows until, and the frame they face
    * where they played the ball until, kicked or thrown.
@@ -591,11 +680,14 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       const last = seen[i] ?? mover;
       steps[i] = { d: mover.d - last.d, x: mover.x - last.x };
       seen[i] = { d: mover.d, x: mover.x };
+      travelled[i] = travelled[i]! + Math.hypot(steps[i]!.d, steps[i]!.x);
     });
     xs.push([]);
     ys.push([]);
     poseLog.push([]);
     facingLog.push([]);
+    poseFrameLog.push([]);
+    travelLog.push([...travelled]);
     const at = xs.length - 1;
     const [bx, by] = toScreen(ball);
     movers.forEach((mover, i) => {
@@ -627,6 +719,7 @@ export const createClipScript = (input: ClipInput): ClipScript => {
             ? 'stand'
             : mover.pose;
       poseLog[at]!.push(poses.indexOf(pose));
+      poseFrameLog[at]!.push(pose === 'header' ? (mover.poseFrame ?? 0) : -1);
     });
     balls.push([bx, by, ball.height]);
     const focus = cameraFocus();
@@ -742,11 +835,15 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       if (held.has(i)) {
         return;
       }
+      // A shooter from range waits deep for the ball to come to them. Once
+      // beaten, no one closes the ball down: they all chase.
       const goal = {
         ...(overrides.get(i) ??
-          (i === presser
-            ? { d: ball.d + 3, x: ball.x + (34 - ball.x) * 0.05 }
-            : target(i, ball, frame)))
+          (i === shooter && finish === 'long-range'
+            ? shootingSpot
+            : i === presser && !beaten
+              ? { d: ball.d + 3, x: ball.x + (34 - ball.x) * 0.05 }
+              : target(i, ball, frame)))
       };
       if (i < attackers.length) {
         goal.d = Math.min(goal.d, line);
@@ -809,6 +906,17 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     // From a corner the shooter meets the cross in the box.
     shootingSpot.d = pitchLength - rng.between(6, 12);
     shootingSpot.x = 34 + rng.between(-6, 6);
+  } else if (finish === 'header') {
+    // A cross is met six to eleven metres out.
+    shootingSpot.d = pitchLength - finishRng.between(6, 11);
+    shootingSpot.x = 34 + finishRng.between(-6, 6);
+  } else if (finish === 'long-range') {
+    shootingSpot.d = pitchLength - finishRng.between(22, 30);
+    shootingSpot.x = 34 + finishRng.between(-12, 12);
+  } else if (finish === 'one-on-one') {
+    // Through on goal, centrally, with the keeper to beat.
+    shootingSpot.d = pitchLength - finishRng.between(14, 18);
+    shootingSpot.x = 34 + finishRng.between(-5, 5);
   }
   const passCount = others.length ? rng.int(2, 5) : 0;
   const minBuildUp = 6 * clipFps;
@@ -833,17 +941,23 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       const mover = movers[holder]!;
       const gap = distance(mover, to);
       if (gap > step) {
-        mover.d += ((to.d - mover.d) / gap) * step;
-        mover.x += ((to.x - mover.x) / gap) * step;
+        const heading = {
+          d: (to.d - mover.d) / gap,
+          x: (to.x - mover.x) / gap
+        };
         // From a walk the carrier turns with the ball at once; at a run the
-        // ball comes round over a few frames.
+        // ball comes round over a few frames, and they slow to turn with it.
         const last = steps[holder];
         const walking =
           !last || Math.hypot(last.d, last.x) < perFrame(walkingSpeed);
+        const along = carrying.d * heading.d + carrying.x * heading.x;
+        const pace = walking ? step : step * clamp(along, 0.3, 1);
+        mover.d += heading.d * pace;
+        mover.x += heading.x * pace;
         const turn = walking ? 1 : 0.5;
         const turned = {
-          d: lerp(carrying.d, (to.d - mover.d) / gap, turn),
-          x: lerp(carrying.x, (to.x - mover.x) / gap, turn)
+          d: lerp(carrying.d, heading.d, turn),
+          x: lerp(carrying.x, heading.x, turn)
         };
         const length = Math.hypot(turned.d, turned.x);
         if (length > 0.01) {
@@ -853,7 +967,7 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       ball.d = mover.d + carrying.d * stride;
       ball.x = mover.x + carrying.x * stride;
       const overrides = new Map<number, Point>(chase);
-      if (holder !== shooter && passesLeft() === 1) {
+      if (holder !== shooter && passesLeft() <= 1) {
         overrides.set(shooter, shootingSpot);
       }
       steer(frame, new Set([holder]), overrides);
@@ -888,20 +1002,79 @@ export const createClipScript = (input: ClipInput): ClipScript => {
   const reach = (frames: number) => frames * perFrame(receiverSpeed);
 
   /**
+   * Where the final pass finds the shooter, for a finish that needs it.
+   * From range, the shooter drops off or pushes on along their own line from
+   * goal to 23 to 30 m out. Through on goal, the ball goes in behind the
+   * deepest defender, or there is no one-on-one and they shoot instead.
+   */
+  const placeFinish = (end: Point) => {
+    const runner = movers[shooter]!;
+    if (finish === 'long-range') {
+      const out = Math.hypot(runner.d - pitchLength, runner.x - 34) || 1;
+      const reach = clamp(out, longRange, 30);
+      end.d = pitchLength + ((runner.d - pitchLength) / out) * reach;
+      end.x = clamp(34 + ((runner.x - 34) / out) * reach, 18, 50);
+    } else if (finish === 'one-on-one') {
+      const deepest = Math.max(
+        ...defenders.flatMap((p, j) =>
+          p.line === 'keeper' ? [] : [movers[attackers.length + j]!.d]
+        )
+      );
+      end.d = Math.max(end.d, deepest + 4);
+      if (end.d > pitchLength - 9) {
+        finish = 'shot';
+        end.d = shootingSpot.d;
+      }
+    }
+    shootingSpot.d = end.d;
+    shootingSpot.x = end.x;
+  };
+
+  /**
+   * A run onto a ball, from where player `i` stands to `to` over `frames`:
+   * bent out of the stride they are in, so they don't turn sharply as the
+   * ball is played. It gives their place `u` of the way along.
+   */
+  const bentRun = (i: number, to: Point, frames: number) => {
+    const from = { d: movers[i]!.d, x: movers[i]!.x };
+    const step = steps[i] ?? { d: 0, x: 0 };
+    const ahead = Math.hypot(step.d, step.x) * (frames / 2);
+    const most = distance(from, to) / 2;
+    const bend = ahead > most ? most / ahead : 1;
+    const via = {
+      d: from.d + step.d * (frames / 2) * bend,
+      x: from.x + step.x * (frames / 2) * bend
+    };
+    return (u: number): Point => ({
+      d: lerp(lerp(from.d, via.d, u), lerp(via.d, to.d, u), u),
+      x: lerp(lerp(from.x, via.x, u), lerp(via.x, to.x, u), u)
+    });
+  };
+
+  /**
    * A pass to a receiver running onto it, at the ball's own pace: the
    * receiver is played in where they can get to it. The passer holds the
    * final pass back a moment while the shooter gets within reach.
    */
-  const pass = (receiver: number, kind: ClipPass['kind'] = 'pass') => {
+  const pass = (
+    receiver: number,
+    kind: ClipPass['kind'] = 'pass',
+    /** Where it is played, if not to the receiver's feet or run. */
+    into?: Point
+  ) => {
     const runner = movers[receiver]!;
     const lead = kind === 'throw-in' ? rng.between(0.5, 2) : rng.between(2, 6);
-    const end =
-      receiver === shooter
+    const end = into
+      ? { ...into }
+      : receiver === shooter
         ? { ...shootingSpot }
         : {
             d: clamp(runner.d + lead, 10, 95),
             x: clamp(runner.x + rng.between(-3, 3), 3, pitchWidth - 3)
           };
+    if (receiver === shooter && !into) {
+      placeFinish(end);
+    }
     if (receiver === shooter && kind === 'pass') {
       const chase = new Map([[shooter, end]]);
       for (
@@ -925,7 +1098,6 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       end.x = runner.x + ((end.x - runner.x) / gap) * most;
     }
     const from = { d: ball.d, x: ball.x };
-    const runFrom = { d: runner.d, x: runner.x };
     const { frames, lofted } = flightTo(end, kind);
     // The receiver meets the ball a stride behind it, the way it came.
     const came = distance(from, end);
@@ -933,16 +1105,7 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       ? { d: (end.d - from.d) / came, x: (end.x - from.x) / came }
       : { d: 1, x: 0 };
     const runTo = { d: end.d - way.d * stride, x: end.x - way.x * stride };
-    // The receiver bends their run out of the stride they are in, so they
-    // don't turn sharply as the ball is played.
-    const step = steps[receiver] ?? { d: 0, x: 0 };
-    const ahead = Math.hypot(step.d, step.x) * (frames / 2);
-    const most = distance(runFrom, runTo) / 2;
-    const bend = ahead > most ? most / ahead : 1;
-    const bendAt = {
-      d: runFrom.d + step.d * (frames / 2) * bend,
-      x: runFrom.x + step.x * (frames / 2) * bend
-    };
+    const runAt = bentRun(receiver, runTo, frames);
     passes.push({
       end: frame + frames,
       from: label(holder),
@@ -952,6 +1115,9 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       start: frame,
       to: label(receiver)
     });
+    if (receiver === shooter && finish === 'one-on-one') {
+      beaten = true;
+    }
     const thrower = holder;
     if (kind === 'throw-in') {
       aimAt(thrower, end);
@@ -967,16 +1133,7 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       // A throw is let go with the ball still held over the head.
       movers[thrower]!.pose =
         kind === 'throw-in' && f <= kickFrames ? 'hold' : 'run';
-      runner.d = lerp(
-        lerp(runFrom.d, bendAt.d, u),
-        lerp(bendAt.d, runTo.d, u),
-        u
-      );
-      runner.x = lerp(
-        lerp(runFrom.x, bendAt.x, u),
-        lerp(bendAt.x, runTo.x, u),
-        u
-      );
+      Object.assign(runner, runAt(u));
       const overrides = new Map<number, Point>();
       if (receiver !== shooter && passesLeft() <= 2) {
         overrides.set(shooter, shootingSpot);
@@ -1062,7 +1219,10 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       restart === 'throw-in'
         ? rng.int(50, 80)
         : restart === 'corner'
-          ? rng.int(90, 130)
+          ? // A corner to be headed takes longer, as the box fills.
+            finish === 'header'
+            ? rng.int(150, 200)
+            : rng.int(90, 130)
           : rng.int(75, 110);
     // For a corner, the shooter and up to four more attack the box.
     const box = new Map<number, Point>();
@@ -1108,7 +1268,11 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     const long = others.filter(
       i => onside(i) && movers[i]!.d > 30 && movers[i]!.d < 75
     );
-    if (restart !== 'corner' || outcome !== 'interception') {
+    // A corner to be headed, or cut out, is crossed in the moment.
+    if (
+      restart !== 'corner' ||
+      (outcome !== 'interception' && finish !== 'header')
+    ) {
       pass(
         restart === 'corner'
           ? shooter
@@ -1121,6 +1285,33 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       );
     }
   }
+
+  /**
+   * For a header, the ball goes wide for a cross: the holder carries it to
+   * the wing if it is near, or else plays it out there to whoever is
+   * nearest, while the shooter makes for the box.
+   */
+  const goWide = () => {
+    // Never more than a few metres back from a holder already deep.
+    const wing = {
+      d: Math.max(pitchLength - finishRng.between(10, 20), ball.d - 3),
+      x: ball.x < 34 ? 5 : pitchWidth - 5
+    };
+    const gap = distance(movers[holder]!, wing);
+    // Out to someone level or ahead, never a long way back.
+    const near = others
+      .filter(i => i !== holder && movers[i]!.d >= ball.d - 5)
+      .toSorted(
+        (a, b) => distance(movers[a]!, wing) - distance(movers[b]!, wing)
+      );
+    if (gap > widestCarry && near.length) {
+      pass(near[0]!, 'pass', wing);
+      dribble(rng.int(15, 30), { d: ball.d + 1, x: ball.x }, 1.5);
+    } else {
+      const speed = rng.between(5.5, 7);
+      dribble(Math.max(1, Math.round((gap / speed) * clipFps)), wing, speed);
+    }
+  };
 
   // The build-up: each player takes the ball under control, may carry it
   // on, then passes; the last pass reaches the shooter in shooting range.
@@ -1135,9 +1326,15 @@ export const createClipScript = (input: ClipInput): ClipScript => {
           ? Math.max(1, Math.min(4, (minBuildUp - frame) / clipFps))
           : rng.between(1, 4);
       const speed = rng.between(5, 7);
+      // A shooter from range carries it no nearer than they mean to shoot.
+      const range =
+        holder === shooter && finish === 'long-range'
+          ? Math.max(0, distance(movers[holder]!, towards) - longRange)
+          : Infinity;
       const reach = Math.min(
         seconds * speed,
-        Math.max(0, distance(movers[holder]!, towards) - 4)
+        Math.max(0, distance(movers[holder]!, towards) - 4),
+        range
       );
       const gap = distance(movers[holder]!, towards) || 1;
       const to = {
@@ -1172,7 +1369,16 @@ export const createClipScript = (input: ClipInput): ClipScript => {
         dribble(Math.round((metres / speed) * clipFps), to, speed);
       }
     }
+    if (finish === 'header' && passesLeft() <= 1) {
+      goWide();
+      break;
+    }
     const receiver = nextReceiver();
+    if (finish === 'header' && receiver === shooter) {
+      // The shooter waits in the box for the cross.
+      goWide();
+      break;
+    }
     if (receiver === shooter && outcome === 'interception') {
       // The final pass is the one cut out.
       break;
@@ -1182,28 +1388,61 @@ export const createClipScript = (input: ClipInput): ClipScript => {
   if (holder === shooter && outcome === 'interception') {
     outcome = 'block';
   }
+  // Left with the ball themselves, the shooter can't head a cross.
+  if (finish === 'header' && holder === shooter) {
+    finish = 'shot';
+  }
+
+  // Through on goal from further out, the shooter runs on with the ball.
+  if (finish === 'one-on-one' && holder === shooter) {
+    const runOn = pitchLength - 16 - movers[shooter]!.d;
+    if (runOn > 0) {
+      dribble(
+        Math.round((runOn / 7) * clipFps),
+        { d: pitchLength - 16, x: lerp(ball.x, 34, 0.5) },
+        7
+      );
+    }
+  }
 
   // The zoom: the shooter takes a touch towards goal as the camera closes in.
   // Offside no longer matters once the shooter has the ball in range.
   const zoomStart = frame;
   const zoomFrames = clipFps;
   // Before an interception the passer has the ball; a corner taker waits.
-  const touch =
-    holder === shooter
+  // Through on goal, the shooter carries it on and the keeper comes out;
+  // waiting for a cross, the shooter makes for the spot to meet it.
+  const through = finish === 'one-on-one' && holder === shooter;
+  const touch = through
+    ? {
+        d: Math.min(movers[shooter]!.d + 6, pitchLength - 10),
+        x: lerp(ball.x, 34, 0.3)
+      }
+    : holder === shooter
       ? { d: Math.min(movers[shooter]!.d + 1.5, 100), x: ball.x }
       : restart === 'corner'
         ? { d: movers[holder]!.d, x: movers[holder]!.x }
         : { d: Math.min(movers[holder]!.d + 1, 100), x: ball.x };
   const waiting = restart === 'corner' && holder !== shooter;
+  const zoomChase = new Map<number, Point>();
+  if (finish === 'header') {
+    zoomChase.set(shooter, shootingSpot);
+  }
   for (let f = 0; f < zoomFrames; f++) {
     cameraWidth = lerp(cameraWide, cameraZoomed, ease(f / zoomFrames));
+    if (through && keeperSlot >= 0) {
+      zoomChase.set(keeperSlot, {
+        d: pitchLength - keeperRushes,
+        x: lerp(34, ball.x, 0.5)
+      });
+    }
     if (waiting) {
       // The ball stays on the corner spot until it is crossed.
-      steer(frame, new Set([holder]));
+      steer(frame, new Set([holder]), zoomChase);
       record();
       frame++;
     } else {
-      dribble(1, touch, 1.5);
+      dribble(1, touch, through ? 5.5 : 1.5, zoomChase);
     }
   }
   cameraWidth = cameraZoomed;
@@ -1213,7 +1452,7 @@ export const createClipScript = (input: ClipInput): ClipScript => {
   offside = false;
   const momentFrames = 2 * clipFps;
   const side = rng.next() < 0.5 ? -1 : 1;
-  const shotFrom = { d: ball.d, x: ball.x };
+  let shotFrom = { d: ball.d, x: ball.x };
   const keeper = keeperSlot >= 0 ? movers[keeperSlot]! : undefined;
   let momentFrame: number;
   /** For a clearance, the defender who meets the ball and clears it. */
@@ -1311,6 +1550,47 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       frame++;
     }
   } else {
+    // For a header the cross comes first: from the crosser, or the corner
+    // flag, to the shooter, who runs on, crouches and leaps to meet it.
+    let crossFrames = 0;
+    const headed = finish === 'header';
+    if (headed) {
+      const crosser = holder;
+      const headAt = { ...shootingSpot };
+      const crossFrom = { d: ball.d, x: ball.x };
+      const header = movers[shooter]!;
+      crossFrames = Math.ceil(
+        Math.max(distance(crossFrom, headAt) / perFrame(18), clipFps * 0.8)
+      );
+      passes.push({
+        end: frame + crossFrames,
+        from: label(crosser),
+        kind: restart === 'corner' ? 'corner' : 'cross',
+        passer: crosser,
+        receiver: shooter,
+        start: frame,
+        to: label(shooter)
+      });
+      kick(crosser, headAt);
+      cameraFocus = () => ({ d: (ball.d + pitchLength) / 2, x: ball.x });
+      const runAt = bentRun(shooter, headAt, crossFrames);
+      for (let f = 1; f <= crossFrames; f++) {
+        const u = f / crossFrames;
+        ball.d = lerp(crossFrom.d, headAt.d, u);
+        ball.x = lerp(crossFrom.x, headAt.x, u);
+        ball.height = Math.sin(Math.PI * u) * 0.6 + headHeight * u;
+        Object.assign(header, runAt(u));
+        const left = crossFrames - f;
+        header.pose = left < jumpFrames ? 'header' : 'run';
+        header.poseFrame = left < jumpFrames / 2 ? 1 : 0;
+        steer(frame, new Set([shooter]));
+        record();
+        frame++;
+      }
+      shotFrom = { d: ball.d, x: ball.x };
+    }
+    // Through on goal, the keeper has come out to meet the shooter.
+    const outFor = finish === 'one-on-one' && keeper ? keeper : undefined;
     let aim: Point;
     let rest: Point;
     let stopsAtKeeper = false;
@@ -1330,7 +1610,12 @@ export const createClipScript = (input: ClipInput): ClipScript => {
             (outcome === 'hold'
               ? rng.between(0, 1.2)
               : rng.between(2, goalHalf - 0.3));
-        aim = { d: pitchLength - 0.8, x };
+        aim = outFor
+          ? {
+              d: outFor.d - 0.5,
+              x: outFor.x + side * (outcome === 'hold' ? 0.3 : 1.4)
+            }
+          : { d: pitchLength - 0.8, x };
         stopsAtKeeper = true;
         rest =
           outcome === 'parry'
@@ -1362,22 +1647,27 @@ export const createClipScript = (input: ClipInput): ClipScript => {
         break;
       }
     }
+    // A header is slower than a shot, a shot from range faster.
+    const pace = headed ? 14 : finish === 'long-range' ? 28 : 25;
     const flight = Math.max(
       10,
-      Math.ceil(distance(shotFrom, aim) / perFrame(25))
+      Math.ceil(distance(shotFrom, aim) / perFrame(pace))
     );
-    // The frame the ball arrives: the moment's frames are recorded from 0.
-    momentFrame = momentStart + flight - 1;
+    // The frame the ball arrives, the cross's frames included.
+    momentFrame = momentStart + crossFrames + flight - 1;
     const keeperFrom = keeper ? { d: keeper.d, x: keeper.x } : undefined;
     const keeperTo =
       keeper && keeperFrom
         ? stopsAtKeeper
           ? { d: aim.d, x: aim.x }
           : outcome === 'goal'
-            ? {
-                d: pitchLength - 0.5,
-                x: lerp(keeperFrom.x, aim.x, 0.55)
-              }
+            ? outFor
+              ? // Rounded or beaten, the keeper is left where they came to.
+                { d: keeperFrom.d, x: lerp(keeperFrom.x, aim.x, 0.35) }
+              : {
+                  d: pitchLength - 0.5,
+                  x: lerp(keeperFrom.x, aim.x, 0.55)
+                }
             : keeperFrom
         : undefined;
     const dives =
@@ -1385,14 +1675,30 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       outcome === 'parry' ||
       (outcome === 'goal' && Math.abs(aim.x - (keeperFrom?.x ?? 34)) > 1.5);
     cameraFocus = () => ({ d: (ball.d + pitchLength) / 2, x: ball.x });
-    kick(shooter, aim);
+    if (headed) {
+      aimAt(shooter, aim);
+    } else {
+      kick(shooter, aim);
+    }
+    const scorer = movers[shooter]!;
     for (let f = 1; f <= momentFrames; f++) {
+      if (headed) {
+        // The forehead meets it, then the header lands and runs on.
+        scorer.pose = f <= kickFrames ? 'header' : 'run';
+        scorer.poseFrame = 2;
+      }
       if (f <= flight) {
         const u = f / flight;
         ball.d = lerp(shotFrom.d, aim.d, u);
         ball.x = lerp(shotFrom.x, aim.x, u);
+        // A header starts at head height and goes down, or over the bar.
+        const from = headed ? headHeight : 0.4;
         ball.height =
-          outcome === 'over' ? 0.4 + 0.6 * u : Math.sin(Math.PI * u) * 0.35;
+          outcome === 'over'
+            ? from + (1 - from) * u
+            : headed
+              ? headHeight * (1 - u) + Math.sin(Math.PI * u) * 0.12
+              : Math.sin(Math.PI * u) * 0.35;
       } else {
         const after = f - flight;
         const settle = Math.min(1, after / 40);
@@ -1557,8 +1863,12 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       facing: facings[facingLog[low]![i]!]!,
       keeper: keepers.has(i),
       pose: poses[poseLog[low]![i]!]!,
+      ...(poseFrameLog[low]![i]! >= 0
+        ? { poseFrame: poseFrameLog[low]![i]! }
+        : {}),
       side,
       ...(zoomed && tired.has(i) ? { status: 'tired' as const } : {}),
+      travelled: lerp(travelLog[low]![i]!, travelLog[high]![i]!, u),
       x: lerp(xs[low]![i]!, xs[high]![i]!, u),
       y: lerp(ys[low]![i]!, ys[high]![i]!, u)
     }));
@@ -1590,6 +1900,7 @@ export const createClipScript = (input: ClipInput): ClipScript => {
   };
 
   return {
+    finish,
     frame: frameAt,
     input,
     length,
@@ -1626,6 +1937,7 @@ export const kickOffFrame = (
         keeper: p.line === 'keeper',
         pose: 'stand',
         side: team,
+        travelled: 0,
         x: up ? x : pitchWidth - x,
         y: up ? pitchLength - d : d
       };

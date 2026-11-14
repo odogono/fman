@@ -19,6 +19,7 @@ const player = (side: 'attack' | 'defence', spot: Spot): FramePlayer => ({
   keeper: false,
   pose: 'run',
   side,
+  travelled: 0,
   ...spot
 });
 
@@ -72,6 +73,7 @@ const clip = (
     };
   };
   return {
+    finish: 'shot',
     frame,
     input: {
       attack: {

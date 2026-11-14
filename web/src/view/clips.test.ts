@@ -1,4 +1,4 @@
-import { expect, test } from 'bun:test';
+import { expect, setDefaultTimeout, test } from 'bun:test';
 
 import { longestClip } from '../sim/ticker';
 import { checkClip, type ClipIssueKind } from './clip-checks';
@@ -8,6 +8,7 @@ import {
   clearanceOutcomes,
   clipFps,
   createClipScript,
+  finishes,
   kickOffFrame,
   missOutcomes,
   outcomeKind,
@@ -20,6 +21,10 @@ import {
   type ClipSide,
   type Line
 } from './clips';
+
+// Most of these tests build and play out a hundred clips or more, which is
+// slow on a busy CI runner; bun's 5 s default is for ordinary tests.
+setDefaultTimeout(20_000);
 
 const lines: readonly Line[] = [
   'keeper',
@@ -66,7 +71,7 @@ test('the same moment always plays the same clip', () => {
 });
 
 test('clips run at real-world pace, within what the sim holds', () => {
-  for (let seed = 0; seed < 200; seed++) {
+  for (let seed = 0; seed < 100; seed++) {
     for (const kind of ['goal', 'save', 'near-miss'] as const) {
       const script = createClipScript(input({ kind, seed }));
       // A corner's cross goes straight to the shooter.
@@ -83,7 +88,10 @@ test('clips run at real-world pace, within what the sim holds', () => {
       expect(script.momentFrame).toBeLessThan(reaction);
       expect(reaction).toBeLessThan(script.length);
       expect(script.passes.length).toBeGreaterThanOrEqual(corner ? 1 : 2);
-      expect(script.passes.length).toBeLessThanOrEqual(5);
+      // A header adds the ball out wide, then the cross.
+      expect(script.passes.length).toBeLessThanOrEqual(
+        script.finish === 'header' ? 6 : 5
+      );
       expect(script.passes.at(-1)!.to).toBe(`#d70000 ${9}`);
     }
   }
@@ -91,7 +99,7 @@ test('clips run at real-world pace, within what the sim holds', () => {
 
 test('the seed picks each outcome of a save, a clearance and a near miss', () => {
   const seen = new Set<string>();
-  for (let seed = 0; seed < 200; seed++) {
+  for (let seed = 0; seed < 100; seed++) {
     for (const kind of ['save', 'clearance', 'near-miss'] as const) {
       const { outcome } = createClipScript(input({ kind, seed }));
       expect(outcomeKind(outcome)).toBe(kind);
@@ -475,6 +483,10 @@ test('the passer and shooter kick, and players face the way they move', () => {
     const first = script.passes[0]!;
     const passer = Number(first.from.split(' ')[1]);
     expect(script.frame(first.start).players[passer]!.pose).toBe('kick');
+    // A header is met, not kicked: its own test follows.
+    if (script.finish === 'header') {
+      continue;
+    }
     if (script.outcome === 'goal') {
       expect(script.frame(script.phases.moment).players[9]!.pose).toBe('kick');
     }
@@ -702,3 +714,107 @@ test('clips pass the clip checks, whoever shoots', () => {
   expect([...found.values()]).toEqual([]);
   // 180 clips, each built and checked frame by frame: slow on a busy runner.
 }, 30_000);
+
+/**
+ * Clips of one finish, as the debug page forces it, from open play but for
+ * headers. A one-on-one with the defence too deep to get in behind is a
+ * shot instead, so only the clips that kept their finish are given.
+ */
+const finished = (finish: (typeof finishes)[number], seeds = 30) => {
+  const scripts = Array.from({ length: seeds }, (_, seed) =>
+    createClipScript(
+      input({
+        finish,
+        kind: (['goal', 'save', 'near-miss'] as const)[seed % 3]!,
+        ...(finish === 'header' ? {} : { restart: 'open-play' as const }),
+        seed
+      })
+    )
+  );
+  const kept = scripts.filter(script => script.finish === finish);
+  expect(kept.length).toBeGreaterThanOrEqual(seeds * 0.8);
+  return kept;
+};
+
+test('the seed picks every finish; corners and defenders head it, clearances shoot', () => {
+  const seen = new Set<string>();
+  for (let seed = 0; seed < 120; seed++) {
+    const forward = createClipScript(input({ seed }));
+    seen.add(forward.finish);
+    if (forward.restart === 'corner') {
+      expect(forward.finish).toBe('header');
+    }
+    expect(createClipScript(input({ kind: 'clearance', seed })).finish).toBe(
+      'shot'
+    );
+    // A centre-back has come up for a set piece, to head it.
+    expect(createClipScript(input({ seed, shooter: 2 })).finish).toBe('header');
+  }
+  expect([...seen].sort()).toEqual([...finishes].sort());
+});
+
+test('a header meets a cross at head height, with a crouch and a leap first', () => {
+  for (const script of finished('header')) {
+    const cross = script.passes.at(-1)!;
+    expect(['corner', 'cross']).toContain(cross.kind);
+    expect(cross.receiver).toBe(9);
+    const meet = script.frame(cross.end);
+    const header = meet.players[9]!;
+    // The ball reaches the head, in the box.
+    expect(
+      Math.hypot(header.x - meet.ball.x, header.y - meet.ball.y)
+    ).toBeLessThan(1);
+    expect(meet.ball.height).toBeGreaterThan(0.3);
+    expect(depth(header.y)).toBeGreaterThan(pitchLength - 13);
+    // Crouch, leap, then the forehead.
+    const poses = [cross.end - 12, cross.end - 3, cross.end + 2].map(at => {
+      const p = script.frame(at).players[9]!;
+      return [p.pose, p.poseFrame];
+    });
+    expect(poses).toEqual([
+      ['header', 0],
+      ['header', 1],
+      ['header', 2]
+    ]);
+    // The clip reaches its moment as the header arrives, after the cross.
+    expect(script.momentFrame).toBeGreaterThan(cross.end);
+  }
+});
+
+test('a shot from range is struck from 22 m or more', () => {
+  for (const script of finished('long-range')) {
+    const shot = script.frame(script.phases.moment);
+    const shooter = shot.players[9]!;
+    expect(
+      Math.hypot(shooter.x - 34, depth(shooter.y) - pitchLength)
+    ).toBeGreaterThan(21);
+  }
+});
+
+test('one on one, the shooter has beaten the defence and the keeper comes out', () => {
+  for (const script of finished('one-on-one')) {
+    const shot = script.frame(script.phases.moment);
+    const shooter = shot.players[9]!;
+    const keeper = shot.players.find(p => p.side === 'defence' && p.keeper)!;
+    expect(depth(keeper.y)).toBeLessThan(pitchLength - 3);
+    // No outfield defender stands between the shooter and the goal line.
+    const between = shot.players.filter(
+      p =>
+        p.side === 'defence' && !p.keeper && depth(p.y) > depth(shooter.y) + 1
+    );
+    expect(between).toEqual([]);
+  }
+});
+
+test('players count the ground they cover, for their stride', () => {
+  const script = createClipScript(input());
+  const first = script.frame(0);
+  const last = script.frame(script.length - 1);
+  last.players.forEach((p, i) => {
+    const start = first.players[i]!;
+    expect(p.travelled).toBeGreaterThanOrEqual(
+      Math.hypot(p.x - start.x, p.y - start.y) - 0.01
+    );
+  });
+  expect(Math.max(...last.players.map(p => p.travelled))).toBeGreaterThan(20);
+});

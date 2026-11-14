@@ -9,6 +9,7 @@ import {
   clearanceOutcomes,
   clipFps,
   createClipScript,
+  finishes,
   hashSeed,
   missOutcomes,
   restarts,
@@ -17,6 +18,7 @@ import {
   type ClipOutcome,
   type ClipPlayer,
   type ClipScript,
+  type Finish,
   type Line,
   type Restart
 } from './clips';
@@ -46,6 +48,7 @@ const settings = {
   awayEnergy: 20,
   awayKit: 1,
   defence: 4,
+  finish: 'seed' as Finish | 'seed',
   homeEnergy: 20,
   homeKit: 2,
   ids: false,
@@ -176,6 +179,7 @@ const settingsInput = (seedBase = settings.seedBase): ClipInput => {
     minute: settings.minute,
     ...(settings.outcome === 'seed' ? {} : { outcome: settings.outcome }),
     ...(settings.restart === 'seed' ? {} : { restart: settings.restart }),
+    ...(settings.finish === 'seed' ? {} : { finish: settings.finish }),
     seed: hashSeed(
       [
         'debug',
@@ -257,6 +261,7 @@ const rebuild = () => {
     `moment at   frame ${script.momentFrame}`,
     `outcome     ${script.outcome}`,
     `restart     ${script.restart}`,
+    `finish      ${script.finish}`,
     `phases      build-up 0, zoom ${zoom}, moment ${moment}, reaction ${reaction}`,
     `seed        ${input.seed}`,
     `shooter     ${input.attack.players[input.shooter]?.label ?? '-'}`,
@@ -332,6 +337,15 @@ const renderControls = () => {
         [['seed', 'From the seed'], ...restarts.map(o => [o, o] as const)],
         settings.restart,
         value => change('restart')(value as Restart | 'seed')
+      )
+    ),
+    // A corner is always headed, and a clearance always a shot.
+    labelled(
+      'Finish',
+      select(
+        [['seed', 'From the seed'], ...finishes.map(o => [o, o] as const)],
+        settings.finish,
+        value => change('finish')(value as Finish | 'seed')
       )
     )
   );
@@ -610,6 +624,27 @@ root.append(
   )
 );
 rebuild();
+
+// The clip on show and the frame, for poking at from the browser's console;
+// `paint` draws a frame at once, even in a background tab that gets no
+// animation frames.
+Object.assign(globalThis, {
+  clipDebug: {
+    get at() {
+      return at;
+    },
+    paint: (frame: number) =>
+      paintClip(
+        context,
+        script.frame(frame),
+        { attack: script.input.attack, defence: script.input.defence },
+        fitClipCanvas(canvas)
+      ),
+    get script() {
+      return script;
+    }
+  }
+});
 
 let last = performance.now();
 const tick = (now: number) => {

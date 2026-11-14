@@ -138,7 +138,11 @@ const clubs = Array.from({ length: 64 }, (_, i) => ({
 }));
 const gameWith = (players: readonly Player[]) =>
   ({ club: 1, clubs, players, seed: 1 }) as unknown as Game;
-const fixture = { home: true, opponent: 2 } as MatchFixture;
+const fixture = {
+  home: true,
+  opponent: 2,
+  opponentStrength: [7, 10, 10, 10, 10]
+} as unknown as MatchFixture;
 
 test('a picked goalkeeper keeps goal; without one, the first-picked defender', () => {
   const players = [
@@ -190,6 +194,7 @@ test('a goalkeeper who shoots plays up front, and another keeps goal', () => {
     0
   );
   expect(input.attack.players[input.shooter]).toEqual({
+    energy: 10,
     label: 'P2',
     line: 'attack'
   });
@@ -241,4 +246,14 @@ test("a clip's seed comes from the match and the moment, never the game's random
   expect(
     clipInputFor(gameWith(players), fixture, moments[0]!, 1).seed
   ).not.toBe(a[0]!.input.seed);
+});
+
+test("picked players carry their own energy, an opponent's the side's team Energy", () => {
+  const players = [{ ...player(1, 'GK'), energy: 4 }, player(2, 'FW')];
+  const moment: Moment = { kind: 'goal', minute: 70, player: 2, side: 'club' };
+  const input = clipInputFor(gameWith(players), fixture, moment, 0);
+  expect(input.attack.players.map(p => p.energy)).toEqual([4, 10]);
+  expect(new Set(input.defence.players.map(p => p.energy))).toEqual(
+    new Set([7])
+  );
 });

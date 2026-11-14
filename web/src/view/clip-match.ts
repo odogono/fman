@@ -113,7 +113,7 @@ const keeperOf = (
 };
 
 const lineUp = (
-  people: readonly { label: string; position?: Position }[],
+  people: readonly { energy?: number; label: string; position?: Position }[],
   shooter: number
 ): ClipPlayer[] => {
   const keeper = keeperOf(
@@ -121,6 +121,7 @@ const lineUp = (
     shooter
   );
   return people.map((p, i) => ({
+    ...(p.energy === undefined ? {} : { energy: p.energy }),
     label: p.label,
     line:
       i === keeper
@@ -224,6 +225,7 @@ const sidesFor = (
       : -1;
   const club = lineUp(
     picked.map(p => ({
+      energy: p.energy,
       label: p.name.trim(),
       ...(p.position ? { position: p.position } : {})
     })),
@@ -233,16 +235,20 @@ const sidesFor = (
   const named = moment?.side === 'opponent' ? moment.squadPlayer : undefined;
   const eleven = squad ? opponentEleven(squad, named) : [];
   const opponentShooter = named === undefined ? -1 : eleven.indexOf(named);
+  // Other clubs' players' energy isn't kept, so each shows the side's team
+  // Energy.
+  const energy = fixture.opponentStrength[0]!;
   const opponent = squad
     ? lineUp(
         eleven.map(i => ({
+          energy,
           label: squad[i]!.name.trim(),
           position: squad[i]!.position
         })),
         opponentShooter
       )
     : lineUp(
-        unnamedEleven.map(position => ({ label: '', position })),
+        unnamedEleven.map(position => ({ energy, label: '', position })),
         moment?.side === 'opponent' ? 10 : -1
       );
   const clubSide = (fixture.home ? 'home' : 'away') as 'away' | 'home';

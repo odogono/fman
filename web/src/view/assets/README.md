@@ -19,3 +19,18 @@ Original-ROM PRINT observations validate pixel hashes independently; they are
 not the asset source. See [glyph-raster-fidelity.md](../../../../docs/glyph-raster-fidelity.md)
 for capture commands, comparisons and coverage limits. The TTF is retained for
 native input/caret metrics; visible game glyphs use the bitmap atlas.
+
+# Sprite highlights artwork
+
+`clip-sprites.ts` holds the sprites of Modern mode's sprite highlights
+([#146](https://github.com/odogono/fman/issues/146),
+[sprite-highlights.md](../../../../docs/sprite-highlights.md#artwork)): the
+players' poses, the ball's spin and the status icons, as pixel grids of
+characters. The players, the dive and the tired icon began as reference images
+made for this project with ChatGPT's image tool (November 2026), prompted for
+an original design that copies no existing game. A script fitted each image's
+pixel grid and snapped every cell to the sprites' palette; the grids were then
+cleaned up by hand, the ball removed from the kicks and the dive, and the ball's
+spin drawn by hand. The images themselves are not kept. The grids are dedicated
+to the public domain under
+[CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/).

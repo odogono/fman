@@ -81,7 +81,9 @@ const clip = (
     };
   };
   return {
-    finish: 'shot',
+    // Headed, so its moment starts with the cross, 40 m out, and no shot
+    // is struck out of range.
+    finish: 'header',
     frame,
     input: {
       attack: {

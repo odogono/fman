@@ -13,6 +13,7 @@ import {
   missOutcomes,
   outcomeKind,
   pitchLength,
+  pitchWidth,
   restarts,
   saveOutcomes,
   seededOutcome,
@@ -170,13 +171,19 @@ test('the minute shows over the first half second; the label only zoomed in', ()
   expect(script.frame(script.length - 1).minimap).toBe(true);
 });
 
-test('the camera keeps the ball in its patch', () => {
+test('the camera keeps the ball in its patch, and after a goal the scorer', () => {
   for (let seed = 0; seed < 50; seed++) {
-    const script = createClipScript(input({ seed }));
+    const script = createClipScript(
+      input({ kind: seed % 2 ? 'goal' : 'save', seed })
+    );
     for (let at = 0; at < script.length; at += 10) {
-      const { ball, camera } = script.frame(at);
-      expect(Math.abs(ball.x - camera.x)).toBeLessThan(camera.width / 2);
-      expect(Math.abs(ball.y - camera.y)).toBeLessThan(
+      const { ball, camera, players } = script.frame(at);
+      const kept =
+        script.outcome === 'goal' && at >= script.phases.reaction
+          ? players[9]!
+          : ball;
+      expect(Math.abs(kept.x - camera.x)).toBeLessThan(camera.width / 2);
+      expect(Math.abs(kept.y - camera.y)).toBeLessThan(
         (camera.width * 5) / 8 + 2
       );
     }
@@ -1079,6 +1086,27 @@ test('after a save or a miss the shooter holds their head, then all turn back', 
     // By the end the attackers have headed back up their own half.
     const start = script.frame(reaction);
     const end = script.frame(script.length - 1);
+    if (script.outcome === 'parry') {
+      // Out for a corner: an attacker heads for the flag, the keeper back
+      // to their line.
+      const flag = {
+        x: end.ball.x < pitchWidth / 2 ? 0 : pitchWidth,
+        y: end.ball.y
+      };
+      const toFlag = (p: { x: number; y: number }) =>
+        Math.hypot(p.x - flag.x, p.y - flag.y);
+      const nearest = Math.min(
+        ...start.players.flatMap(p => (p.side === 'attack' ? [toFlag(p)] : []))
+      );
+      const closing = start.players.some(
+        (p, i) =>
+          p.side === 'attack' &&
+          toFlag(end.players[i]!) < Math.min(toFlag(p) - 8, nearest)
+      );
+      expect(closing).toBe(true);
+      expect(depth(keeperOf(end).y)).toBeGreaterThan(pitchLength - 3);
+      continue;
+    }
     const back = start.players.filter(
       (p, i) =>
         p.side === 'attack' &&
@@ -1119,5 +1147,43 @@ test('no one freezes once the ball arrives', () => {
       return Math.hypot(q.x - p.x, q.y - p.y) > 1;
     });
     expect(moved.length).toBeGreaterThanOrEqual(5);
+  }
+});
+
+test('after a goal the scorer wheels away and team-mates pile in', () => {
+  for (let seed = 0; seed < 20; seed++) {
+    const script = createClipScript(input({ kind: 'goal', seed }));
+    const { reaction } = script.phases;
+    // Arms up where they scored, then off at a run.
+    expect(script.frame(reaction + 5).players[9]!.pose).toBe('celebrate');
+    const start = script.frame(reaction).players[9]!;
+    const end = script.frame(script.length - 1);
+    const scorer = end.players[9]!;
+    expect(Math.hypot(scorer.x - start.x, scorer.y - start.y)).toBeGreaterThan(
+      4
+    );
+    expect(scorer.pose).toBe('celebrate');
+    // Team-mates celebrate around them.
+    const huddle = end.players.filter(
+      (p, i) =>
+        i !== 9 &&
+        p.side === 'attack' &&
+        p.pose === 'celebrate' &&
+        Math.hypot(p.x - scorer.x, p.y - scorer.y) < 3
+    );
+    expect(huddle.length).toBeGreaterThanOrEqual(1);
+  }
+});
+
+test('after a catch the keeper walks out with the ball as a team-mate breaks wide', () => {
+  for (let seed = 0; seed < 20; seed++) {
+    const script = createClipScript(
+      input({ kind: 'save', outcome: 'hold', seed })
+    );
+    const { reaction } = script.phases;
+    const from = keeperOf(script.frame(reaction));
+    const out = keeperOf(script.frame(reaction + 45));
+    expect(out.pose).not.toBe('dive');
+    expect(depth(out.y)).toBeLessThan(depth(from.y) - 1);
   }
 });

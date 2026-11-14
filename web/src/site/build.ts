@@ -51,7 +51,8 @@ const check = (output: Bun.BuildOutput) => {
 /**
  * Builds the installable, offline web app into `outdir`, served from
  * `base`: the page and its assets, the manifest and icons, and a service
- * worker that caches every file the build wrote.
+ * worker that caches every file the build wrote; and, uncached, the clip
+ * debugger at `clips.html`.
  */
 export const buildSite = async ({
   base,
@@ -99,6 +100,18 @@ export const buildSite = async ({
     hash.update(file).update(await Bun.file(join(outdir, file)).bytes());
   }
   const precache = built.map(file => (file === 'index.html' ? './' : file));
+
+  // The clip debugger (#144) is published beside the game, built after the
+  // precache is listed so the offline cache leaves it out.
+  const clips = await Bun.build({
+    entrypoints: [join(web, 'clips.html')],
+    minify: true,
+    outdir,
+    publicPath: base
+  });
+  check(clips);
+  const debug = clips.outputs.map(output => relative(outdir, output.path));
+
   check(
     await Bun.build({
       define: {
@@ -111,7 +124,7 @@ export const buildSite = async ({
       outdir
     })
   );
-  return { precache };
+  return { debug, precache };
 };
 
 if (import.meta.main) {

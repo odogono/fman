@@ -94,22 +94,14 @@ const tickerLines = (
     .reverse();
 };
 
-/** The score after `shown`, home first, as the ticker keeps it. */
-const scoreAfter = (fixture: MatchFixture, shown: readonly Moment[]) => {
-  const goals = (side: Moment['side']) =>
-    shown.filter(m => m.kind === 'goal' && m.side === side).length;
-  const club = goals('club');
-  const opponent = goals('opponent');
-  return fixture.home ? [club, opponent] : [opponent, club];
-};
-
 /**
- * `clip`: under sprite highlights, how far the clips have got, which the
- * ticker alone can't tell, since a clip shows its moment partway through.
+ * `clips`: under sprite highlights, how far the clips have got and the
+ * score after them, which the ticker alone can't tell, since a clip shows
+ * its moment partway through.
  */
 export const highlightsFor = (
   view: View,
-  clip?: ClipProgress
+  clips?: Readonly<{ progress: ClipProgress; score: readonly number[] }>
 ): ModernHighlights | undefined => {
   if (view.screen !== 'highlights') {
     return undefined;
@@ -120,14 +112,14 @@ export const highlightsFor = (
   const away = clubName(sides.away);
   const title = fixtureTitle(game, fixture);
   if ('ticker' in view) {
-    const shown = clip
-      ? view.ticker.moments.slice(0, clip.shown)
+    const shown = clips
+      ? view.ticker.moments.slice(0, clips.progress.shown)
       : view.ticker.shown;
     return {
       away,
-      ...(clip ? { clip } : {}),
+      ...(clips ? { clip: clips.progress } : {}),
       home,
-      score: clip ? scoreAfter(fixture, shown) : view.ticker.score,
+      score: clips?.score ?? view.ticker.score,
       ticker: {
         lines: tickerLines(game, fixture, shown),
         skip: !view.ticker.done

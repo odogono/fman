@@ -1,6 +1,6 @@
 # Sprite highlights
 
-[#111](https://github.com/odogono/fman/issues/111). In Modern mode, matches decided as [moments](moment-highlights.md) are shown on a top-down pitch with tiny sprites, in place of the paper-and-ink ticker. The direction and mockups are in [highlights-engine.md](highlights-engine.md). Nothing here is built yet.
+[#111](https://github.com/odogono/fman/issues/111). In Modern mode, matches decided as [moments](moment-highlights.md) are shown on a top-down pitch with tiny sprites, in place of the paper-and-ink ticker. The direction and mockups are in [highlights-engine.md](highlights-engine.md). The clips play with placeholder shapes ([#144](https://github.com/odogono/fman/issues/144)); the events drawer and panel and the sprite artwork are not built yet.
 
 ## Scope
 
@@ -33,7 +33,7 @@ Everything moves at real speeds: passes at about 15 m/s, runs at 5 to 7 m/s, hal
 - **Between clips** the view cuts straight to the next one. Each clip opens with both sides already in shape, under a caption of its minute that is part of the clip's own length; there is no filler play.
 - **Kick-off and full time.** During the 0-0 header both sides stand in shape with the ball on the centre spot, captioned "Kick-off". The final hold shows the same still pitch captioned "Full time", or the full ticker list after Skip.
 - **Ends.** The sides change ends at half-time: the home side attacks up the screen before 46′ and down after.
-- **Players.** The managed club shows one sprite per picked player, set out by position: defence at the back, midfield in the middle, attack up front. A picked goalkeeper keeps goal; with none, the first-picked defender does, so even a side picked short has a keeper. A player with no position plays in midfield. A team picked short of 11 plays short. Each line spreads evenly across the pitch at a fixed depth, whatever its count. The opponent fields a 4-4-2 in squad order: its first goalkeeper, then its first four defenders, four midfielders and two attackers, filling any gap from other positions. The named player always plays, in place of the last-listed player in their position. Only the player the moment names is labelled, in the zoomed view.
+- **Players.** The managed club shows one sprite per picked player, set out by position: defence at the back, midfield in the middle, attack up front. A picked goalkeeper keeps goal; with none, the first-picked defender does, so even a side picked short has a keeper. A player with no position plays in midfield. A goalkeeper the moment names as its shooter plays up front, and the same rule picks who keeps goal instead. A team picked short of 11 plays short. Each line spreads evenly across the pitch at a fixed depth, whatever its count. The opponent fields a 4-4-2 in squad order: its first goalkeeper, then its first four defenders, four midfielders and two attackers, filling any gap from other positions. The named player always plays, in place of the last-listed player in their position. Only the player the moment names is labelled, in the zoomed view.
 - **Tiredness.** In the zoomed view, tired players show it (sweat, hands on knees), more often later in the match. It reads each side's real energy and the minute, and draws only from the clip's seed.
 
 ## The screen
@@ -50,11 +50,11 @@ New sprites drawn for this view on a canvas of its own at the screen's resolutio
 
 ## Debug page
 
-A page of its own, `web/clips.html`, served by `bun run dev` and left out of the build, plays any clip the engine can make. It sets the kind and outcome (or leaves it to the seed), the scoring side, the minute, both kits, the managed side's line counts with or without a goalkeeper, and the moment's place in the list, with a random-seed button. It plays, pauses, steps and scrubs frames at ¼×, 1× and 4×, shows the clip's length, moment frame and passes, and can overlay player ids and the ball's path. It can also load the autosave or a web save file and replay a moment from that match's ticker.
+A page of its own, `web/clips.html`, served by `bun run dev` at `/clips` and left out of the build, plays any clip the engine can make. It sets the kind and outcome (or leaves it to the seed), the scoring side, the minute, both kits, the managed side's line counts with or without a goalkeeper, and the moment's place in the list, with a random-seed button. It plays, pauses, steps and scrubs frames at ¼×, 1× and 4×, shows the clip's length, moment frame and passes, and can overlay player ids and the ball's path. It can also load the autosave or a web save file and replay a moment from that match's ticker.
 
 ## Order of work
 
-1. **Clip lengths from the view** (sim): the ticker's timeline takes a length for each moment, saves it, and defaults to 75 frames.
-2. **The sprite view with placeholder shapes** (Modern): the clip scripts, seeding, camera and zoom, mini-map, ends, team shapes, the goalkeeper colour, cuts, Skip, resuming mid-clip, reduced motion and screen readers. Only the latest moment's ticker line shows under the pitch. The debug page ships with it.
+1. **Clip lengths from the view** (sim, done in [#143](https://github.com/odogono/fman/issues/143)): the ticker's timeline takes a length for each moment, saves it, and defaults to 75 frames.
+2. **The sprite view with placeholder shapes** (Modern, done in [#144](https://github.com/odogono/fman/issues/144)): the clip scripts, seeding, camera and zoom, mini-map, ends, team shapes, the goalkeeper colour, cuts, Skip, resuming mid-clip, reduced motion and screen readers. Only the latest moment's ticker line shows under the pitch. The debug page ships with it.
 3. **The events drawer and panel.**
 4. **The sprite artwork**, including tiredness.

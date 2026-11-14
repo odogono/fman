@@ -872,13 +872,12 @@ button.pick-row:focus-visible {
   display: grid;
   place-items: start center;
   min-height: 0;
+  container-type: size;
 }
 .clip-pitch {
   display: block;
-  max-width: 100%;
-  max-height: 100%;
+  width: min(100cqw, 80cqh);
   aspect-ratio: 4 / 5;
-  height: 100%;
   touch-action: manipulation;
   user-select: none;
   -webkit-user-select: none;

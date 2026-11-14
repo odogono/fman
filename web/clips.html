@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Clip debugger</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font:
+          14px/1.4 system-ui,
+          sans-serif;
+      }
+      body {
+        margin: 0;
+        padding: 12px;
+      }
+      h1 {
+        margin: 0 0 8px;
+        font-size: 18px;
+      }
+      .debug {
+        display: grid;
+        grid-template-columns: minmax(0, 420px) minmax(260px, 1fr);
+        gap: 16px;
+        align-items: start;
+      }
+      @media (max-width: 760px) {
+        .debug {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+      .clip-pitch {
+        display: block;
+        width: 100%;
+        aspect-ratio: 4 / 5;
+        border-radius: 4px;
+      }
+      fieldset {
+        margin: 0 0 8px;
+        border: 1px solid #8884;
+        border-radius: 4px;
+      }
+      label {
+        display: inline-flex;
+        gap: 4px;
+        align-items: center;
+        margin: 2px 8px 2px 0;
+      }
+      input[type='number'] {
+        width: 4.5em;
+      }
+      .transport {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+        margin: 8px 0;
+      }
+      .transport input[type='range'] {
+        flex: 1 1 200px;
+      }
+      pre {
+        margin: 0;
+        padding: 8px;
+        overflow: auto;
+        background: #8881;
+        border-radius: 4px;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Clip debugger</h1>
+    <main id="debug"></main>
+    <script type="module" src="./src/view/clips-debug.ts"></script>
+  </body>
+</html>

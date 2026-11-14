@@ -507,3 +507,168 @@ test('the crowd stands only in a goal’s reaction', () => {
     expect(save.frame(save.length - 1).cheer).toBeUndefined();
   }
 });
+
+/** A pass's length and pace, and where its passer and receiver are. */
+const passesOf = (seeds: number) =>
+  Array.from({ length: seeds }, (_, seed) =>
+    (['goal', 'save', 'near-miss', 'clearance'] as const).flatMap(kind => {
+      const script = createClipScript(input({ kind, seed }));
+      const labels = script.input.attack.players.map(p => p.label);
+      return script.passes.map(pass => {
+        const from = script.frame(pass.start);
+        const to = script.frame(pass.end);
+        const metres = Math.hypot(
+          to.ball.x - from.ball.x,
+          to.ball.y - from.ball.y
+        );
+        return {
+          from,
+          metres,
+          pace: metres / ((pass.end - pass.start) / clipFps),
+          pass,
+          passer: labels.indexOf(pass.from),
+          receiver: labels.indexOf(pass.to),
+          script,
+          to
+        };
+      });
+    })
+  ).flat();
+
+const facingVectors = {
+  down: [0, 1],
+  left: [-1, 0],
+  right: [1, 0],
+  up: [0, -1]
+} as const;
+
+test('a passer faces the way they play the ball', () => {
+  for (const { from, passer, to } of passesOf(100)) {
+    const player = from.players[passer]!;
+    const metres = Math.hypot(to.ball.x - player.x, to.ball.y - player.y);
+    if (metres < 2) {
+      continue;
+    }
+    const [fx, fy] = facingVectors[player.facing];
+    const along =
+      (fx * (to.ball.x - player.x) + fy * (to.ball.y - player.y)) / metres;
+    // Within about 60 degrees of the pass, never side-on or turned away.
+    expect(along).toBeGreaterThan(0.5);
+  }
+});
+
+test('a long pass goes in the air; along the ground it is 30 m at most', () => {
+  let lofted = 0;
+  for (const { metres, pass, script } of passesOf(100)) {
+    const middle = script.frame((pass.start + pass.end) / 2);
+    if (middle.ball.height > 0) {
+      lofted++;
+    } else {
+      expect(metres).toBeLessThanOrEqual(30);
+    }
+  }
+  expect(lofted).toBeGreaterThan(0);
+});
+
+test('the ball keeps a pass’s pace, and the receiver gets to it', () => {
+  for (const { metres, pace, pass, receiver, to } of passesOf(100)) {
+    if (metres >= 9) {
+      expect(pace).toBeGreaterThanOrEqual(pass.kind === 'throw-in' ? 8 : 10);
+    }
+    const player = to.players[receiver]!;
+    expect(
+      Math.hypot(player.x - to.ball.x, player.y - to.ball.y)
+    ).toBeLessThanOrEqual(1.5);
+  }
+});
+
+test('a pass along the ground never runs through a defender', () => {
+  for (const { pass, script } of passesOf(100)) {
+    for (let at = pass.start + 5; at < pass.end - 5; at++) {
+      const frame = script.frame(at);
+      if (frame.ball.height > 0) {
+        break;
+      }
+      for (const player of frame.players.filter(p => p.side === 'defence')) {
+        expect(
+          Math.hypot(player.x - frame.ball.x, player.y - frame.ball.y)
+        ).toBeGreaterThan(0.9);
+      }
+    }
+  }
+});
+
+test('passes go forward; a pass back is short', () => {
+  let forward = 0;
+  let back = 0;
+  for (const { from, metres, pass, script, to } of passesOf(100)) {
+    if (pass.kind !== 'pass' || pass.to === script.passes.at(-1)!.to) {
+      continue;
+    }
+    // Shooting up the screen, a pass back goes down it.
+    const gained = from.ball.y - to.ball.y;
+    if (gained < -5) {
+      back++;
+      expect(metres).toBeLessThanOrEqual(15);
+    } else {
+      forward++;
+    }
+  }
+  expect(forward).toBeGreaterThan(back * 3);
+});
+
+test('the ball runs ahead of a carrier, the way they go', () => {
+  let carries = 0;
+  for (let seed = 0; seed < 60; seed++) {
+    const script = createClipScript(input({ restart: 'open-play', seed }));
+    const labels = script.input.attack.players.map(p => p.label);
+    for (let at = 1; at < script.phases.zoom; at++) {
+      if (script.passes.some(p => at >= p.start - 2 && at <= p.end + 2)) {
+        continue;
+      }
+      const before = script.frame(at - 1);
+      const frame = script.frame(at);
+      // The carrier received the latest pass.
+      const latest = script.passes.findLast(p => p.end <= at);
+      if (!latest) {
+        continue;
+      }
+      const k = labels.indexOf(latest.to);
+      const vx = frame.players[k]!.x - before.players[k]!.x;
+      const vy = frame.players[k]!.y - before.players[k]!.y;
+      // Carrying at a run, at least 4 m/s.
+      if (Math.hypot(vx, vy) * clipFps < 4) {
+        continue;
+      }
+      carries++;
+      const ox = frame.ball.x - frame.players[k]!.x;
+      const oy = frame.ball.y - frame.players[k]!.y;
+      // Within 45 degrees of the way they go.
+      expect(
+        (ox * vx + oy * vy) / (Math.hypot(ox, oy) * Math.hypot(vx, vy))
+      ).toBeGreaterThan(Math.cos(Math.PI / 4));
+    }
+  }
+  expect(carries).toBeGreaterThan(100);
+});
+
+test('a receiver runs onto a pass without turning sharply as it is played', () => {
+  for (const { pass, receiver, script } of passesOf(100)) {
+    if (pass.start < 2) {
+      continue;
+    }
+    const [a, b, c] = [-2, -1, 0].map(
+      k => script.frame(pass.start + k).players[receiver]!
+    );
+    const before = [b!.x - a!.x, b!.y - a!.y];
+    const after = [c!.x - b!.x, c!.y - b!.y];
+    const speeds = [before, after].map(([x, y]) => Math.hypot(x!, y!));
+    if (speeds.some(s => s * clipFps < 2)) {
+      continue;
+    }
+    const cos =
+      (before[0]! * after[0]! + before[1]! * after[1]!) /
+      (speeds[0]! * speeds[1]!);
+    expect(cos).toBeGreaterThan(Math.cos(Math.PI / 4));
+  }
+});

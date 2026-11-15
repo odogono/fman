@@ -1,5 +1,6 @@
 import { shadowArt, type ArtGrid } from './assets/clip-sprites';
 import { drawCard, overlayUnit } from './clip-card';
+import { drawGoal } from './clip-goal';
 import {
   artPixelSize,
   ballHeld,
@@ -379,17 +380,24 @@ export const paintClip = (
     ctx.fillStyle = '#fff';
     ctx.fillText(label.text, x!, above - 14);
   }
+  // The card and the goal announcement, on the art-pixel grid in device
+  // pixels.
+  const unit = overlayUnit(Math.round(width * ratio));
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
   if (frame.card) {
-    // On the art-pixel grid, in device pixels.
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    drawCard(
-      ctx,
-      frame.card,
-      sides.attack.kit,
-      overlayUnit(Math.round(width * ratio))
-    );
-    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    drawCard(ctx, frame.card, sides.attack.kit, unit);
   }
+  if (frame.goal) {
+    drawGoal(
+      ctx,
+      frame.goal,
+      sides.attack.kit,
+      unit,
+      Math.ceil((width * ratio) / unit),
+      Math.ceil((height * ratio) / unit)
+    );
+  }
+  ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
   if (frame.minimap) {
     const mapWidth = Math.round(width * 0.2);
     const mapHeight = (mapWidth * pitchLength) / pitchWidth;

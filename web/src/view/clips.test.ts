@@ -11,6 +11,7 @@ import {
   clipFps,
   createClipScript,
   finishes,
+  goalFrames,
   kickOffFrame,
   missOutcomes,
   outcomeKind,
@@ -227,7 +228,8 @@ test('the match-time card slides in and out over the first 1.5 s; the label only
   expect(wide.camera.width).toBe(cameraWide);
   expect(wide.label).toBeUndefined();
   expect(wide.minimap).toBe(true);
-  const zoomed = script.frame(script.momentFrame);
+  // Just before the moment: a goal's announcement hides the label after.
+  const zoomed = script.frame(script.momentFrame - 1);
   expect(zoomed.camera.width).toBeLessThan(cameraWide);
   expect(zoomed.label?.text).toBe('#d70000 9');
   expect(zoomed.minimap).toBe(false);
@@ -1552,4 +1554,39 @@ test('a scorer wheels away arms up, then celebrates arms up, jumping or on their
     }
   }
   expect([...ends].sort()).toEqual(['celebrate', 'jump', 'slide']);
+});
+
+test('a goal is announced from its moment for 2.5 s, naming the scorer in place of the label', () => {
+  const goal = createClipScript(input({ outcome: 'goal', score: [2, 1] }));
+  const { momentFrame } = goal;
+  expect(goal.frame(momentFrame - 1).goal).toBeUndefined();
+  expect(goal.frame(momentFrame - 1).label?.text).toBe('#d70000 9');
+  const shown = goal.frame(momentFrame + 10);
+  expect(shown.goal).toMatchObject({
+    at: 10,
+    minute: '34′',
+    name: '#d70000 9',
+    score: [2, 1]
+  });
+  expect(shown.label).toBeUndefined();
+  // Gone before the wipe out of the clip.
+  const end = momentFrame + shown.goal!.length;
+  expect(shown.goal!.length).toBeLessThanOrEqual(goalFrames);
+  expect(end).toBeLessThanOrEqual(goal.length - 20);
+  expect(goal.frame(end - 1).goal).toBeDefined();
+  expect(goal.frame(end).goal).toBeUndefined();
+  // Left out, the score is the goal alone, home first.
+  const away = createClipScript(
+    input({
+      attack: side('#d70000'),
+      defence: { ...side('#0000d7'), home: true },
+      outcome: 'goal'
+    })
+  );
+  expect(away.frame(away.momentFrame).goal?.score).toEqual([0, 1]);
+  // No other outcome is announced.
+  const saved = createClipScript(input({ kind: 'save', outcome: 'hold' }));
+  for (let at = 0; at < saved.length; at += 5) {
+    expect(saved.frame(at).goal).toBeUndefined();
+  }
 });

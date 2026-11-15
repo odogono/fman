@@ -8,11 +8,11 @@ import { clipScriptsFor, stillFrameFor } from './clip-match';
 import {
   clipStage,
   shotAt,
-  wipeFrames,
   type ClipPicture,
   type ClipShot,
   type ClipStage
 } from './clip-wipe';
+import { wipeFrames } from './clips';
 import type { ClipProgress } from './modern-highlights';
 
 export type { ClipShot } from './clip-wipe';

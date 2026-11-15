@@ -1,13 +1,7 @@
 import { expect, test } from 'bun:test';
 
-import {
-  shotAt,
-  wipeFrames,
-  wipeRow,
-  type ClipPicture,
-  type ClipStage
-} from './clip-wipe';
-import { kickOffFrame, type ClipSide } from './clips';
+import { shotAt, wipeRow, type ClipPicture, type ClipStage } from './clip-wipe';
+import { kickOffFrame, wipeFrames, type ClipSide } from './clips';
 
 const home: ClipSide = { home: true, keeper: '#000', kit: '#c00', players: [] };
 const away: ClipSide = { keeper: '#000', kit: '#00c', players: [] };

@@ -24,6 +24,23 @@ export const cameraAspect = 5 / 4;
  */
 export const cardFrames = 75;
 const cardSlide = 10;
+/** How long a wipe between pictures takes, in frames: 0.8 s. */
+export const wipeFrames = 40;
+/** How long the goal announcement shows from the moment: 2.5 s. */
+export const goalFrames = 125;
+
+/**
+ * The goal announcement, from the moment a goal goes in: `at` frames in, of
+ * `length`, the scorer's name and the minute, and the new score, home
+ * first.
+ */
+export type ClipGoal = Readonly<{
+  at: number;
+  length: number;
+  minute: string;
+  name: string;
+  score: readonly number[];
+}>;
 
 /**
  * A save: a dive, a catch or a parry, or the keeper coming off their line
@@ -126,6 +143,11 @@ export type ClipInput = Readonly<{
   rebound?: boolean;
   /** Forces how the build-up starts, for the debug page. */
   restart?: Restart;
+  /**
+   * The score after this moment, home first, for the goal announcement;
+   * it plays no part in the clip. Left out, a goal makes it 1-0.
+   */
+  score?: readonly number[];
   seed: number;
   /** The named player: an index into `attack.players`. */
   shooter: number;
@@ -347,6 +369,8 @@ export type ClipFrame = Readonly<{
   card?: ClipCard;
   /** The crowd is on its feet, after a goal (#157). */
   cheer?: boolean;
+  /** The goal announcement, while it shows. */
+  goal?: ClipGoal;
   /** The named player's label, in the zoomed view only. */
   label?: Readonly<{ text: string; x: number; y: number }>;
   /** The overview of the whole pitch shows, except while zoomed in. */
@@ -3208,6 +3232,21 @@ export const createClipScript = (input: ClipInput): ClipScript => {
           : 'reaction';
   const shooterLabel = attackers[shooter]?.label ?? '';
   const tired = tiredPlayers(input);
+  // The goal announcement is gone before the wipe out of the clip starts.
+  const goalEnd =
+    outcome === 'goal'
+      ? Math.min(momentFrame + goalFrames, length - wipeFrames / 2)
+      : 0;
+  const goalAt = (at: number): ClipGoal | undefined =>
+    at >= momentFrame && at < goalEnd
+      ? {
+          at: at - momentFrame,
+          length: goalEnd - momentFrame,
+          minute: `${input.minute}′`,
+          name: shooterLabel,
+          score: input.score ?? (input.attack.home ? [1, 0] : [0, 1])
+        }
+      : undefined;
 
   const frameAt = (at: number): ClipFrame => {
     const clamped = clamp(at, 0, length - 1);
@@ -3234,6 +3273,7 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     const [bx0, by0, bh0] = balls[low]!;
     const [bx1, by1, bh1] = balls[high]!;
     const named = players[shooter];
+    const goal = goalAt(clamped);
     return {
       ball: {
         height: lerp(bh0, bh1, u),
@@ -3257,7 +3297,9 @@ export const createClipScript = (input: ClipInput): ClipScript => {
             }
           }
         : {}),
-      ...(named && zoomed
+      ...(goal ? { goal } : {}),
+      // The announcement names the scorer while it shows.
+      ...(named && zoomed && !goal
         ? { label: { text: shooterLabel, x: named.x, y: named.y } }
         : {}),
       minimap: !zoomed,

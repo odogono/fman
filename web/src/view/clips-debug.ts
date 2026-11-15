@@ -673,9 +673,15 @@ Object.assign(globalThis, {
      * the full-time still, wiped between. Returns each stage's length.
      */
     sequence: (list: readonly Partial<typeof settings>[]) => {
+      // Each goal carries the score so far, home first.
+      const score = [0, 0];
       const scripts = list.map(changes => {
         setSettings(changes);
-        return script;
+        if (script.outcome !== 'goal') {
+          return script;
+        }
+        score[script.input.attack.home ? 0 : 1]! += 1;
+        return createClipScript({ ...script.input, score: [...score] });
       });
       const { attack, defence } = scripts[0]!.input;
       const home = attack.home ? attack : defence;

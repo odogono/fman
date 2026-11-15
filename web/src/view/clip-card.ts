@@ -16,7 +16,14 @@ const yellow = '#fac81e';
 export const overlayUnit = (deviceWidth: number) =>
   Math.max(1, Math.round(deviceWidth / overlayColumns));
 
-const glyph = (c: string) => fontGlyphs[c.toUpperCase()] ?? fontGlyphs[' ']!;
+/**
+ * The glyph for `c`, in capitals: an accented letter takes its plain one
+ * and an apostrophe the prime; anything else the font lacks is a space.
+ */
+const glyph = (c: string) => {
+  const plain = c.normalize('NFD').charAt(0).toUpperCase();
+  return fontGlyphs[plain === "'" ? '′' : plain] ?? fontGlyphs[' ']!;
+};
 
 /** The width of `text`, in the font's pixels: its letters a pixel apart. */
 export const textColumns = (text: string) =>

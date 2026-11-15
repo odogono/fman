@@ -1,5 +1,5 @@
 import { shadowArt, type ArtGrid } from './assets/clip-sprites';
-import { drawCard, overlayUnit } from './clip-card';
+import { drawCard, drawLabel, overlayUnit } from './clip-card';
 import { drawGoal } from './clip-goal';
 import {
   artPixelSize,
@@ -367,23 +367,18 @@ export const paintClip = (
       }
     }
   }
+  // The label, the card and the goal announcement, on the art-pixel grid
+  // in device pixels.
+  const unit = overlayUnit(Math.round(width * ratio));
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
   if (frame.label) {
     const { label } = frame;
     const [x, y] = onScreen(label.x, label.y);
     // Over the named player's head, and any status icon.
     const named = frame.players.find(p => p.x === label.x && p.y === label.y);
     const above = (named && tops.get(named)) ?? y! - scale * 2;
-    ctx.font = '600 14px system-ui, sans-serif';
-    const textWidth = ctx.measureText(label.text).width;
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-    ctx.fillRect(x! - textWidth / 2 - 5, above - 24, textWidth + 10, 20);
-    ctx.fillStyle = '#fff';
-    ctx.fillText(label.text, x!, above - 14);
+    drawLabel(ctx, label.text, x! * ratio, (above - 4) * ratio, unit);
   }
-  // The card and the goal announcement, on the art-pixel grid in device
-  // pixels.
-  const unit = overlayUnit(Math.round(width * ratio));
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
   if (frame.card) {
     drawCard(ctx, frame.card, sides.attack.kit, unit);
   }

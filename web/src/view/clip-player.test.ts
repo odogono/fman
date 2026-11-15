@@ -73,7 +73,7 @@ test('the 0-0 header shows both sides in shape under "Kick-off"', () => {
     progress: { drawer: false, full: false, shown: 0 },
     score: [0, 0]
   });
-  expect(state().shot.frame.caption).toBe('Kick-off');
+  expect(state().shot.frame.card?.text).toBe('Kick-off');
 });
 
 test('partway through a clip, its moment shows only once the clip reaches it', () => {
@@ -104,7 +104,7 @@ test('Skip shows every moment and the final score for the final hold', () => {
     progress: { drawer: false, full: true, shown: scripts.length },
     score: tickerOf(journal).ticker.score
   });
-  expect(state().shot.frame.caption).toBe('Full time');
+  expect(state().shot.frame.card?.text).toBe('Full time');
 });
 
 test('left to play, the clips run to the "Full time" hold', () => {
@@ -117,7 +117,7 @@ test('left to play, the clips run to the "Full time" hold', () => {
     phase: 'full-time',
     progress: { full: false, shown: scripts.length }
   });
-  expect(state().shot.frame.caption).toBe('Full time');
+  expect(state().shot.frame.card?.text).toBe('Full time');
 });
 
 test('a match resumed mid-clip picks the clip up at the same frame', () => {

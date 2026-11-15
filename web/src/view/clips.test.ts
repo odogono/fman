@@ -6,7 +6,7 @@ import {
   boardMetres,
   boardTop,
   cameraWide,
-  captionFrames,
+  cardFrames,
   clearanceOutcomes,
   clipFps,
   createClipScript,
@@ -20,6 +20,7 @@ import {
   saveOutcomes,
   seededOutcome,
   tiredPerSide,
+  type ClipFrame,
   type ClipInput,
   type ClipSide,
   type Line
@@ -47,6 +48,10 @@ const side = (kit: string, shape = lines): ClipSide => ({
   kit,
   players: shape.map((line, i) => ({ label: `${kit} ${i}`, line }))
 });
+/** The card's minute and restart, as they read. */
+const cardText = (frame: ClipFrame) =>
+  [frame.card?.minute, frame.card?.text].filter(Boolean).join(' ');
+
 const input = (overrides: Partial<ClipInput> = {}): ClipInput => ({
   attack: side('#d70000'),
   attackingUp: true,
@@ -209,11 +214,15 @@ test('the sides change ends at half-time', () => {
   expect(second.frame(second.momentFrame).ball.y).toBeGreaterThan(104);
 });
 
-test('the minute shows over the first half second; the label only zoomed in', () => {
+test('the match-time card slides in and out over the first 1.5 s; the label only zoomed in', () => {
   const script = createClipScript(input({ restart: 'open-play' }));
-  expect(script.frame(0).caption).toBe('34′');
-  expect(script.frame(captionFrames - 1).caption).toBe('34′');
-  expect(script.frame(captionFrames).caption).toBeUndefined();
+  // From open play, the minute alone.
+  expect(script.frame(0).card).toEqual({ minute: '34′', shown: 0 });
+  expect(script.frame(5).card!.shown).toBeGreaterThan(0);
+  expect(script.frame(5).card!.shown).toBeLessThan(1);
+  expect(script.frame(cardFrames / 2).card!.shown).toBe(1);
+  expect(script.frame(cardFrames - 5).card!.shown).toBeLessThan(1);
+  expect(script.frame(cardFrames).card).toBeUndefined();
   const wide = script.frame(script.phases.zoom - 1);
   expect(wide.camera.width).toBe(cameraWide);
   expect(wide.label).toBeUndefined();
@@ -311,7 +320,7 @@ test('build-ups start in open play, from a free kick or from a throw-in', () => 
 test('a throw-in is taken from beyond the touchline, with the ball held', () => {
   const script = createClipScript(input({ restart: 'throw-in' }));
   const start = script.frame(0);
-  expect(start.caption).toBe('34′ Throw-in');
+  expect(cardText(start)).toBe('34′ Throw-in');
   expect([0, 68]).toContain(start.ball.x);
   expect(start.ball.height).toBeGreaterThan(0);
   const thrower = start.players.find(p => p.pose === 'hold')!;
@@ -322,7 +331,7 @@ test('a throw-in is taken from beyond the touchline, with the ball held', () => 
 test('defenders stand back from a free kick until it is taken', () => {
   for (let seed = 0; seed < 30; seed++) {
     const script = createClipScript(input({ restart: 'free-kick', seed }));
-    expect(script.frame(0).caption).toBe('34′ Free kick');
+    expect(cardText(script.frame(0))).toBe('34′ Free kick');
     const taken = script.passes[0]!;
     expect(taken.kind).toBe('free-kick');
     const set = script.frame(taken.start - 1);
@@ -338,7 +347,7 @@ test('defenders stand back from a free kick until it is taken', () => {
 test('a goal kick is taken by the keeper from the six-yard box, and goes long', () => {
   for (let seed = 0; seed < 20; seed++) {
     const script = createClipScript(input({ restart: 'goal-kick', seed }));
-    expect(script.frame(0).caption).toBe('34′ Goal kick');
+    expect(cardText(script.frame(0))).toBe('34′ Goal kick');
     const kick = script.passes[0]!;
     expect(kick).toMatchObject({ from: '#d70000 0', kind: 'goal-kick' });
     const start = script.frame(0).ball;
@@ -360,12 +369,16 @@ test('a goal kick is taken by the keeper from the six-yard box, and goes long', 
 test('a corner is crossed from the flag to the shooter in the box', () => {
   for (let seed = 0; seed < 20; seed++) {
     const script = createClipScript(input({ restart: 'corner', seed }));
-    expect(script.frame(0).caption).toBe('34′ Corner');
+    expect(cardText(script.frame(0))).toBe('34′ Corner');
     const start = script.frame(0).ball;
     expect(depth(start.y)).toBeGreaterThan(104);
     expect(start.x < 1 || start.x > 67).toBe(true);
     expect(script.passes).toHaveLength(1);
     expect(script.passes[0]).toMatchObject({ kind: 'corner', to: '#d70000 9' });
+    // The card holds until the corner is taken, after the zoom for a header.
+    const taken = script.passes[0]!.start;
+    expect(script.frame(taken - 1).card).toBeDefined();
+    expect(script.frame(taken).card).toBeUndefined();
     const met = script.frame(script.passes[0]!.end).ball;
     expect(depth(met.y)).toBeGreaterThan(pitchLength - 16.5);
     expect(Math.abs(met.x - 34)).toBeLessThan(20.16);

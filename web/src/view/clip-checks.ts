@@ -1,4 +1,5 @@
 import {
+  boardMetres,
   clipFps,
   outcomeKind,
   pitchLength,
@@ -11,7 +12,8 @@ import {
 
 // Checks a clip for play that looks wrong: passes that face away, crawl or
 // run through a defender, players standing inside each other, a scattered
-// back line, a defender scoring from open play. The clip debugger shows
+// back line, a defender scoring from open play, the ball or a player going
+// through the advertising boards. The clip debugger shows
 // what they find over the pitch, and the tests hold the engine to them.
 
 export type ClipIssueKind =
@@ -29,6 +31,7 @@ export type ClipIssueKind =
   | 'sharp-turn'
   | 'slow-build-up'
   | 'slow-pass'
+  | 'through-boards'
   | 'unlikely-scorer';
 
 export const clipIssueKinds: readonly ClipIssueKind[] = [
@@ -46,6 +49,7 @@ export const clipIssueKinds: readonly ClipIssueKind[] = [
   'sharp-turn',
   'slow-build-up',
   'slow-pass',
+  'through-boards',
   'unlikely-scorer'
 ];
 
@@ -433,6 +437,33 @@ export const checkClip = (script: ClipScript): ClipIssue[] => {
         });
         break;
       }
+    }
+  }
+
+  // Nothing goes through the advertising boards into the crowd.
+  const pastBoards = (at: At) =>
+    at.x < -boardMetres ||
+    at.x > pitchWidth + boardMetres ||
+    at.y < -boardMetres ||
+    at.y > pitchLength + boardMetres;
+  const last = frames.length - 1;
+  for (const run of runs(0, last, at => pastBoards(frames[at]!.ball), 1)) {
+    issues.push({
+      ...run,
+      kind: 'through-boards',
+      message: 'the ball goes through the boards',
+      players: []
+    });
+  }
+  for (let i = 0; i < count; i++) {
+    const [found] = runs(0, last, at => pastBoards(frames[at]!.players[i]!), 1);
+    if (found) {
+      issues.push({
+        ...found,
+        kind: 'through-boards',
+        message: `${i < attackers ? `attack #${i}` : `defence #${i - attackers}`} goes through the boards`,
+        players: [i]
+      });
     }
   }
 

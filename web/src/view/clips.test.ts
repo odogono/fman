@@ -3,6 +3,7 @@ import { expect, setDefaultTimeout, test } from 'bun:test';
 import { longestClip } from '../sim/ticker';
 import { checkClip, type ClipIssueKind } from './clip-checks';
 import {
+  boardMetres,
   cameraWide,
   captionFrames,
   clearanceOutcomes,
@@ -146,6 +147,49 @@ test('a goal ends in the net; a miss beside or over it', () => {
   expect(Math.abs(wide.frame(wide.momentFrame).ball.x - 34)).toBeGreaterThan(
     3.66
   );
+});
+
+/** Short of the advertising boards. */
+const inside = (at: { x: number; y: number }) =>
+  at.x > -boardMetres &&
+  at.x < pitchWidth + boardMetres &&
+  at.y > -boardMetres &&
+  at.y < pitchLength + boardMetres;
+
+/** How far beyond the pitch's lines, in metres. */
+const beyond = (at: { x: number; y: number }) =>
+  Math.max(-at.x, at.x - pitchWidth, -at.y, at.y - pitchLength);
+
+test('a ball wide or into touch comes back off the boards, and no one goes through them', () => {
+  let bounced = 0;
+  for (let seed = 0; seed < 40; seed++) {
+    for (const outcome of ['wide-left', 'over', 'block'] as const) {
+      const script = createClipScript(
+        input({
+          attackingUp: seed % 2 === 0,
+          kind: outcome === 'block' ? 'clearance' : 'near-miss',
+          outcome,
+          seed
+        })
+      );
+      const frames = Array.from({ length: script.length }, (_, at) =>
+        script.frame(at)
+      );
+      for (const frame of frames) {
+        expect(inside(frame.ball)).toBe(true);
+        expect(frame.players.every(inside)).toBe(true);
+      }
+      // Beyond a line, it runs out towards the boards, then back off them.
+      const out = frames.map(f => beyond(f.ball));
+      const furthest = Math.max(...out);
+      if (furthest > boardMetres - 1 && out.at(-1)! < furthest - 0.3) {
+        bounced++;
+      }
+    }
+  }
+  // Every miss wide or over reaches the boards; a clearance does when it
+  // goes into touch.
+  expect(bounced).toBeGreaterThan(80);
 });
 
 test('the sides change ends at half-time', () => {
@@ -1234,14 +1278,22 @@ test('a clearance lands, bounces and runs on before it stops', () => {
         (h[k + 1] ?? 0) > height
     );
     expect(bounce).toBe(true);
-    // Along the grass it runs on a few metres and stops, if the clip lasts
-    // long enough to see it: a long one can still be rolling as it ends.
+    // Along the grass it runs on a few metres, off the boards if it meets
+    // them, and stops, if the clip lasts long enough to see it: a long one
+    // can still be rolling as it ends.
     const settled = balls.findLastIndex(b => b.height > 0) + 1;
     if (balls.length - settled > 30) {
-      const runOn = Math.hypot(
-        balls[settled + 30]!.x - balls[settled]!.x,
-        balls[settled + 30]!.y - balls[settled]!.y
-      );
+      const runOn = balls
+        .slice(settled + 1, settled + 31)
+        .reduce(
+          (sum, b, k) =>
+            sum +
+            Math.hypot(
+              b.x - balls[settled + k]!.x,
+              b.y - balls[settled + k]!.y
+            ),
+          0
+        );
       expect(runOn).toBeGreaterThan(2);
       const stopped = balls[settled + 30]!;
       const after = balls[settled + 29]!;

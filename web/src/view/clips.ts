@@ -204,6 +204,29 @@ export const headHeight = 0.8;
 const jumpFrames = 16;
 /** A clearance runs on this far, in metres, after it bounces. */
 const clearRunOn = 4;
+/** The advertising boards stand this far beyond the lines (#157). */
+export const boardMetres = 3;
+/**
+ * How far beyond the lines the ball's middle can go before it meets the
+ * boards. A board along a touchline is drawn edge on, about 0.9 m across,
+ * and the ball is about 0.6 m across.
+ */
+const boardStops = { d: boardMetres - 0.3, x: boardMetres - 0.8 } as const;
+/** How far beyond the lines a player can go, about 1 m across, likewise. */
+const playerStops = { d: boardMetres - 0.4, x: boardMetres - 1 } as const;
+/** A ball meeting the boards comes back off them at this share of its pace. */
+const boardBounce = 0.3;
+
+/**
+ * Where a ball running on past `low` or `high` ends up, having come back off
+ * the boards there.
+ */
+const offBoards = (at: number, low: number, high: number) =>
+  at < low
+    ? low + (low - at) * boardBounce
+    : at > high
+      ? high - (at - high) * boardBounce
+      : at;
 /**
  * A first touch takes the pace off the ball this fast, in metres a frame
  * each frame, and the receiver closes on it at this share of their pace.
@@ -952,6 +975,11 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     poseFrameLog.push([]);
     travelLog.push([...travelled]);
     const at = xs.length - 1;
+    // Nothing goes through the advertising boards: a ball running on past
+    // them comes back off them. Every frame is placed afresh, so this moves
+    // the ball itself, and whatever follows starts where it came to rest.
+    ball.d = offBoards(ball.d, -boardStops.d, pitchLength + boardStops.d);
+    ball.x = offBoards(ball.x, -boardStops.x, pitchWidth + boardStops.x);
     const [bx, by] = toScreen(ball);
     movers.forEach((mover, i) => {
       const [x, y] = toScreen(mover);
@@ -1176,6 +1204,10 @@ export const createClipScript = (input: ClipInput): ClipScript => {
           standOff(goal, lane.from, lane.to, laneWidth);
         }
       }
+      // No one walks through the boards, even to get goal side of a ball
+      // that has gone behind.
+      goal.d = clamp(goal.d, -playerStops.d, pitchLength + playerStops.d);
+      goal.x = clamp(goal.x, -playerStops.x, pitchWidth + playerStops.x);
       const gap = distance(mover, goal);
       // A defender out of position, such as one the ball has gone past,
       // sprints to get back.
@@ -2702,7 +2734,8 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       }
     : {
         d: clamp(ball.d - rng.between(5, 20), 5, 100),
-        x: ball.x < 34 ? -3 : pitchWidth + 3
+        // Landing just out of play, it runs on into the boards.
+        x: ball.x < 34 ? -0.5 : pitchWidth + 0.5
       };
   const clearFrames = Math.max(
     20,

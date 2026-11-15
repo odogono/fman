@@ -98,6 +98,39 @@ const writeShots = (frames: string, shots: readonly string[], n: number) =>
   }, n);
 
 /**
+ * Paints every `step`th frame of `length` with `paint`, an expression in
+ * the page that paints `frame`, and writes each to `frames` as a JPEG,
+ * numbered from `n`. Returns the next number.
+ */
+const capture = async (
+  page: Page,
+  frames: string,
+  n: number,
+  length: number,
+  step: number,
+  paint: string
+) => {
+  const batch = 12;
+  let next = n;
+  // A batch of frames per round trip: each comes back as a JPEG data URL.
+  for (let at = 0; at < length; at += step * batch) {
+    const shots = await page.evaluate<string[]>(`(() => {
+      const canvas = document.querySelector('.clip-pitch');
+      const shots = [];
+      for (let k = 0; k < ${batch}; k++) {
+        const frame = ${at} + k * ${step};
+        if (frame >= ${length}) break;
+        ${paint};
+        shots.push(canvas.toDataURL('image/jpeg', 0.9));
+      }
+      return shots;
+    })()`);
+    next = writeShots(frames, shots, next);
+  }
+  return next;
+};
+
+/**
  * Records the scenarios as one video, as a match's highlights play them:
  * the kick-off still, each clip in minute order, then the full-time still,
  * wiped between.
@@ -111,22 +144,15 @@ const recordSequence = async (page: Page, options: Options, out: string) => {
   rmSync(frames, { force: true, recursive: true });
   mkdirSync(frames, { recursive: true });
   let n = 0;
-  const batch = 12;
   for (const [index, length] of lengths.entries()) {
-    for (let at = 0; at < length; at += options.step * batch) {
-      const shots = await page.evaluate<string[]>(`(() => {
-        const canvas = document.querySelector('.clip-pitch');
-        const shots = [];
-        for (let k = 0; k < ${batch}; k++) {
-          const frame = ${at} + k * ${options.step};
-          if (frame >= ${length}) break;
-          clipDebug.paintSequence(${index}, frame);
-          shots.push(canvas.toDataURL('image/jpeg', 0.9));
-        }
-        return shots;
-      })()`);
-      n = writeShots(frames, shots, n);
-    }
+    n = await capture(
+      page,
+      frames,
+      n,
+      length,
+      options.step,
+      `clipDebug.paintSequence(${index}, frame)`
+    );
   }
   const video = join(out, 'sequence.mp4');
   encode(frames, video, options);
@@ -159,7 +185,6 @@ const record = async (options: Options) => {
       await recordSequence(page, options, out);
       return;
     }
-    const batch = 12;
     for (const scenario of options.scenarios) {
       const info = await page.evaluate<ClipInfo>(`(() => {
         clipDebug.set(${JSON.stringify(withDefaults(scenario.settings))});
@@ -169,22 +194,14 @@ const record = async (options: Options) => {
       const frames = join(out, `${scenario.name}-frames`);
       rmSync(frames, { force: true, recursive: true });
       mkdirSync(frames, { recursive: true });
-      let n = 0;
-      // A batch of frames per round trip: each comes back as a JPEG data URL.
-      for (let at = 0; at < info.length; at += options.step * batch) {
-        const shots = await page.evaluate<string[]>(`(() => {
-          const canvas = document.querySelector('.clip-pitch');
-          const shots = [];
-          for (let k = 0; k < ${batch}; k++) {
-            const frame = ${at} + k * ${options.step};
-            if (frame >= clipDebug.script.length) break;
-            clipDebug.paint(frame);
-            shots.push(canvas.toDataURL('image/jpeg', 0.9));
-          }
-          return shots;
-        })()`);
-        n = writeShots(frames, shots, n);
-      }
+      await capture(
+        page,
+        frames,
+        0,
+        info.length,
+        options.step,
+        'clipDebug.paint(frame)'
+      );
       const video = join(out, `${scenario.name}.mp4`);
       encode(frames, video, options);
       if (!options.frames) {

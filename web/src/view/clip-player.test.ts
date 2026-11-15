@@ -203,3 +203,27 @@ test('Skip wipes from the clip on show into the "Full time" hold', () => {
   expect(shot.frame.card?.text).toBe('Full time');
   expect(shot.wipe?.from?.frame).toEqual(left.frame);
 });
+
+test('a save holding other clip lengths wipes on the lengths it holds', () => {
+  const journal = kickedOff();
+  const player = createClipPlayer();
+  const lengths = player.kickOff(journal.session.view)!;
+  // As if the clips were made longer since the save: the first runs on.
+  const held = [lengths[0]! + 100, ...lengths.slice(1)];
+  journal.holdClips(held);
+  const state = () => player.state(journal.session.view)!;
+  journal.advance(tickerLeadIn + tickerPause + lengths[0]! - 10);
+  expect(state().shot.wipe).toBeUndefined();
+  journal.advance(100);
+  const out = state().shot;
+  expect(out.wipe?.to).toBeDefined();
+  expect(out.wipe!.progress).toBeCloseTo(10 / 40);
+  // Past the clip's own end, its last frame holds.
+  expect(out.frame).toEqual(
+    clipScriptsFor(
+      tickerOf(journal).game,
+      tickerOf(journal).fixture,
+      tickerOf(journal).ticker.moments
+    )[0]!.frame(lengths[0]! - 1)
+  );
+});

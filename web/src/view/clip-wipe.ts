@@ -41,12 +41,22 @@ export type ClipStage = Readonly<{
   picture: (at: number) => ClipPicture;
 }>;
 
-/** A clip as a stage of the highlights. */
-export const clipStage = (script: ClipScript): ClipStage => {
+/**
+ * A clip as a stage of the highlights, `length` frames long: the length the
+ * sim holds for it, which a save made before the clips changed keeps
+ * (ADR 0013). Past the clip's own end, its last frame holds.
+ */
+export const clipStage = (
+  script: ClipScript,
+  length = script.length
+): ClipStage => {
   const sides = { attack: script.input.attack, defence: script.input.defence };
   return {
-    length: script.length,
-    picture: at => ({ frame: script.frame(at), sides })
+    length,
+    picture: at => ({
+      frame: script.frame(Math.min(at, script.length - 1)),
+      sides
+    })
   };
 };
 

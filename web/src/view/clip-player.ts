@@ -65,6 +65,7 @@ const tickerView = (view: View): TickerView | undefined =>
 export const createClipPlayer = () => {
   let plan:
     | {
+        lengths: Ticker['lengths'];
         moments: readonly Moment[];
         scripts: ReturnType<typeof clipScriptsFor>;
         stages: ClipStage[];
@@ -85,18 +86,24 @@ export const createClipPlayer = () => {
    */
   let entry: { from?: ClipPicture; index: number; ticker: Ticker } | undefined;
   const planFor = ({ fixture, game, ticker }: TickerView) => {
-    if (plan?.moments !== ticker.moments) {
-      const scripts = clipScriptsFor(game, fixture, ticker.moments);
+    // The clips are made once per match; their stages again once the sim
+    // holds their lengths.
+    const same = plan?.moments === ticker.moments;
+    if (!plan || !same || plan.lengths !== ticker.lengths) {
+      const scripts =
+        (same && plan?.scripts) ||
+        clipScriptsFor(game, fixture, ticker.moments);
       const still = (caption: string): ClipStage => {
         const picture = stillFrameFor(game, fixture, caption);
         return { length: tickerPause, picture: () => picture };
       };
       plan = {
+        lengths: ticker.lengths,
         moments: ticker.moments,
         scripts,
         stages: [
           still('Kick-off'),
-          ...scripts.map(clipStage),
+          ...scripts.map((script, i) => clipStage(script, ticker.lengths?.[i])),
           still('Full time')
         ]
       };

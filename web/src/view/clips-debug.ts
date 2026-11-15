@@ -682,7 +682,7 @@ Object.assign(globalThis, {
       const away = home === attack ? defence : attack;
       sequence = [
         stillStage(home, away, 'Kick-off', tickerPause),
-        ...scripts.map(clipStage),
+        ...scripts.map(script => clipStage(script)),
         stillStage(home, away, 'Full time', tickerPause)
       ];
       return sequence.map(stage => stage.length);

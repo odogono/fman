@@ -375,6 +375,10 @@ test('a corner is crossed from the flag to the shooter in the box', () => {
     expect(start.x < 1 || start.x > 67).toBe(true);
     expect(script.passes).toHaveLength(1);
     expect(script.passes[0]).toMatchObject({ kind: 'corner', to: '#d70000 9' });
+    // The card holds until the corner is taken, after the zoom for a header.
+    const taken = script.passes[0]!.start;
+    expect(script.frame(taken - 1).card).toBeDefined();
+    expect(script.frame(taken).card).toBeUndefined();
     const met = script.frame(script.passes[0]!.end).ball;
     expect(depth(met.y)).toBeGreaterThan(pitchLength - 16.5);
     expect(Math.abs(met.x - 34)).toBeLessThan(20.16);

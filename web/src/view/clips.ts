@@ -2098,6 +2098,10 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     }
   }
   cameraWidth = cameraZoomed;
+  // A corner crossed in the moment keeps its card until it is taken.
+  if (waiting) {
+    cardEnd = Math.max(cardEnd, frame);
+  }
 
   // The moment: the shot, and how it ends.
   const momentStart = frame;

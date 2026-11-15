@@ -257,3 +257,22 @@ test("picked players carry their own energy, an opponent's the side's team Energ
     new Set([7])
   );
 });
+
+test('each clip carries the score after its moment, home first, for the goal announcement', () => {
+  const players = [player(1, 'GK'), player(2, 'DF'), player(3, 'FW')];
+  const moments: Moment[] = [
+    { kind: 'goal', minute: 12, player: 3, side: 'club' },
+    { kind: 'goal', minute: 40, side: 'opponent', squadPlayer: 9 },
+    { kind: 'save', minute: 55, player: 3, side: 'club' },
+    { kind: 'goal', minute: 70, player: 3, side: 'club' }
+  ];
+  const scripts = clipScriptsFor(gameWith(players), fixture, moments);
+  const homeFirst = (club: number, opponent: number) =>
+    fixture.home ? [club, opponent] : [opponent, club];
+  expect(scripts.map(s => s.input.score)).toEqual([
+    homeFirst(1, 0),
+    homeFirst(1, 1),
+    homeFirst(1, 1),
+    homeFirst(2, 1)
+  ]);
+});

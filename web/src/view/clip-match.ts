@@ -336,9 +336,17 @@ export const clipScriptsFor = (
   fixture: MatchFixture,
   moments: readonly Moment[]
 ): ClipScript[] =>
-  moments.map((moment, i) =>
-    createClipScript(clipInputFor(game, fixture, moment, i))
-  );
+  moments.map((moment, i) => {
+    const goals = (side: Moment['side']) =>
+      moments.slice(0, i + 1).filter(m => m.kind === 'goal' && m.side === side)
+        .length;
+    const club = goals('club');
+    const opponent = goals('opponent');
+    return createClipScript({
+      ...clipInputFor(game, fixture, moment, i),
+      score: fixture.home ? [club, opponent] : [opponent, club]
+    });
+  });
 
 /** The still pitch under "Kick-off" or "Full time": both sides in shape. */
 export const stillFrameFor = (

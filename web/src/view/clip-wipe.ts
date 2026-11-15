@@ -2,6 +2,7 @@ import { paintClip, type ClipSides } from './clip-canvas';
 import { overlayUnit } from './clip-card';
 import {
   kickOffFrame,
+  wipeFrames,
   type ClipFrame,
   type ClipScript,
   type ClipSide
@@ -28,8 +29,6 @@ export type ClipWipe = Readonly<
 /** What the clip canvas paints: a picture, and a wipe if one is under way. */
 export type ClipShot = ClipPicture & Readonly<{ wipe?: ClipWipe }>;
 
-/** How long a wipe takes, in frames at 50 a second: 0.8 s. */
-export const wipeFrames = 40;
 const half = wipeFrames / 2;
 
 /**

@@ -111,3 +111,28 @@ export const drawCard = (
     drawText(ctx, card.text, x + left * unit, top, textSize * unit, white);
   }
 };
+
+/** The name label's size in art pixels: the name in the small letters. */
+export const labelSize = (text: string) => ({
+  height: fontHeight + 4,
+  width: textColumns(text) + 4
+});
+
+/**
+ * The named player's label, in device pixels: the name in white on a dark
+ * box, centred on `x` with its bottom at `bottom`, on the art-pixel grid.
+ */
+export const drawLabel = (
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  bottom: number,
+  unit: number
+) => {
+  const { height, width } = labelSize(text);
+  const left = Math.round(x / unit - width / 2) * unit;
+  const top = Math.round(bottom / unit - height) * unit;
+  ctx.fillStyle = 'rgba(20, 20, 20, 0.75)';
+  ctx.fillRect(left, top, width * unit, height * unit);
+  drawText(ctx, text, left + 2 * unit, top + 2 * unit, unit, white);
+};

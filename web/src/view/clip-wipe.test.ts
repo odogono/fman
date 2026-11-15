@@ -1,6 +1,13 @@
 import { expect, test } from 'bun:test';
 
-import { shotAt, wipeRow, type ClipPicture, type ClipStage } from './clip-wipe';
+import { inkColours } from './clip-match';
+import {
+  middleStripe,
+  shotAt,
+  wipeRow,
+  type ClipPicture,
+  type ClipStage
+} from './clip-wipe';
 import { kickOffFrame, wipeFrames, type ClipSide } from './clips';
 
 const home: ClipSide = { home: true, keeper: '#000', kit: '#c00', players: [] };
@@ -59,4 +66,13 @@ test('the stripes sweep the whole picture, left to right, the lower rows behind'
     expect(s.to).toBe(top.stripes[k]!.from);
   });
   expect(top.swept).toBe(top.stripes.at(-1)!.from);
+});
+
+test('the middle stripe is white, unless a kit looks like it', () => {
+  const [black, blue, red, , , , yellowKit, white] = inkColours;
+  expect(middleStripe(red, blue)).toBe('#f4f4f4');
+  expect(middleStripe(black, red)).toBe('#f4f4f4');
+  // A white kit beside it would read as one wide stripe.
+  expect(middleStripe(red, white)).toBe('#fac81e');
+  expect(middleStripe(white, yellowKit)).toBe('#141414');
 });

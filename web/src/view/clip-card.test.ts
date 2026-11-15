@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test';
 
 import { fontGlyphs, fontHeight } from './assets/clip-font';
-import { cardSize, overlayUnit, textColumns } from './clip-card';
+import { cardSize, labelSize, overlayUnit, textColumns } from './clip-card';
 
 test('every glyph is seven rows of one width, ink or clear', () => {
   for (const [c, grid] of Object.entries(fontGlyphs)) {
@@ -39,4 +39,11 @@ test('the art pixel scales with the canvas, never below a device pixel', () => {
   expect(overlayUnit(840)).toBe(4);
   expect(overlayUnit(1680)).toBe(8);
   expect(overlayUnit(100)).toBe(1);
+});
+
+test("a player's label fits their name in the small letters, with a margin", () => {
+  expect(labelSize('S.Frost')).toEqual({
+    height: 7 + 4,
+    width: textColumns('S.FROST') + 4
+  });
 });

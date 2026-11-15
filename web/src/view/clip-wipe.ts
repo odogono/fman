@@ -1,5 +1,6 @@
 import { paintClip, type ClipSides } from './clip-canvas';
 import { overlayUnit } from './clip-card';
+import { colourDistance } from './clip-match';
 import {
   kickOffFrame,
   wipeFrames,
@@ -137,12 +138,27 @@ export const wipeRow = (
   return { stripes, swept: edge };
 };
 
-/** The stripes from the leading edge: ink, home, white, away, ink. */
+/**
+ * The stripes from the leading edge: ink, home, the middle stripe, away,
+ * ink.
+ */
 const stripeWidths = [2, 10, 10, 10, 2] as const;
 /** How far each row lags the one above, in columns. */
 const lean = 0.6;
 const ink = '#141414';
 const white = '#f4f4f4';
+const yellow = '#fac81e';
+/** Stripes closer in colour than this would read as one. */
+const stripesApart = 200;
+
+/**
+ * The stripe between the kits: white, or where a kit looks like it, yellow,
+ * or else ink, so each kit's stripe stands apart.
+ */
+export const middleStripe = (home: string, away: string) =>
+  [white, yellow].find(c =>
+    [home, away].every(kit => colourDistance(c, kit) >= stripesApart)
+  ) ?? ink;
 
 /**
  * Paints `shot` into a box `width` by `height` CSS pixels: its picture, and
@@ -183,7 +199,13 @@ export const paintShot = (
   const { attack, defence } = next.sides;
   const home = defence.home ? defence : attack;
   const away = home === attack ? defence : attack;
-  const colours = [ink, home.kit, white, away.kit, ink];
+  const colours = [
+    ink,
+    home.kit,
+    middleStripe(home.kit, away.kit),
+    away.kit,
+    ink
+  ];
   ctx.save();
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   lines.forEach(({ stripes }, row) => {

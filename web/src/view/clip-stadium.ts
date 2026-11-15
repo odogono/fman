@@ -11,7 +11,13 @@ import {
   playerPalette,
   type ArtPalette
 } from './clip-sprites';
-import { hashSeed, pitchLength, pitchWidth, type ClipSide } from './clips';
+import {
+  boardMetres,
+  hashSeed,
+  pitchLength,
+  pitchWidth,
+  type ClipSide
+} from './clips';
 
 // The ground around the pitch (#157): the goals, the advertising boards
 // and the crowd, laid out in metres on the pitch. Each piece stands on a
@@ -29,8 +35,7 @@ export type GroundPiece = Readonly<{
   palette: ArtPalette;
 }>;
 
-/** The boards stand this far beyond the lines, and the stands begin past them. */
-const boardMetres = 3;
+/** The stands begin this far beyond the lines, past the boards. */
 const standMetres = 4.5;
 /** Each row of the stand is this much deeper than the one in front. */
 const rowMetres = 1.6;

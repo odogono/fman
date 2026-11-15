@@ -139,6 +139,10 @@ Output:
   --out       the folder for the videos (default build/clips)
   --step      record every nth frame (default 2, so the video plays at 25 fps)
   --frames    keep each clip's JPEG frames beside its video
+  --sequence  record the clips as one video, played as a match's
+              highlights: the kick-off card, each clip in minute order and
+              the full-time card, wiped between. Clips without --minute
+              are spread through the match
   --url       record from a running clip debugger, such as
               http://localhost:3147/clips, instead of starting one
 
@@ -148,6 +152,7 @@ export type Options = {
   frames: boolean;
   out: string;
   scenarios: Scenario[];
+  sequence: boolean;
   step: number;
   url?: string;
 };
@@ -197,6 +202,7 @@ export const parseOptions = (args: readonly string[]): Options => {
       rebound: { type: 'string' },
       restart: { type: 'string' },
       seeds: { type: 'string' },
+      sequence: { type: 'boolean' },
       side: { type: 'string' },
       step: { type: 'string' },
       url: { type: 'string' }
@@ -224,6 +230,7 @@ export const parseOptions = (args: readonly string[]): Options => {
     frames: values.frames ?? false,
     out: values.out ?? 'build/clips',
     scenarios: [],
+    sequence: values.sequence ?? false,
     step: values.step ? integer('step', values.step, 1, 50) : 2,
     ...(values.url ? { url: values.url } : {})
   };
@@ -289,6 +296,24 @@ export const parseOptions = (args: readonly string[]): Options => {
   }));
   return options;
 };
+
+/**
+ * The scenarios as a match's highlights play them, in minute order: those
+ * that name no minute are spread evenly through the match, in the order
+ * given.
+ */
+export const inMatchOrder = (scenarios: readonly Scenario[]): Scenario[] =>
+  scenarios
+    .map((scenario, k) => ({
+      ...scenario,
+      settings: {
+        ...scenario.settings,
+        minute:
+          scenario.settings.minute ??
+          Math.round(((k + 1) * 90) / (scenarios.length + 1))
+      }
+    }))
+    .sort((a, b) => a.settings.minute - b.settings.minute);
 
 /**
  * Every setting a scenario leaves out goes back to the seed, so one

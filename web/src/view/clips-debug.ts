@@ -2,9 +2,17 @@ import { openSave } from '../sim/journal';
 import type { MatchFixture } from '../sim/league';
 import type { Game } from '../sim/management';
 import type { Moment } from '../sim/moments';
+import { tickerPause } from '../sim/ticker';
 import { fitClipCanvas, paintClip } from './clip-canvas';
 import { checkClip, clipIssueKinds, type ClipIssue } from './clip-checks';
 import { clipInputFor, inkColours, keeperColoursFor } from './clip-match';
+import {
+  clipStage,
+  paintShot,
+  shotAt,
+  stillStage,
+  type ClipStage
+} from './clip-wipe';
 import {
   clearanceOutcomes,
   clipFps,
@@ -647,11 +655,39 @@ rebuild();
 // and for `bun run clips:record`; `paint` draws a frame at once, even in a
 // background tab that gets no animation frames, and `set` changes the
 // settings, as the controls do, and makes the clip again.
+let sequence: ClipStage[] = [];
+const setSettings = (changes: Partial<typeof settings>) => {
+  loaded = undefined;
+  Object.assign(settings, changes);
+  rebuild();
+  playing = false;
+};
 Object.assign(globalThis, {
   clipDebug: {
     get at() {
       return at;
     },
+    /**
+     * Makes the clips for each of `list`'s settings, in order, and plays
+     * them as a match's highlights would: the kick-off still, the clips and
+     * the full-time still, wiped between. Returns each stage's length.
+     */
+    sequence: (list: readonly Partial<typeof settings>[]) => {
+      const scripts = list.map(changes => {
+        setSettings(changes);
+        return script;
+      });
+      const { attack, defence } = scripts[0]!.input;
+      const home = attack.home ? attack : defence;
+      const away = home === attack ? defence : attack;
+      sequence = [
+        stillStage(home, away, 'Kick-off', tickerPause),
+        ...scripts.map(clipStage),
+        stillStage(home, away, 'Full time', tickerPause)
+      ];
+      return sequence.map(stage => stage.length);
+    },
+    /** Paints frame `frame` of the sequence's stage `index`. */
     paint: (frame: number) =>
       paintClip(
         context,
@@ -659,15 +695,12 @@ Object.assign(globalThis, {
         { attack: script.input.attack, defence: script.input.defence },
         fitClipCanvas(canvas)
       ),
+    paintSequence: (index: number, frame: number) =>
+      paintShot(context, shotAt(sequence, index, frame), fitClipCanvas(canvas)),
     get script() {
       return script;
     },
-    set: (changes: Partial<typeof settings>) => {
-      loaded = undefined;
-      Object.assign(settings, changes);
-      rebuild();
-      playing = false;
-    }
+    set: setSettings
   }
 });
 

@@ -454,6 +454,48 @@ test('a tackle slides in on the ball, and the shooter goes down and gets up', ()
   }
 });
 
+test('now and then a defender slides in on the carrier, who skips past', () => {
+  let challenged = 0;
+  const clips = 200;
+  for (let seed = 0; seed < clips; seed++) {
+    const script = createClipScript(input({ seed }));
+    const { zoom } = script.phases;
+    const start = Array.from({ length: zoom }, (_, at) => at).find(at =>
+      script.frame(at).players.some(p => p.pose === 'tackle')
+    );
+    if (start === undefined) {
+      continue;
+    }
+    challenged++;
+    const slider = script
+      .frame(start)
+      .players.findIndex(p => p.pose === 'tackle');
+    expect(script.frame(start).players[slider]!.side).toBe('defence');
+    // The carrier keeps the ball: still at their feet once the slide is by.
+    const carrier = script.passes.findLast(p => p.end <= start)?.receiver;
+    const after = script.frame(start + 24);
+    if (carrier !== undefined && start + 24 < zoom) {
+      const runner = after.players[carrier]!;
+      expect(
+        Math.hypot(runner.x - after.ball.x, runner.y - after.ball.y)
+      ).toBeLessThan(2);
+    }
+    // The slider sits up, then gets up, all before the zoom.
+    const poses = Array.from(
+      { length: zoom - start },
+      (_, k) => script.frame(start + k).players[slider]!
+    );
+    expect(poses.some(p => p.pose === 'tackle' && p.poseFrame === 1)).toBe(
+      true
+    );
+    expect(poses.some(p => p.pose === 'getup')).toBe(true);
+    expect(['run', 'stand']).toContain(poses.at(-1)!.pose);
+  }
+  // About a quarter of clips.
+  expect(challenged / clips).toBeGreaterThan(0.15);
+  expect(challenged / clips).toBeLessThan(0.35);
+});
+
 test('some blocks are made sliding in', () => {
   let sliding = 0;
   for (let seed = 0; seed < 60; seed++) {

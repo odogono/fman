@@ -80,9 +80,14 @@ export const defaultScenarios: readonly Scenario[] = [
       seedBase: 18
     }
   },
+  // A defender slides in on the carrier early in the build-up.
+  {
+    name: 'challenge',
+    settings: { kind: 'goal', restart: 'open-play', seedBase: 7 }
+  },
   {
     name: 'block',
-    settings: { kind: 'clearance', outcome: 'block', seedBase: 4 }
+    settings: { kind: 'clearance', outcome: 'block', seedBase: 11 }
   },
   {
     name: 'tackle',

@@ -544,6 +544,17 @@ const slideFrames = 20;
 const stumbleFrames = 10;
 const stumblePace = 11;
 const lieFrames = 45;
+/** Of the clips, this share see a defender slide in on the ball in the build-up. */
+const challengeShare = 0.8;
+/**
+ * A challenge comes from a defender this near the ball, in metres, and in
+ * front of it. Their slide takes this many frames, and the carrier skips
+ * aside from it over these frames, at up to this pace in metres a second.
+ */
+const challengeRange = [2, 5] as const;
+const challengeSlide = 24;
+const challengeSkip = [2, 22] as const;
+const skipPace = 2.5;
 /** A tackler sits up this many frames before getting up; a blocker, fewer. */
 const sitFrames = 20;
 const blockSitFrames = 10;
@@ -899,7 +910,35 @@ export const createClipScript = (input: ClipInput): ClipScript => {
   /** Where each player was at the last frame, and their step since. */
   const seen: Point[] = [];
   const steps: Point[] = [];
+  /**
+   * A defender's challenge in the build-up: who, the way and the pace they
+   * slide, the frame it starts, and the side the carrier skips to.
+   */
+  let challenge:
+    | { at: number; pace: number; side: number; way: Point; who: number }
+    | undefined;
+  /** Whether the challenger is down, sliding or sitting, at `at`. */
+  const challengerDown = (at: number) =>
+    challenge !== undefined && at - challenge.at < challengeSlide + sitFrames;
   const record = () => {
+    // The challenger slides, slowing, then sits up until they get up.
+    if (challenge) {
+      const t = frame - challenge.at;
+      const slider = movers[challenge.who]!;
+      if (t < challengeSlide) {
+        const step = challenge.pace * (1 - t / challengeSlide);
+        slider.d += challenge.way.d * step;
+        slider.x += challenge.way.x * step;
+        slider.pose = 'tackle';
+        slider.poseFrame = 0;
+      } else if (t < challengeSlide + sitFrames) {
+        slider.pose = 'tackle';
+        slider.poseFrame = 1;
+      } else if (t === challengeSlide + sitFrames) {
+        // Up again, and from now on posed by the clip like anyone else.
+        slider.pose = 'run';
+      }
+    }
     movers.forEach((mover, i) => {
       const last = seen[i] ?? mover;
       steps[i] = { d: mover.d - last.d, x: mover.x - last.x };
@@ -1074,14 +1113,17 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     paces: ReadonlyMap<number, number> = new Map()
   ) => {
     const line = offside ? offsideLine() - 0.5 : Infinity;
-    // The defender nearest the ball closes it down, but never tackles. The
-    // one already doing it keeps on unless another is clearly nearer, so
-    // two about as near don't take turns.
+    // The defender nearest the ball closes it down, tackling only in a
+    // challenge. The one already doing it keeps on unless another is clearly
+    // nearer, so two about as near don't take turns.
     let presser = -1;
     let nearest = Infinity;
     for (let j = 0; j < defenders.length; j++) {
       const i = attackers.length + j;
-      if (defenders[j]!.line === 'keeper') {
+      if (
+        defenders[j]!.line === 'keeper' ||
+        (challengerDown(frame) && challenge!.who === i)
+      ) {
         continue;
       }
       const gap =
@@ -1103,8 +1145,10 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       const high = Math.min(...inLine) + backLineGive;
       backLineDepth = low <= high ? clamp(wanted, low, high) : (low + high) / 2;
     }
+    // A challenger down on the ground stays there.
+    const down = challengerDown(frame) ? challenge!.who : -1;
     movers.forEach((mover, i) => {
-      if (held.has(i)) {
+      if (held.has(i) || i === down) {
         return;
       }
       // A shooter from range waits deep for the ball to come to them. Once
@@ -1159,7 +1203,7 @@ export const createClipScript = (input: ClipInput): ClipScript => {
         standOff(mover, lane.from, lane.to, laneClearance);
       }
     });
-    separate(held);
+    separate(down >= 0 ? new Set([...held, down]) : held);
     // Stepping apart never takes a defender into a pass's way.
     if (lane) {
       for (let i = attackers.length; i < count; i++) {
@@ -1221,6 +1265,13 @@ export const createClipScript = (input: ClipInput): ClipScript => {
   const setUp = finish === 'one-on-one' ? 3 : finish === 'header' ? 2 : 0;
   const lastCarry = (7 - setUp) * clipFps;
   const maxBuildUp = (8 - setUp) * clipFps;
+  // Some build-ups see a defender slide in on the ball, and the carrier
+  // skip past: picked from a stream of its own, so other clips play as
+  // before.
+  const challengeRng = createClipRng(hashSeed(`${input.seed}|challenge`));
+  const wantsChallenge = challengeRng.next() < challengeShare;
+  /** Until the zoom, when a challenge can still come. */
+  let buildingUp = true;
   let frame = 0;
   let holder = starter;
   const label = (i: number) => attackers[i]!.label;
@@ -1285,6 +1336,86 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       const moved = carryPace;
       mover.d += carrying.d * moved;
       mover.x += carrying.x * moved;
+      // A defender in front slides in on the ball, while the carrier is on
+      // the move and carries on long enough for the defender to be up
+      // again before the zoom.
+      if (
+        wantsChallenge &&
+        !challenge &&
+        buildingUp &&
+        carryPace >= perFrame(4) &&
+        frames - f > challengeSlide + sitFrames &&
+        frame + 2 * clipFps < maxBuildUp
+      ) {
+        let nearest = Infinity;
+        let who = -1;
+        defenders.forEach((p, j) => {
+          const i = attackers.length + j;
+          const gap = distance(movers[i]!, ball);
+          const ahead =
+            (carrying.d * (movers[i]!.d - ball.d) +
+              carrying.x * (movers[i]!.x - ball.x)) /
+            (gap || 1);
+          if (
+            p.line !== 'keeper' &&
+            gap >= challengeRange[0] &&
+            gap <= challengeRange[1] &&
+            ahead > 0 &&
+            gap < nearest
+          ) {
+            nearest = gap;
+            who = i;
+          }
+        });
+        if (who >= 0) {
+          // Aimed just behind where the ball will be, so it is knocked on
+          // past the slide, which runs on a metre further.
+          const from = movers[who]!;
+          const meet = {
+            d: ball.d + carrying.d * moved * 3,
+            x: ball.x + carrying.x * moved * 3
+          };
+          const length = distance(from, meet) || 1;
+          const way = {
+            d: (meet.d - from.d) / length,
+            x: (meet.x - from.x) / length
+          };
+          // The slide's run, slowing to a stop, covers it all.
+          const pace = Math.min(
+            perFrame(14),
+            (2 * (length + 1)) / challengeSlide
+          );
+          // The carrier skips to the side the slide doesn't end on.
+          const end = {
+            d: from.d + way.d * length,
+            x: from.x + way.x * length
+          };
+          const across =
+            -carrying.x * (end.d - mover.d) + carrying.d * (end.x - mover.x);
+          challenge = {
+            at: frame,
+            pace,
+            side: across > 0 ? -1 : 1,
+            way,
+            who
+          };
+        }
+      }
+      if (challenge) {
+        const t = frame - challenge.at;
+        if (t >= challengeSkip[0] && t < challengeSkip[1]) {
+          const span = challengeSkip[1] - challengeSkip[0];
+          const hop =
+            perFrame(skipPace) *
+            Math.sin((Math.PI * (t - challengeSkip[0])) / span);
+          const aside = {
+            d: -carrying.x * challenge.side * hop,
+            x: carrying.d * challenge.side * hop
+          };
+          mover.d += aside.d;
+          mover.x += aside.x;
+        }
+      }
       // Off the first touch the ball runs on ahead, slowing, and the
       // receiver comes onto it: it never runs back to them.
       if (firstTouch) {
@@ -1864,6 +1995,7 @@ export const createClipScript = (input: ClipInput): ClipScript => {
   // The zoom: the shooter takes a touch towards goal as the camera closes in.
   // Offside no longer matters once the shooter has the ball in range.
   const zoomStart = frame;
+  buildingUp = false;
   // Running late, the camera closes in quicker.
   const zoomFrames = frame > shooterReadyBy ? clipFps / 2 : clipFps;
   // Before an interception the passer has the ball; a corner taker waits.

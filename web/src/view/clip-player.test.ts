@@ -151,3 +151,79 @@ test('the drawer opens only once a moment shows, and Skip closes it', () => {
     false
   );
 });
+
+/** A keypress or tap: it ends the clip on show. */
+const tap = (journal: Journal) => {
+  journal.press('Space', 'held');
+  journal.advance(1);
+  journal.release();
+};
+
+test('played through, a clip wipes into the next across their ends', () => {
+  const { journal, scripts, state } = playing();
+  journal.advance(tickerLeadIn + tickerPause + scripts[0]!.length - 10);
+  const out = state().shot;
+  expect(out.wipe?.to?.frame).toEqual(scripts[1]!.frame(0));
+  journal.advance(10);
+  const into = state().shot;
+  expect(into.frame).toEqual(scripts[1]!.frame(0));
+  expect(into.wipe?.from?.frame).toEqual(
+    scripts[0]!.frame(scripts[0]!.length - 1)
+  );
+  expect(into.wipe!.progress).toBeGreaterThan(out.wipe!.progress);
+});
+
+test('a tap ends a clip with a whole wipe from where it was, and a tap mid-wipe cuts', () => {
+  const { journal, scripts, state } = playing();
+  journal.advance(tickerLeadIn + tickerPause + 100);
+  const left = state().shot;
+  expect(left.wipe).toBeUndefined();
+  tap(journal);
+  const into = state().shot;
+  expect(into.frame).toEqual(scripts[1]!.frame(0));
+  expect(into.wipe?.from?.frame).toEqual(left.frame);
+  expect(into.wipe!.progress).toBeLessThan(0.1);
+  journal.advance(10);
+  expect(state().shot.wipe?.from).toBe(into.wipe!.from);
+  // Tapped again mid-wipe, it jumps to the newest picture.
+  tap(journal);
+  const cut = state().shot;
+  expect(cut.wipe).toBeUndefined();
+  journal.advance(10);
+  expect(state().shot.wipe).toBeUndefined();
+});
+
+test('Skip wipes from the clip on show into the "Full time" hold', () => {
+  const { journal, player, state } = playing();
+  journal.advance(tickerLeadIn + tickerPause + 100);
+  const left = state().shot;
+  journal.skipPause();
+  player.skip(journal.session.view);
+  const shot = state().shot;
+  expect(shot.frame.card?.text).toBe('Full time');
+  expect(shot.wipe?.from?.frame).toEqual(left.frame);
+});
+
+test('a save holding other clip lengths wipes on the lengths it holds', () => {
+  const journal = kickedOff();
+  const player = createClipPlayer();
+  const lengths = player.kickOff(journal.session.view)!;
+  // As if the clips were made longer since the save: the first runs on.
+  const held = [lengths[0]! + 100, ...lengths.slice(1)];
+  journal.holdClips(held);
+  const state = () => player.state(journal.session.view)!;
+  journal.advance(tickerLeadIn + tickerPause + lengths[0]! - 10);
+  expect(state().shot.wipe).toBeUndefined();
+  journal.advance(100);
+  const out = state().shot;
+  expect(out.wipe?.to).toBeDefined();
+  expect(out.wipe!.progress).toBeCloseTo(10 / 40);
+  // Past the clip's own end, its last frame holds.
+  expect(out.frame).toEqual(
+    clipScriptsFor(
+      tickerOf(journal).game,
+      tickerOf(journal).fixture,
+      tickerOf(journal).ticker.moments
+    )[0]!.frame(lengths[0]! - 1)
+  );
+});

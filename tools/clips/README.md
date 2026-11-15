@@ -9,6 +9,12 @@ bun run clips:record --kind save --outcome parry --finish header --seeds 1-5
 bun run clips:record --help                    # every option
 ```
 
+`--sequence` records the chosen clips as one video, `sequence.mp4`, played as a match's highlights: the kick-off card, each clip in minute order and the full-time card, with the wipes between. Clips that set no `--minute` are spread evenly through the match, so later ones attack the other way after half-time.
+
+```sh
+bun run clips:record --sequence --only shot,corner-header,near-miss
+```
+
 The videos and a `summary.txt` go to `build/clips/` unless `--out` names another folder. Each line of the summary gives a clip's restart, finish, outcome, the direction it attacks, its length and when its moment comes. `--frames` keeps the JPEG frames, for stepping through a clip one frame at a time.
 
 A recorded clip is the one the debugger shows for the same settings and seed. The seeds here are the debugger's **Seed** field. To find a clip worth recording, try seeds in the debugger first (`bun run dev`, then `/clips`). To record from a debugger you already have running, pass `--url http://localhost:3147/clips`.

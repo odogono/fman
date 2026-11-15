@@ -10,7 +10,8 @@ import {
   type AmountEntry
 } from './amount-entry';
 import type { App, Dom, MenuControl } from './app';
-import { fitClipCanvas, paintClip } from './clip-canvas';
+import { fitClipCanvas } from './clip-canvas';
+import { paintShot } from './clip-wipe';
 import type { BarButton } from './context-bar';
 import { rasterText, rasterizeCells } from './glyphs';
 import type { ClubName, Home } from './home';
@@ -1087,9 +1088,9 @@ export const createBrowserDom = (app: HTMLElement) => {
       notice.textContent = text;
     },
     openMenu: () => menu.showModal(),
-    paintClip: ({ frame, sides }) => {
+    paintClip: shot => {
       if (clipPitch.isConnected) {
-        paintClip(clipContext, frame, sides, fitClipCanvas(clipPitch));
+        paintShot(clipContext, shot, fitClipCanvas(clipPitch));
       }
     },
     get reducedMotion() {

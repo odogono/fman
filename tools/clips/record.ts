@@ -4,8 +4,14 @@ import { createServer } from 'node:net';
 import { join, resolve } from 'node:path';
 
 import { clipFps } from '../../web/src/view/clips';
-import { openPage, waitFor } from './browser';
-import { parseOptions, usage, withDefaults, type Options } from './scenarios';
+import { openPage, waitFor, type Page } from './browser';
+import {
+  inMatchOrder,
+  parseOptions,
+  usage,
+  withDefaults,
+  type Options
+} from './scenarios';
 
 // `bun run clips:record`: records Modern-mode highlight clips from the clip
 // debugger (web/clips.html) in headless Chromium, one MP4 per scenario, for
@@ -52,6 +58,116 @@ type ClipInfo = {
   restart: string;
 };
 
+/** Joins the JPEG frames in `frames` into `video` at the clips' speed. */
+const encode = (frames: string, video: string, options: Options) => {
+  const ffmpeg = spawnSync('ffmpeg', [
+    '-y',
+    '-loglevel',
+    'error',
+    '-framerate',
+    String(clipFps / options.step),
+    '-i',
+    join(frames, '%05d.jpg'),
+    '-vf',
+    'scale=trunc(iw/2)*2:trunc(ih/2)*2',
+    '-pix_fmt',
+    'yuv420p',
+    '-c:v',
+    'libx264',
+    '-crf',
+    '20',
+    video
+  ]);
+  if (ffmpeg.error || ffmpeg.status !== 0) {
+    throw new Error(
+      ffmpeg.error
+        ? `ffmpeg didn't run (${ffmpeg.error.message}); the frames are in ${frames}`
+        : String(ffmpeg.stderr)
+    );
+  }
+};
+
+/** Writes each JPEG data URL in `shots` to `frames`, numbered from `n`. */
+const writeShots = (frames: string, shots: readonly string[], n: number) =>
+  shots.reduce((k, shot) => {
+    writeFileSync(
+      join(frames, `${String(k).padStart(5, '0')}.jpg`),
+      Buffer.from(shot.slice(shot.indexOf(',') + 1), 'base64')
+    );
+    return k + 1;
+  }, n);
+
+/**
+ * Paints every `step`th frame of `length` with `paint`, an expression in
+ * the page that paints `frame`, and writes each to `frames` as a JPEG,
+ * numbered from `n`. Returns the next number.
+ */
+const capture = async (
+  page: Page,
+  frames: string,
+  n: number,
+  length: number,
+  step: number,
+  paint: string
+) => {
+  const batch = 12;
+  let next = n;
+  // A batch of frames per round trip: each comes back as a JPEG data URL.
+  for (let at = 0; at < length; at += step * batch) {
+    const shots = await page.evaluate<string[]>(`(() => {
+      const canvas = document.querySelector('.clip-pitch');
+      const shots = [];
+      for (let k = 0; k < ${batch}; k++) {
+        const frame = ${at} + k * ${step};
+        if (frame >= ${length}) break;
+        ${paint};
+        shots.push(canvas.toDataURL('image/jpeg', 0.9));
+      }
+      return shots;
+    })()`);
+    next = writeShots(frames, shots, next);
+  }
+  return next;
+};
+
+/**
+ * Records the scenarios as one video, as a match's highlights play them:
+ * the kick-off still, each clip in minute order, then the full-time still,
+ * wiped between.
+ */
+const recordSequence = async (page: Page, options: Options, out: string) => {
+  const scenarios = inMatchOrder(options.scenarios);
+  const lengths = await page.evaluate<number[]>(
+    `clipDebug.sequence(${JSON.stringify(scenarios.map(s => withDefaults(s.settings)))})`
+  );
+  const frames = join(out, 'sequence-frames');
+  rmSync(frames, { force: true, recursive: true });
+  mkdirSync(frames, { recursive: true });
+  let n = 0;
+  for (const [index, length] of lengths.entries()) {
+    n = await capture(
+      page,
+      frames,
+      n,
+      length,
+      options.step,
+      `clipDebug.paintSequence(${index}, frame)`
+    );
+  }
+  const video = join(out, 'sequence.mp4');
+  encode(frames, video, options);
+  if (!options.frames) {
+    rmSync(frames, { force: true, recursive: true });
+  }
+  const line = [
+    'sequence:',
+    scenarios.map(s => `${s.name} (${s.settings.minute}′)`).join(', '),
+    `-> ${video}`
+  ].join(' ');
+  console.log(line);
+  writeFileSync(join(out, 'summary.txt'), `${line}\n`);
+};
+
 const record = async (options: Options) => {
   const served = options.url ? undefined : await serveDebugger();
   const url = options.url ?? served!.url;
@@ -65,7 +181,10 @@ const record = async (options: Options) => {
     );
     const out = resolve(options.out);
     mkdirSync(out, { recursive: true });
-    const batch = 12;
+    if (options.sequence) {
+      await recordSequence(page, options, out);
+      return;
+    }
     for (const scenario of options.scenarios) {
       const info = await page.evaluate<ClipInfo>(`(() => {
         clipDebug.set(${JSON.stringify(withDefaults(scenario.settings))});
@@ -75,54 +194,16 @@ const record = async (options: Options) => {
       const frames = join(out, `${scenario.name}-frames`);
       rmSync(frames, { force: true, recursive: true });
       mkdirSync(frames, { recursive: true });
-      let n = 0;
-      // A batch of frames per round trip: each comes back as a JPEG data URL.
-      for (let at = 0; at < info.length; at += options.step * batch) {
-        const shots = await page.evaluate<string[]>(`(() => {
-          const canvas = document.querySelector('.clip-pitch');
-          const shots = [];
-          for (let k = 0; k < ${batch}; k++) {
-            const frame = ${at} + k * ${options.step};
-            if (frame >= clipDebug.script.length) break;
-            clipDebug.paint(frame);
-            shots.push(canvas.toDataURL('image/jpeg', 0.9));
-          }
-          return shots;
-        })()`);
-        for (const shot of shots) {
-          writeFileSync(
-            join(frames, `${String(n++).padStart(5, '0')}.jpg`),
-            Buffer.from(shot.slice(shot.indexOf(',') + 1), 'base64')
-          );
-        }
-      }
+      await capture(
+        page,
+        frames,
+        0,
+        info.length,
+        options.step,
+        'clipDebug.paint(frame)'
+      );
       const video = join(out, `${scenario.name}.mp4`);
-      const fps = clipFps / options.step;
-      const encode = spawnSync('ffmpeg', [
-        '-y',
-        '-loglevel',
-        'error',
-        '-framerate',
-        String(fps),
-        '-i',
-        join(frames, '%05d.jpg'),
-        '-vf',
-        'scale=trunc(iw/2)*2:trunc(ih/2)*2',
-        '-pix_fmt',
-        'yuv420p',
-        '-c:v',
-        'libx264',
-        '-crf',
-        '20',
-        video
-      ]);
-      if (encode.error || encode.status !== 0) {
-        throw new Error(
-          encode.error
-            ? `ffmpeg didn't run (${encode.error.message}); the frames are in ${frames}`
-            : String(encode.stderr)
-        );
-      }
+      encode(frames, video, options);
       if (!options.frames) {
         rmSync(frames, { force: true, recursive: true });
       }

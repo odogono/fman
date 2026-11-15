@@ -3,6 +3,7 @@ import { describe, expect, test } from 'bun:test';
 import { browserCandidates } from './browser';
 import {
   defaultScenarios,
+  inMatchOrder,
   parseOptions,
   parseSeeds,
   withDefaults
@@ -121,4 +122,21 @@ test('browserCandidates tries the newest Playwright headless shell first', () =>
     candidates.findIndex(c => c.includes('chromium-1250/'))
   );
   expect(candidates.some(c => c.includes('firefox'))).toBe(false);
+});
+
+describe('inMatchOrder', () => {
+  test('--sequence plays the clips in minute order, spreading those without one', () => {
+    expect(parseOptions(['--sequence']).sequence).toBe(true);
+    expect(parseOptions([]).sequence).toBe(false);
+    const ordered = inMatchOrder([
+      { name: 'a', settings: {} },
+      { name: 'b', settings: { minute: 10 } },
+      { name: 'c', settings: {} }
+    ]);
+    expect(ordered.map(s => [s.name, s.settings.minute])).toEqual([
+      ['b', 10],
+      ['a', 23],
+      ['c', 68]
+    ]);
+  });
 });

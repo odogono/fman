@@ -46,6 +46,10 @@ export type PlayerArt = Readonly<{
   /** A celebrating run, arms up: four frames, two strides, as the run. */
   cheer: Readonly<Record<ArtFacing, readonly ArtGrid[]>>;
   dive: Readonly<{ left: ArtGrid }>;
+  /** Taken out by a tackle: falling, then lying face down. Left only. */
+  fall: Readonly<{ left: readonly ArtGrid[] }>;
+  /** Getting up off the ground: on hands and knees, then on one knee. Left only. */
+  getup: Readonly<{ left: readonly ArtGrid[] }>;
   head: Readonly<Record<ArtFacing, ArtGrid>>;
   /** A header's frames: crouching, in the air, meeting the ball. */
   header: Readonly<Record<ArtFacing, readonly ArtGrid[]>>;
@@ -57,6 +61,8 @@ export type PlayerArt = Readonly<{
   /** A knee slide, arms spread. */
   slide: Readonly<Record<ArtFacing, ArtGrid>>;
   stand: Readonly<Record<ArtFacing, ArtGrid>>;
+  /** A sliding tackle, feet first, then sitting up. Left only. */
+  tackle: Readonly<{ left: readonly ArtGrid[] }>;
 }>;
 
 export const playerArt: PlayerArt = {
@@ -459,6 +465,100 @@ export const playerArt: PlayerArt = {
       '.ooooooossssdooooooo',
       'offssssssssodddffddo',
       'offoooo..ooooddooooo'
+    ]
+  },
+  fall: {
+    left: [
+      [
+        '.....oooooo...............',
+        '....ohhhhhhoo.............',
+        '...ohhhhhhhhho............',
+        '..ohhhhhhhhhhho...........',
+        '..ohhhhhhhhhhho...........',
+        '..ohhhhhhhhhhho...........',
+        '...ohffhhhhhhho...........',
+        '...ofoffhhhhhho...........',
+        '...ofofffhhhhoo...........',
+        '...offfffhhhho............',
+        '....ooofffhho.............',
+        '....ooofffooooo...........',
+        '.ooooooooossssso..........',
+        'offffsdddosssssso.........',
+        'offfffsoosssssssso........',
+        '.ooooooffssossssddo.......',
+        '..offffffooooodddddo......',
+        '..offffoo..oodddddddo.....',
+        '...oooo...offdddoddddo....',
+        '..........offfoooooddfooo.',
+        '...........odddo...ohfddoo',
+        '............oddo....ooodoo',
+        '............oooo.....ooooo'
+      ],
+      [
+        '......ooooooo..................',
+        '.....ohhhhhhho.................',
+        '....oohhhhhhhoo................',
+        '....ohhhhhhhhho................',
+        '...ohhhhhhhhhhho...............',
+        '...ohhhhhhhhhhho...............',
+        '...ohhffhhhhhhho...............',
+        '....ofoffhhhhhho...............',
+        '.oooofofffhhhhhoooooooo........',
+        'offfoffffffhhhossssdddoo.oooo..',
+        'ofofoffffooooosssssdddddoooooo.',
+        '.offfffssssssssssssdddddfffssoo',
+        '.offfffssssssssssssdddddfffssoo',
+        '.offffffooooooooooooooooooooooo',
+        '..oooooo.......................'
+      ]
+    ]
+  },
+  getup: {
+    left: [
+      [
+        '...oooooo............',
+        '..ohhhhhho...........',
+        '.ohhhhhhhho..........',
+        'ohhhhhhhhhho.........',
+        'ohhhhhhhhhho.........',
+        'ohhffhhhhhho.........',
+        '.ofoffhhhhho.........',
+        '.ofofffhhhho.........',
+        '.offfffhhho..........',
+        '.offfffhhoo..........',
+        '..offffooooooooo.....',
+        '...oooosssssssddo....',
+        '...ossossossssddo....',
+        '...ossossosssdddo....',
+        '...offoffoooodddo....',
+        '...offoffo..oddooooo.',
+        '..ooffoffo..offdddooo',
+        '.offfofffo..offdddooo',
+        '.ooooooooo..ooooooooo'
+      ],
+      [
+        '...ooooo.......',
+        '..ohhhhhoo.....',
+        '.ohhhhhhhho....',
+        'ohhhhhhhhhho...',
+        'ohhhhhhhhhho...',
+        '.ohffhhhhhho...',
+        '.ofoffhhhhho...',
+        '.ofofffhhho....',
+        '.offfffhhho....',
+        '.oofffooooo....',
+        '...ooosssso....',
+        '....osssssso...',
+        '...ohssssosso..',
+        '..offosssoffo..',
+        '.ooooddddoffo..',
+        '.offdddddoffo..',
+        '.offooodddoo...',
+        '.oddo.odddoooo.',
+        '.oddo.offfdddoo',
+        'ooooo.offfdddoo',
+        'ooooo.ooooooooo'
+      ]
     ]
   },
   head: {
@@ -1553,6 +1653,49 @@ export const playerArt: PlayerArt = {
       '..ooddooddo...',
       '..oooooooooo..',
       '..oooooooooo..'
+    ]
+  },
+  tackle: {
+    left: [
+      [
+        '............oohhhoo......',
+        '...........ohhhhhhho.....',
+        '..........ohhhhhhhhho....',
+        '..........ohhhhhhhhho....',
+        '..........oohhhhhhhho....',
+        '...........ofoffhhhho....',
+        '...........ofofffhhho....',
+        '...........offfffhho.....',
+        '.....ooooooooffffoo......',
+        '....offfossssoooosoo.....',
+        '....offffssssssssssso....',
+        '.....ooooooosssssossoo...',
+        '..........ossssssoosfo...',
+        'ooooooooooddooooooofffo..',
+        'ooossfffdddoodfffo.offfoo',
+        'oohssfffdddoodfffo.oofffo',
+        'oooooooooooooooooo..ooooo'
+      ],
+      [
+        '.........oohhhoh...',
+        '........ohhhhhhho..',
+        '.......ohhhhhhhhho.',
+        '.......ohhhhhhhhho.',
+        '........ohffhhhhho.',
+        '........ofofhhhhho.',
+        '........ofoffhhhoo.',
+        '........offffhhho..',
+        '.........offfooo...',
+        '..........ooosoo...',
+        '..........osssso...',
+        '..........ssssso...',
+        '.........osssosso..',
+        'oooooooooodssoffo..',
+        'oooooooodddddoffoo.',
+        'oossfffddddddoffffo',
+        'oossfffdddddooffffo',
+        'ooooooooooooo.ooooo'
+      ]
     ]
   }
 };

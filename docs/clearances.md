@@ -26,4 +26,4 @@ The goal rate and every draw are unchanged, so no result moves: the `clearances`
 ## On screen
 
 - **Ticker.** `CLEARED:` in Classic mode and `Cleared` in Modern mode. Near misses now read `MISSED:` / `Missed` in every ruleset with a ticker, in place of `POST!`, since few hit the post.
-- **Sprite highlights.** The defender cuts out the final pass, or steps into the line of the shot and blocks it, evenly as the clip's seed picks. The clip reaches its moment when the defender meets the ball, then the defender clears long upfield or into touch ([sprite-highlights.md](sprite-highlights.md)).
+- **Sprite highlights.** The defender cuts out the final pass, or steps into the line of the shot and blocks it, evenly as the clip's seed picks; half the blocks of a shooter on the ball are a sliding tackle instead. The clip reaches its moment when the defender meets the ball, then the defender clears long upfield or into touch ([sprite-highlights.md](sprite-highlights.md)).

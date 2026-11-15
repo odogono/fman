@@ -391,6 +391,123 @@ test('an interception cuts out the final pass; a block stops the shot', () => {
   expect(alone.outcome).toBe('block');
 });
 
+test('the seed tackles a shooter on the ball, instead of blocking the shot', () => {
+  let tackles = 0;
+  let clearances = 0;
+  for (let seed = 0; seed < 300; seed++) {
+    const script = createClipScript(input({ kind: 'clearance', seed }));
+    clearances++;
+    if (script.outcome !== 'tackle') {
+      continue;
+    }
+    tackles++;
+    // Only the shooter, with the ball at their feet, is tackled.
+    expect(script.finish === 'shot' || script.finish === 'long-range').toBe(
+      true
+    );
+  }
+  // Half the blocks of a shot: about a quarter of clearances.
+  expect(tackles / clearances).toBeGreaterThan(0.15);
+  expect(tackles / clearances).toBeLessThan(0.35);
+  // A clearance is always a shot, so a forced tackle from a corner comes
+  // after the corner is played short to the shooter.
+  const short = createClipScript(
+    input({ kind: 'clearance', outcome: 'tackle', restart: 'corner' })
+  );
+  expect(short.outcome).toBe('tackle');
+  expect(short.passes.at(-1)!.to).toBe('#d70000 9');
+});
+
+test('a tackle slides in on the ball, and the shooter goes down and gets up', () => {
+  for (let seed = 0; seed < 40; seed++) {
+    const script = createClipScript(
+      input({ kind: 'clearance', outcome: 'tackle', seed })
+    );
+    expect(script.outcome).toBe('tackle');
+    const met = script.frame(script.momentFrame);
+    const sliding = met.players.filter(p => p.pose === 'tackle');
+    expect(sliding).toHaveLength(1);
+    expect(sliding[0]!.side).toBe('defence');
+    expect(
+      Math.hypot(sliding[0]!.x - met.ball.x, sliding[0]!.y - met.ball.y)
+    ).toBeLessThan(1.5);
+    // The slide shows for a few frames before it meets the ball.
+    expect(
+      script
+        .frame(script.momentFrame - 5)
+        .players.some(p => p.pose === 'tackle')
+    ).toBe(true);
+    // The shooter stumbles, lies down, gets up on hands and knees, then on
+    // one knee, and is up again before the clip ends.
+    const seen: string[] = [];
+    for (let at = script.momentFrame + 1; at < script.length; at++) {
+      const { pose, poseFrame } = script.frame(at).players[9]!;
+      const step = `${pose}${poseFrame ?? ''}`;
+      if (seen.at(-1) !== step) {
+        seen.push(step);
+      }
+    }
+    expect(seen.slice(0, 4)).toEqual(['fall0', 'fall1', 'getup0', 'getup1']);
+    expect(['run', 'stand']).toContain(
+      script.frame(script.length - 1).players[9]!.pose
+    );
+  }
+});
+
+test('some blocks are made sliding in', () => {
+  let sliding = 0;
+  for (let seed = 0; seed < 60; seed++) {
+    const script = createClipScript(
+      input({ kind: 'clearance', outcome: 'block', seed })
+    );
+    if (
+      script.frame(script.momentFrame).players.some(p => p.pose === 'tackle')
+    ) {
+      sliding++;
+    }
+  }
+  expect(sliding).toBeGreaterThan(15);
+  expect(sliding).toBeLessThan(45);
+});
+
+/** Lying or sitting on the ground, as a player is before getting up. */
+const down = (pose: string, poseFrame?: number) =>
+  pose === 'dive' ||
+  ((pose === 'fall' || pose === 'tackle') && poseFrame === 1);
+
+test('a player down on the ground gets up, never springing straight up', () => {
+  const ground = new Set(['dive', 'fall', 'getup', 'tackle']);
+  let getUps = 0;
+  for (let seed = 0; seed < 60; seed++) {
+    for (const outcome of ['dive', 'parry', 'tackle', 'block'] as const) {
+      const script = createClipScript(
+        input({ kind: outcomeKind(outcome), outcome, seed })
+      );
+      for (let at = 1; at < script.length; at++) {
+        const before = script.frame(at - 1).players;
+        script.frame(at).players.forEach((p, i) => {
+          const was = before[i]!;
+          if (ground.has(p.pose)) {
+            // Drawn side on, facing left or right; up after a dive, the
+            // way they lay.
+            if (p.pose === 'fall' || p.pose === 'tackle') {
+              expect(['left', 'right']).toContain(p.facing);
+            }
+            return;
+          }
+          // Up from the ground only by way of getting up.
+          expect(down(was.pose, was.poseFrame)).toBe(false);
+          if (was.pose === 'getup') {
+            getUps++;
+            expect(was.poseFrame).toBe(1);
+          }
+        });
+      }
+    }
+  }
+  expect(getUps).toBeGreaterThan(100);
+});
+
 test('the defender clears upfield or into touch', () => {
   let upfield = 0;
   let touch = 0;

@@ -80,7 +80,19 @@ export const defaultScenarios: readonly Scenario[] = [
       seedBase: 18
     }
   },
-  { name: 'clearance', settings: { kind: 'clearance', seedBase: 4 } },
+  {
+    name: 'block',
+    settings: { kind: 'clearance', outcome: 'block', seedBase: 4 }
+  },
+  {
+    name: 'tackle',
+    settings: {
+      kind: 'clearance',
+      outcome: 'tackle',
+      restart: 'open-play',
+      seedBase: 11
+    }
+  },
   { name: 'near-miss', settings: { kind: 'near-miss', seedBase: 23 } },
   // After half-time the home side attacks down the screen.
   {

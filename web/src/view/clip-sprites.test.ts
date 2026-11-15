@@ -47,7 +47,7 @@ test('every grid is a rectangle drawn in the palette', () => {
 
 test('players are about 14 by 22 art pixels, larger than the original 8 by 8 characters', () => {
   for (const [name, grid] of everyGrid().filter(
-    ([name]) => !/^(ball|tired|dive)/.test(name)
+    ([name]) => !/^(ball|tired|dive|fall|getup|tackle)/.test(name)
   )) {
     // Clear rows under the feet lift a frame off the ground: a stride's
     // bounce by a row or two, a header's or a jump's leap by a few.
@@ -70,6 +70,25 @@ test('players are about 14 by 22 art pixels, larger than the original 8 by 8 cha
     );
     expect(body, name).toBeGreaterThanOrEqual(19);
     expect(body, name).toBeLessThanOrEqual(26);
+  }
+});
+
+test('a player on the ground lies on the bottom row, at the same scale', () => {
+  for (const [name, grid] of everyGrid().filter(([name]) =>
+    /^(fall|getup|tackle)/.test(name)
+  )) {
+    expect(grid.at(-1), name).toMatch(/[^.]/);
+    expect(
+      grid.every(row => row.length === grid[0]!.length),
+      name
+    ).toBe(true);
+    expect(grid[0]!.length, name).toBeLessThanOrEqual(32);
+    expect(grid.length, name).toBeGreaterThanOrEqual(14);
+    expect(grid.length, name).toBeLessThanOrEqual(24);
+  }
+  // Each comes in two frames: going down, then down; or getting up.
+  for (const pose of ['fall', 'getup', 'tackle'] as const) {
+    expect(playerArt[pose].left).toHaveLength(2);
   }
 });
 

@@ -26,7 +26,7 @@ export const captionFrames = 25;
  * to catch a cross before it can be headed.
  */
 export type SaveOutcome = 'claim' | 'dive' | 'hold' | 'parry';
-export type ClearanceOutcome = 'block' | 'interception';
+export type ClearanceOutcome = 'block' | 'interception' | 'tackle';
 export type MissOutcome = 'over' | 'post' | 'wide-left' | 'wide-right';
 /**
  * How a moment plays out: a goal, a kind of save, a kind of clearance
@@ -40,8 +40,14 @@ export type ClipOutcome = 'goal' | ClearanceOutcome | MissOutcome | SaveOutcome;
 export const saveOutcomes: readonly SaveOutcome[] = ['dive', 'hold', 'parry'];
 export const clearanceOutcomes: readonly ClearanceOutcome[] = [
   'interception',
-  'block'
+  'block',
+  'tackle'
 ];
+/**
+ * The clearances the seed picks from evenly. A tackle is picked apart from
+ * them, from a block of a shooter on the ball, so other clips play as before.
+ */
+const drawnClearances: readonly ClearanceOutcome[] = ['interception', 'block'];
 export const missOutcomes: readonly MissOutcome[] = [
   'post',
   'wide-left',
@@ -126,6 +132,8 @@ export type Pose =
   | 'celebrate'
   | 'cheer'
   | 'dive'
+  | 'fall'
+  | 'getup'
   | 'head'
   | 'header'
   | 'hold'
@@ -133,7 +141,8 @@ export type Pose =
   | 'kick'
   | 'run'
   | 'slide'
-  | 'stand';
+  | 'stand'
+  | 'tackle';
 const poses: readonly Pose[] = [
   'run',
   'header',
@@ -145,8 +154,21 @@ const poses: readonly Pose[] = [
   'stand',
   'cheer',
   'jump',
-  'slide'
+  'slide',
+  'tackle',
+  'fall',
+  'getup'
 ];
+/** Poses drawn side on only, facing left or right. */
+const sideOn: ReadonlySet<Pose> = new Set(['dive', 'fall', 'getup', 'tackle']);
+/** Poses whose frame the clip sets, rather than the ground covered. */
+const framedPoses: ReadonlySet<Pose> = new Set([
+  'fall',
+  'getup',
+  'header',
+  'jump',
+  'tackle'
+]);
 /** Which way a player faces on the screen. */
 export type Facing = 'down' | 'left' | 'right' | 'up';
 const facings: readonly Facing[] = ['up', 'down', 'left', 'right'];
@@ -376,7 +398,7 @@ const drawOutcome = (rng: ClipRng, kind: Moment['kind']): ClipOutcome =>
     : kind === 'save'
       ? rng.pick(saveOutcomes)
       : kind === 'clearance'
-        ? rng.pick(clearanceOutcomes)
+        ? rng.pick(drawnClearances)
         : drawMiss(rng);
 
 /** The outcome a clip's seed picks for a kind: the clip's first draw. */
@@ -500,6 +522,31 @@ const slideMetres = 3;
 const huddleGap = 1.1;
 /** A keeper down after a save is up again after this many frames. */
 const getUpFrames = 25;
+/**
+ * Getting up shows for at most this many frames, half on hands and knees,
+ * half on one knee; up from sitting, only the half on one knee.
+ */
+const gettingUp = 12;
+/** Of the blocks of a shooter on the ball, this share are tackles instead. */
+const tackleShare = 0.5;
+/** Of the other blocks, this share are made sliding in. */
+const slidingBlockShare = 0.5;
+/** A tackler sprints in at this pace, in metres a second, and slides in from this near. */
+const tacklePace = 8;
+const slideReach = 3;
+/** A slide starts at this pace, in metres a second, and stops in this many frames. */
+const slidePace = 8;
+const slideFrames = 20;
+/**
+ * A tackled shooter stumbles this many frames, from this pace in metres a
+ * second (about 1.2 m in all), then lies down this many.
+ */
+const stumbleFrames = 10;
+const stumblePace = 11;
+const lieFrames = 45;
+/** A tackler sits up this many frames before getting up; a blocker, fewer. */
+const sitFrames = 20;
+const blockSitFrames = 10;
 /** A keeper with the ball walks out at this pace, in metres a second. */
 const keeperStride = 2;
 /** A header shows its contact, then its landing, this many frames each. */
@@ -890,19 +937,35 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       const previous = at ? facings[facingLog[at - 1]![i]!]! : undefined;
       const aim = at < aimUntil[i]! ? aims[i] : undefined;
       const [ax, ay] = aim ? toScreen(aim) : [bx, by];
+      // Drawn side on, a player on the ground faces left or right: the way
+      // they go, or else the way they were.
+      const across = aim ? ax - x : dx;
+      const stillDown = at > 0 && poses[poseLog[at - 1]![i]!] === mover.pose;
       const wanted = facings.indexOf(
-        aim
-          ? facingFor(ax - x, ay - y, previous)
-          : running[i]
-            ? facingFor(dx, dy, previous)
-            : facingFor(bx - x, by - y, previous)
+        sideOn.has(mover.pose) && mover.pose !== 'dive'
+          ? stillDown && (previous === 'left' || previous === 'right')
+            ? previous
+            : Math.abs(across) > 0.05
+              ? across < 0
+                ? 'left'
+                : 'right'
+              : previous === 'right'
+                ? 'right'
+                : 'left'
+          : aim
+            ? facingFor(ax - x, ay - y, previous)
+            : running[i]
+              ? facingFor(dx, dy, previous)
+              : facingFor(bx - x, by - y, previous)
       );
       // A turn waits until the last has settled, but a kick or a throw
       // faces its aim at once.
       const kept = at ? facingLog[at - 1]![i]! : wanted;
       const turns =
         wanted !== kept &&
-        ((aim && !looking[i]) || at - turnedAt[i]! >= turnFrames);
+        ((aim && !looking[i]) ||
+          at - turnedAt[i]! >= turnFrames ||
+          (sideOn.has(mover.pose) && mover.pose !== 'dive'));
       if (turns) {
         turnedAt[i] = at;
       }
@@ -917,7 +980,7 @@ export const createClipScript = (input: ClipInput): ClipScript => {
               : mover.pose;
       poseLog[at]!.push(poses.indexOf(pose));
       poseFrameLog[at]!.push(
-        pose === 'header' || pose === 'jump' ? (mover.poseFrame ?? 0) : -1
+        framedPoses.has(pose) ? (mover.poseFrame ?? 0) : -1
       );
     });
     balls.push([bx, by, ball.height]);
@@ -1757,6 +1820,25 @@ export const createClipScript = (input: ClipInput): ClipScript => {
   if (holder === shooter && outcome === 'interception') {
     outcome = 'block';
   }
+  // A shooter on the ball can be tackled before they shoot: half the blocks
+  // of a shot, picked from a stream of their own. Only the shooter is
+  // tackled, so a cross can't be.
+  const tackleRng = createClipRng(hashSeed(`${input.seed}|tackle`));
+  const onTheBall =
+    holder === shooter && (finish === 'shot' || finish === 'long-range');
+  if (
+    outcome === 'block' &&
+    onTheBall &&
+    input.outcome === undefined &&
+    tackleRng.next() < tackleShare
+  ) {
+    outcome = 'tackle';
+  }
+  if (outcome === 'tackle' && holder !== shooter) {
+    outcome = 'block';
+  }
+  const slidingBlock =
+    outcome === 'block' && tackleRng.next() < slidingBlockShare;
   // Left with the ball themselves, the shooter can't head a cross.
   if (finish === 'header' && holder === shooter) {
     finish = 'shot';
@@ -1843,7 +1925,175 @@ export const createClipScript = (input: ClipInput): ClipScript => {
   let momentFrame: number;
   /** For a clearance, the defender who meets the ball and clears it. */
   let clearer = -1;
-  if (outcomeKind(outcome) === 'clearance') {
+  /** For a tackle, who made it, and the frame the shooter is up again by. */
+  let tackler = -1;
+  let shooterUpAt = 0;
+  if (outcome === 'tackle') {
+    // The defender nearest the shooter sprints in and slides, feet first,
+    // into the ball as the shooter shapes to shoot. It runs loose, and the
+    // shooter goes over and lies there a moment.
+    const runner = movers[shooter]!;
+    let nearest = Infinity;
+    defenders.forEach((p, j) => {
+      const i = attackers.length + j;
+      const gap = distance(movers[i]!, runner);
+      if (p.line !== 'keeper' && gap < nearest) {
+        nearest = gap;
+        tackler = i;
+      }
+    });
+    if (tackler < 0) {
+      tackler = keeperSlot;
+    }
+    const defender = movers[tackler]!;
+    const goal = { d: pitchLength, x: 34 };
+    const toGoal = distance(runner, goal) || 1;
+    const heading = {
+      d: (goal.d - runner.d) / toGoal,
+      x: (goal.x - runner.x) / toGoal
+    };
+    // With the tackler still far off, the shooter steadies themselves.
+    const runPace = perFrame(nearest > 10 ? 2.5 : 4.5);
+    const latest = clipFps * 3;
+    let slide: Point | undefined;
+    let sliding = 0;
+    let contact = 0;
+    let loose: Point = { d: ball.d, x: ball.x };
+    let looseFrom: Point = { d: ball.d, x: ball.x };
+    /** The defender who runs onto the loose ball, if one is near. */
+    let sweeper = -1;
+    const held = new Set([shooter, tackler]);
+    cameraFocus = () => ({ d: ball.d + 4, x: ball.x });
+    for (let f = 1; !contact || f <= contact + afterArrival; f++) {
+      if (!contact) {
+        // The shooter carries on, the ball just ahead, and plants their
+        // feet to shoot as the slide comes in.
+        const pace = runPace * Math.max(0, 1 - sliding / 6);
+        runner.d += heading.d * pace;
+        runner.x += heading.x * pace;
+        ball.d = runner.d + heading.d * 0.7;
+        ball.x = runner.x + heading.x * 0.7;
+        ball.height = 0;
+        runner.pose = 'run';
+        if (!slide) {
+          const lead = {
+            d: ball.d + heading.d * 1.5,
+            x: ball.x + heading.x * 1.5
+          };
+          const gap = distance(defender, lead) || 1;
+          const step = Math.min(gap, perFrame(tacklePace));
+          defender.d += ((lead.d - defender.d) / gap) * step;
+          defender.x += ((lead.x - defender.x) / gap) * step;
+          defender.pose = 'run';
+          if (
+            distance(defender, ball) < slideReach ||
+            f >= latest - slideFrames
+          ) {
+            slide = { d: 0, x: 0 };
+          }
+        }
+        if (slide) {
+          // Feet first, homing on the ball, slowing as they go.
+          const feet = distance(defender, ball) || 1;
+          slide = {
+            d: (ball.d - defender.d) / feet,
+            x: (ball.x - defender.x) / feet
+          };
+          const step = Math.min(
+            perFrame(Math.max(2, slidePace * (1 - sliding / slideFrames))),
+            Math.max(0, feet - 0.8)
+          );
+          defender.d += slide.d * step;
+          defender.x += slide.x * step;
+          defender.pose = 'tackle';
+          defender.poseFrame = 0;
+          aimAt(tackler, {
+            d: defender.d + slide.d * 5,
+            x: defender.x + slide.x * 5
+          });
+          sliding++;
+          if ((feet < 1.2 && sliding >= 6) || sliding >= 2 * slideFrames) {
+            contact = f;
+            // Poked away, on across the shooter's path.
+            const across = tackleRng.next() < 0.5 ? -1 : 1;
+            const along = tackleRng.between(3, 6);
+            const way = {
+              d: slide.d * 0.8 - slide.x * across * 0.6,
+              x: slide.x * 0.8 + slide.d * across * 0.6
+            };
+            const size = Math.hypot(way.d, way.x) || 1;
+            looseFrom = { d: ball.d, x: ball.x };
+            loose = {
+              d: clamp(ball.d + (way.d / size) * along, 2, pitchLength - 2),
+              x: clamp(ball.x + (way.x / size) * along, 2, pitchWidth - 2)
+            };
+            let near = 9;
+            defenders.forEach((p, j) => {
+              const i = attackers.length + j;
+              const gap = distance(movers[i]!, loose);
+              if (i !== tackler && p.line !== 'keeper' && gap < near) {
+                near = gap;
+                sweeper = i;
+              }
+            });
+            if (sweeper >= 0) {
+              held.add(sweeper);
+            }
+            clearer = sweeper >= 0 ? sweeper : tackler;
+          }
+        }
+      } else {
+        const after = f - contact;
+        const settle = Math.min(1, after / 25);
+        const u = 1 - (1 - settle) * (1 - settle);
+        ball.d = lerp(looseFrom.d, loose.d, u);
+        ball.x = lerp(looseFrom.x, loose.x, u);
+        ball.height = 0;
+        // Taken out, the shooter pitches forward over the tackle and goes
+        // down.
+        if (after <= stumbleFrames) {
+          const on = perFrame(stumblePace) * (1 - after / stumbleFrames);
+          runner.d += heading.d * on;
+          runner.x += heading.x * on;
+          aimAt(shooter, {
+            d: runner.d + heading.d * 5,
+            x: runner.x + heading.x * 5
+          });
+        }
+        runner.pose = 'fall';
+        runner.poseFrame = after <= stumbleFrames ? 0 : 1;
+        // The slide runs out, and the tackler sits up.
+        if (after < 8 && slide) {
+          const step = perFrame(slidePace) * 0.4 * (1 - after / 8);
+          defender.d += slide.d * step;
+          defender.x += slide.x * step;
+        }
+        const sitting = after < 8 + sitFrames;
+        defender.pose = sitting ? 'tackle' : 'run';
+        defender.poseFrame = after < 8 ? 0 : 1;
+        if (!sitting && sweeper >= 0) {
+          held.delete(tackler);
+        }
+        const sweeping = sitting && sweeper < 0 ? undefined : movers[clearer];
+        if (sweeping) {
+          // A team-mate gets to the loose ball, facing upfield.
+          const to = { d: ball.d + 0.6, x: ball.x };
+          const gap = distance(sweeping, to);
+          const step = perFrame(7);
+          if (gap > step) {
+            sweeping.d += ((to.d - sweeping.d) / gap) * step;
+            sweeping.x += ((to.x - sweeping.x) / gap) * step;
+          }
+          sweeping.pose = 'run';
+        }
+      }
+      steer(frame, held);
+      record();
+      frame++;
+    }
+    momentFrame = momentStart + contact - 1;
+    shooterUpAt = momentFrame + stumbleFrames + lieFrames;
+  } else if (outcomeKind(outcome) === 'clearance') {
     // The final pass cut out, or the shot blocked by a defender stepping
     // into its line; the clip reaches its moment as they meet the ball.
     const interception = outcome === 'interception';
@@ -1898,6 +2148,11 @@ export const createClipScript = (input: ClipInput): ClipScript => {
         if (defender && from) {
           defender.d = lerp(from.d, meet.d + 0.6, u);
           defender.x = lerp(from.x, meet.x, u);
+          // Some blocks are made sliding in, over the last of the flight.
+          if (slidingBlock && u > 0.55) {
+            defender.pose = 'tackle';
+            defender.poseFrame = 0;
+          }
         }
         if (interception) {
           const gap = distance(runner, towards);
@@ -1913,8 +2168,14 @@ export const createClipScript = (input: ClipInput): ClipScript => {
         ball.d = lerp(meet.d, loose.d, u);
         ball.x = lerp(meet.x, loose.x, u);
         ball.height = 0;
-        if (defender) {
+        const down = slidingBlock && f - flight < 8 + blockSitFrames;
+        if (defender && down) {
+          // Down from the slide, the defender sits up a moment.
+          defender.pose = 'tackle';
+          defender.poseFrame = f - flight < 8 ? 0 : 1;
+        } else if (defender) {
           // The defender gets to the ball, facing upfield.
+          defender.pose = 'run';
           const to = { d: ball.d + 0.6, x: ball.x };
           const gap = distance(defender, to);
           const step = perFrame(5);
@@ -2272,7 +2533,9 @@ export const createClipScript = (input: ClipInput): ClipScript => {
           keeper.x = lerp(keeperFrom.x, keeperTo.x, ease(u));
           keeper.pose = dives && f > flight * 0.4 ? 'dive' : 'run';
           if (stopsAtKeeper && f > flight && outcome !== 'parry') {
-            keeper.pose = 'hold';
+            // Caught diving, the keeper stays down with it until the
+            // reaction gets them up.
+            keeper.pose = outcome === 'dive' ? 'dive' : 'hold';
             ball.d = keeper.d;
             ball.x = keeper.x;
           }
@@ -2501,7 +2764,9 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       cameraFocus = () => ({ d: scorer.d, x: scorer.x });
       keepInShot = () => scorer;
     } else if (outcomeKind(outcome) === 'clearance') {
-      scorer.pose = 'run';
+      // Tackled, the shooter lies there a moment first.
+      scorer.pose = frame < shooterUpAt ? 'fall' : 'run';
+      scorer.poseFrame = 1;
       if (f === 25) {
         kick(clearer, cleared);
       }
@@ -2695,6 +2960,37 @@ export const createClipScript = (input: ClipInput): ClipScript => {
   }
 
   const length = frame;
+  // A player down on the ground gets up over the last frames they spend
+  // there: on hands and knees, then on one knee; from sitting, on one knee.
+  const getUpIndex = poses.indexOf('getup');
+  const lying = (at: number, i: number) => {
+    const pose = poses[poseLog[at]![i]!]!;
+    return (
+      pose === 'dive' ||
+      ((pose === 'fall' || pose === 'tackle') && poseFrameLog[at]![i] === 1)
+    );
+  };
+  for (let i = 0; i < count; i++) {
+    let start = -1;
+    for (let at = 0; at < length; at++) {
+      if (lying(at, i)) {
+        start = start < 0 ? at : start;
+        continue;
+      }
+      if (start >= 0) {
+        const sat = poses[poseLog[at - 1]![i]!] === 'tackle';
+        const span = Math.min(
+          sat ? gettingUp / 2 : gettingUp,
+          Math.floor((at - start) / 2)
+        );
+        for (let k = at - span; k < at; k++) {
+          poseLog[k]![i] = getUpIndex;
+          poseFrameLog[k]![i] = sat || k >= at - span / 2 ? 1 : 0;
+        }
+        start = -1;
+      }
+    }
+  }
   const sides = Array.from({ length: count }, (_, i) =>
     i < attackers.length ? ('attack' as const) : ('defence' as const)
   );

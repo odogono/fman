@@ -1534,7 +1534,7 @@ test('Modern mode hands the sim the clip lengths at kick-off and shows what the 
   );
   expect(run.ticker().elapsedT).toBe(0);
   run.wait(5);
-  expect(run.page.clips.at(-1)!.caption).toBe('Kick-off');
+  expect(run.page.clips.at(-1)!.card?.text).toBe('Kick-off');
   // Partway through the first clip, the page shows what the player says.
   while (run.page.highlights!.clip!.shown === 0) {
     run.wait(10);
@@ -1558,7 +1558,7 @@ test('a tap ends the clip, showing its moment first, and the next clip starts', 
   run.app.pointerUp();
   expect(run.ticker().shown).toHaveLength(2);
   expect(run.page.highlights!.clip!.shown).toBe(1);
-  expect(run.page.clips.at(-1)!.caption).toStartWith(
+  expect(run.page.clips.at(-1)!.card?.minute).toBe(
     `${run.ticker().moments[1]!.minute}′`
   );
 });
@@ -1589,9 +1589,7 @@ test('reopening the page mid-clip picks the clip up where it was', () => {
   });
   reopened.wait(1);
   expect(tickerIn(reopened.view())?.lengths).toEqual(run.ticker().lengths);
-  expect(reopened.page.clips.at(-1)!.caption).toBe(
-    run.page.clips.at(-1)!.caption
-  );
+  expect(reopened.page.clips.at(-1)!.card).toEqual(run.page.clips.at(-1)!.card);
   expect(reopened.page.highlights!.clip).toEqual(run.page.highlights!.clip);
 });
 

@@ -1,4 +1,5 @@
 import { shadowArt, type ArtGrid } from './assets/clip-sprites';
+import { drawCard, overlayUnit } from './clip-card';
 import {
   artPixelSize,
   ballHeld,
@@ -378,14 +379,16 @@ export const paintClip = (
     ctx.fillStyle = '#fff';
     ctx.fillText(label.text, x!, above - 14);
   }
-  if (frame.caption) {
-    ctx.font = '600 18px system-ui, sans-serif';
-    ctx.textAlign = 'left';
-    const textWidth = ctx.measureText(frame.caption).width;
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
-    ctx.fillRect(8, 8, textWidth + 16, 30);
-    ctx.fillStyle = '#fff';
-    ctx.fillText(frame.caption, 16, 24);
+  if (frame.card) {
+    // On the art-pixel grid, in device pixels.
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    drawCard(
+      ctx,
+      frame.card,
+      sides.attack.kit,
+      overlayUnit(Math.round(width * ratio))
+    );
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
   }
   if (frame.minimap) {
     const mapWidth = Math.round(width * 0.2);
@@ -424,7 +427,7 @@ export const paintClip = (
     ctx.arc(left + ball.x * unit, top + ball.y * unit, 2, 0, Math.PI * 2);
     ctx.fill();
   }
-  // The problems' list, in the bottom left, clear of the caption and map.
+  // The problems' list, in the bottom left, clear of the card and map.
   if (overlays.problems?.length) {
     ctx.font = '600 11px system-ui, sans-serif';
     ctx.textAlign = 'left';

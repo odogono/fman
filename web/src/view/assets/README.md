@@ -42,3 +42,7 @@ ChatGPT's image tool set their look but were not converted. The boards' panels
 are plain colours and shapes, chosen to look like no flag or brand. The crowd
 reuses the players' poses. These grids are also dedicated to the public domain
 under [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/).
+
+# Highlights lettering
+
+`clip-font.ts` is the pixel font of the highlights' cards: capitals, figures and a few marks, 5 by 7 art pixels, drawn by hand for this project in November 2026 from mockups made by script. It copies no existing font. The grids are dedicated to the public domain under [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/).

@@ -18,8 +18,12 @@ export const cameraWide = 40;
 export const cameraZoomed = 30;
 /** The camera's patch is this much taller than it is wide. */
 export const cameraAspect = 5 / 4;
-/** The minute caption shows over a clip's first half second. */
-export const captionFrames = 25;
+/**
+ * The match-time card shows over a clip's first 1.5 s, or until a restart
+ * is taken, sliding in and out over this many frames.
+ */
+export const cardFrames = 75;
+const cardSlide = 10;
 
 /**
  * A save: a dive, a catch or a parry, or the keeper coming off their line
@@ -323,13 +327,24 @@ export type FramePlayer = Readonly<{
 /** A header's frames: crouching, in the air, meeting the ball. */
 export const headerFrames = 3;
 
+/** The match-time card in a frame's top left. */
+export type ClipCard = Readonly<{
+  /** As "34′"; none on the still pitch at kick-off and full time. */
+  minute?: string;
+  /** How far it has slid in, from 0 out of sight to 1. */
+  shown: number;
+  /** The restart, such as "Free kick", or "Kick-off" or "Full time". */
+  text?: string;
+}>;
+
 /** One frame of a clip, in metres on a pitch whose top edge is y = 0. */
 export type ClipFrame = Readonly<{
   /** `height` is 0 on the ground, up to 1 well over the bar. */
   ball: Readonly<{ height: number; x: number; y: number }>;
   /** The middle of the patch on show, and its width. */
   camera: Readonly<{ width: number; x: number; y: number }>;
-  caption?: string;
+  /** The match-time card: the minute, and the restart or "Kick-off". */
+  card?: ClipCard;
   /** The crowd is on its feet, after a goal (#157). */
   cheer?: boolean;
   /** The named player's label, in the zoomed view only. */
@@ -1751,7 +1766,7 @@ export const createClipScript = (input: ClipInput): ClipScript => {
   // A restart: the thrower holds the ball over their head, or the taker
   // waits with the defenders back, while both sides set; then the ball is
   // played to a team-mate.
-  let captionEnd = captionFrames;
+  let cardEnd = cardFrames;
   if (restart !== 'open-play') {
     const waits =
       restart === 'throw-in'
@@ -1779,7 +1794,7 @@ export const createClipScript = (input: ClipInput): ClipScript => {
         movers[i]!.x = spot.x + rng.between(-3, 3);
       }
     }
-    captionEnd = Math.max(captionFrames, waits);
+    cardEnd = Math.max(cardFrames, waits);
     keepAway = restart === 'free-kick' ? { d: ball.d, x: ball.x } : undefined;
     if (keepAway) {
       // The clip opens with the defenders already back.
@@ -3223,11 +3238,19 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       },
       camera: { width, x: lerp(cx0, cx1, u), y: lerp(cy0, cy1, u) },
       ...(outcome === 'goal' && low >= reactionStart ? { cheer: true } : {}),
-      ...(low < captionEnd
+      ...(clamped < cardEnd
         ? {
-            caption: [`${input.minute}′`, restartNames[restart]]
-              .filter(Boolean)
-              .join(' ')
+            card: {
+              minute: `${input.minute}′`,
+              shown: ease(
+                Math.min(
+                  1,
+                  clamped / cardSlide,
+                  (cardEnd - clamped) / cardSlide
+                )
+              ),
+              ...(restartNames[restart] ? { text: restartNames[restart] } : {})
+            }
           }
         : {}),
       ...(named && zoomed
@@ -3255,7 +3278,7 @@ export const createClipScript = (input: ClipInput): ClipScript => {
 
 /**
  * Both sides standing in shape with the ball on the centre spot, as under
- * the "Kick-off" and "Full time" captions. `home` shoots up the screen.
+ * the "Kick-off" and "Full time" cards. `home` shoots up the screen.
  */
 export const kickOffFrame = (
   home: ClipSide,
@@ -3287,7 +3310,7 @@ export const kickOffFrame = (
   return {
     ball: { height: 0, x: pitchWidth / 2, y: pitchLength / 2 },
     camera: { width: cameraWide, x: pitchWidth / 2, y: pitchLength / 2 },
-    caption,
+    card: { shown: 1, text: caption },
     minimap: true,
     phase: 'build-up',
     players: [...place(home, true, 'attack'), ...place(away, false, 'defence')]

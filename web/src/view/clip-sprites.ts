@@ -109,10 +109,19 @@ export const spriteFor = (
   if (pose === 'dive') {
     return { grid: playerArt.dive.left, mirrored: facing === 'right' };
   }
+  // On the ground, drawn side on: the frame the clip names.
+  if (pose === 'tackle' || pose === 'fall' || pose === 'getup') {
+    const frames = playerArt[pose].left;
+    const at = Math.min(frames.length - 1, Math.max(0, player.poseFrame ?? 0));
+    return { grid: frames[at]!, mirrored: facing === 'right' };
+  }
   const drawn: 'down' | 'left' | 'up' = facing === 'right' ? 'left' : facing;
   const mirrored = facing === 'right';
   const art: Record<
-    Exclude<Pose, 'cheer' | 'dive' | 'header' | 'jump' | 'run'>,
+    Exclude<
+      Pose,
+      'cheer' | 'dive' | 'fall' | 'getup' | 'header' | 'jump' | 'run' | 'tackle'
+    >,
     typeof playerArt.stand
   > = {
     celebrate: playerArt.celebrate,

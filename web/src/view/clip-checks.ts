@@ -337,12 +337,19 @@ export const checkClip = (script: ClipScript): ClipIssue[] => {
   }
 
   // No two players stand inside each other, until the reaction's huddles.
+  // A player on the ground can be stepped over.
   const count = frames[0]!.players.length;
+  const grounded = new Set<string>(['dive', 'fall', 'getup', 'tackle']);
   for (let i = 0; i < count; i++) {
     for (let j = i + 1; j < count; j++) {
-      const close = (at: number) =>
-        gap(frames[at]!.players[i]!, frames[at]!.players[j]!) <
-        clipLimits.crowded;
+      const close = (at: number) => {
+        const [a, b] = [frames[at]!.players[i]!, frames[at]!.players[j]!];
+        return (
+          gap(a, b) < clipLimits.crowded &&
+          !grounded.has(a.pose) &&
+          !grounded.has(b.pose)
+        );
+      };
       for (const run of runs(
         0,
         phases.reaction - 1,
@@ -399,13 +406,15 @@ export const checkClip = (script: ClipScript): ClipIssue[] => {
   }
 
   // No one turns back and forth: three turns within half a second flicker.
-  // A turn to kick the ball is meant, so it doesn't count.
+  // A turn to kick the ball, or going to ground, is meant, so it doesn't
+  // count.
   for (let i = 0; i < count; i++) {
     const turns: number[] = [];
     for (let at = 1; at < frames.length; at++) {
       const player = frames[at]!.players[i]!;
       if (
         player.pose !== 'kick' &&
+        !grounded.has(player.pose) &&
         player.facing !== frames[at - 1]!.players[i]!.facing
       ) {
         turns.push(at);

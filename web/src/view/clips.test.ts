@@ -4,6 +4,7 @@ import { longestClip } from '../sim/ticker';
 import { checkClip, type ClipIssueKind } from './clip-checks';
 import {
   boardMetres,
+  boardTop,
   cameraWide,
   captionFrames,
   clearanceOutcomes,
@@ -162,6 +163,7 @@ const beyond = (at: { x: number; y: number }) =>
 
 test('a ball wide or into touch comes back off the boards, and no one goes through them', () => {
   let bounced = 0;
+  let over = 0;
   for (let seed = 0; seed < 40; seed++) {
     for (const outcome of ['wide-left', 'over', 'block'] as const) {
       const script = createClipScript(
@@ -176,9 +178,16 @@ test('a ball wide or into touch comes back off the boards, and no one goes throu
         script.frame(at)
       );
       for (const frame of frames) {
-        expect(inside(frame.ball)).toBe(true);
         expect(frame.players.every(inside)).toBe(true);
       }
+      // Over the bar, it clears the boards; along the ground, it meets them.
+      const crowd = frames.findIndex(f => !inside(f.ball));
+      if (outcome === 'over') {
+        expect(frames[crowd - 1]?.ball.height ?? 0).toBeGreaterThan(boardTop);
+        over++;
+        continue;
+      }
+      expect(crowd).toBe(-1);
       // Beyond a line, it runs out towards the boards, then back off them.
       const out = frames.map(f => beyond(f.ball));
       const furthest = Math.max(...out);
@@ -187,9 +196,10 @@ test('a ball wide or into touch comes back off the boards, and no one goes throu
       }
     }
   }
-  // Every miss wide or over reaches the boards; a clearance does when it
-  // goes into touch.
-  expect(bounced).toBeGreaterThan(80);
+  // Every miss wide reaches the boards, and a clearance does when it goes
+  // into touch; every one over the bar goes into the crowd.
+  expect(bounced).toBeGreaterThan(50);
+  expect(over).toBe(40);
 });
 
 test('the sides change ends at half-time', () => {

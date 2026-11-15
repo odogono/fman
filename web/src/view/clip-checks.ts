@@ -1,5 +1,6 @@
 import {
   boardMetres,
+  boardTop,
   clipFps,
   outcomeKind,
   pitchLength,
@@ -440,7 +441,8 @@ export const checkClip = (script: ClipScript): ClipIssue[] => {
     }
   }
 
-  // Nothing goes through the advertising boards into the crowd.
+  // Nothing goes through the advertising boards into the crowd, though a
+  // ball high enough goes over them.
   const pastBoards = (at: At) =>
     at.x < -boardMetres ||
     at.x > pitchWidth + boardMetres ||
@@ -448,6 +450,9 @@ export const checkClip = (script: ClipScript): ClipIssue[] => {
     at.y > pitchLength + boardMetres;
   const last = frames.length - 1;
   for (const run of runs(0, last, at => pastBoards(frames[at]!.ball), 1)) {
+    if ((frames[run.start - 1]?.ball.height ?? 0) >= boardTop) {
+      continue;
+    }
     issues.push({
       ...run,
       kind: 'through-boards',

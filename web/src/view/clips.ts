@@ -123,7 +123,17 @@ export type ClipInput = Readonly<{
 
 /** What a player is doing, for the drawing. */
 export type Pose =
-  'celebrate' | 'dive' | 'head' | 'header' | 'hold' | 'kick' | 'run' | 'stand';
+  | 'celebrate'
+  | 'cheer'
+  | 'dive'
+  | 'head'
+  | 'header'
+  | 'hold'
+  | 'jump'
+  | 'kick'
+  | 'run'
+  | 'slide'
+  | 'stand';
 const poses: readonly Pose[] = [
   'run',
   'header',
@@ -132,7 +142,10 @@ const poses: readonly Pose[] = [
   'head',
   'hold',
   'kick',
-  'stand'
+  'stand',
+  'cheer',
+  'jump',
+  'slide'
 ];
 /** Which way a player faces on the screen. */
 export type Facing = 'down' | 'left' | 'right' | 'up';
@@ -477,6 +490,12 @@ const celebrationPace = 8;
 const celebrateFor = 30;
 /** The furthest a scorer wheels away, in metres, so team-mates catch them. */
 const longestWheel = 12;
+/** A jump for joy: frames crouched, in the air, then landed with arms up. */
+const jumpCrouch = 8;
+const jumpAir = 14;
+const jumpCycle = 32;
+/** A knee slide carries a scorer this many metres. */
+const slideMetres = 3;
 /** Team-mates crowd a celebrating scorer this close, in metres. */
 const huddleGap = 1.1;
 /** A keeper down after a save is up again after this many frames. */
@@ -893,9 +912,13 @@ export const createClipScript = (input: ClipInput): ClipScript => {
           ? 'kick'
           : mover.pose === 'run' && !moving
             ? 'stand'
-            : mover.pose;
+            : mover.pose === 'cheer' && !moving
+              ? 'celebrate'
+              : mover.pose;
       poseLog[at]!.push(poses.indexOf(pose));
-      poseFrameLog[at]!.push(pose === 'header' ? (mover.poseFrame ?? 0) : -1);
+      poseFrameLog[at]!.push(
+        pose === 'header' || pose === 'jump' ? (mover.poseFrame ?? 0) : -1
+      );
     });
     balls.push([bx, by, ball.height]);
     const focus = cameraFocus();
@@ -2393,6 +2416,24 @@ export const createClipScript = (input: ClipInput): ClipScript => {
         )[0] ?? -1)
       : -1;
   const huddled = new Set<number>();
+  // How the scorer celebrates once there: arms up, jumping, or, from a
+  // run to the fans or the corner, a knee slide.
+  const arrivesWith = rng.pick(
+    wheelsTo === 'mates'
+      ? (['arms', 'jump'] as const)
+      : (['arms', 'jump', 'slide'] as const)
+  );
+  /** The reaction's frame the scorer got there. */
+  let there: number | undefined;
+  /** A jump for joy, `t` frames in: crouch, in the air, land, again. */
+  const jumping = (t: number): Pick<Mover, 'pose' | 'poseFrame'> => {
+    const at = ((t % jumpCycle) + jumpCycle) % jumpCycle;
+    return at < jumpCrouch
+      ? { pose: 'jump', poseFrame: 0 }
+      : at < jumpCrouch + jumpAir
+        ? { pose: 'jump', poseFrame: 1 }
+        : { pose: 'celebrate' };
+  };
   let fetched = false;
   let mateSpot: Point | undefined;
   let keeperSpot: Point | undefined;
@@ -2409,14 +2450,33 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       const gap = distance(scorer, celebrateAt);
       const step = perFrame(celebrationPace);
       const off = f >= leapFrames && gap > step;
+      // A knee slide carries them the last few metres, slowing.
+      const sliding =
+        arrivesWith === 'slide' && f >= leapFrames && gap < slideMetres;
       if (off) {
-        scorer.d += ((celebrateAt.d - scorer.d) / gap) * step;
-        scorer.x += ((celebrateAt.x - scorer.x) / gap) * step;
+        const pace = sliding ? step * Math.max(0.2, gap / slideMetres) : step;
+        scorer.d += ((celebrateAt.d - scorer.d) / gap) * pace;
+        scorer.x += ((celebrateAt.x - scorer.x) / gap) * pace;
       } else if (f >= leapFrames) {
         Object.assign(scorer, celebrateAt);
-        aimAt(shooter, salute, true);
+        if (arrivesWith !== 'slide') {
+          aimAt(shooter, salute, true);
+        }
+        there ??= f;
       }
-      scorer.pose = off ? 'run' : 'celebrate';
+      // Arms up as they go, then arms up, a jump for joy or on their knees.
+      Object.assign(
+        scorer,
+        f < leapFrames
+          ? { pose: 'celebrate' }
+          : sliding || (there !== undefined && arrivesWith === 'slide')
+            ? { pose: 'slide' }
+            : off
+              ? { pose: 'cheer' }
+              : arrivesWith === 'jump'
+                ? jumping(f - there!)
+                : { pose: 'celebrate' }
+      );
       joiners.forEach((i, k) => {
         const angle = Math.PI * (0.25 + (k * 2) / 3);
         // They make for where the scorer is going, to meet them there.
@@ -2622,8 +2682,12 @@ export const createClipScript = (input: ClipInput): ClipScript => {
         huddled.add(i);
         reactionHeld.add(i);
       }
-      // Chasing or arrived, they look at the scorer.
-      movers[i]!.pose = huddled.has(i) ? 'celebrate' : 'run';
+      // Chasing or arrived, they look at the scorer, and jump about with
+      // them, each in their own time.
+      Object.assign(
+        movers[i]!,
+        huddled.has(i) ? jumping(f + joiners.indexOf(i) * 9) : { pose: 'run' }
+      );
       aimAt(i, scorer, true);
     }
     record();

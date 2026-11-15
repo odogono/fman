@@ -643,9 +643,10 @@ root.append(
 );
 rebuild();
 
-// The clip on show and the frame, for poking at from the browser's console;
-// `paint` draws a frame at once, even in a background tab that gets no
-// animation frames.
+// The clip on show and the frame, for poking at from the browser's console
+// and for `bun run clips:record`; `paint` draws a frame at once, even in a
+// background tab that gets no animation frames, and `set` changes the
+// settings, as the controls do, and makes the clip again.
 Object.assign(globalThis, {
   clipDebug: {
     get at() {
@@ -660,6 +661,12 @@ Object.assign(globalThis, {
       ),
     get script() {
       return script;
+    },
+    set: (changes: Partial<typeof settings>) => {
+      loaded = undefined;
+      Object.assign(settings, changes);
+      rebuild();
+      playing = false;
     }
   }
 });

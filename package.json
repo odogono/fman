@@ -15,6 +15,7 @@
     "baseline": "bun tools/bots/cli.ts baseline",
     "baseline:compare": "bun tools/bots/cli.ts compare",
     "squads": "bun tools/squads/generate.ts",
+    "clips:record": "bun tools/clips/record.ts",
     "typecheck": "tsc --noEmit && bun run --cwd web typecheck",
     "test": "bun test tools && bun run --cwd web test",
     "lint": "eslint --cache .",

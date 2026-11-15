@@ -6,6 +6,7 @@ For a change to see in the real app (layout, touch controls, the game menu, the 
 
 - `bun run dev` serves `web/index.html` with hot reload, and the clip debugger `web/clips.html` at `/clips`; pass a fixed port, as in `cd web && bun --port 3147 ./index.html ./clips.html`, so the preview URL is known. Stop it when done.
 - The service worker and install prompt exist only in the built site: `bun run build`, then serve `web/dist`.
+- To watch a change to the highlight clips, record them: `bun run clips:record` writes MP4s to `build/clips/` (`tools/clips/README.md`).
 - Use the T3 preview tools (`preview_open`, `preview_evaluate`, `preview_snapshot`). Playwright is not a dependency.
 
 ## Driving the page

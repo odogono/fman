@@ -63,6 +63,8 @@ const settings = {
   awayKit: 1,
   defence: 4,
   finish: 'seed' as Finish | 'seed',
+  /** For a tackled injury (#211): a foul in the box. */
+  foul: 'no' as 'no' | 'yes',
   homeEnergy: 20,
   homeKit: 2,
   ids: false,
@@ -72,6 +74,8 @@ const settings = {
   minute: 30,
   outcome: 'seed' as ClipOutcome | 'seed',
   path: false,
+  /** For a goal, save or near miss (#211): from the penalty spot. */
+  penalty: 'no' as 'no' | 'yes',
   place: 0,
   problems: false,
   rebound: 'seed' as 'no' | 'seed' | 'yes',
@@ -225,7 +229,13 @@ const settingsInput = (seedBase = settings.seedBase): ClipInput => {
       ? {}
       : { rebound: settings.rebound === 'yes' }),
     ...(settings.kind === 'injury'
-      ? { tackled: settings.tackled === 'yes' }
+      ? {
+          foul: settings.foul === 'yes',
+          tackled: settings.tackled === 'yes'
+        }
+      : {}),
+    ...(penaltyKinds.has(settings.kind)
+      ? { penalty: settings.penalty === 'yes' }
       : {}),
     seed: hashSeed(
       [
@@ -240,6 +250,13 @@ const settingsInput = (seedBase = settings.seedBase): ClipInput => {
     shooter: Math.max(0, shooter)
   };
 };
+
+/** The kinds a penalty can be (#211). */
+const penaltyKinds: ReadonlySet<Moment['kind']> = new Set([
+  'goal',
+  'near-miss',
+  'save'
+]);
 
 const outcomesFor = (kind: Moment['kind']): readonly ClipOutcome[] =>
   kind === 'goal'
@@ -396,6 +413,37 @@ const renderControls = () => {
         value => change('tackled')(value as 'no' | 'yes')
       )
     ),
+    // A tackle in the box can be a foul that gives a penalty.
+    ...(settings.kind === 'injury'
+      ? [
+          labelled(
+            'Foul',
+            select(
+              [
+                ['no', 'no'],
+                ['yes', 'yes, in the box']
+              ],
+              settings.foul,
+              value => change('foul')(value as 'no' | 'yes')
+            )
+          )
+        ]
+      : []),
+    ...(penaltyKinds.has(settings.kind)
+      ? [
+          labelled(
+            'Penalty',
+            select(
+              [
+                ['no', 'no'],
+                ['yes', 'yes']
+              ],
+              settings.penalty,
+              value => change('penalty')(value as 'no' | 'yes')
+            )
+          )
+        ]
+      : []),
     labelled(
       'Scored by',
       select(

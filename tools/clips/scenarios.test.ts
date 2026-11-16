@@ -96,9 +96,11 @@ test('parseSeeds reads a seed, a list or a range', () => {
 test('withDefaults puts back every setting a scenario leaves out', () => {
   expect(withDefaults({ kind: 'save', seedBase: 4 })).toEqual({
     finish: 'seed',
+    foul: 'no',
     kind: 'save',
     minute: 30,
     outcome: 'seed',
+    penalty: 'no',
     rebound: 'seed',
     restart: 'seed',
     seedBase: 4,
@@ -116,6 +118,23 @@ test('an injury clip can be tackled or pulling up', () => {
   ]).scenarios;
   expect(scenario!.name).toBe('injury-pulled-up-seed1');
   expect(scenario!.settings).toMatchObject({ kind: 'injury', tackled: 'no' });
+});
+
+test('a clip can be a penalty, or an injury from a foul in the box', () => {
+  const [penalty] = parseOptions([
+    '--kind',
+    'save',
+    '--penalty',
+    'yes'
+  ]).scenarios;
+  expect(penalty!.name).toBe('save-penalty-seed1');
+  expect(penalty!.settings).toMatchObject({ kind: 'save', penalty: 'yes' });
+  const [foul] = parseOptions(['--kind', 'injury', '--foul', 'yes']).scenarios;
+  expect(foul!.name).toBe('injury-foul-seed1');
+  expect(foul!.settings).toMatchObject({ foul: 'yes', kind: 'injury' });
+  expect(() => parseOptions(['--penalty', 'maybe'])).toThrow(
+    '--penalty must be one of'
+  );
 });
 
 test('browserCandidates tries the newest Playwright headless shell first', () => {

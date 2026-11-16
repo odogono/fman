@@ -7,6 +7,7 @@ bun run clips:record                           # one clip of each kind of chance
 bun run clips:record --only rebound,one-on-one # some of those
 bun run clips:record --kind save --outcome parry --finish header --seeds 1-5
 bun run clips:record --kind injury --tackled no # a player pulling up injured
+bun run clips:record --kind save --penalty yes  # a penalty saved
 bun run clips:record --help                    # every option
 ```
 

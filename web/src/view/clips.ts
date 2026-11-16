@@ -89,10 +89,11 @@ export const missOutcomes: readonly MissOutcome[] = [
 
 /**
  * How the build-up starts: in open play, or from a free kick, a throw-in,
- * a goal kick or a corner.
+ * a goal kick or a corner. A penalty (#211) has no build-up: the seed never
+ * picks it, and only a penalty moment plays it.
  */
 export type Restart =
-  'corner' | 'free-kick' | 'goal-kick' | 'open-play' | 'throw-in';
+  'corner' | 'free-kick' | 'goal-kick' | 'open-play' | 'penalty' | 'throw-in';
 export const restarts: readonly Restart[] = [
   'open-play',
   'free-kick',
@@ -105,6 +106,7 @@ const restartNames: Record<Restart, string> = {
   'free-kick': 'Free kick',
   'goal-kick': 'Goal kick',
   'open-play': '',
+  penalty: 'Penalty',
   'throw-in': 'Throw-in'
 };
 
@@ -146,10 +148,20 @@ export type ClipInput = Readonly<{
   defence: ClipSide;
   /** Forces how the chance is finished, for the debug page. */
   finish?: Finish;
+  /**
+   * For an injury caused by a tackle (#211): the tackle was a foul in the
+   * penalty area, so the player goes down in the box and play stops.
+   */
+  foul?: boolean;
   kind: Moment['kind'];
   minute: number;
   /** Forces the outcome, for the debug page; the seed picks it otherwise. */
   outcome?: ClipOutcome;
+  /**
+   * A goal, save or near miss from the penalty spot (#211): no build-up,
+   * the ball on the spot, everyone else outside the box and the D.
+   */
+  penalty?: boolean;
   /** Forces a rebound, or none, for the debug page. */
   rebound?: boolean;
   /** Forces how the build-up starts, for the debug page. */
@@ -333,6 +345,16 @@ const longestLongRange = 30;
  * tackle never looks like a foul that should have been a penalty.
  */
 const injuredFrom = 16.5 + 3;
+/** A player fouled in the box (#211) goes down no nearer goal than this. */
+const sixYards = 8;
+/** The penalty spot's distance from goal, and the D's radius round it. */
+const penaltySpot = 11;
+const penaltyArc = 9.15;
+/** A penalty taker runs up at this pace, in metres a second. */
+const penaltyRunUp = 4.5;
+/** The penalty area's depth from the goal line, and half its width. */
+const boxDepth = 16.5;
+const boxHalf = 20.16;
 /** A shooter found out of range carries it into range at this pace, in metres a second, done by this frame. */
 const intoRangePace = 7;
 const shooterReadyBy = 13.5 * clipFps;
@@ -858,6 +880,24 @@ export const createClipScript = (input: ClipInput): ClipScript => {
   /** An injury (#110): tackled, or pulling up, the player stays down. */
   const injured = input.kind === 'injury';
   const pulledUp = injured && input.tackled === false;
+  /** A foul in the box (#211): the player goes down in it, and play stops. */
+  const foul = injured && !pulledUp && input.foul === true;
+  /** Any other injury is kept out of the box, so it never looks a penalty. */
+  const keptOut = injured && !foul;
+  /**
+   * The nearest an injured player gets to goal, in metres up the pitch:
+   * short of the box, or for a foul, short of the six-yard box.
+   */
+  const injuredLimit = keptOut
+    ? pitchLength - injuredFrom
+    : foul
+      ? pitchLength - sixYards
+      : Infinity;
+  /** A chance from the penalty spot (#211), with no build-up. */
+  const penalty =
+    input.penalty === true && !injured && outcomeKind(outcome) !== 'clearance';
+  /** The penalty's set-up and the foul's spot, from a stream of their own. */
+  const penaltyRng = createClipRng(hashSeed(`${input.seed}|penalty`));
   const deep = others.filter(i => attackers[i]!.line !== 'attack');
   let starter = others.length ? rng.pick(deep.length ? deep : others) : shooter;
   // Of the build-ups, 40% start in open play, 20% each from a free kick and
@@ -883,8 +923,9 @@ export const createClipScript = (input: ClipInput): ClipScript => {
           : restartRoll < 0.9
             ? 'goal-kick'
             : 'corner');
-  const restart: Restart =
-    !others.length || (drawn === 'goal-kick' && goalKicker < 0)
+  const restart: Restart = penalty
+    ? 'penalty'
+    : !others.length || (drawn === 'goal-kick' && goalKicker < 0)
       ? 'open-play'
       : drawn;
 
@@ -916,7 +957,7 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       ? 'header'
       : (odds.find(([, chance]) => (roll -= chance) < 0)?.[0] ?? 'shot');
   let finish: Finish =
-    outcomeKind(outcome) === 'clearance'
+    outcomeKind(outcome) === 'clearance' || penalty
       ? 'shot'
       : restart === 'corner'
         ? 'header'
@@ -945,6 +986,10 @@ export const createClipScript = (input: ClipInput): ClipScript => {
   } else if (restart === 'corner') {
     ballStart.d = pitchLength - 0.3;
     ballStart.x = touchline === 0 ? 0.3 : pitchWidth - 0.3;
+  } else if (restart === 'penalty') {
+    starter = shooter;
+    ballStart.d = pitchLength - penaltySpot;
+    ballStart.x = 34;
   }
   const movers: Mover[] = Array.from({ length: count }, (_, i) => ({
     ...target(i, ballStart, 0),
@@ -985,6 +1030,63 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       if (i < attackers.length && i !== starter) {
         mover.d = Math.min(mover.d, line - 0.5);
       }
+    });
+  }
+  if (restart === 'penalty') {
+    // The taker stands a few steps back from the spot, the keeper on their
+    // line, and everyone else outside the box and the D: along its edge
+    // either side, then behind the D, then a row further back, the two
+    // sides mixed in.
+    const taker = movers[shooter]!;
+    taker.d = ballStart.d - penaltyRng.between(2.6, 3.4);
+    taker.x = ballStart.x + penaltyRng.between(-1.2, 1.2);
+    if (keeperSlot >= 0) {
+      Object.assign(movers[keeperSlot]!, { d: pitchLength - 0.4, x: 34 });
+    }
+    const edge = pitchLength - boxDepth - 1;
+    const byCentre = (row: number, xs: readonly number[]) =>
+      xs
+        .map(x => ({ d: row, x }))
+        .toSorted((a, b) => Math.abs(a.x - 34) - Math.abs(b.x - 34));
+    const wide = (from: number, to: number, gap: number) => {
+      const xs: number[] = [];
+      for (let off = from; off <= to; off += gap) {
+        xs.push(34 - off, 34 + off);
+      }
+      return xs;
+    };
+    const behindD = ballStart.d - penaltyArc - 1.2;
+    const slots = [
+      ...byCentre(edge, wide(penaltyArc, boxHalf - 1, 2.3)),
+      ...byCentre(behindD, [31.5, 34, 36.5, 29, 39]),
+      ...byCentre(edge - 2.6, wide(penaltyArc - 0.5, boxHalf + 1, 2.3))
+    ];
+    const lining = [
+      ...others,
+      ...defenders.flatMap((p, j) =>
+        p.line === 'keeper' ? [] : [attackers.length + j]
+      )
+    ];
+    // Attackers and defenders take turns, so the two sides mix.
+    const attackersIn = lining.filter(i => i < attackers.length);
+    const defendersIn = lining.filter(i => i >= attackers.length);
+    const mixed: number[] = [];
+    for (let k = 0; k < Math.max(attackersIn.length, defendersIn.length); k++) {
+      for (const from of [defendersIn, attackersIn]) {
+        if (k < from.length) {
+          mixed.push(from[k]!);
+        }
+      }
+    }
+    mixed.forEach((i, k) => {
+      const slot = slots[k] ?? {
+        d: edge - 5 - Math.floor((k - slots.length) / 8) * 2.6,
+        x: 20 + ((k - slots.length) % 8) * 4
+      };
+      Object.assign(movers[i]!, {
+        d: slot.d - penaltyRng.between(0, 0.5),
+        x: slot.x + penaltyRng.between(-0.3, 0.3)
+      });
     });
   }
 
@@ -1306,8 +1408,9 @@ export const createClipScript = (input: ClipInput): ClipScript => {
         goal.d = Math.min(
           goal.d,
           line,
-          // An injured player's runs stop short of the box.
-          i === shooter && injured ? pitchLength - injuredFrom - 3 : Infinity
+          // An injured player's runs stop short of the box, or for a foul,
+          // of the six-yard box.
+          i === shooter ? injuredLimit - (keptOut ? 3 : 0) : Infinity
         );
         // Caught beyond the line, a player first drops straight back.
         if (mover.d > line) {
@@ -1386,9 +1489,12 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     shootingSpot.x = 34 + finishRng.between(-5, 5);
   }
   // An injured player is found outside the box, with room to take the
-  // pass in their stride.
-  if (injured) {
-    shootingSpot.d = Math.min(shootingSpot.d, pitchLength - injuredFrom - 3);
+  // pass in their stride; one fouled, in it.
+  if (keptOut) {
+    shootingSpot.d = Math.min(shootingSpot.d, injuredLimit - 3);
+  } else if (foul) {
+    shootingSpot.d = pitchLength - penaltyRng.between(11, 14);
+    shootingSpot.x = 34 + penaltyRng.between(-10, 10);
   }
   // Of the saves from a cross, some are the keeper coming to catch it.
   if (
@@ -1405,6 +1511,7 @@ export const createClipScript = (input: ClipInput): ClipScript => {
   // their own so every other clip plays as before.
   const reboundRng = createClipRng(hashSeed(`${input.seed}|rebound`));
   let rebound =
+    !penalty &&
     (finish === 'shot' || finish === 'header') &&
     keeperSlot >= 0 &&
     outcome !== 'claim' &&
@@ -1880,7 +1987,17 @@ export const createClipScript = (input: ClipInput): ClipScript => {
   // waits with the defenders back, while both sides set; then the ball is
   // played to a team-mate.
   let cardEnd = cardFrames;
-  if (restart !== 'open-play') {
+  if (restart === 'penalty') {
+    // Everyone waits, still, while the penalty is set.
+    const waits = penaltyRng.int(80, 100);
+    cardEnd = Math.max(cardFrames, waits);
+    const everyone = new Set(movers.keys());
+    for (let f = 0; f < waits; f++) {
+      steer(frame, everyone);
+      record();
+      frame++;
+    }
+  } else if (restart !== 'open-play') {
     const waits =
       restart === 'throw-in'
         ? rng.int(50, 80)
@@ -1993,7 +2110,7 @@ export const createClipScript = (input: ClipInput): ClipScript => {
   // The build-up: each player takes the ball under control, may carry it
   // on, then passes; the last pass reaches the shooter in shooting range.
   // A corner's cross has already found the shooter.
-  while (restart !== 'corner') {
+  while (restart !== 'corner' && restart !== 'penalty') {
     // The first touch takes the ball on the way it came, the receiver
     // slowing to it from the pace they came at.
     // Found late, the shooter's touch is a quick one.
@@ -2046,8 +2163,9 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       const to = {
         d: Math.min(
           movers[holder]!.d + ((towards.d - movers[holder]!.d) / gap) * reach,
-          // An injured player carries it no further than the edge of the box.
-          holder === shooter && injured ? pitchLength - injuredFrom : Infinity
+          // An injured player carries it no further than the edge of the
+          // box, or for a foul, the six-yard box.
+          holder === shooter ? injuredLimit : Infinity
         ),
         x: clamp(
           movers[holder]!.x +
@@ -2209,9 +2327,7 @@ export const createClipScript = (input: ClipInput): ClipScript => {
           d: Math.min(
             movers[shooter]!.d + 1.5,
             // Injured, they take it no nearer the box.
-            injured
-              ? Math.max(movers[shooter]!.d, pitchLength - injuredFrom)
-              : 100
+            injured ? Math.max(movers[shooter]!.d, injuredLimit) : 100
           ),
           x: ball.x
         }
@@ -2231,7 +2347,24 @@ export const createClipScript = (input: ClipInput): ClipScript => {
         x: lerp(34, ball.x, 0.5)
       });
     }
-    if (waiting) {
+    if (restart === 'penalty') {
+      // The taker waits, then steps up to the ball over the last frames,
+      // everyone else still until it is struck.
+      const taker = movers[shooter]!;
+      const to = { d: ball.d - 0.7, x: ball.x - 0.3 };
+      const gap = distance(taker, to);
+      const left = zoomFrames - f;
+      const runUp = Math.ceil(gap / perFrame(penaltyRunUp));
+      if (left <= runUp && gap > 0) {
+        const step = Math.min(gap, perFrame(penaltyRunUp));
+        taker.d += ((to.d - taker.d) / gap) * step;
+        taker.x += ((to.x - taker.x) / gap) * step;
+      }
+      aimAt(shooter, ball, true);
+      steer(frame, new Set(movers.keys()));
+      record();
+      frame++;
+    } else if (waiting) {
       // The ball stays on the corner spot until it is crossed.
       steer(frame, new Set([holder]), zoomChase);
       record();
@@ -2305,7 +2438,9 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     };
     // With the tackler still far off, the shooter steadies themselves.
     const runPace = perFrame(nearest > 10 ? 2.5 : 4.5);
-    const latest = clipFps * 3;
+    // To be fouled in the box, they carry it in at pace first, and the
+    // slide waits for them there.
+    const latest = clipFps * (foul ? 12 : 3);
     let slide: Point | undefined;
     let sliding = 0;
     let contact = 0;
@@ -2319,11 +2454,18 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       if (!contact) {
         // The shooter carries on, the ball just ahead, and plants their
         // feet to shoot as the slide comes in.
-        // Injured, they never get into the box.
+        // A foul waits for the shooter to be in the box.
+        const inBox = !foul || runner.d > pitchLength - boxDepth + 1;
+        // Injured, they never get into the box, or for a foul, the six-yard
+        // box.
         const room = injured
-          ? Math.max(0, pitchLength - injuredFrom - runner.d) / heading.d
+          ? Math.max(0, injuredLimit - runner.d) / heading.d
           : Infinity;
-        const pace = Math.min(room, runPace * Math.max(0, 1 - sliding / 6));
+        const pace = Math.min(
+          room,
+          (inBox ? runPace : perFrame(intoRangePace)) *
+            Math.max(0, 1 - sliding / 6)
+        );
         runner.d += heading.d * pace;
         runner.x += heading.x * pace;
         ball.d = runner.d + heading.d * 0.7;
@@ -2331,10 +2473,20 @@ export const createClipScript = (input: ClipInput): ClipScript => {
         ball.height = 0;
         runner.pose = 'run';
         if (!slide) {
-          const lead = {
-            d: ball.d + heading.d * 1.5,
-            x: ball.x + heading.x * 1.5
-          };
+          // Until then, the tackler runs with them, a little ahead and to
+          // the side they came from.
+          const across = { d: -heading.x, x: heading.d };
+          const fromSide =
+            Math.sign(
+              (defender.d - runner.d) * across.d +
+                (defender.x - runner.x) * across.x
+            ) || 1;
+          const lead = inBox
+            ? { d: ball.d + heading.d * 1.5, x: ball.x + heading.x * 1.5 }
+            : {
+                d: runner.d + heading.d * 2.2 + across.d * fromSide * 1.6,
+                x: runner.x + heading.x * 2.2 + across.x * fromSide * 1.6
+              };
           const gap = distance(defender, lead) || 1;
           const step = Math.min(gap, perFrame(tacklePace));
           defender.d += ((lead.d - defender.d) / gap) * step;
@@ -2342,7 +2494,8 @@ export const createClipScript = (input: ClipInput): ClipScript => {
           defender.pose = 'run';
           if (
             !pulledUp &&
-            (distance(defender, ball) < slideReach || f >= latest - slideFrames)
+            ((inBox && distance(defender, ball) < slideReach) ||
+              f >= latest - slideFrames)
           ) {
             slide = { d: 0, x: 0 };
           }
@@ -3188,15 +3341,20 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       // Tackled, the shooter lies there a moment first.
       scorer.pose = frame < shooterUpAt ? 'fall' : 'run';
       scorer.poseFrame = 1;
-      if (f === 25) {
+      // For a foul, play stops: the ball stays where it ran, and the
+      // defender who took it is free.
+      if (foul && f === 25) {
+        reactionHeld.delete(clearer);
+      }
+      if (f === 25 && !foul) {
         kick(clearer, cleared);
       }
-      if (f >= 25 && f < 25 + clearFrames) {
+      if (!foul && f >= 25 && f < 25 + clearFrames) {
         const u = (f - 25) / clearFrames;
         ball.d = lerp(ballAtRest.d, cleared.d, u);
         ball.x = lerp(ballAtRest.x, cleared.x, u);
         ball.height = loftedHeight(u, 0.6);
-      } else if (f >= 25 + clearFrames) {
+      } else if (!foul && f >= 25 + clearFrames) {
         // Landed, it runs on a few metres and stops.
         const run = Math.min(1, (f - 25 - clearFrames) / 30);
         const on = (1 - (1 - run) * (1 - run)) * clearRunOn;

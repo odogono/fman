@@ -14,9 +14,11 @@ import {
  */
 export type ClipSettings = {
   finish?: string;
+  foul?: 'no' | 'yes';
   kind?: string;
   minute?: number;
   outcome?: string;
+  penalty?: 'no' | 'yes';
   rebound?: 'no' | 'yes';
   restart?: string;
   seedBase?: number;
@@ -100,6 +102,13 @@ export const defaultScenarios: readonly Scenario[] = [
     }
   },
   { name: 'near-miss', settings: { kind: 'near-miss', seedBase: 23 } },
+  // A penalty (#211): from the spot, everyone else outside the box.
+  { name: 'penalty', settings: { kind: 'goal', penalty: 'yes', seedBase: 1 } },
+  // A foul in the box that injures the player and gives the penalty.
+  {
+    name: 'foul',
+    settings: { foul: 'yes', kind: 'injury', seedBase: 7, tackled: 'yes' }
+  },
   // After half-time the home side attacks down the screen.
   {
     name: 'goal-attacking-down',
@@ -135,6 +144,8 @@ Clip options (anything left out comes from the seed):
   --minute    1 to 90 (default 30; after 45 the home side attacks down the screen)
   --side      home, away: the side that has the chance (default home)
   --tackled   yes, no: an injury's tackle, or pulling up (default yes)
+  --foul      yes, no: a tackle that injures is a foul in the box (default no)
+  --penalty   yes, no: a goal, save or near miss from the spot (default no)
   --seeds     a seed, a list (3,7,9) or a range (1-5); default 1
   --name      the files' name (default from the options)
 
@@ -195,6 +206,7 @@ export const parseOptions = (args: readonly string[]): Options => {
     args: [...args],
     options: {
       finish: { type: 'string' },
+      foul: { type: 'string' },
       frames: { type: 'boolean' },
       kind: { type: 'string' },
       minute: { type: 'string' },
@@ -202,6 +214,7 @@ export const parseOptions = (args: readonly string[]): Options => {
       only: { type: 'string' },
       out: { type: 'string' },
       outcome: { type: 'string' },
+      penalty: { type: 'string' },
       rebound: { type: 'string' },
       restart: { type: 'string' },
       seeds: { type: 'string' },
@@ -215,10 +228,12 @@ export const parseOptions = (args: readonly string[]): Options => {
   });
   const own = [
     'finish',
+    'foul',
     'kind',
     'minute',
     'name',
     'outcome',
+    'penalty',
     'rebound',
     'restart',
     'seeds',
@@ -285,6 +300,15 @@ export const parseOptions = (args: readonly string[]): Options => {
           tackled: oneOf('tackled', values.tackled, ['yes', 'no']) as
             'no' | 'yes'
         }
+      : {}),
+    ...(values.foul
+      ? { foul: oneOf('foul', values.foul, ['yes', 'no']) as 'no' | 'yes' }
+      : {}),
+    ...(values.penalty
+      ? {
+          penalty: oneOf('penalty', values.penalty, ['yes', 'no']) as
+            'no' | 'yes'
+        }
       : {})
   };
   const name =
@@ -297,7 +321,9 @@ export const parseOptions = (args: readonly string[]): Options => {
       settings.rebound === 'yes' ? 'rebound' : undefined,
       settings.minute === undefined ? undefined : `min${settings.minute}`,
       settings.side === 'away' ? 'away' : undefined,
-      settings.tackled === 'no' ? 'pulled-up' : undefined
+      settings.tackled === 'no' ? 'pulled-up' : undefined,
+      settings.foul === 'yes' ? 'foul' : undefined,
+      settings.penalty === 'yes' ? 'penalty' : undefined
     ]
       .filter(Boolean)
       .join('-');
@@ -333,9 +359,11 @@ export const inMatchOrder = (scenarios: readonly Scenario[]): Scenario[] =>
  */
 export const withDefaults = (settings: ClipSettings) => ({
   finish: 'seed',
+  foul: 'no',
   kind: 'goal',
   minute: 30,
   outcome: 'seed',
+  penalty: 'no',
   rebound: 'seed',
   restart: 'seed',
   seedBase: 1,

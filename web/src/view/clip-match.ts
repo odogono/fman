@@ -354,13 +354,17 @@ export const clipInputFor = (
         moment.minute,
         moment.kind,
         moment.side,
-        name
+        name,
+        // A penalty's (#211) seed differs; every other clip's stays the same.
+        ...(moment.penalty ? ['penalty'] : [])
       ].join('|')
     ),
+    ...(moment.penalty ? { penalty: true } : {}),
     shooter,
     ...(moment.kind === 'injury'
       ? {
           tackled: moment.tackled ?? false,
+          ...(moment.foul ? { foul: true } : {}),
           ...(sides.tackler >= 0 ? { tackler: sides.tackler } : {})
         }
       : {})

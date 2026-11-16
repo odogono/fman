@@ -145,6 +145,35 @@ test('an injury names the player, and who made the tackle when it fits', () => {
   ]);
 });
 
+test('a penalty says so, and the injury it was for names the foul', () => {
+  const { squad } = game.clubs[fixture.opponent - 1]!;
+  const fouler = squad![4]!.name.toUpperCase();
+  const lines = tickerLines(game, fixture, [
+    { kind: 'save', minute: 20, penalty: true, side: 'opponent' },
+    {
+      foul: true,
+      kind: 'injury',
+      minute: 63,
+      player: 3,
+      side: 'club',
+      tackled: true,
+      tackler: 4,
+      weeksOut: 2
+    },
+    { kind: 'goal', minute: 63, penalty: true, player: 17, side: 'club' },
+    { kind: 'near-miss', minute: 80, penalty: true, player: 17, side: 'club' }
+  ]).map(tickerText);
+  expect(lines).toEqual([
+    `80' PEN MISSED: ${player(17)}`,
+    `63' PEN GOAL! ${player(17)} ${fixture.home ? '1-0' : '0-1'}`,
+    fitting(
+      `63' INJURY: ${player(3)}, FOULED BY ${fouler}`,
+      `63' INJURY: ${player(3)}`
+    ),
+    `20' PEN SAVED: ${opponent}`
+  ]);
+});
+
 test('a long name is cut to fit, keeping the minute and score', () => {
   const long = {
     ...game,

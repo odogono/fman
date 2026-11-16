@@ -14,7 +14,8 @@ import {
  * carries one change alone while it is measured against the original, and
  * is retired once the change joins Enhanced (`even-difficulty`,
  * `grace-period`, `lasting-skill`, `steep-difficulty`, `tiring-injuries`,
- * `club-squads`, `moment-highlights`, `clearances`, `match-injuries`).
+ * `club-squads`, `moment-highlights`, `clearances`, `match-injuries`,
+ * `penalties`).
  */
 export const rulesets = [
   'original',
@@ -27,12 +28,13 @@ export const rulesets = [
   'enhanced-7',
   'enhanced-8',
   'enhanced-9',
-  'enhanced-10'
+  'enhanced-10',
+  'enhanced-11'
 ] as const;
 export type Ruleset = (typeof rulesets)[number];
 
 /** The Enhanced version every new Enhanced game starts with. */
-export const latestEnhanced = 'enhanced-10' satisfies Ruleset;
+export const latestEnhanced = 'enhanced-11' satisfies Ruleset;
 
 export const isRuleset = (value: unknown): value is Ruleset =>
   rulesets.includes(value as Ruleset);
@@ -51,6 +53,7 @@ const changes: Record<
     lastingSkill: boolean;
     matchInjuries: boolean;
     momentHighlights: boolean;
+    penalties: boolean;
     plainNames: boolean;
     presentDay: boolean;
     tiringInjuries: boolean;
@@ -64,6 +67,7 @@ const changes: Record<
     lastingSkill: false,
     matchInjuries: false,
     momentHighlights: false,
+    penalties: false,
     plainNames: false,
     presentDay: false,
     tiringInjuries: false
@@ -76,6 +80,20 @@ const changes: Record<
     lastingSkill: true,
     matchInjuries: true,
     momentHighlights: true,
+    penalties: false,
+    plainNames: true,
+    presentDay: true,
+    tiringInjuries: true
+  },
+  'enhanced-11': {
+    clearances: true,
+    clubSquads: true,
+    difficulty: 'steep',
+    gracePeriod: true,
+    lastingSkill: true,
+    matchInjuries: true,
+    momentHighlights: true,
+    penalties: true,
     plainNames: true,
     presentDay: true,
     tiringInjuries: true
@@ -88,6 +106,7 @@ const changes: Record<
     lastingSkill: false,
     matchInjuries: false,
     momentHighlights: false,
+    penalties: false,
     plainNames: false,
     presentDay: false,
     tiringInjuries: false
@@ -100,6 +119,7 @@ const changes: Record<
     lastingSkill: false,
     matchInjuries: false,
     momentHighlights: false,
+    penalties: false,
     plainNames: false,
     presentDay: true,
     tiringInjuries: false
@@ -112,6 +132,7 @@ const changes: Record<
     lastingSkill: true,
     matchInjuries: false,
     momentHighlights: false,
+    penalties: false,
     plainNames: false,
     presentDay: true,
     tiringInjuries: false
@@ -124,6 +145,7 @@ const changes: Record<
     lastingSkill: true,
     matchInjuries: false,
     momentHighlights: false,
+    penalties: false,
     plainNames: false,
     presentDay: true,
     tiringInjuries: true
@@ -136,6 +158,7 @@ const changes: Record<
     lastingSkill: true,
     matchInjuries: false,
     momentHighlights: false,
+    penalties: false,
     plainNames: false,
     presentDay: true,
     tiringInjuries: true
@@ -148,6 +171,7 @@ const changes: Record<
     lastingSkill: true,
     matchInjuries: false,
     momentHighlights: true,
+    penalties: false,
     plainNames: false,
     presentDay: true,
     tiringInjuries: true
@@ -160,6 +184,7 @@ const changes: Record<
     lastingSkill: true,
     matchInjuries: false,
     momentHighlights: true,
+    penalties: false,
     plainNames: false,
     presentDay: true,
     tiringInjuries: true
@@ -172,6 +197,7 @@ const changes: Record<
     lastingSkill: true,
     matchInjuries: true,
     momentHighlights: true,
+    penalties: false,
     plainNames: false,
     presentDay: true,
     tiringInjuries: true
@@ -184,6 +210,7 @@ const changes: Record<
     lastingSkill: false,
     matchInjuries: false,
     momentHighlights: false,
+    penalties: false,
     plainNames: false,
     presentDay: false,
     tiringInjuries: false
@@ -315,3 +342,13 @@ export const longestInjury = (ruleset: Ruleset) =>
  * fault). The original keeps its print faults.
  */
 export const plainNames = (ruleset: Ruleset) => changes[ruleset].plainNames;
+
+/**
+ * Whether each side can win a penalty, for a foul in the box, about once
+ * in eight matches (#211, measured as `penalties` against `enhanced-10`,
+ * then part of `enhanced-11`).
+ * A penalty is a chance of its own, scored as often as any other chance,
+ * so it can change the result. A managed player injured by a tackle in the
+ * same match can be the one fouled. It needs moment highlights.
+ */
+export const penalties = (ruleset: Ruleset) => changes[ruleset].penalties;

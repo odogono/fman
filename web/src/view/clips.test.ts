@@ -1654,6 +1654,75 @@ test('an injured player goes down outside the box, where no one could ask for a 
   }
 }, 60_000);
 
+test('a player fouled in the box goes down in it, and play stops', () => {
+  for (const shooter of [9, 6, 2]) {
+    for (let seed = 0; seed < 40; seed++) {
+      const attackingUp = seed % 2 === 0;
+      const script = createClipScript(
+        input({
+          attackingUp,
+          foul: true,
+          kind: 'injury',
+          seed,
+          shooter,
+          tackled: true
+        })
+      );
+      expect(checkClip(script)).toEqual([]);
+      for (const at of [script.momentFrame, script.length - 1]) {
+        const down = script.frame(at).players[shooter]!;
+        expect({ at, in: inBox(down, attackingUp), seed, shooter }).toEqual({
+          at,
+          in: true,
+          seed,
+          shooter
+        });
+      }
+      // Nobody clears it: the ball lies where it ran.
+      expect(script.frame(script.length - 1).ball).toEqual(
+        script.frame(script.phases.reaction).ball
+      );
+    }
+  }
+}, 60_000);
+
+test('a penalty is struck from the spot, with only the taker and the keeper in the box', () => {
+  for (const kind of ['goal', 'save', 'near-miss'] as const) {
+    for (const shooter of [9, 6, 2]) {
+      for (let seed = 0; seed < 15; seed++) {
+        const attackingUp = seed % 2 === 0;
+        const made = input({ attackingUp, kind, penalty: true, seed, shooter });
+        const script = createClipScript(made);
+        expect(script.restart).toBe('penalty');
+        expect(script.rebound).toBe(false);
+        expect(script.passes).toEqual([]);
+        expect(outcomeKind(script.outcome)).toBe(kind);
+        expect(checkClip(script)).toEqual([]);
+        expect(script.length).toBeLessThanOrEqual(longestClip);
+        expect(cardText(script.frame(10))).toContain('Penalty');
+        const keeper = script.input.attack.players.length;
+        for (let at = 0; at < script.phases.moment; at++) {
+          const frame = script.frame(at);
+          expect(frame.ball.x).toBeCloseTo(pitchWidth / 2);
+          expect(
+            attackingUp ? frame.ball.y : pitchLength - frame.ball.y
+          ).toBeCloseTo(11);
+          const inside = frame.players.flatMap((p, i) =>
+            i !== shooter && i !== keeper && inBox(p, attackingUp) ? [i] : []
+          );
+          expect({ at, inside }).toEqual({ at, inside: [] });
+        }
+        // The taker strikes it.
+        const struck = script.frame(script.phases.moment + 1);
+        expect(struck.players[shooter]!.pose).toBe('kick');
+        expect(createClipScript(made).frame(script.momentFrame)).toEqual(
+          script.frame(script.momentFrame)
+        );
+      }
+    }
+  }
+}, 60_000);
+
 test('an injured player is tackled by the named defender, or pulls up, and stays down', () => {
   for (const shooter of [9, 6, 2]) {
     for (let seed = 0; seed < 12; seed++) {

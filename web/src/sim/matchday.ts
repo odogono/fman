@@ -23,7 +23,12 @@ import {
   type HighlightResult,
   type Playback
 } from './playback';
-import { clearances, matchInjuries, momentHighlights } from './ruleset';
+import {
+  clearances,
+  matchInjuries,
+  momentHighlights,
+  penalties
+} from './ruleset';
 import { createTicker, validClipLengths, type Ticker } from './ticker';
 
 /**
@@ -161,6 +166,7 @@ export const createMatchday = (initial: Game, keyboard?: PauseKeyboard) => {
           home: fixture.home,
           injuries: matchInjuries(game.ruleset),
           opponent: fixture.opponentStrength,
+          penalties: penalties(game.ruleset),
           players: game.players,
           seed: game.seed,
           strength: teamStrength(game),

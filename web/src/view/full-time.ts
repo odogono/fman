@@ -63,7 +63,7 @@ const scorers = (
   for (const goal of goals) {
     const name = playerName(game, fixture, goal);
     const minutes = rows.get(name) ?? [];
-    minutes.push(`${goal.minute}′`);
+    minutes.push(`${goal.minute}′${goal.penalty ? ' (pen)' : ''}`);
     rows.set(name, minutes);
   }
   return [...rows].map(([name, minutes]) =>

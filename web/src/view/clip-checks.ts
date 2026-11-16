@@ -503,13 +503,15 @@ export const checkClip = (script: ClipScript): ClipIssue[] => {
     });
   }
 
-  // Defenders and keepers score mostly from set pieces.
+  // Defenders and keepers score mostly from set pieces, a penalty among
+  // them.
   const shooter = input.attack.players[input.shooter];
   if (
     shooter &&
     (shooter.line === 'defence' || shooter.line === 'keeper') &&
     script.restart !== 'corner' &&
-    script.restart !== 'free-kick'
+    script.restart !== 'free-kick' &&
+    script.restart !== 'penalty'
   ) {
     issues.push({
       end: phases.moment,

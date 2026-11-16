@@ -69,7 +69,7 @@ Style is "paper & ink": light grey paper, black text with red and blue ink rows,
   - The pitch carries a screen-reader label naming the attacking club, and a polite live region announces each outcome, such as "Goal! Arsenal 1, Blackpool 0" or "No goal".
   - **Ticker** (`moment-highlights`): drawn in paper & ink under the same scoreboard, as a scrollable list with no strength columns. The newest moment is on top and the minute mark is `′`. A Skip button sits below the list and works as in Classic.
   - On a wide window the highlights stand alone, centred as on a phone, without the left pane: its choices are all disabled during a match, and it would draw the eye from the pitch.
-  - **Clips** (sprite highlights): the pitch takes the screen, with the scoreboard as one strip above it and one row of controls below; the top bar and footer are hidden. See [sprite-highlights.md](sprite-highlights.md#the-screen).
+  - **Clips** (sprite highlights): the pitch takes the screen, with the scoreboard as one strip above it and one row of controls below; the top bar and footer are hidden. On a phone on its side, the scoreboard and the moments take columns either side of the pitch instead. See [sprite-highlights.md](sprite-highlights.md#the-screen).
 - **Status** (`s`, "Print score etc"): the original's facts only, without the league record the mockup invents.
   - The club name in its name colour, with the manager and the colours under it. A black bar reads "Managerial rating 37 / 100".
   - Then labelled rows: Level (its name in the level's colours, as in the original), Seasons, Cash, Loan, Morale, League position ("—" before the first league match, as on Home) and League match.
@@ -87,7 +87,7 @@ Style is "paper & ink": light grey paper, black text with red and blue ink rows,
   - The bid uses the loan screen's controls: − and +, Classic's chips, and the exact-amount keypad. It starts at the player's value, with "Up to £X" for the cash.
   - "Place bid" is the yellow primary, disabled at £0, where a bid can only be refused; a red "Pass" (`99`) sits under it.
 - **Messages**: every plain text message (a refused bid, "has been sold", "has joined your team", the full-squad notice) shows its text in a black inverse bar, worded as the original has it, with Continue under it.
-- **Desktop**: two panes when the window is at least 900px wide and wider than tall; otherwise the phone layout, centred at up to about 480px. The left pane holds the club summary, next fixture and menu choices, enabled only while the menu prompt waits, since the original accepts them nowhere else; it is hidden during the highlights. The right pane shows the screen on show, or, while the menu waits, Modern mode's status read-only, without its Done button. The mode switch is not in the header, as the mockup shows, but in the game menu's Options.
+- **Desktop**: two panes when the window is at least 900px wide, more than 500px tall and wider than tall; otherwise the phone layout, centred at up to about 480px. The left pane holds the club summary, next fixture and menu choices, enabled only while the menu prompt waits, since the original accepts them nowhere else; it is hidden during the highlights. The right pane shows the screen on show, or, while the menu waits, Modern mode's status read-only, without its Done button. The mode switch is not in the header, as the mockup shows, but in the game menu's Options.
 
 ![Desktop](https://gist.githubusercontent.com/odogono/00dcc8e44efa42a79b1c8599d68c7496/raw/desktop.jpg)
 

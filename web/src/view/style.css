@@ -557,7 +557,7 @@ main {
 :root.modern:not(.at-home) .home {
   display: none;
 }
-@media (min-width: 900px) and (min-aspect-ratio: 1) {
+@media (min-width: 900px) and (min-aspect-ratio: 1) and (min-height: 501px) {
   :root.modern,
   :root.modern.fit {
     --pixel: min(3px, calc((100vw - 360px - 72px) / 288));
@@ -784,7 +784,7 @@ button.pick-row:focus-visible {
 :root.modern.at-pick-team .context-bar {
   display: none;
 }
-@media (min-width: 900px) and (min-aspect-ratio: 1) {
+@media (min-width: 900px) and (min-aspect-ratio: 1) and (min-height: 501px) {
   :root.modern main:has(#home:not([hidden])) .pick-team {
     grid-column: 2;
     width: 480px;
@@ -986,7 +986,7 @@ button.latest-moment:focus-visible,
 .moments-panel {
   display: none;
 }
-@media (min-width: 900px) and (min-aspect-ratio: 1) {
+@media (min-width: 900px) and (min-aspect-ratio: 1) and (min-height: 501px) {
   .modern-highlights:has(.clip-stage) {
     grid-template-columns: 360px 480px;
     grid-template-rows: auto minmax(0, 1fr) auto;
@@ -1183,7 +1183,7 @@ button.latest-moment:focus-visible,
   outline-offset: 2px;
 }
 /* On a wide window the panel holds the moments: Skip all stands alone. */
-@media (min-width: 900px) and (min-aspect-ratio: 1) {
+@media (min-width: 900px) and (min-aspect-ratio: 1) and (min-height: 501px) {
   .clip-controls .latest-moment {
     display: none;
   }
@@ -1200,6 +1200,94 @@ button.latest-moment:focus-visible,
     display: none;
   }
 }
+/* A phone on its side: the pitch, square or taller, at full height in the
+   middle; the scoreboard stacked in the left column; the moments, with
+   Skip all at their foot, in the right. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .modern-highlights:has(.clip-stage) {
+    --pane-height: calc(
+      100dvh - max(8px, env(safe-area-inset-top)) -
+        max(8px, env(safe-area-inset-bottom))
+    );
+    grid-template-columns: minmax(0, 1fr) min(var(--pane-height), 50vw) minmax(
+        0,
+        1fr
+      );
+    grid-template-rows: minmax(0, 1fr) auto;
+    column-gap: 12px;
+    max-width: none;
+  }
+  .modern-highlights:has(.clip-stage) > .clip-scoreboard {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    grid-column: 1;
+    grid-row: 1 / -1;
+    text-align: center;
+  }
+  .clip-scoreboard .scoreboard-menu {
+    align-self: start;
+  }
+  .clip-scoreboard .club-name:nth-child(n) {
+    justify-self: auto;
+    overflow: visible;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .clip-scoreboard .scoreboard-goals {
+    align-self: center;
+    padding: 4px 12px;
+    font-size: 28px;
+  }
+  .scoreboard-clock {
+    text-align: center;
+  }
+  .modern-highlights:has(.clip-stage) > .clip-stage {
+    grid-column: 2;
+    grid-row: 1 / -1;
+  }
+  .clip-stage .clip-frame {
+    width: min(100cqw, 100cqh);
+  }
+  .modern-highlights:has(.clip-stage) > .moments-panel {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-column: 3;
+    grid-row: 1;
+    min-height: 0;
+  }
+  .moments-panel h3 {
+    padding: 2px 8px;
+    background: var(--normal-0);
+    color: var(--bright-7);
+  }
+  .moments-panel .modern-ticker li {
+    grid-template-columns: 34px 52px minmax(0, 1fr) auto;
+    gap: 4px;
+    font-size: 14px;
+  }
+  .moments-panel .modern-ticker:empty::before {
+    content: 'Kick-off';
+    display: block;
+    padding: 8px 4px;
+    font-weight: 600;
+  }
+  .modern-highlights:has(.clip-stage) > .clip-controls {
+    grid-column: 3;
+    grid-row: 2;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* The panel holds the moments, so none show under or over the pitch. */
+  .clip-controls .latest-moment,
+  .modern-highlights .moments-drawer,
+  .clip-stage .full-ticker {
+    display: none;
+  }
+  .clip-controls .primary {
+    grid-column: 1;
+  }
+}
 /* The highlights screen stands in for the original's and the ticker's bar. */
 :root.modern.at-highlights .machine,
 :root.modern.at-highlights .context-bar {
@@ -1210,7 +1298,7 @@ button.latest-moment:focus-visible,
   width: 100%;
   max-width: 480px;
 }
-@media (min-width: 900px) and (min-aspect-ratio: 1) {
+@media (min-width: 900px) and (min-aspect-ratio: 1) and (min-height: 501px) {
   :root.modern main:has(#home:not([hidden])) .modern-highlights {
     grid-column: 2;
     width: 480px;
@@ -1300,7 +1388,7 @@ button.latest-moment:focus-visible,
 :root.modern.at-home .modern-status {
   display: none;
 }
-@media (min-width: 900px) and (min-aspect-ratio: 1) {
+@media (min-width: 900px) and (min-aspect-ratio: 1) and (min-height: 501px) {
   /* Only while shown: a hidden status must not hold the right pane. */
   :root.modern main:has(#home:not([hidden])) .modern-status:not([hidden]) {
     display: grid;
@@ -1431,7 +1519,7 @@ button.latest-moment:focus-visible,
 :root.modern.has-amount .context-bar {
   display: none;
 }
-@media (min-width: 900px) and (min-aspect-ratio: 1) {
+@media (min-width: 900px) and (min-aspect-ratio: 1) and (min-height: 501px) {
   :root.modern main:has(#home:not([hidden])) .modern-amount {
     grid-column: 2;
     align-self: start;

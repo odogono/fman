@@ -26,6 +26,7 @@ import {
   cameraAspect,
   pitchLength,
   pitchWidth,
+  shortestCameraAspect,
   tallestCameraAspect,
   type ClipFrame,
   type ClipSide
@@ -55,8 +56,9 @@ const line = 'rgba(255, 255, 255, 0.85)';
 
 /**
  * Sizes `canvas` to its box at the screen's resolution, and returns its
- * size in CSS pixels. The camera keeps its width, so a box taller than the
- * camera's shape shows more of the pitch's length, up to the tallest shape.
+ * size in CSS pixels. The camera keeps its width, so a box taller or shorter
+ * than the camera's shape shows more or less of the pitch's length, between
+ * the shortest and tallest shapes.
  */
 export const fitClipCanvas = (canvas: HTMLCanvasElement) => {
   const ratio = globalThis.devicePixelRatio || 1;
@@ -65,7 +67,7 @@ export const fitClipCanvas = (canvas: HTMLCanvasElement) => {
     width *
     Math.min(
       tallestCameraAspect,
-      Math.max(cameraAspect, canvas.clientHeight / width)
+      Math.max(shortestCameraAspect, canvas.clientHeight / width)
     );
   const pixelsWide = Math.round(width * ratio);
   const pixelsHigh = Math.round(height * ratio);
@@ -208,17 +210,26 @@ export const paintClip = (
   const { height, ratio, width } = size;
   const aspect = height / width;
   // A taller patch than the clip framed is kept as far onto the pitch as
-  // the clip's own; the ball stays in shot, since the patch only grew.
+  // the clip's own; the ball stays in shot, since the patch only grew. A
+  // shorter one follows the ball, so it never leaves the picture.
   const halfLength = (frame.camera.width * aspect) / 2;
+  const onPitch =
+    halfLength * 2 > pitchLength + 16
+      ? pitchLength / 2
+      : Math.min(
+          Math.max(frame.camera.y, halfLength - 8),
+          pitchLength - halfLength + 8
+        );
+  const reachToBall = Math.max(0, halfLength - 3);
   const camera = {
     ...frame.camera,
     y:
-      halfLength * 2 > pitchLength + 16
-        ? pitchLength / 2
-        : Math.min(
-            Math.max(frame.camera.y, halfLength - 8),
-            pitchLength - halfLength + 8
+      aspect < cameraAspect
+        ? Math.min(
+            Math.max(onPitch, frame.ball.y - reachToBall),
+            frame.ball.y + reachToBall
           )
+        : onPitch
   };
   const scale = width / camera.width;
   ctx.setTransform(ratio, 0, 0, ratio, 0, 0);

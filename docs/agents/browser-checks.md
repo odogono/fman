@@ -27,6 +27,7 @@ For a change to see in the real app (layout, touch controls, the game menu, the 
 | `#amount-prompt`                    | Modern mode's loan, repayment and transfer bid screen; amount buttons carry `data-action`, the rest `data-id`. |
 | `#message`                          | Modern mode's messages: the balance after a loan, and plain text messages, with Continue.                      |
 | `#week-results`, `#league-table`    | Modern mode's week's results and league table, each with Continue.                                             |
+| `#bills`                            | Modern mode's weekly bills and dismissal, with Continue or Leave the club.                                     |
 | `#full-time`                        | Modern mode's Full-time screen: scoreboard, scorers, injuries and gate receipts, with Continue.                |
 
 Storage keys (`web/src/view/storage.ts`): `fman:options` holds `{ presentation, rules, scale, sound, touch }`, `fman:autosave` the session the page resumes on load, `fman:slot:<n>` the save slots. Set options, then `location.reload()`; `sound: false` keeps prompts quiet, and `touch: 'on'` forces the context bar, and `presentation: 'classic'` turns off Modern mode, the default.

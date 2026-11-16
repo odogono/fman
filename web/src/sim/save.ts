@@ -117,7 +117,9 @@ export const validGame = (v: unknown): v is Game => {
           'value'
         ]) &&
         p.id === i + 1 &&
-        rules.every((rule, r) => rule.player?.valid(p, on[r]!) ?? true) &&
+        rules.every(
+          (rule, r) => rule.player?.valid(p, on[r]!, ruleset) ?? true
+        ) &&
         text(p.name, 8) &&
         integer(p.status, 0, 3) &&
         integer(p.skill, 0, 100) &&

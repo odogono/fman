@@ -1,6 +1,6 @@
 import { coloursText, levels } from '../sim/catalogue';
 import type { Game, Player } from '../sim/management';
-import { tiringInjuries } from '../sim/ruleset';
+import { longestInjury, tiringInjuries } from '../sim/ruleset';
 import { inSquadOrder, playerCategory } from '../sim/squads';
 import type { Paint } from './grid';
 import type { Layouts } from './layout';
@@ -112,7 +112,7 @@ export const paintSquad = (
   print.text('p', { ink: 3, inverse: true });
   if (weeksOut) {
     print.text(' = picked, ', { ink: 0, inverse: false });
-    print.text('1-3', { ink: 4, inverse: true });
+    print.text(`1-${longestInjury(game.ruleset)}`, { ink: 4, inverse: true });
     print.text(' = weeks injured', { ink: 0, inverse: false });
   } else {
     print.text(' = picked to play, ', { ink: 0, inverse: false });

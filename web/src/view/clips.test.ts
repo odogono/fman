@@ -1611,3 +1611,9 @@ test('a goal is announced from its moment for 2.5 s, naming the scorer in place 
     expect(saved.frame(at).goal).toBeUndefined();
   }
 });
+
+test('until injuries have clips of their own, an injury plays as a tackle', () => {
+  for (let seed = 0; seed < 50; seed++) {
+    expect(seededOutcome(seed, 'injury')).toBe('tackle');
+  }
+});

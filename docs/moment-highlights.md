@@ -19,7 +19,7 @@ Under `enhanced-7` (and `moment-highlights` before it), kicking off decides the 
 - **The list** is sorted by minute. Moments in the same minute keep the order they were drawn in.
 - **The score** is the number of goal moments. A drawn cup tie is replayed as now. There is no extra time and there are no penalties.
 
-Injuries, tackles and build-up play are not moments. Injuries are still drawn before team selection, as in the original.
+Tackles and build-up play are not moments. Injuries are drawn before team selection, as in the original, except under [match injuries](match-injuries.md), where they are moments of their own.
 
 The match is decided at kick-off, then the [ticker](#the-ticker) shows it. The attack positions the original carries from one match to the next don't change. The engine uses the game's seeded random numbers, but it can't draw as many of them as the original's attacks do, so every later draw in the same week differs. The next management menu reseeds from the frame counter, as now; how long the ticker runs, and any key that cuts it short, change how many frames have passed by then. `Game` gains no field, so saves are unchanged.
 

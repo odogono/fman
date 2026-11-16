@@ -6,6 +6,7 @@ import type { Moment } from '../sim/moments';
 const kindWords: Record<Moment['kind'], string> = {
   clearance: 'CLEARED:',
   goal: 'GOAL!',
+  injury: 'INJURY:',
   'near-miss': 'MISSED:',
   save: 'SAVED:'
 };
@@ -42,6 +43,43 @@ export const named = (game: Game, fixture: MatchFixture, moment: Moment) => {
 };
 
 /**
+ * Who made the tackle that injured a player (#110): the opposing player,
+ * or else the opposing club; `undefined` when the player pulled up.
+ */
+export const tacklerName = (
+  game: Game,
+  fixture: MatchFixture,
+  moment: Moment
+) => {
+  if (moment.kind !== 'injury' || !moment.tackled) {
+    return;
+  }
+  const { name, squad } = game.clubs[fixture.opponent - 1]!;
+  return (
+    (moment.tackler === undefined
+      ? undefined
+      : squad?.[moment.tackler]?.name) ?? name
+  ).trim();
+};
+
+/**
+ * What a moment's line names: the player or club, and for an injury
+ * caused by a tackle, who made it, as `Pryce, tackled by Smith`. `room`
+ * drops the tackle when the whole doesn't fit.
+ */
+export const lineName = (
+  game: Game,
+  fixture: MatchFixture,
+  moment: Moment,
+  room = Infinity
+) => {
+  const name = named(game, fixture, moment).trim();
+  const tackler = tacklerName(game, fixture, moment);
+  const full = tackler ? `${name}, tackled by ${tackler}` : name;
+  return full.length <= room ? full : name;
+};
+
+/**
  * The ticker's lines (#108), newest first. Each opens with the minute and
  * the kind, then names the player or club; a goal ends with the score after
  * it. A name too long for the line is cut, keeping the minute and score.
@@ -64,8 +102,7 @@ export const tickerLines = (
     }
     const room =
       width - minute.length - word.length - 2 - (goals ? goals.length + 1 : 0);
-    const name = named(game, fixture, moment)
-      .trim()
+    const name = lineName(game, fixture, moment, room)
       .toUpperCase()
       .slice(0, room);
     return {

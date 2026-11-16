@@ -1,6 +1,7 @@
 import {
   clubSquads,
   gracePeriodWeeks,
+  longestInjury,
   presentDay,
   tiringInjuries,
   type Ruleset
@@ -26,7 +27,7 @@ export type RuleData = Readonly<{
   game?: Owned<(game: Saved, on: boolean, ruleset: Ruleset) => boolean>;
   /** The rule is on under this ruleset. */
   on: (ruleset: Ruleset) => boolean;
-  player?: Owned<(player: Saved, on: boolean) => boolean>;
+  player?: Owned<(player: Saved, on: boolean, ruleset: Ruleset) => boolean>;
   /** The save version the data arrived in; older saves never carry it. */
   since?: number;
 }>;
@@ -93,14 +94,19 @@ export const ruleData: Readonly<Record<string, RuleData>> = {
     },
     on: presentDay
   },
-  /** An injured player misses up to three weeks (#98). */
+  /**
+   * An injured player misses up to three weeks (#98), shown as up to four
+   * under match injuries (#110).
+   */
   tiringInjuries: {
     on: tiringInjuries,
     player: {
       keys: ['weeksOut'],
-      valid: (player, on) =>
+      valid: (player, on, ruleset) =>
         player.weeksOut === undefined ||
-        (on && player.status === 3 && integer(player.weeksOut, 1, 3))
+        (on &&
+          player.status === 3 &&
+          integer(player.weeksOut, 1, longestInjury(ruleset)))
     },
     since: 10
   }

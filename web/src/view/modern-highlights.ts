@@ -4,7 +4,7 @@ import type { Moment } from '../sim/moments';
 import type { View } from '../sim/session';
 import { clubName, fixtureTitle, type ClubName } from './home';
 import { strengthsFor, type Strengths } from './pick-team';
-import { named } from './ticker-layout';
+import { lineName } from './ticker-layout';
 
 /** How far the sprite highlights' clips have got, and the drawer. */
 export type ClipProgress = Readonly<{
@@ -65,6 +65,7 @@ export type ModernHighlights = Readonly<{
 const words: Record<Moment['kind'], string> = {
   clearance: 'Cleared',
   goal: 'Goal!',
+  injury: 'Injury',
   'near-miss': 'Missed',
   save: 'Saved'
 };
@@ -86,7 +87,7 @@ const tickerLines = (
       return {
         kind: moment.kind,
         minute: `${moment.minute}′`,
-        name: named(game, fixture, moment).trim(),
+        name: lineName(game, fixture, moment),
         ...(score ? { score } : {}),
         word: words[moment.kind]
       };

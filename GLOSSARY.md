@@ -41,7 +41,7 @@ A player's readiness to play, reduced by playing and restored by resting.
 _Avoid_: Skill when referring to readiness
 
 **Injury**:
-A player's spell out of the picked team, drawn before each match. In the original it lasts one week; under lasting injuries it is likelier for a tired player and lasts up to three.
+A player's spell out of the picked team, drawn before each match. In the original it lasts one week; under lasting injuries it is likelier for a tired player and lasts up to three. Under match injuries it is drawn in the match instead, for a picked player, as a moment.
 
 **Weeks out**:
 How many more matches an injured player misses under lasting injuries, shown on the squad screen in place of `i`.
@@ -89,7 +89,7 @@ One attacking sequence of the original's highlights, played out on the pitch. Or
 _Avoid_: Chance, which is the strength test behind either
 
 **Moment**:
-One decisive event in a match: a goal, a save, a clearance or a near miss, at a minute, for the side that made the chance. It names the player who shot: for the managed club one of its picked players, and, when clubs own squads, for an opponent one of its squad.
+One decisive event in a match: a goal, a save, a clearance or a near miss, at a minute, for the side that made the chance. It names the player who shot: for the managed club one of its picked players, and, when clubs own squads, for an opponent one of its squad. Under match injuries a moment can also be an injury to one of the managed club's picked players, naming the opponent who made the tackle when one did.
 _Avoid_: Event, highlight
 
 **Clearance**:

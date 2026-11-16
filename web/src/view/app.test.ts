@@ -1174,7 +1174,7 @@ test('the pick team screen groups by category and follows the ruleset', () => {
   toTeam(enhanced);
   const shown = enhanced.page.pickTeam!;
   // Club squads: a goalkeeper heads Defence; tiring injuries count weeks.
-  expect(shown.weeksOut).toBe(true);
+  expect(shown.weeksOut).toBe(3);
   expect(shown.groups[0]!.players[0]!.tag).toBe('G');
   expect(shown.groups[1]!.players.every(row => row.tag === 'M')).toBe(true);
   expect(shown.groups[2]!.players.every(row => row.tag === 'A')).toBe(true);
@@ -1184,7 +1184,7 @@ test('the pick team screen groups by category and follows the ruleset', () => {
   });
   toTeam(original);
   const plain = original.page.pickTeam!;
-  expect(plain.weeksOut).toBe(false);
+  expect(plain.weeksOut).toBeUndefined();
   // Without positions, a player's place gives his category.
   plain.groups.forEach((group, category) => {
     for (const row of group.players) {

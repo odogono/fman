@@ -291,7 +291,13 @@ test('a drawn cup tie is replayed', () => {
 });
 
 test('with clearances, the chances that are not goals split as the original’s misses end', () => {
-  const kinds = { clearance: 0, goal: 0, 'near-miss': 0, save: 0 };
+  const kinds: Record<Moment['kind'], number> = {
+    clearance: 0,
+    goal: 0,
+    injury: 0,
+    'near-miss': 0,
+    save: 0
+  };
   for (let seed = 0; seed < 20_000; seed += 1) {
     for (const moment of decide(seed, { clearances: true }).moments) {
       kinds[moment.kind]++;

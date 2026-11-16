@@ -68,7 +68,7 @@ Phone: the whole pitch upright with an "all events" drawer, and the camera zoome
 ## Open questions
 
 - **How moments are drawn.** The probability of each kind of moment, and how team strengths and individual players' skill and energy set it. The aim is final scores in a range close to the original's, so that the league and cup stay balanced.
-- **Injuries during the match.** The original draws injuries before selection. Either the existing draw moves into the match, or a new one is added; each changes the baseline differently.
+- **Injuries during the match.** Settled in [match-injuries.md](match-injuries.md): the lasting-injuries draw moves into the match, from a stream of its own, so no result moves.
 - **Who scores.** Weighting by skill, and which playing category (defence, midfield or attack) a scorer comes from.
 
 Kits and Classic mode were settled for the sprite view in [sprite-highlights.md](sprite-highlights.md#scope): kits stay as they are, and Classic mode keeps the ticker.

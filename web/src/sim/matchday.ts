@@ -15,6 +15,7 @@ import {
   type MatchFixture
 } from './league';
 import type { Game } from './management';
+import { settleInjuries } from './match-injuries';
 import { decideMoments, type MomentResult } from './moments';
 import type { PauseKeyboard } from './pause-keyboard';
 import {
@@ -22,7 +23,7 @@ import {
   type HighlightResult,
   type Playback
 } from './playback';
-import { clearances, momentHighlights } from './ruleset';
+import { clearances, matchInjuries, momentHighlights } from './ruleset';
 import { createTicker, validClipLengths, type Ticker } from './ticker';
 
 /**
@@ -158,6 +159,7 @@ export const createMatchday = (initial: Game, keyboard?: PauseKeyboard) => {
         const moments = decideMoments({
           clearances: clearances(game.ruleset),
           home: fixture.home,
+          injuries: matchInjuries(game.ruleset),
           opponent: fixture.opponentStrength,
           players: game.players,
           seed: game.seed,
@@ -222,7 +224,10 @@ export const createMatchday = (initial: Game, keyboard?: PauseKeyboard) => {
       expect('team');
       game = togglePickedPlayer(game, id);
     },
-    /** Recovers energy and draws injuries before team selection. */
+    /**
+     * Recovers energy and draws injuries before team selection; under
+     * match injuries (#110) they are drawn in the match instead.
+     */
     refresh: () => {
       expect('fixture');
       game = refreshPlayers(game);
@@ -235,10 +240,17 @@ export const createMatchday = (initial: Game, keyboard?: PauseKeyboard) => {
       highlights = undefined;
       stage = 'fixture';
     },
-    /** Credits receipts and settles the league match or cup leg. */
+    /**
+     * Credits receipts and settles the league match or cup leg, and under
+     * match injuries (#110) counts the injuries down and adds the match's.
+     */
     settle: () => {
       expect('result');
-      const { score } = watched().result;
+      const shown = watched();
+      const { score } = shown.result;
+      if (shown.kind === 'moments' && matchInjuries(game.ruleset)) {
+        game = settleInjuries(game, shown.result.moments);
+      }
       if (fixture.kind === 'cup') {
         const result = settleCupLeg(game, fixture, score);
         game = result.game;

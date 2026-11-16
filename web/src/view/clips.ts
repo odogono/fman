@@ -458,15 +458,20 @@ const drawMiss = (rng: ClipRng): MissOutcome => {
         : 'post';
 };
 
-/** The outcome the seed picks for a kind. */
+/**
+ * The outcome the seed picks for a kind. Until injuries have clips of their
+ * own (#110), an injury plays as the injured player being tackled.
+ */
 const drawOutcome = (rng: ClipRng, kind: Moment['kind']): ClipOutcome =>
-  kind === 'goal'
-    ? 'goal'
-    : kind === 'save'
-      ? rng.pick(saveOutcomes)
-      : kind === 'clearance'
-        ? rng.pick(drawnClearances)
-        : drawMiss(rng);
+  kind === 'injury'
+    ? 'tackle'
+    : kind === 'goal'
+      ? 'goal'
+      : kind === 'save'
+        ? rng.pick(saveOutcomes)
+        : kind === 'clearance'
+          ? rng.pick(drawnClearances)
+          : drawMiss(rng);
 
 /** The outcome a clip's seed picks for a kind: the clip's first draw. */
 export const seededOutcome = (seed: number, kind: Moment['kind']) =>

@@ -40,6 +40,7 @@ import type { PickTeam, PickTeamRow, Strengths } from './pick-team';
 import { paintAttack, paintEmptyPitch } from './pitch';
 import type { SaleOffer } from './sale-offer';
 import type { EndOfSeason, SeasonSummary } from './season-end';
+import type { ModernSetup } from './setup-screens';
 import { tickerLines, tickerText } from './ticker-layout';
 
 // The commit the site build stamps in; `bun run dev` leaves it undefined.
@@ -209,7 +210,7 @@ const amountPanel = (entry: AmountEntry) => {
 /** The context bar or Home screen button an event came from, if any. */
 const barButton = (event: Event) =>
   (event.target as Element).closest<HTMLButtonElement>(
-    '#context-bar button, #home button, #pick-team button, #highlights button, #status button, #amount-prompt button, #message button, #full-time button, #week-results button, #league-table button, #bills button, #next-fixture button, #sale-offer button, #end-of-season button, #season-summary button, #cup-result button, #cup-replay button'
+    '#context-bar button, #home button, #pick-team button, #highlights button, #status button, #amount-prompt button, #message button, #full-time button, #week-results button, #league-table button, #bills button, #setup button, #next-fixture button, #sale-offer button, #end-of-season button, #season-summary button, #cup-result button, #cup-replay button'
   );
 
 const pounds = (value: number) => `£${value.toLocaleString('en-GB')}`;
@@ -1135,6 +1136,110 @@ const paintSaleOffer = (pane: HTMLElement, offer: SaleOffer) => {
   );
 };
 
+/** A choice button on a setup screen, answering as the original's key. */
+const setupButton = (id: string, ...content: (Node | string)[]) => {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'setup-choice';
+  button.dataset.id = id;
+  button.dataset.kind = 'choice';
+  button.append(...content);
+  return button;
+};
+
+/**
+ * Modern mode's setup screens: the manager's name, a division's clubs to
+ * choose from, the levels, the colours, and playing on after a save.
+ */
+const paintSetup = (pane: HTMLElement, setup: ModernSetup) => {
+  switch (setup.kind) {
+    case 'manager': {
+      // Kept while it shows, so typing isn't lost to a repaint.
+      if (pane.querySelector('form.setup-name')) {
+        return;
+      }
+      const form = document.createElement('form');
+      form.className = 'setup-name';
+      form.dataset.viewControl = '';
+      const label = document.createElement('label');
+      label.textContent = 'Your name';
+      const input = document.createElement('input');
+      input.name = 'name';
+      input.maxLength = setup.maxLength;
+      input.autocomplete = 'off';
+      input.spellcheck = false;
+      input.setAttribute('autocapitalize', 'words');
+      label.append(input);
+      const next = document.createElement('button');
+      next.type = 'submit';
+      next.className = 'primary';
+      next.textContent = 'Next';
+      const actions = document.createElement('div');
+      actions.className = 'pick-actions';
+      actions.append(next);
+      form.append(label, actions);
+      pane.replaceChildren(form);
+      input.focus();
+      return;
+    }
+    case 'clubs': {
+      const heading = document.createElement('h2');
+      heading.className = 'league-title';
+      heading.textContent = `Division ${setup.division}`;
+      const list = document.createElement('div');
+      list.className = 'setup-clubs';
+      list.append(
+        ...setup.clubs.map(({ club, id }) => setupButton(id, clubLabel(club)))
+      );
+      const next = setupButton(setup.next.id, setup.next.label);
+      next.classList.add('setup-next');
+      pane.replaceChildren(heading, cell('setup-note', setup.note), list, next);
+      return;
+    }
+    case 'level': {
+      const list = document.createElement('div');
+      list.className = 'setup-levels';
+      list.append(
+        ...setup.levels.map(level => {
+          const name = cell('setup-level-name', level.name);
+          name.style.color = `var(--bright-${level.ink})`;
+          name.style.background = `var(--bright-${level.paper})`;
+          const button = setupButton(
+            level.id,
+            cell('setup-level-number', level.number),
+            name
+          );
+          if (level.current) {
+            button.append(cell('setup-current', 'current'));
+            button.setAttribute('aria-current', 'true');
+          }
+          return button;
+        })
+      );
+      pane.replaceChildren(list);
+      return;
+    }
+    case 'colours':
+    case 'play-on': {
+      const list = document.createElement('div');
+      list.className = 'setup-pair';
+      list.append(
+        ...setup.choices.map(choice => setupButton(choice.id, choice.label))
+      );
+      pane.replaceChildren(
+        cell(
+          'setup-question',
+          setup.kind === 'colours'
+            ? 'Your team colours'
+            : 'Do you want to play some more?'
+        ),
+        list
+      );
+      return;
+    }
+  }
+};
+
 /** Labelled money rows, as on the status screen. */
 const moneyRows = (rows: readonly (readonly [string, number | string])[]) => {
   const facts = document.createElement('dl');
@@ -1444,6 +1549,7 @@ export const createBrowserDom = (app: HTMLElement) => {
   <section id="end-of-season" class="modern-amount modern-season" aria-label="End of season" hidden></section>
   <section id="season-summary" class="modern-amount modern-season" aria-label="Season summary" hidden></section>
   <section id="sale-offer" class="modern-amount modern-sale" aria-label="Sale offer" hidden></section>
+  <section id="setup" class="modern-amount modern-setup" aria-label="New game" hidden></section>
   <section id="full-time" class="modern-amount modern-full-time" aria-label="Full time" hidden></section>
   <section id="message" class="modern-amount modern-message" aria-label="Message" role="status" hidden></section>
   <div id="context-bar" class="context-bar" aria-label="Answers" hidden></div>
@@ -1487,6 +1593,7 @@ export const createBrowserDom = (app: HTMLElement) => {
   const billsPane = find<HTMLElement>('#bills');
   const fixturePane = find<HTMLElement>('#next-fixture');
   const salePane = find<HTMLElement>('#sale-offer');
+  const setupPane = find<HTMLElement>('#setup');
   const endOfSeasonPane = find<HTMLElement>('#end-of-season');
   const seasonSummaryPane = find<HTMLElement>('#season-summary');
   const cupResultPane = find<HTMLElement>('#cup-result');
@@ -1574,6 +1681,11 @@ export const createBrowserDom = (app: HTMLElement) => {
       classes: ['has-amount'],
       paint: ({ summary }) => paintSeasonSummary(seasonSummaryPane, summary),
       pane: seasonSummaryPane
+    },
+    setup: {
+      classes: ['has-amount'],
+      paint: ({ setup }) => paintSetup(setupPane, setup),
+      pane: setupPane
     },
     'week-results': {
       classes: ['has-amount'],
@@ -1986,6 +2098,15 @@ export const createBrowserDom = (app: HTMLElement) => {
     machine.addEventListener('pointerdown', target.pressScreen);
     modernPitch.addEventListener('pointerdown', target.pressScreen);
     clipPitch.addEventListener('pointerdown', target.pressScreen);
+    // The manager's name, typed on the setup screen, is the answer.
+    setupPane.addEventListener('submit', event => {
+      event.preventDefault();
+      const input =
+        setupPane.querySelector<HTMLInputElement>('input[name=name]');
+      if (input) {
+        target.submit(input.value);
+      }
+    });
     // During the celebration, a finger shortens its pauses, as on the pitch.
     cupResultPane.addEventListener('pointerdown', () => {
       if (cupResultPane.classList.contains('celebrating')) {

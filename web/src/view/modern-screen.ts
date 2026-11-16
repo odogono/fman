@@ -32,6 +32,7 @@ import {
   type EndOfSeason,
   type SeasonSummary
 } from './season-end';
+import { setupFor, type ModernSetup } from './setup-screens';
 
 /**
  * The Modern screen on show: a screen Modern mode draws in place of an
@@ -68,6 +69,8 @@ export type ModernScreen =
   | Readonly<{ kind: 'season-summary'; summary: SeasonSummary }>
   /** A club's offer for a player put up for sale. */
   | Readonly<{ kind: 'sale-offer'; offer: SaleOffer }>
+  /** Setting up a game, changing its level, or playing on after a save. */
+  | Readonly<{ kind: 'setup'; setup: ModernSetup }>
   /** A balance or a plain text message. */
   | Readonly<{ kind: 'message'; message: ModernMessage }>;
 
@@ -156,6 +159,14 @@ export const modernScreenFor = (
     case 'sale': {
       const offer = saleOfferFor(view);
       return offer && { kind: 'sale-offer', offer };
+    }
+    case 'manager':
+    case 'clubs':
+    case 'level':
+    case 'colours':
+    case 'save-question': {
+      const setup = setupFor(view);
+      return setup && { kind: 'setup', setup };
     }
     case 'status': {
       const status = statusFor(view);

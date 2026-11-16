@@ -2064,3 +2064,80 @@ button.latest-moment:focus-visible,
   font-size: 14px;
   text-align: center;
 }
+/* Modern mode's setup screens. */
+.setup-name label {
+  display: grid;
+  gap: 8px;
+  font-weight: 600;
+}
+.setup-name input {
+  min-height: 48px;
+  padding: 0 12px;
+  border: 2px solid var(--normal-0);
+  background: var(--bright-7);
+  font: inherit;
+  font-size: 20px;
+}
+.setup-note,
+.setup-question {
+  text-align: center;
+}
+.setup-note {
+  color: #444;
+}
+.setup-question {
+  font-size: 18px;
+  font-weight: 600;
+}
+.setup-clubs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.modern-setup button.setup-choice {
+  min-height: 48px;
+  padding: 0 10px;
+  text-align: left;
+}
+.setup-clubs .club-name {
+  overflow: hidden;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.modern-setup button.setup-next {
+  text-align: center;
+}
+.setup-levels {
+  display: grid;
+  gap: 8px;
+}
+.setup-levels .setup-choice {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.setup-level-number {
+  width: 1.5em;
+  font-variant-numeric: tabular-nums;
+}
+.setup-level-name {
+  padding: 2px 8px;
+  font-family: Spectrum, monospace;
+  font-weight: normal;
+  font-synthesis: none;
+}
+.setup-current {
+  margin-left: auto;
+  color: #444;
+  font-size: 13px;
+}
+.setup-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.modern-setup .setup-pair button.setup-choice {
+  min-height: 56px;
+  text-align: center;
+}

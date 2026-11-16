@@ -2011,3 +2011,40 @@ button.latest-moment:focus-visible,
   font-weight: 600;
   text-align: center;
 }
+/* Modern mode's season end and its summary. */
+.season-facts dd {
+  font-weight: 600;
+}
+.season-banner {
+  padding: 10px 12px;
+  background: var(--normal-0);
+  color: var(--bright-7);
+  font-family: Spectrum, monospace;
+  font-size: 18px;
+  font-synthesis: none;
+  text-align: center;
+}
+.season-banner.promoted {
+  background: #007a00;
+}
+.season-banner.relegated {
+  background: var(--normal-2);
+}
+.season-banner.champions {
+  background: var(--bright-6);
+  color: var(--normal-0);
+}
+.season-bonus-for {
+  color: #444;
+  font-size: 14px;
+}
+.season-moves {
+  margin: 0;
+}
+.season-moves-label {
+  font-weight: 700;
+}
+/* The season's headline keeps to one line on a phone. */
+.modern-season .season-banner {
+  font-size: 15px;
+}

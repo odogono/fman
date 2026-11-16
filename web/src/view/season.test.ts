@@ -23,6 +23,7 @@ test('the season flow keeps the final table visible before showing bonuses and m
     leaguePosition: 1
   };
   const view = {
+    cupWon: false,
     frames: 0,
     game,
     paused: false,

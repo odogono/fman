@@ -38,6 +38,7 @@ import type { ModernScreen, ModernScreenKind } from './modern-screen';
 import type { ModernStatus } from './modern-status';
 import type { PickTeam, PickTeamRow, Strengths } from './pick-team';
 import { paintAttack, paintEmptyPitch } from './pitch';
+import type { EndOfSeason, SeasonSummary } from './season-end';
 import { tickerLines, tickerText } from './ticker-layout';
 
 // The commit the site build stamps in; `bun run dev` leaves it undefined.
@@ -207,7 +208,7 @@ const amountPanel = (entry: AmountEntry) => {
 /** The context bar or Home screen button an event came from, if any. */
 const barButton = (event: Event) =>
   (event.target as Element).closest<HTMLButtonElement>(
-    '#context-bar button, #home button, #pick-team button, #highlights button, #status button, #amount-prompt button, #message button, #full-time button, #week-results button, #league-table button, #bills button, #next-fixture button, #cup-result button, #cup-replay button'
+    '#context-bar button, #home button, #pick-team button, #highlights button, #status button, #amount-prompt button, #message button, #full-time button, #week-results button, #league-table button, #bills button, #next-fixture button, #end-of-season button, #season-summary button, #cup-result button, #cup-replay button'
   );
 
 const pounds = (value: number) => `£${value.toLocaleString('en-GB')}`;
@@ -1045,6 +1046,61 @@ const paintFixture = (pane: HTMLElement, fixture: ModernFixture) => {
   );
 };
 
+/** Modern mode's end of the season: the league place and the cup run. */
+const paintEndOfSeason = (pane: HTMLElement, end: EndOfSeason) => {
+  const facts = document.createElement('dl');
+  facts.className = 'season-facts';
+  for (const [term, value] of [
+    ['League', end.league],
+    ['F.A. Cup', end.cup]
+  ] as const) {
+    const row = document.createElement('div');
+    const dt = document.createElement('dt');
+    dt.textContent = term;
+    const dd = document.createElement('dd');
+    dd.textContent = value;
+    row.append(dt, dd);
+    facts.append(row);
+  }
+  pane.replaceChildren(facts, continueRow(end.done));
+};
+
+/**
+ * Modern mode's season summary: what happened to the club, the bonus and
+ * the rating, then the division's other moves.
+ */
+const paintSeasonSummary = (pane: HTMLElement, summary: SeasonSummary) => {
+  const banner = cell(`season-banner ${summary.outcome}`, summary.headline);
+  const facts = moneyRows([
+    ['League success bonus', summary.bonus],
+    ['Managerial rating', `${summary.rating} / 100`]
+  ]);
+  const parts: HTMLElement[] = [
+    banner,
+    facts,
+    cell('season-bonus-for', `Bonus ${summary.bonusFor}`)
+  ];
+  for (const [label, names] of [
+    [
+      summary.outcome === 'promoted' ? 'Also promoted' : 'Promoted',
+      summary.promoted
+    ],
+    [
+      summary.outcome === 'relegated' ? 'Also relegated' : 'Relegated',
+      summary.relegated
+    ]
+  ] as const) {
+    if (names.length) {
+      const line = document.createElement('p');
+      line.className = 'season-moves';
+      line.append(cell('season-moves-label', label), ` ${names.join(', ')}`);
+      parts.push(line);
+    }
+  }
+  parts.push(continueRow(summary.done));
+  pane.replaceChildren(...parts);
+};
+
 /** Labelled money rows, as on the status screen. */
 const moneyRows = (rows: readonly (readonly [string, number | string])[]) => {
   const facts = document.createElement('dl');
@@ -1350,6 +1406,8 @@ export const createBrowserDom = (app: HTMLElement) => {
   <section id="cup-result" class="modern-amount modern-cup" aria-label="Cup result" hidden></section>
   <section id="cup-replay" class="modern-amount modern-cup" aria-label="Cup replay" hidden></section>
   <section id="next-fixture" class="modern-amount modern-fixture" aria-label="Next fixture" hidden></section>
+  <section id="end-of-season" class="modern-amount modern-season" aria-label="End of season" hidden></section>
+  <section id="season-summary" class="modern-amount modern-season" aria-label="Season summary" hidden></section>
   <section id="full-time" class="modern-amount modern-full-time" aria-label="Full time" hidden></section>
   <section id="message" class="modern-amount modern-message" aria-label="Message" role="status" hidden></section>
   <div id="context-bar" class="context-bar" aria-label="Answers" hidden></div>
@@ -1392,6 +1450,8 @@ export const createBrowserDom = (app: HTMLElement) => {
   const leagueTablePane = find<HTMLElement>('#league-table');
   const billsPane = find<HTMLElement>('#bills');
   const fixturePane = find<HTMLElement>('#next-fixture');
+  const endOfSeasonPane = find<HTMLElement>('#end-of-season');
+  const seasonSummaryPane = find<HTMLElement>('#season-summary');
   const cupResultPane = find<HTMLElement>('#cup-result');
   const cupReplayPane = find<HTMLElement>('#cup-replay');
   // Modern mode's own pitch, kept between attacks as the original's is not.
@@ -1441,6 +1501,12 @@ export const createBrowserDom = (app: HTMLElement) => {
       paint: ({ cupResult }) => paintCupResult(cupResultPane, cupResult),
       pane: cupResultPane
     },
+    'end-of-season': {
+      classes: ['has-amount'],
+      paint: ({ endOfSeason }) =>
+        paintEndOfSeason(endOfSeasonPane, endOfSeason),
+      pane: endOfSeasonPane
+    },
     fixture: {
       classes: ['has-amount'],
       paint: ({ fixture }) => paintFixture(fixturePane, fixture),
@@ -1461,6 +1527,11 @@ export const createBrowserDom = (app: HTMLElement) => {
       classes: ['has-amount'],
       paint: ({ table }) => paintLeagueTable(leagueTablePane, table),
       pane: leagueTablePane
+    },
+    'season-summary': {
+      classes: ['has-amount'],
+      paint: ({ summary }) => paintSeasonSummary(seasonSummaryPane, summary),
+      pane: seasonSummaryPane
     },
     'week-results': {
       classes: ['has-amount'],

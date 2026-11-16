@@ -25,6 +25,12 @@ import {
 import { messageFor, type ModernMessage } from './modern-message';
 import { statusFor, statusOf, type ModernStatus } from './modern-status';
 import { pickTeamFor, type PickTeam } from './pick-team';
+import {
+  endOfSeasonFor,
+  seasonSummaryFor,
+  type EndOfSeason,
+  type SeasonSummary
+} from './season-end';
 
 /**
  * The Modern screen on show: a screen Modern mode draws in place of an
@@ -55,6 +61,10 @@ export type ModernScreen =
   | Readonly<{ cupReplay: CupReplay; kind: 'cup-replay' }>
   /** The next fixture, before the team is picked. */
   | Readonly<{ fixture: ModernFixture; kind: 'fixture' }>
+  /** The season's end, before its final table. */
+  | Readonly<{ endOfSeason: EndOfSeason; kind: 'end-of-season' }>
+  /** The season settled: promotion, the bonus and the rating. */
+  | Readonly<{ kind: 'season-summary'; summary: SeasonSummary }>
   /** A balance or a plain text message. */
   | Readonly<{ kind: 'message'; message: ModernMessage }>;
 
@@ -130,6 +140,14 @@ export const modernScreenFor = (
     case 'fixture': {
       const fixture = modernFixtureFor(view);
       return fixture && { fixture, kind: 'fixture' };
+    }
+    case 'end-season': {
+      const endOfSeason = endOfSeasonFor(view);
+      return endOfSeason && { endOfSeason, kind: 'end-of-season' };
+    }
+    case 'season-summary': {
+      const summary = seasonSummaryFor(view);
+      return summary && { kind: 'season-summary', summary };
     }
     case 'status': {
       const status = statusFor(view);

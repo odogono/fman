@@ -28,6 +28,7 @@ export const completeSeason = (game: Game) => {
   const interrupted = (printFault: string) => ({
     bonus,
     finalPosition,
+    /** The division the season was played in. */
     game: {
       ...game,
       cash: game.cash + bonus,
@@ -37,6 +38,7 @@ export const completeSeason = (game: Game) => {
       seasons
     },
     movements,
+    previousDivision: game.division,
     printFault
   });
   const swap = (
@@ -138,6 +140,7 @@ export const completeSeason = (game: Game) => {
   return {
     bonus,
     finalPosition,
+    /** The division the season was played in. */
     game: {
       ...game,
       cash: game.cash + bonus,
@@ -167,6 +170,7 @@ export const completeSeason = (game: Game) => {
       ...(squads ? { squadSeed: squads.squadSeed } : {})
     },
     movements,
+    previousDivision: game.division,
     printFault: undefined
   };
 };

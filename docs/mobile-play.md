@@ -94,6 +94,9 @@ Style is "paper & ink": light grey paper, black text with red and blue ink rows,
   - Under a grace period, a red bar says how far over the credit limit the loan is and how long is left: "£42,000 over your credit limit – 3 weeks to clear it", or "last week".
   - Then Cash, and the Loan against the credit limit ("£180,000 of £750,000"). This is where crossing the limit matters, so the limit shows here, though the loan screen doesn't show it.
   - A dismissal shows the same bills and ends with a black bar, "Sacked – you owe over £750,000, the club's credit limit". Its button reads "Leave the club", since Enter clears the game rather than starting a new one; the original's green `+` art is dropped.
+- **Season end**:
+  - End of season: in place of the original's banner, the season summed up as rows: "League: Finished 16th in Division 4" and "F.A. Cup: Out in Round 2" (or "Out in the Semi-Final", "Lost in the Final", "Won the F.A. Cup"), then Final table.
+  - Season summary: a bar saying what happened to the club, "Promoted to Division 3" (green), "Relegated to Division 2" (red), "League Champions" (yellow) or "Staying in Division 4" (black); the league success bonus and the new managerial rating as rows, "Bonus for finishing 16th", the division's other moves ("Promoted …", "Relegated …", with "Also" for the club's own), then New season.
 - **Print faults**: when the original's printing stops on a renamed name, every Modern screen steps aside for the original screen, which shows where printing stopped.
 - **Status** (`s`, "Print score etc"): the original's facts only, without the league record the mockup invents.
   - The club name in its name colour, with the manager and the colours under it. A black bar reads "Managerial rating 37 / 100".

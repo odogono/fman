@@ -66,6 +66,14 @@ _Avoid_: Skill when referring to the level; skill belongs to players
 **League match**:
 A fixture contributing goals and points to the current division's league table.
 
+**League table**:
+The clubs of a division ordered by points, then goal difference, then goals scored. The top three are promoted and the bottom three relegated at the season end, except where there is no division to move to; the top club of Division 1 are champions.
+_Avoid_: Standings, ladder
+
+**Week's results**:
+Every league match in the managed club's division in one week: the managed club's own, then the other seven.
+_Avoid_: Other matches, which names only the original's list of the other seven
+
 **Cup round**:
 A stage of the F.A. Cup in which the managed club progresses or is eliminated, with drawn matches replayed.
 
@@ -190,6 +198,10 @@ _Avoid_: Result screen, since result already names a match's outcome and the cup
 
 **Next fixture**:
 The league match or cup round the managed club plays next, as shown before it is started.
+
+**Print fault**:
+The original stopping partway through printing a name renamed with Spectrum control codes, which ends the game and can leave it half-updated. Kept under the Original rules; the Enhanced rules drop it from version 10.
+_Avoid_: Crash, error
 
 **Rules parity**:
 The original ruleset giving the same game state, numbers and random draws as the Spectrum game for the same answers, including the original's rule bugs.

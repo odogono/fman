@@ -327,6 +327,12 @@ const lateBy = 2.5;
 /** The furthest from goal, in metres, an ordinary shot and one from range are struck. */
 const longestShot = 22;
 const longestLongRange = 30;
+/**
+ * An injured player (#110) goes down no nearer goal than this, in metres:
+ * outside the penalty area, 16.5 m deep, with room for the stumble, so the
+ * tackle never looks like a foul that should have been a penalty.
+ */
+const injuredFrom = 16.5 + 3;
 /** A shooter found out of range carries it into range at this pace, in metres a second, done by this frame. */
 const intoRangePace = 7;
 const shooterReadyBy = 13.5 * clipFps;
@@ -1297,7 +1303,12 @@ export const createClipScript = (input: ClipInput): ClipScript => {
               : target(i, ball, frame)))
       };
       if (i < attackers.length) {
-        goal.d = Math.min(goal.d, line);
+        goal.d = Math.min(
+          goal.d,
+          line,
+          // An injured player's runs stop short of the box.
+          i === shooter && injured ? pitchLength - injuredFrom - 3 : Infinity
+        );
         // Caught beyond the line, a player first drops straight back.
         if (mover.d > line) {
           goal.x = mover.x;
@@ -1373,6 +1384,11 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     // Through on goal, centrally, with the keeper to beat.
     shootingSpot.d = pitchLength - finishRng.between(14, 18);
     shootingSpot.x = 34 + finishRng.between(-5, 5);
+  }
+  // An injured player is found outside the box, with room to take the
+  // pass in their stride.
+  if (injured) {
+    shootingSpot.d = Math.min(shootingSpot.d, pitchLength - injuredFrom - 3);
   }
   // Of the saves from a cross, some are the keeper coming to catch it.
   if (
@@ -2028,7 +2044,11 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       );
       const gap = distance(movers[holder]!, towards) || 1;
       const to = {
-        d: movers[holder]!.d + ((towards.d - movers[holder]!.d) / gap) * reach,
+        d: Math.min(
+          movers[holder]!.d + ((towards.d - movers[holder]!.d) / gap) * reach,
+          // An injured player carries it no further than the edge of the box.
+          holder === shooter && injured ? pitchLength - injuredFrom : Infinity
+        ),
         x: clamp(
           movers[holder]!.x +
             ((towards.x - movers[holder]!.x) / gap) * reach +
@@ -2185,7 +2205,16 @@ export const createClipScript = (input: ClipInput): ClipScript => {
         x: lerp(ball.x, 34, 0.3)
       }
     : holder === shooter
-      ? { d: Math.min(movers[shooter]!.d + 1.5, 100), x: ball.x }
+      ? {
+          d: Math.min(
+            movers[shooter]!.d + 1.5,
+            // Injured, they take it no nearer the box.
+            injured
+              ? Math.max(movers[shooter]!.d, pitchLength - injuredFrom)
+              : 100
+          ),
+          x: ball.x
+        }
       : restart === 'corner'
         ? { d: movers[holder]!.d, x: movers[holder]!.x }
         : { d: Math.min(movers[holder]!.d + 1, 100), x: ball.x };
@@ -2290,7 +2319,11 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       if (!contact) {
         // The shooter carries on, the ball just ahead, and plants their
         // feet to shoot as the slide comes in.
-        const pace = runPace * Math.max(0, 1 - sliding / 6);
+        // Injured, they never get into the box.
+        const room = injured
+          ? Math.max(0, pitchLength - injuredFrom - runner.d) / heading.d
+          : Infinity;
+        const pace = Math.min(room, runPace * Math.max(0, 1 - sliding / 6));
         runner.d += heading.d * pace;
         runner.x += heading.x * pace;
         ball.d = runner.d + heading.d * 0.7;
@@ -3309,7 +3342,9 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       if (rues) {
         scorer.pose = f < despairFrames ? 'head' : 'run';
       }
-      if (f === (rues ? despairFrames : 0)) {
+      // A shooter down after a tackle stays where they fell until they are
+      // up; down injured, that is the whole reaction.
+      if (f >= (rues ? despairFrames : 0) && frame >= shooterUpAt) {
         reactionHeld.delete(shooter);
       }
       // Waiting on a corner, the attackers stay up.

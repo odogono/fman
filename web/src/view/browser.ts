@@ -22,7 +22,7 @@ import type {
   LeagueZone,
   WeekResults
 } from './league-screens';
-import type { BidPlayer, ModernAmount } from './modern-amount';
+import type { BidPlayer, LoanCost, ModernAmount } from './modern-amount';
 import type { ModernBills } from './modern-bills';
 import {
   continueId,
@@ -964,6 +964,33 @@ const moneyRows = (rows: readonly (readonly [string, number | string])[]) => {
 };
 
 /**
+ * What a loan or repayment does to the weekly bills (#97): the interest
+ * before and after it, the next bills with it, and their warning.
+ */
+const loanCost = (cost: LoanCost) => {
+  const { after, before } = cost.interest;
+  const change = after - before;
+  const interest =
+    change === 0
+      ? pounds(before)
+      : `${pounds(before)} → ${pounds(after)} (${change > 0 ? '+' : '−'}${pounds(Math.abs(change))})`;
+  const rows = moneyRows([
+    ['Weekly interest', interest],
+    ...(cost.bills === undefined ? [] : [['Next bills', cost.bills] as const])
+  ]);
+  rows.className = 'loan-cost';
+  rows.setAttribute('aria-live', 'polite');
+  const parts: HTMLElement[] = [rows];
+  if (cost.warning) {
+    const note = document.createElement('p');
+    note.className = `home-warning ${cost.warning.level}`;
+    note.textContent = cost.warning.text;
+    parts.push(note);
+  }
+  return parts;
+};
+
+/**
  * Modern mode's amount prompts, a loan or repayment (#134) or a transfer bid
  * (#135): the player for sale on a bid, then the stepper and chips, or
  * the keypad while an exact amount is typed; then the balance after it.
@@ -1018,6 +1045,7 @@ const paintAmount = (pane: HTMLElement, amountPrompt: ModernAmount) => {
     parts.push(
       stepper,
       limit,
+      ...(amountPrompt.cost ? loanCost(amountPrompt.cost) : []),
       chips,
       amountButton('Enter exact amount', { type: 'keypad' }, 'amount-exact')
     );
@@ -1043,7 +1071,12 @@ const paintAmount = (pane: HTMLElement, amountPrompt: ModernAmount) => {
       ),
       amountButton('Done', { type: 'done' }, 'chip')
     );
-    parts.push(shown, limit, keypad);
+    parts.push(
+      shown,
+      limit,
+      ...(amountPrompt.cost ? loanCost(amountPrompt.cost) : []),
+      keypad
+    );
   }
   const submit = actionButton(
     amountPrompt.submit.label,

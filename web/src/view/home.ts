@@ -128,7 +128,9 @@ const pounds = (value: number) => `£${value.toLocaleString('en-GB')}`;
  * so its warning is exact; a cup round's counts the least its draw can pay,
  * so it words the worst case.
  */
-const warningOf = (bills: NextBills): NextBillsWarning | undefined => {
+export const nextBillsWarning = (
+  bills: NextBills
+): NextBillsWarning | undefined => {
   const upTo = bills.exact ? '' : 'up to ';
   switch (bills.outcome) {
     case 'covered':
@@ -166,7 +168,7 @@ export const homeFor = (view: View & { game: Game }): Home => {
     'fixture' in view ? view.fixture : undefined
   );
   const bills = offered.has('menu.play') ? nextBills(game) : undefined;
-  const warning = bills && warningOf(bills);
+  const warning = bills && nextBillsWarning(bills);
   return {
     ...(bills
       ? { bills: { total: bills.total, ...(warning ? { warning } : {}) } }

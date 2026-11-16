@@ -119,6 +119,10 @@ _Avoid_: Header, title bar
 **Gate receipts**:
 The income credited to the managed club for a match, including a cup replay.
 
+**Next bills**:
+The weekly bills the managed club will pay after its next fixture, at its current squad and loan.
+_Avoid_: Forecast, projection
+
 **Credit limit**:
 The most the managed club may owe, set by its division. Borrowing beyond it is refused.
 

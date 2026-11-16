@@ -237,6 +237,7 @@ const paintHome = (pane: HTMLElement, home: Home) => {
     ['League position', home.leaguePosition ?? '—'],
     ['Cash', pounds(home.cash)],
     ['Loan', pounds(home.debt)],
+    ...(home.bills ? [['Next bills', pounds(home.bills.total)] as const] : []),
     ['Morale', home.morale],
     ['Level', home.level]
   ] as const) {
@@ -251,6 +252,14 @@ const paintHome = (pane: HTMLElement, home: Home) => {
   summary.append(heading, manager, division, facts);
 
   const parts: HTMLElement[] = [summary];
+  const warning = home.bills?.warning;
+  if (warning) {
+    const note = document.createElement('p');
+    note.className = `home-warning ${warning.level}`;
+    note.setAttribute('role', 'status');
+    note.textContent = warning.text;
+    parts.push(note);
+  }
   if (home.fixture) {
     const fixture = document.createElement('section');
     fixture.className = 'home-fixture';

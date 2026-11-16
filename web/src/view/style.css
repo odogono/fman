@@ -1862,3 +1862,19 @@ button.latest-moment:focus-visible,
 .league-key .zone-relegation {
   border-color: var(--normal-2);
 }
+/* The Home screen's warning about the next bills (#97). */
+.home-warning {
+  margin: 0;
+  padding: 8px 12px;
+  color: var(--bright-7);
+  font-weight: 600;
+}
+.home-warning.borrow {
+  background: var(--normal-1);
+}
+.home-warning.grace {
+  background: var(--normal-2);
+}
+.home-warning.sacked {
+  background: var(--normal-0);
+}

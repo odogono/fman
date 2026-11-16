@@ -102,6 +102,17 @@ export const previewFixture = (game: Game): FixturePreview | undefined => {
   }
 };
 
+/**
+ * A league match's gate receipts: the home gate at home; away, more the
+ * higher the opponent stands in the table.
+ */
+export const leagueGate = (game: Game, opponent: number, home: boolean) =>
+  home
+    ? game.homeGate
+    : (17 - game.league[opponent - (game.division - 1) * 16 - 1]!.position) *
+      (5 - game.division) *
+      500;
+
 export const prepareLeagueMatch = (game: Game) => {
   if (nextFixture(game) !== 'league') {
     throw new RangeError('The next fixture is not an available league match');
@@ -137,11 +148,7 @@ export const prepareLeagueMatch = (game: Game) => {
       scheduleCounter: (game.scheduleCounter + 1) % 3,
       seed: rng.seed
     },
-    gate: home
-      ? game.homeGate
-      : (17 - game.league[opponent - offset - 1]!.position) *
-        (5 - game.division) *
-        500,
+    gate: leagueGate(game, opponent, home),
     home,
     kind: 'league' as const,
     opponent,

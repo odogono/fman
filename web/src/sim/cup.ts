@@ -17,6 +17,19 @@ const gate = (game: Game, opponent: number, home: boolean) =>
 export const cupRoundName = (round: number) =>
   round === 8 ? 'Final' : round === 7 ? 'Semi-Final' : String(round);
 
+/** The clubs a cup round draws its opponent from: eight, one division. */
+const drawnFrom = (cupRound: number) => (8 - cupRound) * 8 + 1;
+
+/**
+ * The least the next cup round can pay at the gate, before its draw. Every
+ * club it can draw is in one division, so only home or away is unknown.
+ */
+export const lowestCupGate = (game: Game) => {
+  const next = { ...game, cupRound: game.cupRound + 1 };
+  const opponent = drawnFrom(next.cupRound);
+  return Math.min(gate(next, opponent, true), gate(next, opponent, false));
+};
+
 export const prepareCupMatch = (game: Game): MatchFixture => {
   if (nextFixture(game) !== 'cup' || game.cupRound >= 8) {
     throw new RangeError('No cup round is scheduled');
@@ -25,7 +38,7 @@ export const prepareCupMatch = (game: Game): MatchFixture => {
   const rng = createRng(game.seed);
   let opponent: number;
   do {
-    opponent = (8 - cupRound) * 8 + rng.int(1, 8);
+    opponent = drawnFrom(cupRound) - 1 + rng.int(1, 8);
   } while (opponent === game.club);
   const opponentStrength = Array.from({ length: 5 }, () =>
     clamp(

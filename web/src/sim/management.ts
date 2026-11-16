@@ -176,13 +176,22 @@ export const createNewGame = (options: {
   };
 };
 
-export const payWeeklyBills = (game: Game) => {
+/**
+ * What the weekly bills charge, at the club's squad, division and loan:
+ * wages for every owned player, ground rent and the loan's interest.
+ */
+export const weeklyCharges = (game: Game) => {
   const factor = 5 - game.division;
   const wages = game.players
     .filter(p => p.status > 0)
     .reduce((sum, p) => sum + p.skill * 100 * factor, 0);
   const rent = 500 * factor;
   const interest = Math.floor(game.debt / 100);
+  return { interest, rent, wages };
+};
+
+export const payWeeklyBills = (game: Game) => {
+  const { interest, rent, wages } = weeklyCharges(game);
   const cash = game.cash - wages - rent - interest;
   return {
     bills: {

@@ -3,6 +3,7 @@ import { cupRoundName } from '../sim/cup';
 import { previewFixture, type MatchFixture } from '../sim/league';
 import type { Game } from '../sim/management';
 import { clubInk } from '../sim/names';
+import { nextBills, type NextBills } from '../sim/next-bills';
 import type { View } from '../sim/session';
 import { answersFor } from './answers';
 
@@ -19,8 +20,23 @@ export type HomeChoice = Readonly<{
   tone: 'primary' | 'red' | 'blue';
 }>;
 
+/**
+ * A warning about the next bills (#97): a loan to pay them, a loan over the
+ * credit limit under a grace period, or a dismissal.
+ */
+export type NextBillsWarning = Readonly<{
+  level: 'borrow' | 'grace' | 'sacked';
+  text: string;
+}>;
+
 /** The Home screen (#43): the club summary, the next fixture and the menu's choices. */
 export type Home = Readonly<{
+  /**
+   * The next bills, and a warning when they need one; only while the menu
+   * waits, the one place the manager can still act on them, and absent
+   * once the season's matches are all played.
+   */
+  bills?: Readonly<{ total: number; warning?: NextBillsWarning }>;
   cash: number;
   choices: readonly HomeChoice[];
   club: ClubName;
@@ -105,6 +121,43 @@ const fixtureFor = (game: Game, current?: MatchFixture): Home['fixture'] => {
   };
 };
 
+const pounds = (value: number) => `£${value.toLocaleString('en-GB')}`;
+
+/**
+ * The warning for the next bills, if any. A league match's gate is known,
+ * so its warning is exact; a cup round's counts the least its draw can pay,
+ * so it words the worst case.
+ */
+const warningOf = (bills: NextBills): NextBillsWarning | undefined => {
+  const upTo = bills.exact ? '' : 'up to ';
+  switch (bills.outcome) {
+    case 'covered':
+      return undefined;
+    case 'borrow':
+      return {
+        level: 'borrow',
+        text: bills.exact
+          ? `Cash won't cover next week's bills – you'll borrow ${pounds(bills.borrow)}.`
+          : `Cash may not cover next week's bills – you could borrow up to ${pounds(bills.borrow)}.`
+      };
+    case 'grace': {
+      const weeks = bills.weeksLeft!;
+      const then = bills.starts
+        ? `a ${weeks}-week grace period starts`
+        : `${weeks} ${weeks === 1 ? 'week' : 'weeks'} left to clear it`;
+      return {
+        level: 'grace',
+        text: `Next week's bills ${bills.exact ? 'take' : 'could take'} your loan ${upTo}${pounds(bills.over!)} over the credit limit – ${then}.`
+      };
+    }
+    case 'sacked':
+      return {
+        level: 'sacked',
+        text: `Next week's bills ${bills.exact ? 'will' : 'could'} get you sacked unless you find ${upTo}${pounds(bills.over!)}.`
+      };
+  }
+};
+
 export const homeFor = (view: View & { game: Game }): Home => {
   const { game } = view;
   const offered = new Set(answersFor(view).map(answer => answer.id));
@@ -112,7 +165,12 @@ export const homeFor = (view: View & { game: Game }): Home => {
     game,
     'fixture' in view ? view.fixture : undefined
   );
+  const bills = offered.has('menu.play') ? nextBills(game) : undefined;
+  const warning = bills && warningOf(bills);
   return {
+    ...(bills
+      ? { bills: { total: bills.total, ...(warning ? { warning } : {}) } }
+      : {}),
     cash: game.cash,
     choices: [
       {

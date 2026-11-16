@@ -119,6 +119,14 @@ _Avoid_: Header, title bar
 **Gate receipts**:
 The income credited to the managed club for a match, including a cup replay.
 
+**Weekly bills**:
+The wages, ground rent and loan interest the managed club pays after each league match and decided cup round, borrowing any shortfall.
+_Avoid_: Expenses, costs
+
+**Weekly balance**:
+How much the managed club's cash less its loan changed since the last weekly bills.
+_Avoid_: Profit, which ignores the loan; the bills' total
+
 **Next bills**:
 The weekly bills the managed club will pay after its next fixture, at its current squad and loan.
 _Avoid_: Forecast, projection

@@ -2048,3 +2048,19 @@ button.latest-moment:focus-visible,
 .modern-season .season-banner {
   font-size: 15px;
 }
+/* Modern mode's sale offer. */
+.sale-line {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  text-align: center;
+}
+.sale-comparison {
+  color: #444;
+  text-align: center;
+}
+.sale-warning {
+  color: var(--normal-2);
+  font-size: 14px;
+  text-align: center;
+}

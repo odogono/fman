@@ -1,4 +1,10 @@
-import { borrow, repay, weeklyCharges, type Game } from '../sim/management';
+import {
+  borrow,
+  repay,
+  weeklyCharges,
+  type Game,
+  type Player
+} from '../sim/management';
 import { nextBills } from '../sim/next-bills';
 import type { View } from '../sim/session';
 import { playerCategory } from '../sim/squads';
@@ -51,6 +57,17 @@ export type ModernAmount = Readonly<{
   /** At £0 a loan would only do what Cancel does, and a bid is refused. */
   submit: Action & Readonly<{ label: string }>;
 }>;
+
+/** A player as a bid or a sale offer shows him. */
+export const bidPlayerOf = (player: Player): BidPlayer => ({
+  category: playerCategory(player),
+  energy: player.energy,
+  name: player.name.trim(),
+  number: player.id,
+  skill: player.skill,
+  tag: player.position === 'GK' ? 'G' : 'DMA'.charAt(playerCategory(player)),
+  value: player.value
+});
 
 const submitLabels = {
   borrow: 'Take loan',
@@ -117,22 +134,7 @@ export const amountPromptFor = (
     debt: view.game.debt,
     entry,
     kind,
-    ...(player
-      ? {
-          player: {
-            category: playerCategory(player),
-            energy: player.energy,
-            name: player.name.trim(),
-            number: player.id,
-            skill: player.skill,
-            tag:
-              player.position === 'GK'
-                ? 'G'
-                : 'DMA'.charAt(playerCategory(player)),
-            value: player.value
-          }
-        }
-      : {}),
+    ...(player ? { player: bidPlayerOf(player) } : {}),
     submit: {
       ...submit,
       // A tap while the keypad is open submits what it holds, as in Classic.

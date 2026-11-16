@@ -49,8 +49,10 @@ export type ModernHighlights = Readonly<{
    */
   clip?: ClipProgress;
   /**
-   * Under sprite highlights, the scoreboard's clock: the minute of the clip
-   * on show from the clip's start, 0′ before the first and FT after the last.
+   * The scoreboard's clock, under moment highlights: with clips, the minute
+   * of the clip on show from the clip's start; without, the newest moment's
+   * minute. 0′ before the first and FT after the last. The original's
+   * attacks have no minutes, so its pitch has no clock.
    */
   clock?: string;
   home: ClubName;
@@ -156,29 +158,28 @@ export const highlightsFor = (
   const away = clubName(sides.away);
   const title = fixtureTitle(game, fixture);
   const { highlights } = view;
+  const short = shortNames(home, away);
   if (highlights.kind === 'moments') {
     const ticker = highlights.timeline;
     const shown = clips
       ? ticker.moments.slice(0, clips.progress.shown)
       : ticker.shown;
-    const short = clips && shortNames(home, away);
+    const fullTime = ticker.stage.kind === 'full-time';
+    const newest = shown.at(-1);
     return {
       away,
-      ...(clips
-        ? {
-            clip: clips.progress,
-            clock: clockOf(
-              ticker.moments,
-              clips.progress,
-              ticker.stage.kind === 'full-time'
-            )
-          }
-        : {}),
+      ...(clips ? { clip: clips.progress } : {}),
+      // Without clips, the ticker's clock is the newest moment's minute.
+      clock: clips
+        ? clockOf(ticker.moments, clips.progress, fullTime)
+        : fullTime
+          ? 'FT'
+          : `${newest?.minute ?? 0}′`,
       home,
       score: clips?.score ?? ticker.score,
       ...(short ? { short } : {}),
       ticker: {
-        fullTime: ticker.stage.kind === 'full-time',
+        fullTime,
         lines: tickerLines(game, fixture, shown),
         skip: !ticker.done
       },
@@ -208,6 +209,7 @@ export const highlightsFor = (
       strengths: strengthsFor(game, fixture)
     },
     score,
+    ...(short ? { short } : {}),
     title
   };
 };

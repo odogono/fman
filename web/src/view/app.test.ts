@@ -1306,6 +1306,15 @@ test('Modern mode shows the original pitch under a scoreboard, with the strength
   expect(run.page.highlights).toBeUndefined();
 });
 
+test("the original's pitch has a scoreboard with no clock, since its attacks have no minutes", () => {
+  const run = harness({
+    options: JSON.stringify({ presentation: 'modern', rules: 'original' })
+  });
+  kickOff(run);
+  expect(run.page.highlights!.pitch).toBeDefined();
+  expect(run.page.highlights!.clock).toBeUndefined();
+});
+
 test('a finger on the pitch in a timed pause holds a key until it lifts', () => {
   const run = harness({
     options: JSON.stringify({ presentation: 'modern', rules: 'original' })
@@ -1699,6 +1708,26 @@ test('Continue ends the final hold after Skip', () => {
   run.app.pointerUp();
   run.wait(2);
   expect(run.view().screen).not.toBe('highlights');
+});
+
+test("without clips, the ticker's clock is the newest moment's minute, and Continue ends the final hold", () => {
+  const run = modernMoments({ reducedMotion: true });
+  run.wait(1);
+  expect(run.page.highlights!.clock).toBe('0′');
+  while (run.ticker().shown.length === 0) {
+    run.wait(1);
+  }
+  expect(run.page.highlights!.clock).toBe(
+    `${run.ticker().shown.at(-1)!.minute}′`
+  );
+  run.app.tap('ticker.skip');
+  run.wait(1);
+  expect(run.page.highlights!.ticker!.fullTime).toBe(true);
+  expect(run.page.highlights!.clock).toBe('FT');
+  run.app.tap('ticker.continue');
+  run.app.pointerUp();
+  run.wait(2);
+  expect(run.view().screen).toBe('result');
 });
 
 test('Classic mode hands the sim no clip lengths', () => {

@@ -105,7 +105,7 @@ The short animation of one moment in Modern mode's highlights: the build-up, the
 _Avoid_: Replay, which names a cup match; highlight
 
 **Scoreboard**:
-The strip above the pitch in Modern mode's highlights: both clubs, the score and the minute of the moment on show.
+The strip above Modern mode's highlights: both clubs, the score and, where the highlights have minutes, the minute of the moment on show.
 _Avoid_: Header, title bar
 
 **Gate receipts**:

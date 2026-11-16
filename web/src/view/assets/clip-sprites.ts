@@ -9,6 +9,8 @@
 //   l  the goal net's roof    m  the back of the net
 //   x  a shadow
 //   1 to 4  the advertising boards' colours
+//   a  b  e  the cup's light, mid and dark silver
+//   r  the cup's ribbon red
 //
 // A player's frame stands on its bottom row, centred. Players are drawn
 // facing down the screen, up it, or left; facing right is left mirrored.
@@ -31,7 +33,11 @@ export const artColours = [
   '1',
   '2',
   '3',
-  '4'
+  '4',
+  'a',
+  'b',
+  'e',
+  'r'
 ] as const;
 
 export type ArtFacing = 'down' | 'left' | 'up';
@@ -1961,4 +1967,204 @@ export const boardArt: ArtGrid = [
   'o1111111111221111111111oowww33333www33333www333oo3323233333232333332323oo44w4w44444w4w44444w4w4oowww3333wwww3333wwww333oo4441111144411111444111o',
   'o1111111111111111111111ooww33333www33333www3333oo3233323332333233323332oo4w444w444w444w444w444woowwwwwwwwwwwwwwwwwwwwwwoo4411111444111114441111o',
   'oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo'
+];
+
+/**
+ * The cup celebration's captain lifting the cup, facing
+ * down: hands at the chest, over the head, then arms straight up. The cup
+ * is drawn on its own, over the hands.
+ */
+export const liftArt: readonly ArtGrid[] = [
+  [
+    '....ooooo....',
+    '..oohhhhhoo..',
+    '.ohhhhhhhhho.',
+    'ohhhhhhhhhhho',
+    'ohhhhhhhhhhho',
+    'ohhhhhhhhhhho',
+    'ohhhhhhhhhhho',
+    'ohhfffhhffhho',
+    'ohffofffoffho',
+    '.offofffoffo.',
+    '.oofffffffoo.',
+    '.ooofffffooo.',
+    '.ossooooosso.',
+    'ossooooooosso',
+    'osooffoffooso',
+    'ossfffofffsso',
+    '.ooooooooooo.',
+    '..odddddddo..',
+    '..odddodddo..',
+    '..oddoooddo..',
+    '..offoooffo..',
+    '..oddoooddo..',
+    '.ooooooooooo.',
+    '.ooooooooooo.'
+  ],
+  [
+    '.....ooooooo.....',
+    '....offfofffo....',
+    '...ohfffofffho...',
+    '..ossooooooosso..',
+    '.ossohhhhhhhosso.',
+    'ossohhhhhhhhhosso',
+    'osohhhhhhhhhhosso',
+    'osohhfffhhffhhoso',
+    'osohffoffffffhoso',
+    'ossoffofffoffosso',
+    '.ossofffffffosso.',
+    '..osofffffffoso..',
+    '..ossofffffosso..',
+    '...ossooooosso...',
+    '....ossssssso....',
+    '....ossssssso....',
+    '....ossssssso....',
+    '....odddddddo....',
+    '....odddddddo....',
+    '....oddoooddo....',
+    '....offoooffo....',
+    '....oddoooddo....',
+    '...ooooooooooo...',
+    '...ooooooooooo...'
+  ],
+  [
+    '....oooooo....',
+    '...offffffo...',
+    '...offffffo...',
+    '..offfoofffo..',
+    '.ossoooooosso.',
+    '.ossohhhhosso.',
+    'ossohhhhhhosso',
+    'osohhhhhhhhoso',
+    'osohhhhhhhhoso',
+    'osohhhhhhhhoso',
+    'osohfffhffhoso',
+    'osoffoffoffoso',
+    'osoffoffoffoso',
+    '.osoffffffoso.',
+    '.ossofoofosso.',
+    '.ossoffffosso.',
+    '..ossoooosso..',
+    '...ossssssso..',
+    '...ossssssso..',
+    '...ossssssso..',
+    '...odddddddo..',
+    '...odddddddo..',
+    '...oddoodddo..',
+    '...offoofffo..',
+    '..ooddoodddo..',
+    '..ooooooooooo.',
+    '..ooooooooooo.'
+  ]
+];
+
+/** The losers of a cup final, facing down: sitting hugging their knees, then bent with hands on knees. */
+export const slumpArt: readonly ArtGrid[] = [
+  [
+    '....ooooo....',
+    '..oohhhhhoo..',
+    '.ohhhhhhhhho.',
+    '.ohhhhhhhhho.',
+    'ohhhhhhhhhhho',
+    'ohhhhhhhhhhho',
+    'ohhhhhhhhhhho',
+    'ohhhhhhhhhhho',
+    '.ohhhhhhhhho.',
+    '.oohhhhhhhoo.',
+    '..oofffffoo..',
+    '.ossooooosso.',
+    'ooooffsffoooo',
+    'offoooooooffo',
+    'offfffofffffo',
+    '.offfooofffo.',
+    '..offfofffo..',
+    '..odddodddo..',
+    '.ooooooooooo.',
+    '.ooooooooooo.'
+  ],
+  [
+    '....ooooo....',
+    '..oohhhhhoo..',
+    '.ohhhhhhhhho.',
+    '.ohhhhhhhhho.',
+    'ohhhhhhhhhhho',
+    'ohhhhhhhhhhho',
+    'ohhhhhhhhhhho',
+    'ohhhhhhhhhhho',
+    '.ohhhhhhhhho.',
+    '.oohffhhfhoo.',
+    'ossofofofosso',
+    'osssooooossso',
+    'oooosssssoooo',
+    'offosssssoffo',
+    'offodddddoffo',
+    '.offodddoffo.',
+    '..ofoo.oofo..',
+    '..oooo.oooo..',
+    '..offo.offo..',
+    '..oddo.oddo..',
+    '.ooddo.oddoo.',
+    '.ooooo.ooooo.',
+    '.ooooo.ooooo.'
+  ]
+];
+
+/**
+ * The cup: silver in three shades with a highlight, and a ribbon in red
+ * and white on its handle.
+ */
+export const cupArt: ArtGrid = [
+  '...................ooooo...................',
+  '..................ooaabbo..................',
+  '..................ooaaboo..................',
+  '....ooooo..........obboo..........ooooo....',
+  '...oaaaaao.........obboo.........oaaaaao...',
+  '..oaaaaaaao.......oobbbo........oaaaaaaao..',
+  '.oaaaoooaaao....ooobbbboooo....oaaaoooaaao.',
+  '.oaao...oaao....aaaaaaaabbb....oaao...oaao.',
+  'ooao....oaao...oaaaaaaaabbbo...oaao....oaoo',
+  'oaao....oaao..oaaaaaaaaaabbbo..oaao....oaao',
+  'oaao....oao..oaaaaaaabbbbbbbbo..oao....oaao',
+  'oao....oaaoooobbbbbbbbbbbbeeeooooaao...oaao',
+  'oao....oaoobbbbbbbbbbbbbbbeeeeeeooao....oao',
+  'oao..oooooooooooooooooooooooooooooooo...oao',
+  'oao..obbbbbbbbbbbbbbbbbbbbbbbbbbbbbbo...oao',
+  'oao..oooooooooooooooooooooooooooooooo...oao',
+  'oaao..oobbbaaaaaaaaaaaaaaabbbbbeeeeo...oaao',
+  'oaao..obbbwwaaaaaaaaaaaaaabbbbbeeeeo...oao.',
+  '.oao..obbbwwaaaaaaaaaaaaaabbbbbeeeeo...oao.',
+  '.oaao.obbbwwaaaaaaaaaaaaaabbbbbeeeeo..oaao.',
+  '.oaao.obbbwwaaaaaaaaaaaaaabbbbbeeeeo..oao..',
+  '..oaaoobbbwwwwaaaaaaaaaabbbbbbeeeeeo.oaao..',
+  '..oaaaoobbwwwwaaaaaaaaaabbbbbbeeeeeooooo...',
+  '...oaaaoobbwwwaaaaaaaaaabbbbbbeeeeorrro....',
+  '....oaaobbbwwwaaaaaaaaabbbbbbbeeeeorrro....',
+  '.....oaobbbwwwwaaaaaaaabbbbbeeeeeeooroo....',
+  '......oobbbbwwwaaaaaaaabbbbbeeeeeeoorowo...',
+  '........oobbbwwaaaaaaabbbbbbeeeeeoorrowwo..',
+  '........oobbbwwwaaaaabbbbbbeeeeeeoorrowwo..',
+  '.........oobbbwwaaaabbbbbbbeeeeeo.orrowwo..',
+  '..........obbbwwaaaabbbbbbeeeeeeo.rrrowwo..',
+  '...........obbbwwaabbbbbbeeeeeeo..rrrowwwo.',
+  '............obbbbbbbbbbbeeeeeeo...rrrowwwo.',
+  '............obbbbbbbbbbeeeeeee....rorowwwo.',
+  '.............oobbbbbbbbeeeeeo.....o.oow.oo.',
+  '...............oobbbbeeeeeoo.........oo..o.',
+  '................ooooooooooo................',
+  '.................obbbbbbbo.................',
+  '.................ooooooooo.................',
+  '..................oaaabbo..................',
+  '..................oaaabbo..................',
+  '..................oaaabbo..................',
+  '................ooaaaabbboo................',
+  '................obbbbbbbbbo................',
+  '..............ooooooooooooooo..............',
+  '.............oaaaaaaaaaaaaaabo.............',
+  '............oaaaaaaaaaaaaaaabbo............',
+  '............obbbbbbbbbbbbbbbbbo............',
+  '..........oobbbbbbbbbbbbbbbbbbboo..........',
+  '.........oooooooooooooooooooooooo..........',
+  '.........oeeeeeeeeeeeeeeeeeeeeeeeo.........',
+  '.........oeeeeeeeeeeeeeeeeeeeeeeeo.........',
+  '.........ooooooooooooooooooooooooo.........'
 ];

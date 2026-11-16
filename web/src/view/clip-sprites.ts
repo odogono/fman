@@ -1,6 +1,8 @@
 import {
   ballArt,
+  liftArt,
   playerArt,
+  slumpArt,
   statusArt,
   type ArtGrid
 } from './assets/clip-sprites';
@@ -84,6 +86,16 @@ export const playerPalette = (shirt: string, looks: Looks): ArtPalette => {
   };
 };
 
+/** The cup's silver, its highlight and its ribbon (the cup celebration). */
+export const cupPalette: ArtPalette = {
+  a: '#e8e8e8',
+  b: '#b8b8b8',
+  e: '#808080',
+  o: '#141414',
+  r: '#d70000',
+  w: '#ffffff'
+};
+
 export const iconPalette: ArtPalette = {
   c: '#4aa8ff',
   o: '#141414',
@@ -106,6 +118,12 @@ export const spriteFor = (
   player: Pick<FramePlayer, 'facing' | 'pose' | 'poseFrame' | 'travelled'>
 ): Sprite => {
   const { facing, pose } = player;
+  // The cup celebration's poses are drawn facing down only.
+  if (pose === 'lift' || pose === 'slump') {
+    const frames = pose === 'lift' ? liftArt : slumpArt;
+    const at = Math.min(frames.length - 1, Math.max(0, player.poseFrame ?? 0));
+    return { grid: frames[at]!, mirrored: false };
+  }
   if (pose === 'dive') {
     return { grid: playerArt.dive.left, mirrored: facing === 'right' };
   }
@@ -120,7 +138,16 @@ export const spriteFor = (
   const art: Record<
     Exclude<
       Pose,
-      'cheer' | 'dive' | 'fall' | 'getup' | 'header' | 'jump' | 'run' | 'tackle'
+      | 'cheer'
+      | 'dive'
+      | 'fall'
+      | 'getup'
+      | 'header'
+      | 'jump'
+      | 'lift'
+      | 'run'
+      | 'slump'
+      | 'tackle'
     >,
     typeof playerArt.stand
   > = {

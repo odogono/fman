@@ -183,8 +183,12 @@ export type Pose =
   | 'hold'
   | 'jump'
   | 'kick'
+  /** The cup celebration's captain lifting the cup: facing down only. */
+  | 'lift'
   | 'run'
   | 'slide'
+  /** A loser of a cup final, slumped: facing down only. */
+  | 'slump'
   | 'stand'
   | 'tackle';
 const poses: readonly Pose[] = [
@@ -201,7 +205,9 @@ const poses: readonly Pose[] = [
   'slide',
   'tackle',
   'fall',
-  'getup'
+  'getup',
+  'lift',
+  'slump'
 ];
 /** Poses drawn side on only, facing left or right. */
 const sideOn: ReadonlySet<Pose> = new Set(['dive', 'fall', 'getup', 'tackle']);
@@ -211,6 +217,8 @@ const framedPoses: ReadonlySet<Pose> = new Set([
   'getup',
   'header',
   'jump',
+  'lift',
+  'slump',
   'tackle'
 ]);
 /** Which way a player faces on the screen. */
@@ -387,6 +395,11 @@ export type ClipFrame = Readonly<{
   card?: ClipCard;
   /** The crowd is on its feet, after a goal (#157). */
   cheer?: boolean;
+  /**
+   * Coloured specks of confetti over the pitch, in metres, for the cup
+   * celebration.
+   */
+  confetti?: readonly Readonly<{ colour: string; x: number; y: number }>[];
   /** The goal announcement, while it shows. */
   goal?: ClipGoal;
   /** The named player's label, in the zoomed view only. */
@@ -395,6 +408,11 @@ export type ClipFrame = Readonly<{
   minimap: boolean;
   phase: ClipPhase;
   players: readonly FramePlayer[];
+  /**
+   * The cup, for the cup celebration: where it stands on the pitch, and how
+   * far above the ground its foot is, in metres.
+   */
+  trophy?: Readonly<{ raise: number; x: number; y: number }>;
 }>;
 
 export type ClipPass = Readonly<{

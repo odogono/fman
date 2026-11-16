@@ -2,6 +2,7 @@ import { expect, test } from 'bun:test';
 
 import type { View } from '../sim/session';
 import { playTo } from '../test/play';
+import { celebrationSidesFor } from './clip-match';
 import { cupReplayFor, cupResultFor } from './cup-screens';
 import { modernScreenFor } from './modern-screen';
 
@@ -71,21 +72,32 @@ test('winning the final celebrates, with the progress the original draws', () =>
   expect(screen.outcome).toBe('won');
   expect(screen.headline).toBe("You've won the F.A. Cup");
   expect(screen.tie).toBe(`Beat ${opponent} 2–1 in the Final`);
-  expect(screen.celebration).toEqual({
-    flash: expect.any(Boolean),
-    stars: 9,
+  // At the end, the scene holds on the lift, in the final's kits.
+  expect(screen.celebration?.progress).toEqual({
+    stars: 1,
     text: 1,
     trophy: 1
   });
+  expect(screen.celebration?.sides).toEqual(
+    celebrationSidesFor(won.game, fixture)
+  );
+  expect(screen.celebration?.clock).toBe(won.ulaFrames ?? won.frames);
   const playing: View = {
     ...won,
     celebration: 2,
-    celebrationProgress: { stars: 40, text: 32, trophy: 160 },
-    screen: 'cup-celebration'
+    celebrationProgress: { stars: 72, text: 32, trophy: 160 },
+    screen: 'cup-celebration',
+    ulaFrames: 240
   };
   const shown = cupResultFor(playing)!;
-  // Half the trophy's 320 cells, half the title's 64 characters, two rows.
-  expect(shown.celebration).toMatchObject({ stars: 2, text: 0.5, trophy: 0.5 });
+  // Half the trophy's 320 cells, half the title's 64 characters, a quarter
+  // of the 288 stars: the scene's run-in, lift and confetti follow them.
+  expect(shown.celebration?.progress).toEqual({
+    stars: 0.25,
+    text: 0.5,
+    trophy: 0.5
+  });
+  expect(shown.celebration?.clock).toBe(240);
   // The celebration takes no answer; a finger only shortens its pauses.
   expect(shown.done.enabled).toBe(false);
 });

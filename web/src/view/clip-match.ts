@@ -14,6 +14,7 @@ import {
   type ClipSide,
   type Line
 } from './clips';
+import type { CelebrationSides } from './cup-celebration';
 import { named } from './ticker-layout';
 
 // How a real match becomes clips (#144): who plays for each side and where,
@@ -399,6 +400,21 @@ export const stillFrameFor = (
     frame: kickOffFrame(home, away, caption),
     sides: { attack: home, defence: away }
   };
+};
+
+/**
+ * The cup celebration's sides: the managed club, who won the final, and the
+ * opponent, each in the kit they wore in it. The winners' fans fill most of
+ * the stands, as a home side's do.
+ */
+export const celebrationSidesFor = (
+  game: Game,
+  fixture: MatchFixture
+): CelebrationSides => {
+  const { away, home } = sidesFor(game, fixture);
+  const [winners, losers] = fixture.home ? [home, away] : [away, home];
+  const { home: _, ...visitors } = losers;
+  return { losers: visitors, winners: { ...winners, home: true } };
 };
 
 /** The club names for the debug page's readout. */

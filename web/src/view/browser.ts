@@ -10,11 +10,11 @@ import {
   type AmountEntry
 } from './amount-entry';
 import type { App, Dom, MenuControl } from './app';
-import { fitClipCanvas } from './clip-canvas';
+import { fitClipCanvas, paintClip } from './clip-canvas';
 import { paintShot } from './clip-wipe';
 import type { BarButton } from './context-bar';
+import { celebrationFrame } from './cup-celebration';
 import type { CupReplay, CupResult } from './cup-screens';
-import { trophy } from './cup-victory';
 import type { FullTime } from './full-time';
 import { rasterText, rasterizeCells } from './glyphs';
 import type { ClubName, Home } from './home';
@@ -962,81 +962,64 @@ const paintCupReplay = (pane: HTMLElement, replay: CupReplay) => {
   pane.replaceChildren(title, word, sides, continueRow(replay.done));
 };
 
-/** The trophy's columns: the original prints it in the middle twelve. */
-const trophyColumns = [10, 22] as const;
-
-/**
- * The trophy built up as far as the original has drawn it: its cells in
- * reading order, blue on the yellow paper.
- */
-const paintTrophy = (canvas: HTMLCanvasElement, shown: number) => {
-  const [from, to] = trophyColumns;
-  const size = 12;
-  canvas.width = (to - from) * size;
-  canvas.height = trophy.length * size;
-  const context = canvas.getContext('2d')!;
-  const styles = getComputedStyle(document.documentElement);
-  context.fillStyle = styles.getPropertyValue('--bright-6');
-  context.fillRect(0, 0, canvas.width, canvas.height);
-  context.fillStyle = styles.getPropertyValue('--bright-1');
-  const cells = shown * trophy.length * 32;
-  trophy.forEach((row, y) => {
-    for (let x = from; x < to; x++) {
-      if (row[x] === '█' && y * 32 + x < cells) {
-        context.fillRect((x - from) * size, y * size, size, size);
-      }
-    }
-  });
-};
-
 /**
  * Modern mode's cup result: through, out, or the cup won. Winning plays
- * the celebration as the original draws it, the trophy, the title and the
- * flashing rows of stars, before Continue.
+ * the cup celebration on the pitch, paced by the original's timed
+ * celebration, before Continue; under reduced motion it shows the lift
+ * from the start.
  */
 const paintCupResult = (pane: HTMLElement, result: CupResult) => {
-  const title = document.createElement('h2');
-  title.className = 'league-title';
-  title.textContent = result.title;
-  const parts: HTMLElement[] = [title];
   const { celebration } = result;
-  pane.classList.toggle(
-    'celebrating',
-    Boolean(celebration) && !result.done.enabled
-  );
-  if (celebration) {
-    const card = document.createElement('div');
-    card.className = `cup-celebration${celebration.flash ? ' flash' : ''}`;
-    const canvas = document.createElement('canvas');
-    canvas.className = 'cup-trophy';
-    canvas.setAttribute('role', 'img');
-    canvas.setAttribute('aria-label', 'The F.A. Cup');
-    paintTrophy(canvas, celebration.trophy);
-    const headline = cell(
-      'cup-headline',
-      result.headline.slice(
-        0,
-        Math.round(celebration.text * result.headline.length)
-      )
-    );
-    headline.setAttribute('aria-label', result.headline);
-    const stars = document.createElement('div');
-    stars.className = 'cup-stars';
-    stars.setAttribute('aria-hidden', 'true');
-    stars.append(
-      ...Array.from({ length: celebration.stars }, () =>
-        cell('cup-star-row', '★'.repeat(16))
-      )
-    );
-    card.append(canvas, headline, stars);
-    parts.push(card);
-  } else {
-    parts.push(cell(`cup-banner ${result.outcome}`, result.headline));
+  const playing = Boolean(celebration) && !result.done.enabled;
+  pane.classList.toggle('celebrating', playing);
+  // The scene's canvas stays put while it plays, so painting each frame
+  // doesn't rebuild the screen.
+  const shown = pane.dataset.shape;
+  const shape = JSON.stringify([
+    result.title,
+    result.headline,
+    result.outcome,
+    result.done,
+    Boolean(celebration)
+  ]);
+  if (shown !== shape) {
+    pane.dataset.shape = shape;
+    const title = document.createElement('h2');
+    title.className = 'league-title';
+    title.textContent = result.title;
+    const parts: HTMLElement[] = [title];
+    if (celebration) {
+      const canvas = document.createElement('canvas');
+      canvas.className = 'cup-scene';
+      canvas.setAttribute('role', 'img');
+      canvas.setAttribute(
+        'aria-label',
+        'The players lift the F.A. Cup on the pitch'
+      );
+      parts.push(canvas, cell('cup-won', result.headline));
+    } else {
+      parts.push(cell(`cup-banner ${result.outcome}`, result.headline));
+    }
+    if (!celebration || result.done.enabled) {
+      parts.push(cell('cup-tie', result.tie), continueRow(result.done));
+    }
+    pane.replaceChildren(...parts);
   }
-  if (!celebration || result.done.enabled) {
-    parts.push(cell('cup-tie', result.tie), continueRow(result.done));
+  const canvas = pane.querySelector<HTMLCanvasElement>('canvas.cup-scene');
+  if (celebration && canvas) {
+    const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    paintClip(
+      canvas.getContext('2d')!,
+      celebrationFrame(
+        celebration.sides,
+        celebration.progress,
+        celebration.clock,
+        still
+      ),
+      { attack: celebration.sides.winners, defence: celebration.sides.losers },
+      fitClipCanvas(canvas)
+    );
   }
-  pane.replaceChildren(...parts);
 };
 
 /** Labelled money rows, as on the status screen. */

@@ -1,4 +1,4 @@
-import { shadowArt, type ArtGrid } from './assets/clip-sprites';
+import { cupArt, shadowArt, type ArtGrid } from './assets/clip-sprites';
 import { drawCard, drawLabel, overlayUnit } from './clip-card';
 import { drawGoal } from './clip-goal';
 import {
@@ -6,6 +6,7 @@ import {
   ballHeld,
   ballLiftMetres,
   ballSprite,
+  cupPalette,
   iconPalette,
   looksFor,
   playerPalette,
@@ -256,7 +257,8 @@ export const paintClip = (
   }
   const { ball } = frame;
   const lift = ball.height * ballLiftMetres;
-  const held = ballHeld(frame.players, ball);
+  // A ball is held, or, in the cup celebration, put away.
+  const held = Boolean(frame.trophy) || ballHeld(frame.players, ball);
   ctx.restore();
 
   // The sprites, in device pixels, from the far side of the ground to the
@@ -353,6 +355,21 @@ export const paintClip = (
       }
     });
   });
+  const { trophy } = frame;
+  if (trophy) {
+    // Just in front of whoever holds it, so the hands stay behind the cup.
+    draws.push({
+      depth: trophy.y + 0.01,
+      draw: () => {
+        const [x, y] = onScreen(trophy.x, trophy.y - trophy.raise);
+        drawSprite(ctx, cupArt, cupPalette, {
+          size: pixel,
+          x: x! * ratio,
+          y: y! * ratio
+        });
+      }
+    });
+  }
   if (!held) {
     draws.push({
       depth: ball.y,
@@ -369,6 +386,17 @@ export const paintClip = (
   }
   for (const { draw } of draws.toSorted((a, b) => a.depth - b.depth)) {
     draw();
+  }
+  // Confetti over everything, two art pixels square a speck.
+  for (const speck of frame.confetti ?? []) {
+    const [x, y] = onScreen(speck.x, speck.y);
+    ctx.fillStyle = speck.colour;
+    ctx.fillRect(
+      Math.round(x! * ratio),
+      Math.round(y! * ratio),
+      Math.ceil(pixel * 2),
+      Math.ceil(pixel * 2)
+    );
   }
   ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
 

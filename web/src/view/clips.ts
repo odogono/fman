@@ -151,6 +151,13 @@ export type ClipInput = Readonly<{
   seed: number;
   /** The named player: an index into `attack.players`. */
   shooter: number;
+  /**
+   * For an injury (#110): whether a tackle caused it, and who made it, an
+   * index into `defence.players`. Left out, a tackle did, from the nearest
+   * defender.
+   */
+  tackled?: boolean;
+  tackler?: number;
 }>;
 
 /** What a player is doing, for the drawing. */
@@ -459,8 +466,8 @@ const drawMiss = (rng: ClipRng): MissOutcome => {
 };
 
 /**
- * The outcome the seed picks for a kind. Until injuries have clips of their
- * own (#110), an injury plays as the injured player being tackled.
+ * The outcome the seed picks for a kind. An injury (#110) plays as the
+ * injured player being tackled, or pulling up, and staying down.
  */
 const drawOutcome = (rng: ClipRng, kind: Moment['kind']): ClipOutcome =>
   kind === 'injury'
@@ -616,6 +623,8 @@ const slideFrames = 20;
 const stumbleFrames = 10;
 const stumblePace = 11;
 const lieFrames = 45;
+/** An injured player pulls up before a defender closing them down is this near, in metres. */
+const pullUpGap = 3.5;
 /** Of the clips, this share see a defender slide in on the ball in the build-up. */
 const challengeShare = 0.8;
 /**
@@ -811,6 +820,9 @@ export const createClipScript = (input: ClipInput): ClipScript => {
   // shooter is blocked instead.
   let outcome: ClipOutcome =
     drawnOutcome === 'interception' && !others.length ? 'block' : drawnOutcome;
+  /** An injury (#110): tackled, or pulling up, the player stays down. */
+  const injured = input.kind === 'injury';
+  const pulledUp = injured && input.tackled === false;
   const deep = others.filter(i => attackers[i]!.line !== 'attack');
   let starter = others.length ? rng.pick(deep.length ? deep : others) : shooter;
   // Of the build-ups, 40% start in open play, 20% each from a free kick and
@@ -2217,7 +2229,16 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     if (tackler < 0) {
       tackler = keeperSlot;
     }
+    // An injury's tackle is made by the defender the moment names.
+    const named =
+      input.tackler === undefined ? undefined : defenders[input.tackler];
+    if (named && named.line !== 'keeper') {
+      tackler = attackers.length + input.tackler!;
+      nearest = distance(movers[tackler]!, runner);
+    }
     const defender = movers[tackler]!;
+    /** Pulling up, the player goes down this many frames into the run. */
+    const pullAt = pulledUp ? Math.round(tackleRng.between(20, 32)) : 0;
     const goal = { d: pitchLength, x: 34 };
     const toGoal = distance(runner, goal) || 1;
     const heading = {
@@ -2258,11 +2279,38 @@ export const createClipScript = (input: ClipInput): ClipScript => {
           defender.x += ((lead.x - defender.x) / gap) * step;
           defender.pose = 'run';
           if (
-            distance(defender, ball) < slideReach ||
-            f >= latest - slideFrames
+            !pulledUp &&
+            (distance(defender, ball) < slideReach || f >= latest - slideFrames)
           ) {
             slide = { d: 0, x: 0 };
           }
+        }
+        if (
+          pulledUp &&
+          (f >= pullAt || distance(defender, runner) < pullUpGap)
+        ) {
+          // Pulling up, the player stops short and the ball runs on, before
+          // the defender closing them down gets there.
+          contact = f;
+          looseFrom = { d: ball.d, x: ball.x };
+          const along = tackleRng.between(3, 5);
+          loose = {
+            d: clamp(ball.d + heading.d * along, 2, pitchLength - 2),
+            x: clamp(ball.x + heading.x * along, 2, pitchWidth - 2)
+          };
+          let near = 15;
+          defenders.forEach((p, j) => {
+            const i = attackers.length + j;
+            const gap = distance(movers[i]!, loose);
+            if (p.line !== 'keeper' && gap < near) {
+              near = gap;
+              sweeper = i;
+            }
+          });
+          if (sweeper >= 0) {
+            held.add(sweeper);
+          }
+          clearer = sweeper >= 0 ? sweeper : tackler;
         }
         if (slide) {
           // Feet first, homing on the ball, slowing as they go.
@@ -2324,7 +2372,9 @@ export const createClipScript = (input: ClipInput): ClipScript => {
         // Taken out, the shooter pitches forward over the tackle and goes
         // down.
         if (after <= stumbleFrames) {
-          const on = perFrame(stumblePace) * (1 - after / stumbleFrames);
+          const on =
+            perFrame(pulledUp ? stumblePace / 3 : stumblePace) *
+            (1 - after / stumbleFrames);
           runner.d += heading.d * on;
           runner.x += heading.x * on;
           aimAt(shooter, {
@@ -2340,9 +2390,12 @@ export const createClipScript = (input: ClipInput): ClipScript => {
           defender.d += slide.d * step;
           defender.x += slide.x * step;
         }
-        const sitting = after < 8 + sitFrames;
-        defender.pose = sitting ? 'tackle' : 'run';
-        defender.poseFrame = after < 8 ? 0 : 1;
+        // Pulling up, nobody slid in, and the nearest defender takes it.
+        const sitting = !pulledUp && after < 8 + sitFrames;
+        if (!pulledUp) {
+          defender.pose = sitting ? 'tackle' : 'run';
+          defender.poseFrame = after < 8 ? 0 : 1;
+        }
         if (!sitting && sweeper >= 0) {
           held.delete(tackler);
         }
@@ -2364,7 +2417,8 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       frame++;
     }
     momentFrame = momentStart + contact - 1;
-    shooterUpAt = momentFrame + stumbleFrames + lieFrames;
+    // Injured, the player stays down.
+    shooterUpAt = injured ? Infinity : momentFrame + stumbleFrames + lieFrames;
   } else if (outcomeKind(outcome) === 'clearance') {
     // The final pass cut out, or the shot blocked by a defender stepping
     // into its line; the clip reaches its moment as they meet the ball.
@@ -2855,8 +2909,9 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     x: rng.between(12, 56)
   };
   const ballAtRest = { d: ball.d, x: ball.x };
-  // A clearance goes long upfield or into touch, as the seed picks.
-  const upfield = rng.next() < 0.5;
+  // A clearance goes long upfield or into touch, as the seed picks. With a
+  // player down injured, it goes into touch, so play stops for them.
+  const upfield = rng.next() < 0.5 && !injured;
   const cleared = upfield
     ? {
         d: clamp(ball.d - rng.between(30, 45), 5, 100),
@@ -2974,6 +3029,15 @@ export const createClipScript = (input: ClipInput): ClipScript => {
         )[0] ?? -1)
       : -1;
   const huddled = new Set<number>();
+  // With a player down injured, the two team-mates nearest walk over to
+  // see to them once the ball is out.
+  const carers = injured
+    ? others
+        .toSorted(
+          (a, b) => distance(movers[a]!, scorer) - distance(movers[b]!, scorer)
+        )
+        .slice(0, 2)
+    : [];
   // How the scorer celebrates once there: arms up, jumping, or, from a
   // run to the fans or the corner, a knee slide.
   const arrivesWith = rng.pick(
@@ -3081,7 +3145,17 @@ export const createClipScript = (input: ClipInput): ClipScript => {
         // Cleared, the defender is free to rejoin the shape.
         reactionHeld.delete(clearer);
       }
-      cameraFocus = () => ({ d: ball.d, x: ball.x });
+      if (injured && f >= 30) {
+        carers.forEach((i, k) => {
+          const side = k === 0 ? -1 : 1;
+          overrides.set(i, { d: scorer.d - 1, x: scorer.x + side * 2.2 });
+          paces.set(i, walkPace);
+        });
+      }
+      // The camera stays with a player down injured.
+      cameraFocus = injured
+        ? () => ({ d: scorer.d, x: scorer.x })
+        : () => ({ d: ball.d, x: ball.x });
     } else {
       scorer.pose = outcomeKind(outcome) === 'near-miss' ? 'head' : 'run';
       if (keeper && outcomeKind(outcome) === 'save') {

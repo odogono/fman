@@ -8,6 +8,7 @@ import {
   clipInputFor,
   clipScriptsFor,
   colourDistance,
+  goneOff,
   inkColours,
   keeperColours,
   keeperColoursFor,
@@ -275,4 +276,50 @@ test('each clip carries the score after its moment, home first, for the goal ann
     homeFirst(1, 1),
     homeFirst(2, 1)
   ]);
+});
+
+test('an injury’s clip has the named opponent make the tackle', () => {
+  const players = [player(1, 'GK'), player(2, 'DF'), player(3, 'FW')];
+  const injury: Moment = {
+    kind: 'injury',
+    minute: 51,
+    player: 3,
+    side: 'club',
+    tackled: true,
+    tackler: 11,
+    weeksOut: 1
+  };
+  const input = clipInputFor(gameWith(players), fixture, injury, 0);
+  expect(input.kind).toBe('injury');
+  expect(input.attack.players[input.shooter]!.label).toBe('P3');
+  expect(input.tackled).toBe(true);
+  // The tackler plays, though the usual eleven leaves them out.
+  expect(input.defence.players[input.tackler!]!.label).toBe('S11');
+  const pulledUp = clipInputFor(
+    gameWith(players),
+    fixture,
+    { kind: 'injury', minute: 51, player: 3, side: 'club', weeksOut: 1 },
+    0
+  );
+  expect(pulledUp.tackled).toBe(false);
+  expect(pulledUp.tackler).toBeUndefined();
+});
+
+test('a player injured in a clip is left out of the later ones', () => {
+  const players = [player(1, 'GK'), player(2, 'DF'), player(3, 'FW')];
+  const moments: Moment[] = [
+    { kind: 'save', minute: 12, player: 3, side: 'club' },
+    { kind: 'injury', minute: 30, player: 3, side: 'club', weeksOut: 2 },
+    { kind: 'goal', minute: 70, player: 2, side: 'club' }
+  ];
+  expect([...goneOff(moments, 2)]).toEqual([3]);
+  expect(goneOff(moments, 1).size).toBe(0);
+  const labels = clipScriptsFor(gameWith(players), fixture, moments).map(s =>
+    s.input.attack.players.map(p => p.label)
+  );
+  expect(labels[0]).toContain('P3');
+  // Injured in the second clip, the player is down in it, then gone.
+  expect(labels[1]).toContain('P3');
+  expect(labels[2]).not.toContain('P3');
+  expect(labels[2]).toHaveLength(2);
 });

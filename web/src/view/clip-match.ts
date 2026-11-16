@@ -206,19 +206,38 @@ type Sides = Readonly<{
   clubShooter: number;
   home: ClipSide;
   opponentShooter: number;
+  /** For an injury (#110), the tackler's place in the opponent's eleven. */
+  tackler: number;
 }>;
 
-/** Both sides as a moment shows them, with that moment's shooter. */
+/**
+ * The managed club's players who have gone off injured before `index`'s
+ * moment (#110), whom its clip and the later ones leave out.
+ */
+export const goneOff = (moments: readonly Moment[], index = moments.length) =>
+  new Set(
+    moments
+      .slice(0, index)
+      .flatMap(m =>
+        m.kind === 'injury' && m.player !== undefined ? [m.player] : []
+      )
+  );
+
+/**
+ * Both sides as a moment shows them, with that moment's shooter, and
+ * without the players who have gone off injured.
+ */
 const sidesFor = (
   game: Game,
   fixture: MatchFixture,
-  moment?: Moment
+  moment?: Moment,
+  off: ReadonlySet<number> = new Set()
 ): Sides => {
   const inks = matchInks(game, fixture);
   const homeKit = inkColours[inks.home]!;
   const awayKit = inkColours[inks.away]!;
   const keepers = keeperColoursFor(homeKit, awayKit);
-  const picked = pickedTeam(game);
+  const picked = pickedTeam(game).filter(p => !off.has(p.id));
   const clubShooter =
     moment?.side === 'club'
       ? picked.findIndex((p: Player) => p.id === moment.player)
@@ -232,9 +251,15 @@ const sidesFor = (
     clubShooter
   );
   const { squad } = game.clubs[fixture.opponent - 1]!;
-  const named = moment?.side === 'opponent' ? moment.squadPlayer : undefined;
+  const named =
+    moment?.side === 'opponent'
+      ? moment.squadPlayer
+      : moment?.kind === 'injury'
+        ? moment.tackler
+        : undefined;
   const eleven = squad ? opponentEleven(squad, named) : [];
-  const opponentShooter = named === undefined ? -1 : eleven.indexOf(named);
+  const namedIndex = named === undefined ? -1 : eleven.indexOf(named);
+  const opponentShooter = moment?.side === 'opponent' ? namedIndex : -1;
   // Other clubs' players' energy isn't kept, so each shows the side's team
   // Energy.
   const energy = fixture.opponentStrength[0]!;
@@ -273,18 +298,23 @@ const sidesFor = (
     opponentShooter:
       opponentShooter < 0 && !squad && moment?.side === 'opponent'
         ? 10
-        : opponentShooter
+        : opponentShooter,
+    tackler: moment?.kind === 'injury' ? namedIndex : -1
   };
 };
 
-/** The input for the clip of the `index`th moment of a match. */
+/**
+ * The input for the clip of the `index`th moment of a match, without the
+ * players `off` injured before it.
+ */
 export const clipInputFor = (
   game: Game,
   fixture: MatchFixture,
   moment: Moment,
-  index: number
+  index: number,
+  off: ReadonlySet<number> = new Set()
 ): ClipInput => {
-  const sides = sidesFor(game, fixture, moment);
+  const sides = sidesFor(game, fixture, moment, off);
   const clubHome = fixture.home;
   const club = clubHome ? sides.home : sides.away;
   const opponent = clubHome ? sides.away : sides.home;
@@ -326,7 +356,13 @@ export const clipInputFor = (
         name
       ].join('|')
     ),
-    shooter
+    shooter,
+    ...(moment.kind === 'injury'
+      ? {
+          tackled: moment.tackled ?? false,
+          ...(sides.tackler >= 0 ? { tackler: sides.tackler } : {})
+        }
+      : {})
   };
 };
 
@@ -343,18 +379,22 @@ export const clipScriptsFor = (
     const club = goals('club');
     const opponent = goals('opponent');
     return createClipScript({
-      ...clipInputFor(game, fixture, moment, i),
+      ...clipInputFor(game, fixture, moment, i, goneOff(moments, i)),
       score: fixture.home ? [club, opponent] : [opponent, club]
     });
   });
 
-/** The still pitch under "Kick-off" or "Full time": both sides in shape. */
+/**
+ * The still pitch under "Kick-off" or "Full time": both sides in shape,
+ * without the players `off` injured.
+ */
 export const stillFrameFor = (
   game: Game,
   fixture: MatchFixture,
-  caption: string
+  caption: string,
+  off: ReadonlySet<number> = new Set()
 ): { frame: ClipFrame; sides: { attack: ClipSide; defence: ClipSide } } => {
-  const { away, home } = sidesFor(game, fixture);
+  const { away, home } = sidesFor(game, fixture, undefined, off);
   return {
     frame: kickOffFrame(home, away, caption),
     sides: { attack: home, defence: away }

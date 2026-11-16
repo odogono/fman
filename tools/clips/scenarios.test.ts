@@ -102,8 +102,20 @@ test('withDefaults puts back every setting a scenario leaves out', () => {
     rebound: 'seed',
     restart: 'seed',
     seedBase: 4,
-    side: 'home'
+    side: 'home',
+    tackled: 'yes'
   });
+});
+
+test('an injury clip can be tackled or pulling up', () => {
+  const [scenario] = parseOptions([
+    '--kind',
+    'injury',
+    '--tackled',
+    'no'
+  ]).scenarios;
+  expect(scenario!.name).toBe('injury-pulled-up-seed1');
+  expect(scenario!.settings).toMatchObject({ kind: 'injury', tackled: 'no' });
 });
 
 test('browserCandidates tries the newest Playwright headless shell first', () => {

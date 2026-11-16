@@ -4,7 +4,7 @@ import type { Game } from '../sim/management';
 import type { Moment } from '../sim/moments';
 import type { View } from '../sim/session';
 import { tickerPause, type Ticker } from '../sim/ticker';
-import { clipScriptsFor, stillFrameFor } from './clip-match';
+import { clipScriptsFor, goneOff, stillFrameFor } from './clip-match';
 import {
   clipStage,
   shotAt,
@@ -93,8 +93,8 @@ export const createClipPlayer = () => {
       const scripts =
         (same && plan?.scripts) ||
         clipScriptsFor(game, fixture, ticker.moments);
-      const still = (caption: string): ClipStage => {
-        const picture = stillFrameFor(game, fixture, caption);
+      const still = (caption: string, off?: ReadonlySet<number>): ClipStage => {
+        const picture = stillFrameFor(game, fixture, caption, off);
         return { length: tickerPause, picture: () => picture };
       };
       plan = {
@@ -104,7 +104,8 @@ export const createClipPlayer = () => {
         stages: [
           still('Kick-off'),
           ...scripts.map((script, i) => clipStage(script, ticker.lengths?.[i])),
-          still('Full time')
+          // Full time, without anyone who went off injured.
+          still('Full time', goneOff(ticker.moments))
         ]
       };
     }

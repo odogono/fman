@@ -22,7 +22,7 @@ The refresh still draws its one `R(20)` per player, unowned players included, an
 ## On screen
 
 - **Ticker.** `INJURY:` in Classic mode and `Injury` in Modern mode, naming the player and, when a tackle caused it and the whole fits, who made it: `51' INJURY: PRYCE, TACKLED BY SMITH`. Without club squads the opposing club makes the tackle.
-- **Sprite highlights.** Until injuries have clips of their own, an injury plays as the injured player being tackled.
+- **Sprite highlights.** The named opponent tackles the injured player, or they pull up, and they stay down while the ball goes into touch. They are left out of the match's later clips ([sprite-highlights.md](sprite-highlights.md)).
 
 ## Result
 

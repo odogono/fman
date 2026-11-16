@@ -339,23 +339,6 @@ const strengthsTable = (strengths: Strengths) => {
   return table;
 };
 
-/** Modern mode's highlights scoreboard: the competition, then the score. */
-const scoreboard = (highlights: ModernHighlights) => {
-  const board = document.createElement('section');
-  board.className = 'scoreboard';
-  board.setAttribute('aria-label', 'Score');
-  const title = document.createElement('h3');
-  title.textContent = highlights.title;
-  const score = document.createElement('p');
-  score.append(
-    clubLabel(highlights.home),
-    cell('scoreboard-goals', `${highlights.score[0]} v ${highlights.score[1]}`),
-    clubLabel(highlights.away)
-  );
-  board.append(title, score);
-  return board;
-};
-
 /** A club's name, carrying its three letters for a narrow scoreboard. */
 const scoreboardClub = (name: ClubName, short?: string) => {
   const label = clubLabel(name);
@@ -367,13 +350,13 @@ const scoreboardClub = (name: ClubName, short?: string) => {
 };
 
 /**
- * The sprite highlights' scoreboard: one strip with the game menu, both
+ * Modern mode's highlights scoreboard: one strip with the game menu, both
  * clubs, the score and the clock. Names too long for a phone's strip give
  * way to their three letters.
  */
-const clipScoreboard = (highlights: ModernHighlights) => {
+const stripScoreboard = (highlights: ModernHighlights) => {
   const board = document.createElement('section');
-  board.className = 'scoreboard clip-scoreboard';
+  board.className = 'scoreboard strip-scoreboard';
   board.setAttribute('aria-label', `Score: ${highlights.title}`);
   const menu = document.createElement('button');
   menu.type = 'button';
@@ -512,6 +495,27 @@ const actionButton = (
 };
 
 /**
+ * The row under the highlights: Skip all, which becomes Continue for the
+ * final hold, after the latest moment's line where one is given.
+ */
+const highlightsControls = (
+  ticker: NonNullable<ModernHighlights['ticker']>,
+  latest?: HTMLElement
+) => {
+  const controls = document.createElement('div');
+  controls.className = 'highlights-controls';
+  if (latest) {
+    controls.append(latest);
+  }
+  controls.append(
+    ticker.fullTime
+      ? actionButton('Continue', continueId, 'continue', true)
+      : actionButton('Skip all', 'ticker.skip', 'skip', ticker.skip)
+  );
+  return controls;
+};
+
+/**
  * Modern mode's highlights screen (#45), around `pitch`, the canvas the
  * original pitch is painted on.
  */
@@ -521,9 +525,7 @@ const paintHighlights = (
   clipPitch: HTMLCanvasElement,
   highlights: ModernHighlights
 ) => {
-  const parts: HTMLElement[] = [
-    highlights.clip ? clipScoreboard(highlights) : scoreboard(highlights)
-  ];
+  const parts: HTMLElement[] = [stripScoreboard(highlights)];
   if (highlights.clip && highlights.ticker) {
     // Sprite highlights (#144): the clip's pitch, with the latest moment's
     // line under it, or after Skip the whole ticker over it. The moments
@@ -546,13 +548,9 @@ const paintHighlights = (
     }
     // One row under the pitch: the latest moment, then Skip all, which
     // becomes Continue once the last clip has played.
-    const controls = document.createElement('div');
-    controls.className = 'clip-controls';
-    controls.append(
-      latestMoment(ticker.lines, clip.drawer, !clip.full),
-      ticker.fullTime
-        ? actionButton('Continue', continueId, 'continue', true)
-        : actionButton('Skip all', 'ticker.skip', 'skip', ticker.skip)
+    const controls = highlightsControls(
+      ticker,
+      latestMoment(ticker.lines, clip.drawer, !clip.full)
     );
     const before = document.activeElement?.closest<HTMLElement>(
       '[data-view-control]'
@@ -579,12 +577,10 @@ const paintHighlights = (
     parts.push(pitch, strengths);
   }
   if (highlights.ticker) {
-    const actions = document.createElement('div');
-    actions.className = 'pick-actions';
-    actions.append(
-      actionButton('Skip', 'ticker.skip', 'skip', highlights.ticker.skip)
+    parts.push(
+      tickerList(highlights.ticker),
+      highlightsControls(highlights.ticker)
     );
-    parts.push(tickerList(highlights.ticker), actions);
   }
   pane.replaceChildren(...parts);
 };

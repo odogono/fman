@@ -200,7 +200,7 @@ _Avoid_: Result screen, since result already names a match's outcome and the cup
 The league match or cup round the managed club plays next, as shown before it is started.
 
 **Print fault**:
-The original stopping partway through printing a name renamed with Spectrum control codes, which ends the game and can leave it half-updated. Kept under the Original rules; the Enhanced rules drop it from version 10.
+The original stopping partway through printing a name renamed with Spectrum control codes, which ends the game and can leave it half-updated. Kept under the Original rules; from version 10 the Enhanced rules refuse a name with control codes beyond a club's colour, so none can happen.
 _Avoid_: Crash, error
 
 **Rules parity**:

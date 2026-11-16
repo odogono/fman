@@ -66,7 +66,9 @@ const squad = fresh().clubs[1]!.squad!;
 
 test('Enhanced version 9 is version 8 with match injuries', () => {
   for (const ruleset of rulesets) {
-    expect(matchInjuries(ruleset)).toBe(ruleset === 'enhanced-9');
+    expect(matchInjuries(ruleset)).toBe(
+      ruleset === 'enhanced-9' || ruleset === 'enhanced-10'
+    );
   }
   for (const accessor of [
     clearances,

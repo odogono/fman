@@ -26,12 +26,13 @@ export const rulesets = [
   'enhanced-6',
   'enhanced-7',
   'enhanced-8',
-  'enhanced-9'
+  'enhanced-9',
+  'enhanced-10'
 ] as const;
 export type Ruleset = (typeof rulesets)[number];
 
 /** The Enhanced version every new Enhanced game starts with. */
-export const latestEnhanced = 'enhanced-9' satisfies Ruleset;
+export const latestEnhanced = 'enhanced-10' satisfies Ruleset;
 
 export const isRuleset = (value: unknown): value is Ruleset =>
   rulesets.includes(value as Ruleset);
@@ -50,6 +51,7 @@ const changes: Record<
     lastingSkill: boolean;
     matchInjuries: boolean;
     momentHighlights: boolean;
+    plainNames: boolean;
     presentDay: boolean;
     tiringInjuries: boolean;
   }
@@ -62,8 +64,21 @@ const changes: Record<
     lastingSkill: false,
     matchInjuries: false,
     momentHighlights: false,
+    plainNames: false,
     presentDay: false,
     tiringInjuries: false
+  },
+  'enhanced-10': {
+    clearances: true,
+    clubSquads: true,
+    difficulty: 'steep',
+    gracePeriod: true,
+    lastingSkill: true,
+    matchInjuries: true,
+    momentHighlights: true,
+    plainNames: true,
+    presentDay: true,
+    tiringInjuries: true
   },
   'enhanced-2': {
     clearances: false,
@@ -73,6 +88,7 @@ const changes: Record<
     lastingSkill: false,
     matchInjuries: false,
     momentHighlights: false,
+    plainNames: false,
     presentDay: false,
     tiringInjuries: false
   },
@@ -84,6 +100,7 @@ const changes: Record<
     lastingSkill: false,
     matchInjuries: false,
     momentHighlights: false,
+    plainNames: false,
     presentDay: true,
     tiringInjuries: false
   },
@@ -95,6 +112,7 @@ const changes: Record<
     lastingSkill: true,
     matchInjuries: false,
     momentHighlights: false,
+    plainNames: false,
     presentDay: true,
     tiringInjuries: false
   },
@@ -106,6 +124,7 @@ const changes: Record<
     lastingSkill: true,
     matchInjuries: false,
     momentHighlights: false,
+    plainNames: false,
     presentDay: true,
     tiringInjuries: true
   },
@@ -117,6 +136,7 @@ const changes: Record<
     lastingSkill: true,
     matchInjuries: false,
     momentHighlights: false,
+    plainNames: false,
     presentDay: true,
     tiringInjuries: true
   },
@@ -128,6 +148,7 @@ const changes: Record<
     lastingSkill: true,
     matchInjuries: false,
     momentHighlights: true,
+    plainNames: false,
     presentDay: true,
     tiringInjuries: true
   },
@@ -139,6 +160,7 @@ const changes: Record<
     lastingSkill: true,
     matchInjuries: false,
     momentHighlights: true,
+    plainNames: false,
     presentDay: true,
     tiringInjuries: true
   },
@@ -150,6 +172,7 @@ const changes: Record<
     lastingSkill: true,
     matchInjuries: true,
     momentHighlights: true,
+    plainNames: false,
     presentDay: true,
     tiringInjuries: true
   },
@@ -161,6 +184,7 @@ const changes: Record<
     lastingSkill: false,
     matchInjuries: false,
     momentHighlights: false,
+    plainNames: false,
     presentDay: false,
     tiringInjuries: false
   }
@@ -283,3 +307,11 @@ export const matchInjuries = (ruleset: Ruleset) =>
  */
 export const longestInjury = (ruleset: Ruleset) =>
   matchInjuries(ruleset) ? 4 : 3;
+
+/**
+ * Whether a new name may carry no control codes beyond a club's leading
+ * colour, so printing it can never stop the game (ADR 0014, part of
+ * `enhanced-10` without an experiment, since only renamed names can
+ * fault). The original keeps its print faults.
+ */
+export const plainNames = (ruleset: Ruleset) => changes[ruleset].plainNames;

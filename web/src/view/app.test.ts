@@ -1080,7 +1080,15 @@ const toTeam = (run: ReturnType<typeof harness>) => {
   run.app.pointerUp();
   for (let i = 0; run.view().screen !== 'team'; i++) {
     expect(i).toBeLessThan(5);
-    run.tap('Continue');
+    // The next fixture is a Modern screen, whose Pick team answers Enter.
+    if (run.view().screen === 'fixture') {
+      run.settle();
+      run.app.tap('fixture.continue');
+      run.wait(3);
+      run.app.pointerUp();
+    } else {
+      run.tap('Continue');
+    }
   }
   run.settle();
 };

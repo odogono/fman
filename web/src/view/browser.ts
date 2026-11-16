@@ -26,6 +26,7 @@ import type {
 } from './league-screens';
 import type { BidPlayer, LoanCost, ModernAmount } from './modern-amount';
 import type { ModernBills } from './modern-bills';
+import type { ModernFixture } from './modern-fixture';
 import {
   continueId,
   drawerIds,
@@ -206,7 +207,7 @@ const amountPanel = (entry: AmountEntry) => {
 /** The context bar or Home screen button an event came from, if any. */
 const barButton = (event: Event) =>
   (event.target as Element).closest<HTMLButtonElement>(
-    '#context-bar button, #home button, #pick-team button, #highlights button, #status button, #amount-prompt button, #message button, #full-time button, #week-results button, #league-table button, #bills button, #cup-result button, #cup-replay button'
+    '#context-bar button, #home button, #pick-team button, #highlights button, #status button, #amount-prompt button, #message button, #full-time button, #week-results button, #league-table button, #bills button, #next-fixture button, #cup-result button, #cup-replay button'
   );
 
 const pounds = (value: number) => `£${value.toLocaleString('en-GB')}`;
@@ -1022,6 +1023,28 @@ const paintCupResult = (pane: HTMLElement, result: CupResult) => {
   }
 };
 
+/**
+ * Modern mode's next fixture: both clubs with where each stands, home on the left, where the managed club plays, and for a cup
+ * round its draw, then Pick team.
+ */
+const paintFixture = (pane: HTMLElement, fixture: ModernFixture) => {
+  // The top bar names the competition, so the card doesn't repeat it.
+  const card = document.createElement('div');
+  card.className = 'fixture-card';
+  const side = ({ club, standing }: ModernFixture['home']) => {
+    const element = document.createElement('div');
+    element.className = 'fixture-side';
+    element.append(clubLabel(club), cell('fixture-standing', standing));
+    return element;
+  };
+  card.append(side(fixture.home), cell('fixture-v', 'v'), side(fixture.away));
+  pane.replaceChildren(
+    card,
+    cell('fixture-venue', fixture.draw ?? fixture.venue),
+    continueRow(fixture.done)
+  );
+};
+
 /** Labelled money rows, as on the status screen. */
 const moneyRows = (rows: readonly (readonly [string, number | string])[]) => {
   const facts = document.createElement('dl');
@@ -1326,6 +1349,7 @@ export const createBrowserDom = (app: HTMLElement) => {
   <section id="bills" class="modern-amount modern-bills" aria-label="Weekly bills" hidden></section>
   <section id="cup-result" class="modern-amount modern-cup" aria-label="Cup result" hidden></section>
   <section id="cup-replay" class="modern-amount modern-cup" aria-label="Cup replay" hidden></section>
+  <section id="next-fixture" class="modern-amount modern-fixture" aria-label="Next fixture" hidden></section>
   <section id="full-time" class="modern-amount modern-full-time" aria-label="Full time" hidden></section>
   <section id="message" class="modern-amount modern-message" aria-label="Message" role="status" hidden></section>
   <div id="context-bar" class="context-bar" aria-label="Answers" hidden></div>
@@ -1367,6 +1391,7 @@ export const createBrowserDom = (app: HTMLElement) => {
   const weekResultsPane = find<HTMLElement>('#week-results');
   const leagueTablePane = find<HTMLElement>('#league-table');
   const billsPane = find<HTMLElement>('#bills');
+  const fixturePane = find<HTMLElement>('#next-fixture');
   const cupResultPane = find<HTMLElement>('#cup-result');
   const cupReplayPane = find<HTMLElement>('#cup-replay');
   // Modern mode's own pitch, kept between attacks as the original's is not.
@@ -1415,6 +1440,11 @@ export const createBrowserDom = (app: HTMLElement) => {
       classes: ['has-amount'],
       paint: ({ cupResult }) => paintCupResult(cupResultPane, cupResult),
       pane: cupResultPane
+    },
+    fixture: {
+      classes: ['has-amount'],
+      paint: ({ fixture }) => paintFixture(fixturePane, fixture),
+      pane: fixturePane
     },
     'full-time': {
       classes: ['has-amount'],

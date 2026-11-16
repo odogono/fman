@@ -26,7 +26,7 @@ test('each screen is titled, and the highlights name the clubs playing', () => {
     'Loan',
     'Bank balance',
     'Main menu',
-    'League match',
+    'League match – Division 4',
     'Picked team'
   ]);
 

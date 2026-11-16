@@ -28,6 +28,7 @@ For a change to see in the real app (layout, touch controls, the game menu, the 
 | `#message`                          | Modern mode's messages: the balance after a loan, and plain text messages, with Continue.                      |
 | `#week-results`, `#league-table`    | Modern mode's week's results and league table, each with Continue.                                             |
 | `#cup-result`, `#cup-replay`        | Modern mode's cup result and winners' celebration, and the replay notice, with Continue.                       |
+| `#next-fixture`                     | Modern mode's next fixture, with Pick team.                                                                    |
 | `#bills`                            | Modern mode's weekly bills and dismissal, with Continue or Leave the club.                                     |
 | `#full-time`                        | Modern mode's Full-time screen: scoreboard, scorers, injuries and gate receipts, with Continue.                |
 

@@ -25,6 +25,11 @@ export const cameraAspect = 5 / 4;
  */
 export const tallestCameraAspect = 2;
 /**
+ * The shortest the patch may get, where a phone on its side leaves a box
+ * wider than the camera's shape: square, 40 m by 40 m.
+ */
+export const shortestCameraAspect = 1;
+/**
  * The match-time card shows over a clip's first 1.5 s, or until a restart
  * is taken, sliding in and out over this many frames.
  */

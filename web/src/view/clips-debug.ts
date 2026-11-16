@@ -35,6 +35,7 @@ import {
   type Line,
   type Restart
 } from './clips';
+import { celebrationFrame, type CelebrationProgress } from './cup-celebration';
 import { named } from './ticker-layout';
 
 // The clip debugger (#144): `web/clips.html`, served by `bun run dev` and
@@ -75,12 +76,36 @@ const settings = {
   problems: false,
   rebound: 'seed' as 'no' | 'seed' | 'yes',
   restart: 'seed' as Restart | 'seed',
+  /** A moment's clip, or the cup celebration. */
+  scene: 'moment' as 'celebration' | 'moment',
   seedBase: 1,
   side: 'home' as 'away' | 'home',
   speed: 1,
   /** For an injury (#110): tackled, or pulling up. */
   tackled: 'yes' as 'no' | 'yes'
 };
+
+/**
+ * The cup celebration on the debug page: its three parts in turn, as the
+ * original's trophy, title and stars would pace them, then a hold.
+ */
+const celebrationLength = 700;
+const celebrationAt = (at: number): CelebrationProgress => {
+  const part = (from: number, to: number) =>
+    Math.min(1, Math.max(0, (at - from) / (to - from)));
+  return { stars: part(300, 525), text: part(150, 300), trophy: part(0, 150) };
+};
+const celebrating = () => settings.scene === 'celebration';
+/** The scene's frame at `at`, and the sides it shows. */
+const sceneAt = (at: number) =>
+  celebrating()
+    ? celebrationFrame(
+        { losers: script.input.defence, winners: script.input.attack },
+        celebrationAt(at),
+        at
+      )
+    : script.frame(at);
+const sceneLength = () => (celebrating() ? celebrationLength : script.length);
 
 /** A match loaded from a save, while its moments are being replayed. */
 let loaded:
@@ -280,7 +305,7 @@ const rebuild = () => {
   );
   at = 0;
   playing = true;
-  scrubber.max = String(script.length - 1);
+  scrubber.max = String(sceneLength() - 1);
   const { moment, reaction, zoom } = script.phases;
   readout.textContent = [
     `length      ${script.length} frames (${(script.length / clipFps).toFixed(2)} s)`,
@@ -317,6 +342,20 @@ const renderControls = () => {
     'fieldset',
     { disabled: Boolean(loaded) },
     element('legend', {}, 'Moment'),
+    labelled(
+      'Scene',
+      select(
+        [
+          ['moment', 'A moment'],
+          ['celebration', 'Cup celebration']
+        ],
+        settings.scene,
+        value => {
+          settings.scene = value as typeof settings.scene;
+          rebuild();
+        }
+      )
+    ),
     labelled(
       'Kind',
       select(
@@ -747,15 +786,15 @@ const tick = (now: number) => {
   last = now;
   if (playing) {
     at += elapsed * clipFps * settings.speed;
-    if (at >= script.length - 1) {
-      at = script.length - 1;
+    if (at >= sceneLength() - 1) {
+      at = sceneLength() - 1;
       playing = false;
     }
   }
   playButton.textContent = playing ? 'Pause' : 'Play';
   scrubber.value = String(Math.round(at));
-  const frame = script.frame(at);
-  frameLabel.textContent = `${Math.floor(at)} / ${script.length - 1} · ${frame.phase}`;
+  const frame = sceneAt(at);
+  frameLabel.textContent = `${Math.floor(at)} / ${sceneLength() - 1} · ${celebrating() ? 'cup celebration' : frame.phase}`;
   paintClip(
     context,
     frame,

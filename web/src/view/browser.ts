@@ -784,7 +784,7 @@ const paintPickTeam = (pane: HTMLElement, pick: PickTeam) => {
   legend.append(
     cell('pick-marker picked', 'p'),
     pick.weeksOut ? ' = picked, ' : ' = picked to play, ',
-    cell('pick-marker injured', pick.weeksOut ? '1-3' : 'i'),
+    cell('pick-marker injured', pick.weeksOut ? `1-${pick.weeksOut}` : 'i'),
     pick.weeksOut ? ' = weeks injured' : ' = injured'
   );
   parts.push(picked, legend);

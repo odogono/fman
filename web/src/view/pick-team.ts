@@ -1,6 +1,6 @@
 import { fixtureSides, teamStrength, type MatchFixture } from '../sim/league';
 import type { Game, Player } from '../sim/management';
-import { tiringInjuries } from '../sim/ruleset';
+import { longestInjury, tiringInjuries } from '../sim/ruleset';
 import type { View } from '../sim/session';
 import { inSquadOrder, playerCategory } from '../sim/squads';
 import { answersFor } from './answers';
@@ -60,8 +60,11 @@ export type PickTeam = Readonly<{
   prompt: 'team' | 'selection';
   /** The team prompt's strengths. */
   strengths?: Strengths;
-  /** Under tiring injuries the legend counts weeks out, not `i`. */
-  weeksOut: boolean;
+  /**
+   * Under tiring injuries the legend counts weeks out, not `i`, up to this
+   * many (#98, #110); otherwise `undefined`.
+   */
+  weeksOut?: number;
 }>;
 
 const groupTitles = ['Defence', 'Midfield', 'Attack'];
@@ -118,6 +121,7 @@ export const pickTeamFor = (view: View): PickTeam | undefined => {
   }
   const { game, pickedCount: picked } = view;
   const weeksOut = tiringInjuries(game.ruleset);
+  const longest = weeksOut ? { weeksOut: longestInjury(game.ruleset) } : {};
   const offered = new Set(answersFor(view).map(answer => answer.id));
   const squad = inSquadOrder(game.players.filter(p => p.status > 0));
   const action = (
@@ -142,7 +146,7 @@ export const pickTeamFor = (view: View): PickTeam | undefined => {
       picked,
       prompt: 'team',
       strengths: strengthsFor(game, view.fixture),
-      weeksOut
+      ...longest
     };
   }
   // Over eleven picked the original only drops, and 99 isn't taken.
@@ -157,6 +161,6 @@ export const pickTeamFor = (view: View): PickTeam | undefined => {
       : 'Tap a player to add',
     picked,
     prompt: 'selection',
-    weeksOut
+    ...longest
   };
 };

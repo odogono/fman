@@ -1,7 +1,7 @@
 import { nextFixture, type MatchFixture } from './league';
 import { payWeeklyBills, type Game, type Player } from './management';
 import { createRng } from './rng';
-import { opponentBonus, tiringInjuries } from './ruleset';
+import { matchInjuries, opponentBonus, tiringInjuries } from './ruleset';
 
 const clamp = (n: number) => Math.max(1, Math.min(20, n));
 const gate = (game: Game, opponent: number, home: boolean) =>
@@ -74,12 +74,17 @@ export const injuryBand = (energy: number) =>
  * down and heals to the reserves. Otherwise a roll in the top `band` of 20
  * injures, for as many weeks as it lands into the band (1–3).
  */
+/** An injured player's week: no energy back, one week fewer out, then the reserves. */
+const countDown = (p: Player): Player => {
+  const { weeksOut = 1, ...rest } = p;
+  return weeksOut > 1
+    ? { ...rest, weeksOut: weeksOut - 1 }
+    : { ...rest, status: 1 };
+};
+
 const lastingRefresh = (p: Player, energy: number, roll: number): Player => {
   if (p.status === 3) {
-    const { weeksOut = 1, ...rest } = p;
-    return weeksOut > 1
-      ? { ...rest, weeksOut: weeksOut - 1 }
-      : { ...rest, status: 1 };
+    return countDown(p);
   }
   const threshold = 20 - injuryBand(energy);
   return roll > threshold
@@ -87,11 +92,19 @@ const lastingRefresh = (p: Player, energy: number, roll: number): Player => {
     : { ...p, energy };
 };
 
+/**
+ * The refresh under match injuries (#110): as under lasting injuries, but
+ * nobody is injured here; the match draws them instead.
+ */
+const inMatchRefresh = (p: Player, energy: number): Player =>
+  p.status === 3 ? countDown(p) : { ...p, energy };
+
 export const refreshPlayers = (game: Game): Game => {
   if (game.leagueMatches === 1 && game.cupRound === 0) {
     return game;
   }
   const lasting = tiringInjuries(game.ruleset);
+  const inMatch = matchInjuries(game.ruleset);
   const rng = createRng(game.seed);
   const players = game.players.map((p): Player => {
     const energy = clamp(
@@ -100,6 +113,9 @@ export const refreshPlayers = (game: Game): Game => {
     );
     // The OR expression evaluates R(20) even for unowned pool players.
     const roll = rng.int(1, 20);
+    if (inMatch && p.status !== 0) {
+      return inMatchRefresh(p, energy);
+    }
     if (lasting && p.status !== 0) {
       return lastingRefresh(p, energy, roll);
     }

@@ -105,6 +105,46 @@ test('a match under club squads names its opponent’s players', () => {
   }
 });
 
+/** `full` if it fits Classic's 32 columns, or else `short`. */
+const fitting = (full: string, short: string) =>
+  full.length <= 32 ? full : short;
+
+test('an injury names the player, and who made the tackle when it fits', () => {
+  const { squad } = game.clubs[fixture.opponent - 1]!;
+  const tackler = squad![4]!.name.toUpperCase();
+  const lines = tickerLines(game, fixture, [
+    { kind: 'injury', minute: 12, player: 2, side: 'club', weeksOut: 1 },
+    {
+      kind: 'injury',
+      minute: 51,
+      player: 3,
+      side: 'club',
+      tackled: true,
+      tackler: 4,
+      weeksOut: 2
+    },
+    {
+      kind: 'injury',
+      minute: 70,
+      player: 4,
+      side: 'club',
+      tackled: true,
+      weeksOut: 1
+    }
+  ]).map(tickerText);
+  expect(lines).toEqual([
+    fitting(
+      `70' INJURY: ${player(4)}, TACKLED BY ${opponent}`,
+      `70' INJURY: ${player(4)}`
+    ),
+    fitting(
+      `51' INJURY: ${player(3)}, TACKLED BY ${tackler}`,
+      `51' INJURY: ${player(3)}`
+    ),
+    `12' INJURY: ${player(2)}`
+  ]);
+});
+
 test('a long name is cut to fit, keeping the minute and score', () => {
   const long = {
     ...game,

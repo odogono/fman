@@ -25,7 +25,8 @@ export const rulesets = [
   'enhanced-5',
   'enhanced-6',
   'enhanced-7',
-  'enhanced-8'
+  'enhanced-8',
+  'match-injuries'
 ] as const;
 export type Ruleset = (typeof rulesets)[number];
 
@@ -47,6 +48,7 @@ const changes: Record<
     difficulty: Difficulty;
     gracePeriod: boolean;
     lastingSkill: boolean;
+    matchInjuries: boolean;
     momentHighlights: boolean;
     presentDay: boolean;
     tiringInjuries: boolean;
@@ -58,6 +60,7 @@ const changes: Record<
     difficulty: 'smooth',
     gracePeriod: false,
     lastingSkill: false,
+    matchInjuries: false,
     momentHighlights: false,
     presentDay: false,
     tiringInjuries: false
@@ -68,6 +71,7 @@ const changes: Record<
     difficulty: 'smooth',
     gracePeriod: true,
     lastingSkill: false,
+    matchInjuries: false,
     momentHighlights: false,
     presentDay: false,
     tiringInjuries: false
@@ -78,6 +82,7 @@ const changes: Record<
     difficulty: 'smooth',
     gracePeriod: true,
     lastingSkill: false,
+    matchInjuries: false,
     momentHighlights: false,
     presentDay: true,
     tiringInjuries: false
@@ -88,6 +93,7 @@ const changes: Record<
     difficulty: 'steep',
     gracePeriod: true,
     lastingSkill: true,
+    matchInjuries: false,
     momentHighlights: false,
     presentDay: true,
     tiringInjuries: false
@@ -98,6 +104,7 @@ const changes: Record<
     difficulty: 'steep',
     gracePeriod: true,
     lastingSkill: true,
+    matchInjuries: false,
     momentHighlights: false,
     presentDay: true,
     tiringInjuries: true
@@ -108,6 +115,7 @@ const changes: Record<
     difficulty: 'steep',
     gracePeriod: true,
     lastingSkill: true,
+    matchInjuries: false,
     momentHighlights: false,
     presentDay: true,
     tiringInjuries: true
@@ -118,6 +126,7 @@ const changes: Record<
     difficulty: 'steep',
     gracePeriod: true,
     lastingSkill: true,
+    matchInjuries: false,
     momentHighlights: true,
     presentDay: true,
     tiringInjuries: true
@@ -128,6 +137,18 @@ const changes: Record<
     difficulty: 'steep',
     gracePeriod: true,
     lastingSkill: true,
+    matchInjuries: false,
+    momentHighlights: true,
+    presentDay: true,
+    tiringInjuries: true
+  },
+  'match-injuries': {
+    clearances: true,
+    clubSquads: true,
+    difficulty: 'steep',
+    gracePeriod: true,
+    lastingSkill: true,
+    matchInjuries: true,
     momentHighlights: true,
     presentDay: true,
     tiringInjuries: true
@@ -138,6 +159,7 @@ const changes: Record<
     difficulty: 'original',
     gracePeriod: false,
     lastingSkill: false,
+    matchInjuries: false,
     momentHighlights: false,
     presentDay: false,
     tiringInjuries: false
@@ -242,3 +264,21 @@ export const clubSquads = (ruleset: Ruleset) => changes[ruleset].clubSquads;
  * near-miss shares shrink to make room, as the original's misses divide.
  */
 export const clearances = (ruleset: Ruleset) => changes[ruleset].clearances;
+
+/**
+ * Whether injuries happen in the match instead of before team selection
+ * (#110, measured as `match-injuries` against `enhanced-8`). Each picked
+ * player rolls the lasting-injuries curve once at kick-off, and an injury is
+ * a moment of the highlights that changes nothing in that match. It needs
+ * tiring injuries and moment highlights.
+ */
+export const matchInjuries = (ruleset: Ruleset) =>
+  changes[ruleset].matchInjuries;
+
+/**
+ * The most weeks out an injury can show (#98): 3, or 4 under match
+ * injuries (#110), where an injury from a match counts one more refresh
+ * before the player is back.
+ */
+export const longestInjury = (ruleset: Ruleset) =>
+  matchInjuries(ruleset) ? 4 : 3;

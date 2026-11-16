@@ -1,4 +1,5 @@
 import type { Player } from './management';
+import { drawInjuries } from './match-injuries';
 import { createRng, type Rng } from './rng';
 import { playerCategory, positionCategory, type SquadPlayer } from './squads';
 
@@ -7,14 +8,24 @@ import { playerCategory, positionCategory, type SquadPlayer } from './squads';
  * or a near miss, at a minute, for the side that made the chance. It names the player who shot:
  * for the managed club the picked player's place (`player`), and for an
  * opponent with a squad (#124) the player's index in it (`squadPlayer`).
+ *
+ * Under match injuries (#110) it can also be an injury to a managed club's
+ * player, on the club's side: whether a tackle caused it, the tackler's
+ * index in the opponent's squad, and how many matches the player misses.
  */
 export type Moment = Readonly<{
-  kind: 'clearance' | 'goal' | 'near-miss' | 'save';
+  kind: 'clearance' | 'goal' | 'injury' | 'near-miss' | 'save';
   minute: number;
   player?: number;
   side: 'club' | 'opponent';
   squadPlayer?: number;
+  tackled?: boolean;
+  tackler?: number;
+  weeksOut?: number;
 }>;
+
+/** A moment that is a chance: anything but an injury. */
+export type ChanceKind = Exclude<Moment['kind'], 'injury'>;
 
 /**
  * A chance becomes a goal on a d100 roll of this or less: the share of the
@@ -83,11 +94,17 @@ const pickSquadShooter = (rng: Rng, squad: readonly SquadPlayer[]) =>
  * stream of their own seeded by `squadSeed` and `seed` together. Neither
  * seed advances, so the RND sequence and the squad stream draw as without
  * them, and only the names change.
+ *
+ * Under match injuries (#110) the picked players' injuries are drawn after
+ * the chances from a stream of their own, so the chances, the score and the
+ * seed are as without them.
  */
 export const decideMoments = (input: {
   /** Some chances that aren't goals are clearances (#150). */
   clearances?: boolean;
   home: boolean;
+  /** Picked players can be injured in the match (#110). */
+  injuries?: boolean;
   opponent: readonly number[];
   opponentSquad?: readonly SquadPlayer[];
   players: readonly Player[];
@@ -104,7 +121,7 @@ export const decideMoments = (input: {
   const drawn: Moment[] = [];
   const chance = (side: Moment['side']) => {
     const roll = rng.int(1, 100);
-    const kind: Moment['kind'] =
+    const kind: ChanceKind =
       roll <= goalRoll
         ? 'goal'
         : input.clearances
@@ -150,8 +167,17 @@ export const decideMoments = (input: {
     drawn.filter(m => m.kind === 'goal' && m.side === side).length;
   const club = goals('club');
   const opponent = goals('opponent');
+  const injuries = input.injuries
+    ? drawInjuries({
+        chances: drawn,
+        ...(opponentSquad ? { opponentSquad } : {}),
+        players: input.players,
+        seed: input.seed
+      })
+    : [];
   return {
-    moments: drawn.toSorted((a, b) => a.minute - b.minute),
+    // An injury in the minute of the player's last chance comes after it.
+    moments: [...drawn, ...injuries].toSorted((a, b) => a.minute - b.minute),
     score: input.home ? [club, opponent] : [opponent, club],
     seed: rng.seed
   };

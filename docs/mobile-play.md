@@ -62,7 +62,7 @@ Style is "paper & ink": light grey paper, black text with red and blue ink rows,
   - Columns are the tag, Name, No., Skill, Energy, Value and the marker. Rows follow Classic's squad order. Under club squads a goalkeeper shows a `G` block in Defence, listed first; under tiring injuries the marker shows the weeks out in green and the legend matches Classic's.
   - A group with no players keeps its heading over a single "None" row.
   - The primary action stays pinned to the bottom of the screen.
-- **Highlights**: one screen for both rulesets' highlights, under a shared scoreboard. The cup replay notice still shows Classic inside the Modern frame.
+- **Highlights**: one screen for both rulesets' highlights, under a shared scoreboard. The cup's replay notice, result and winners' celebration have Modern screens too.
   - The scoreboard is one strip: the game menu button, the home club, the score, the away club, each club in its name colour, and a clock where there are minutes to show (see [sprite-highlights.md](sprite-highlights.md#the-screen) for short names). The competition line is left out, since it showed when the match was picked. The top bar, its title and the page's footer are hidden during every kind of highlights, and the page keeps clear of the notch and home bar.
   - On a phone on its side (wider than tall, no more than 500px tall) the scoreboard stacks in a column on the left, full names wrapping as needed.
   - **Pitch** (Original rules): the original pitch rendering, unchanged and scaled to the width of the screen or pane, including its own GOAL! and NO GOAL! banners and score line. Between attacks, where Classic shows its text screen, the pitch keeps the last frame drawn; before the first attack it shows the empty pitch facing that attack's direction, so the layout never jumps.
@@ -79,6 +79,10 @@ Style is "paper & ink": light grey paper, black text with red and blue ink rows,
   - The managed club's row is marked in white and bold, in place of the original's "Lge.Pos." line.
   - A coloured edge marks the places the season end moves: the top three promoted (green) where there is a division above, the top club champions (yellow) in Division 1, and the bottom three relegated (red) where there is a division below, with a key under the table.
   - At the season end there is no movement column, and the zones are labelled as outcomes on each club: Promoted, Relegated, Champions.
+- **Cup screens**:
+  - Replay notice: the round as the Home screen names it, a magenta Replay bar, and the replay's fixture with the grounds swapped, then Continue.
+  - Result: "Through to Round 4" (or to the Semi-Final or the Final) on a red bar, or "Out of the F.A. Cup" on a black one, then the deciding tie, as "Beat Barnet 2–1" or "Lost to Barnet 0–1", and Continue.
+  - Winning the final: the original's trophy, built up cell by cell in blue on yellow, "You've won the F.A. Cup" revealed as the original prints its title, and the rows of stars, all driven by the original's timed progress so the beeps keep time and a finger shortens the pauses. The title and stars flash as the original's do, except under reduced motion. Then "Beat Aston V. 4–0 in the Final" and Continue.
 - **Weekly bills**: replaces the original's bills, and its dismissal printed over them.
   - Wages, Ground rent and Loan interest as money rows, then their Total.
   - The weekly balance in a box of its own, signed and coloured (green up, red down), with "Change in cash less loan since last week" under it, since the original's label reads like the bills' total.

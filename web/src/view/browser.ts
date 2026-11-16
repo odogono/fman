@@ -13,6 +13,8 @@ import type { App, Dom, MenuControl } from './app';
 import { fitClipCanvas } from './clip-canvas';
 import { paintShot } from './clip-wipe';
 import type { BarButton } from './context-bar';
+import type { CupReplay, CupResult } from './cup-screens';
+import { trophy } from './cup-victory';
 import type { FullTime } from './full-time';
 import { rasterText, rasterizeCells } from './glyphs';
 import type { ClubName, Home } from './home';
@@ -204,7 +206,7 @@ const amountPanel = (entry: AmountEntry) => {
 /** The context bar or Home screen button an event came from, if any. */
 const barButton = (event: Event) =>
   (event.target as Element).closest<HTMLButtonElement>(
-    '#context-bar button, #home button, #pick-team button, #highlights button, #status button, #amount-prompt button, #message button, #full-time button, #week-results button, #league-table button, #bills button'
+    '#context-bar button, #home button, #pick-team button, #highlights button, #status button, #amount-prompt button, #message button, #full-time button, #week-results button, #league-table button, #bills button, #cup-result button, #cup-replay button'
   );
 
 const pounds = (value: number) => `£${value.toLocaleString('en-GB')}`;
@@ -948,6 +950,95 @@ const leagueRow = (row: LeagueRow, moves: boolean, final: boolean) => {
   return tr;
 };
 
+/** Modern mode's replay notice: the round, Replay, and the replay's fixture. */
+const paintCupReplay = (pane: HTMLElement, replay: CupReplay) => {
+  const title = document.createElement('h2');
+  title.className = 'league-title';
+  title.textContent = replay.title;
+  const word = cell('cup-banner replay', 'Replay');
+  const sides = document.createElement('p');
+  sides.className = 'cup-fixture';
+  sides.append(clubLabel(replay.home), ' v ', clubLabel(replay.away));
+  pane.replaceChildren(title, word, sides, continueRow(replay.done));
+};
+
+/** The trophy's columns: the original prints it in the middle twelve. */
+const trophyColumns = [10, 22] as const;
+
+/**
+ * The trophy built up as far as the original has drawn it: its cells in
+ * reading order, blue on the yellow paper.
+ */
+const paintTrophy = (canvas: HTMLCanvasElement, shown: number) => {
+  const [from, to] = trophyColumns;
+  const size = 12;
+  canvas.width = (to - from) * size;
+  canvas.height = trophy.length * size;
+  const context = canvas.getContext('2d')!;
+  const styles = getComputedStyle(document.documentElement);
+  context.fillStyle = styles.getPropertyValue('--bright-6');
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.fillStyle = styles.getPropertyValue('--bright-1');
+  const cells = shown * trophy.length * 32;
+  trophy.forEach((row, y) => {
+    for (let x = from; x < to; x++) {
+      if (row[x] === '█' && y * 32 + x < cells) {
+        context.fillRect((x - from) * size, y * size, size, size);
+      }
+    }
+  });
+};
+
+/**
+ * Modern mode's cup result: through, out, or the cup won. Winning plays
+ * the celebration as the original draws it, the trophy, the title and the
+ * flashing rows of stars, before Continue.
+ */
+const paintCupResult = (pane: HTMLElement, result: CupResult) => {
+  const title = document.createElement('h2');
+  title.className = 'league-title';
+  title.textContent = result.title;
+  const parts: HTMLElement[] = [title];
+  const { celebration } = result;
+  pane.classList.toggle(
+    'celebrating',
+    Boolean(celebration) && !result.done.enabled
+  );
+  if (celebration) {
+    const card = document.createElement('div');
+    card.className = `cup-celebration${celebration.flash ? ' flash' : ''}`;
+    const canvas = document.createElement('canvas');
+    canvas.className = 'cup-trophy';
+    canvas.setAttribute('role', 'img');
+    canvas.setAttribute('aria-label', 'The F.A. Cup');
+    paintTrophy(canvas, celebration.trophy);
+    const headline = cell(
+      'cup-headline',
+      result.headline.slice(
+        0,
+        Math.round(celebration.text * result.headline.length)
+      )
+    );
+    headline.setAttribute('aria-label', result.headline);
+    const stars = document.createElement('div');
+    stars.className = 'cup-stars';
+    stars.setAttribute('aria-hidden', 'true');
+    stars.append(
+      ...Array.from({ length: celebration.stars }, () =>
+        cell('cup-star-row', '★'.repeat(16))
+      )
+    );
+    card.append(canvas, headline, stars);
+    parts.push(card);
+  } else {
+    parts.push(cell(`cup-banner ${result.outcome}`, result.headline));
+  }
+  if (!celebration || result.done.enabled) {
+    parts.push(cell('cup-tie', result.tie), continueRow(result.done));
+  }
+  pane.replaceChildren(...parts);
+};
+
 /** Labelled money rows, as on the status screen. */
 const moneyRows = (rows: readonly (readonly [string, number | string])[]) => {
   const facts = document.createElement('dl');
@@ -1250,6 +1341,8 @@ export const createBrowserDom = (app: HTMLElement) => {
   <section id="week-results" class="modern-amount modern-week-results" aria-label="Results" hidden></section>
   <section id="league-table" class="modern-amount modern-league-table" aria-label="League table" hidden></section>
   <section id="bills" class="modern-amount modern-bills" aria-label="Weekly bills" hidden></section>
+  <section id="cup-result" class="modern-amount modern-cup" aria-label="Cup result" hidden></section>
+  <section id="cup-replay" class="modern-amount modern-cup" aria-label="Cup replay" hidden></section>
   <section id="full-time" class="modern-amount modern-full-time" aria-label="Full time" hidden></section>
   <section id="message" class="modern-amount modern-message" aria-label="Message" role="status" hidden></section>
   <div id="context-bar" class="context-bar" aria-label="Answers" hidden></div>
@@ -1291,6 +1384,8 @@ export const createBrowserDom = (app: HTMLElement) => {
   const weekResultsPane = find<HTMLElement>('#week-results');
   const leagueTablePane = find<HTMLElement>('#league-table');
   const billsPane = find<HTMLElement>('#bills');
+  const cupResultPane = find<HTMLElement>('#cup-result');
+  const cupReplayPane = find<HTMLElement>('#cup-replay');
   // Modern mode's own pitch, kept between attacks as the original's is not.
   const modernPitch = document.createElement('canvas');
   modernPitch.className = 'modern-pitch';
@@ -1327,6 +1422,16 @@ export const createBrowserDom = (app: HTMLElement) => {
       classes: ['has-amount'],
       paint: ({ bills }) => paintBills(billsPane, bills),
       pane: billsPane
+    },
+    'cup-replay': {
+      classes: ['has-amount'],
+      paint: ({ cupReplay }) => paintCupReplay(cupReplayPane, cupReplay),
+      pane: cupReplayPane
+    },
+    'cup-result': {
+      classes: ['has-amount'],
+      paint: ({ cupResult }) => paintCupResult(cupResultPane, cupResult),
+      pane: cupResultPane
     },
     'full-time': {
       classes: ['has-amount'],
@@ -1755,6 +1860,12 @@ export const createBrowserDom = (app: HTMLElement) => {
     machine.addEventListener('pointerdown', target.pressScreen);
     modernPitch.addEventListener('pointerdown', target.pressScreen);
     clipPitch.addEventListener('pointerdown', target.pressScreen);
+    // During the celebration, a finger shortens its pauses, as on the pitch.
+    cupResultPane.addEventListener('pointerdown', () => {
+      if (cupResultPane.classList.contains('celebrating')) {
+        target.pressScreen();
+      }
+    });
     addEventListener('pointerup', target.pointerUp);
     addEventListener('pointercancel', target.pointerUp);
     document.addEventListener('keyup', target.keyUp);

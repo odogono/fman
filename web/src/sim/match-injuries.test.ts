@@ -22,7 +22,7 @@ import { decodeSave, encodeSave } from './save';
 import { completeSeason } from './season';
 import type { SquadPlayer } from './squads';
 
-const fresh = (ruleset: Ruleset = 'match-injuries', seed = 0): Game =>
+const fresh = (ruleset: Ruleset = 'enhanced-9', seed = 0): Game =>
   createNewGame({
     club: 1,
     ...(presentDay(ruleset) ? {} : { colour: 0 }),
@@ -64,9 +64,9 @@ const injuriesOf = (moments: readonly Moment[]) =>
 /** The second club's squad in a new game, under club squads. */
 const squad = fresh().clubs[1]!.squad!;
 
-test('match injuries are measured alone on top of Enhanced version 8', () => {
+test('Enhanced version 9 is version 8 with match injuries', () => {
   for (const ruleset of rulesets) {
-    expect(matchInjuries(ruleset)).toBe(ruleset === 'match-injuries');
+    expect(matchInjuries(ruleset)).toBe(ruleset === 'enhanced-9');
   }
   for (const accessor of [
     clearances,
@@ -77,10 +77,10 @@ test('match injuries are measured alone on top of Enhanced version 8', () => {
     presentDay,
     tiringInjuries
   ]) {
-    expect(accessor('match-injuries')).toEqual(accessor('enhanced-8'));
+    expect(accessor('enhanced-9')).toEqual(accessor('enhanced-8'));
   }
   for (let level = 1; level <= 7; level++) {
-    expect(opponentBonus('match-injuries', level)).toBe(
+    expect(opponentBonus('enhanced-9', level)).toBe(
       opponentBonus('enhanced-8', level)
     );
   }
@@ -240,7 +240,7 @@ const injuredIn = (matchday: Matchday) =>
 
 test('an injury in a league match keeps the player out of exactly the next matches', () => {
   for (let seed = 0; seed < 500; seed++) {
-    const first = played({ ...fresh('match-injuries', seed), seed });
+    const first = played({ ...fresh('enhanced-9', seed), seed });
     expect(first.fixture.kind).toBe('league');
     const [injury] = injuredIn(first);
     if (injury?.weeksOut !== 1) {
@@ -279,7 +279,7 @@ test('an injury in a league match keeps the player out of exactly the next match
 test('a drawn cup leg settles its injuries before the replay', () => {
   for (let seed = 0; seed < 4000; seed++) {
     const cup = played({
-      ...fresh('match-injuries', seed),
+      ...fresh('enhanced-9', seed),
       cupRound: 1,
       leagueMatches: 3,
       scheduleCounter: 5,
@@ -310,7 +310,7 @@ test('a drawn cup leg settles its injuries before the replay', () => {
 });
 
 test('every injury heals at the season end', () => {
-  const game = fresh('match-injuries', 9);
+  const game = fresh('enhanced-9', 9);
   const ended = completeSeason({
     ...game,
     club: 24,
@@ -339,7 +339,7 @@ const injured = (ruleset: Ruleset): Game => ({
 });
 
 test('a save mid-injury keeps the weeks out, up to four under match injuries', () => {
-  const game = injured('match-injuries');
+  const game = injured('enhanced-9');
   expect(decodeSave(encodeSave(game, 100)).game).toEqual(game);
   expect(() => decodeSave(encodeSave(injured('enhanced-8'), 100))).toThrow(
     RangeError

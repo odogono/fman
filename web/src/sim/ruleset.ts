@@ -14,7 +14,7 @@ import {
  * carries one change alone while it is measured against the original, and
  * is retired once the change joins Enhanced (`even-difficulty`,
  * `grace-period`, `lasting-skill`, `steep-difficulty`, `tiring-injuries`,
- * `club-squads`, `moment-highlights`, `clearances`).
+ * `club-squads`, `moment-highlights`, `clearances`, `match-injuries`).
  */
 export const rulesets = [
   'original',
@@ -26,12 +26,12 @@ export const rulesets = [
   'enhanced-6',
   'enhanced-7',
   'enhanced-8',
-  'match-injuries'
+  'enhanced-9'
 ] as const;
 export type Ruleset = (typeof rulesets)[number];
 
 /** The Enhanced version every new Enhanced game starts with. */
-export const latestEnhanced = 'enhanced-8' satisfies Ruleset;
+export const latestEnhanced = 'enhanced-9' satisfies Ruleset;
 
 export const isRuleset = (value: unknown): value is Ruleset =>
   rulesets.includes(value as Ruleset);
@@ -142,7 +142,7 @@ const changes: Record<
     presentDay: true,
     tiringInjuries: true
   },
-  'match-injuries': {
+  'enhanced-9': {
     clearances: true,
     clubSquads: true,
     difficulty: 'steep',
@@ -267,7 +267,8 @@ export const clearances = (ruleset: Ruleset) => changes[ruleset].clearances;
 
 /**
  * Whether injuries happen in the match instead of before team selection
- * (#110, measured as `match-injuries` against `enhanced-8`). Each picked
+ * (#110, measured as `match-injuries` against `enhanced-8`, then part of
+ * `enhanced-9`). Each picked
  * player rolls the lasting-injuries curve once at kick-off, and an injury is
  * a moment of the highlights that changes nothing in that match. It needs
  * tiring injuries and moment highlights.

@@ -1173,8 +1173,9 @@ test('the pick team screen groups by category and follows the ruleset', () => {
   const enhanced = harness({ options: modernOptions });
   toTeam(enhanced);
   const shown = enhanced.page.pickTeam!;
-  // Club squads: a goalkeeper heads Defence; tiring injuries count weeks.
-  expect(shown.weeksOut).toBe(3);
+  // Club squads: a goalkeeper heads Defence; injuries count weeks, up to
+  // four under match injuries.
+  expect(shown.weeksOut).toBe(4);
   expect(shown.groups[0]!.players[0]!.tag).toBe('G');
   expect(shown.groups[1]!.players.every(row => row.tag === 'M')).toBe(true);
   expect(shown.groups[2]!.players.every(row => row.tag === 'A')).toBe(true);

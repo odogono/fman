@@ -1,6 +1,6 @@
 # Match injuries ruleset
 
-[#110](https://github.com/odogono/fman/issues/110). Injuries happen during the match instead of before team selection, as a moment of the highlights ([glossary](../GLOSSARY.md): **Injury**, **Moment**). Measured as the experimental ruleset `match-injuries`: `enhanced-8` plus this rule alone ([ADR 0007](adr/0007-experimental-rules-as-rulesets.md)).
+[#110](https://github.com/odogono/fman/issues/110). Injuries happen during the match instead of before team selection, as a moment of the highlights ([glossary](../GLOSSARY.md): **Injury**, **Moment**). Measured as the experimental ruleset `match-injuries`: `enhanced-8` plus this rule alone ([ADR 0007](adr/0007-experimental-rules-as-rulesets.md)), then part of [`enhanced-9`](enhanced-rules.md). The `enhanced-9` baseline matches `match-injuries`' exactly, metric for metric ([full baseline](baseline/enhanced-9.md)).
 
 ## The rule
 

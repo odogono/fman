@@ -9,6 +9,7 @@ import {
   clearances,
   lastingSkill,
   latestEnhanced,
+  matchInjuries,
   opponentBonus,
   type Ruleset
 } from './ruleset';
@@ -193,9 +194,11 @@ test('saves keep the ruleset, and saves from before rulesets play the original',
   expect(() => openSave(JSON.stringify(older))).toThrow(RangeError);
 });
 
-test('clearances join Enhanced in version 8, which new Enhanced games start with', () => {
+test('clearances join Enhanced in version 8, and match injuries in version 9, which new Enhanced games start with', () => {
   expect(clearances('enhanced-7')).toBe(false);
   expect(clearances('original')).toBe(false);
   expect(clearances('enhanced-8')).toBe(true);
-  expect(latestEnhanced).toBe('enhanced-8');
+  expect(matchInjuries('enhanced-8')).toBe(false);
+  expect(matchInjuries('enhanced-9')).toBe(true);
+  expect(latestEnhanced).toBe('enhanced-9');
 });

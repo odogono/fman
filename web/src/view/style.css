@@ -1924,3 +1924,8 @@ button.latest-moment:focus-visible,
   font-size: 18px;
   text-align: center;
 }
+/* A loan's cost (#97): its rows keep to one line each. */
+.loan-cost dt,
+.loan-cost dd {
+  white-space: nowrap;
+}

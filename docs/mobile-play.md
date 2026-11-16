@@ -98,7 +98,7 @@ Style is "paper & ink": light grey paper, black text with red and blue ink rows,
   - A large amount between red − and + buttons, Classic's chips (+£10k, +£50k, +£100k, Max) rather than the mockup's, and "Enter exact amount", which swaps the stepper for the keypad (digits, Del, Done).
   - Both start at £0. The yellow primary ("Take loan", "Pay off loan") is disabled at £0, where it would do what Cancel does; a red Cancel (`0`) sits under it, both pinned to the bottom.
   - The balance message that follows gets its own screen: Cash and Loan rows and Continue.
-  - The weekly cost of a loan is left to #97.
+  - Under the amount, what it does to the weekly bills (#97), updating as the amount changes: the weekly interest before and after ("£1,500 → £2,000 (+£500)"; a repayment shows the saving), the next bills with it, and the Home screen's next-bills warning when the bills will borrow, go over the credit limit or sack. A transfer bid shows none of it.
 - **Transfer bid** (the offer after a matchday): named by the top bar ("Transfer market"), without the mockup's banner.
   - The player: the name in an inverse bar in its category's ink, with its D/M/A or G tag and number, then Skill, Energy and Value rows. Then Cash and Loan rows, as the original shows the debt too.
   - The bid uses the loan screen's controls: − and +, Classic's chips, and the exact-amount keypad. It starts at the player's value, with "Up to £X" for the cash.

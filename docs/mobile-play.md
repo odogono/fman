@@ -61,7 +61,7 @@ Style is "paper & ink": light grey paper, black text with red and blue ink rows,
   - Columns are the tag, Name, No., Skill, Energy, Value and the marker. Rows follow Classic's squad order. Under club squads a goalkeeper shows a `G` block in Defence, listed first; under tiring injuries the marker shows the weeks out in green and the legend matches Classic's.
   - A group with no players keeps its heading over a single "None" row.
   - The primary action stays pinned to the bottom of the screen.
-- **Highlights**: one screen for both rulesets' highlights, under a shared scoreboard. The screens after the Full-time screen (replay, other matches, table) show Classic inside the Modern frame.
+- **Highlights**: one screen for both rulesets' highlights, under a shared scoreboard. The cup replay notice still shows Classic inside the Modern frame.
   - The scoreboard is one strip: the game menu button, the home club, the score, the away club, each club in its name colour, and a clock where there are minutes to show (see [sprite-highlights.md](sprite-highlights.md#the-screen) for short names). The competition line is left out, since it showed when the match was picked. The top bar, its title and the page's footer are hidden during every kind of highlights, and the page keeps clear of the notch and home bar.
   - On a phone on its side (wider than tall, no more than 500px tall) the scoreboard stacks in a column on the left, full names wrapping as needed.
   - **Pitch** (Original rules): the original pitch rendering, unchanged and scaled to the width of the screen or pane, including its own GOAL! and NO GOAL! banners and score line. Between attacks, where Classic shows its text screen, the pitch keeps the last frame drawn; before the first attack it shows the empty pitch facing that attack's direction, so the layout never jumps.
@@ -72,6 +72,13 @@ Style is "paper & ink": light grey paper, black text with red and blue ink rows,
   - On a wide window the highlights stand alone, centred as on a phone, without the left pane: its choices are all disabled during a match, and it would draw the eye from the pitch.
   - **Clips** (sprite highlights): the pitch takes the screen, with the scoreboard above it and one row of controls below. On a phone on its side, the scoreboard and the moments take columns either side of the pitch instead. See [sprite-highlights.md](sprite-highlights.md#the-screen).
 - **Full-time screen**: replaces the original's final score with the scoreboard at FT, the goals under each club, the managed club's injuries and the gate receipts, then Continue. See [full-time-screen.md](full-time-screen.md).
+- **Week's results**: replaces the other matches with all eight matches of the division that week, the managed club's first and marked, under "Results – Division n". The original lists only the other seven.
+- **League table**: replaces the original's table after each league match and at the season end.
+  - Columns Pos, the places moved since last week (▲2 in green, ▼1 in red, a dash for none; none in the first week), Club in its name colour, F, A, GD and Pts. "Played" is the same for every club, so the caption gives it once: "Division 4 – after 3 of 15".
+  - The managed club's row is marked in white and bold, in place of the original's "Lge.Pos." line.
+  - A coloured edge marks the places the season end moves: the top three promoted (green) where there is a division above, the top club champions (yellow) in Division 1, and the bottom three relegated (red) where there is a division below, with a key under the table.
+  - At the season end there is no movement column, and the zones are labelled as outcomes on each club: Promoted, Relegated, Champions.
+- **Print faults**: when the original's printing stops on a renamed name, every Modern screen steps aside for the original screen, which shows where printing stopped.
 - **Status** (`s`, "Print score etc"): the original's facts only, without the league record the mockup invents.
   - The club name in its name colour, with the manager and the colours under it. A black bar reads "Managerial rating 37 / 100".
   - Then labelled rows: Level (its name in the level's colours, as in the original), Seasons, Cash, Loan, Morale, League position ("—" before the first league match, as on Home) and League match.

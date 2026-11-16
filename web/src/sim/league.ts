@@ -176,6 +176,20 @@ export const completeLeagueMatch = (
   const league = game.league.map(record => ({ ...record }));
   const results: { away: number; home: number; score: readonly number[] }[] =
     [];
+  /** The managed club's own match, as a result of the week. */
+  const match = {
+    away: fixture.home ? fixture.opponent : game.club,
+    home: fixture.home ? game.club : fixture.opponent,
+    score
+  };
+  /**
+   * Each club's league position before this week, by its place in the
+   * division; absent before the first week, when positions mean nothing.
+   */
+  const previous =
+    game.leagueMatches > 1
+      ? game.league.map(entry => entry.position)
+      : undefined;
   const record = (home: number, away: number, goals: readonly number[]) => {
     const a = league[home]!;
     const b = league[away]!;
@@ -270,7 +284,9 @@ export const completeLeagueMatch = (
       return {
         bills: undefined,
         game: retained(),
+        match,
         order: [],
+        previous,
         printFault,
         results
       };
@@ -307,11 +323,26 @@ export const completeLeagueMatch = (
   for (const [rank, index] of order.entries()) {
     const printFault = tablePrintReport(retained(), index);
     if (printFault) {
-      return { bills: undefined, game: retained(), order, printFault, results };
+      return {
+        bills: undefined,
+        game: retained(),
+        match,
+        order,
+        previous,
+        printFault,
+        results
+      };
     }
     league[index]!.position = rank + 1;
   }
   const billed = payWeeklyBills(retained());
-  return { ...billed, order, printFault: undefined, results };
+  return {
+    ...billed,
+    match,
+    order,
+    previous,
+    printFault: undefined,
+    results
+  };
 };
 export type MatchCompletion = ReturnType<typeof completeLeagueMatch>;

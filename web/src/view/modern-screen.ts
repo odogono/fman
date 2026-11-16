@@ -2,6 +2,12 @@ import type { View } from '../sim/session';
 import { startAmount, type AmountEntry } from './amount-entry';
 import { answersFor } from './answers';
 import { fullTimeFor, type FullTime } from './full-time';
+import {
+  leagueTableFor,
+  weekResultsFor,
+  type LeagueTable,
+  type WeekResults
+} from './league-screens';
 import { amountPromptFor, type ModernAmount } from './modern-amount';
 import {
   highlightsFor,
@@ -29,6 +35,10 @@ export type ModernScreen =
   | Readonly<{ amount: ModernAmount; kind: 'amount' }>
   /** The final score, as the Full-time screen. */
   | Readonly<{ fullTime: FullTime; kind: 'full-time' }>
+  /** The week's results, in place of the other matches. */
+  | Readonly<{ kind: 'week-results'; weekResults: WeekResults }>
+  /** The league table, each week and at the season end. */
+  | Readonly<{ kind: 'league-table'; table: LeagueTable }>
   /** A balance or a plain text message. */
   | Readonly<{ kind: 'message'; message: ModernMessage }>;
 
@@ -52,12 +62,16 @@ const freshAmount = (view: View) => {
 
 /**
  * The Modern screen for a view, or `undefined` on screens Modern mode has no
- * design for, which show the original's with the context bar.
+ * design for, which show the original's with the context bar. A print
+ * fault shows the original's too, where printing stopped.
  */
 export const modernScreenFor = (
   view: View,
   context: ModernScreenContext = {}
 ): ModernScreen | undefined => {
+  if (view.printFault) {
+    return undefined;
+  }
   switch (view.screen) {
     case 'menu':
       return { kind: 'home', status: statusOf(view.game) };
@@ -73,6 +87,15 @@ export const modernScreenFor = (
     case 'result': {
       const fullTime = fullTimeFor(view);
       return fullTime && { fullTime, kind: 'full-time' };
+    }
+    case 'other-matches': {
+      const weekResults = weekResultsFor(view);
+      return weekResults && { kind: 'week-results', weekResults };
+    }
+    case 'table':
+    case 'season-table': {
+      const table = leagueTableFor(view);
+      return table && { kind: 'league-table', table };
     }
     case 'status': {
       const status = statusFor(view);

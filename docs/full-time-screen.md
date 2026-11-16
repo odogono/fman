@@ -26,4 +26,4 @@ The session's `result` view carries the match's `moments` under moment highlight
 
 ## Later
 
-The screens after it (replay, other matches, the league table, the cup result) still show Classic inside the Modern frame.
+The week's results and the league table follow it as Modern screens (see [mobile-play.md](mobile-play.md)). The cup replay notice and cup result still show Classic inside the Modern frame.

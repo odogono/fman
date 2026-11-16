@@ -16,6 +16,12 @@ import type { BarButton } from './context-bar';
 import type { FullTime } from './full-time';
 import { rasterText, rasterizeCells } from './glyphs';
 import type { ClubName, Home } from './home';
+import type {
+  LeagueRow,
+  LeagueTable,
+  LeagueZone,
+  WeekResults
+} from './league-screens';
 import type { BidPlayer, ModernAmount } from './modern-amount';
 import {
   continueId,
@@ -197,7 +203,7 @@ const amountPanel = (entry: AmountEntry) => {
 /** The context bar or Home screen button an event came from, if any. */
 const barButton = (event: Event) =>
   (event.target as Element).closest<HTMLButtonElement>(
-    '#context-bar button, #home button, #pick-team button, #highlights button, #status button, #amount-prompt button, #message button, #full-time button'
+    '#context-bar button, #home button, #pick-team button, #highlights button, #status button, #amount-prompt button, #message button, #full-time button, #week-results button, #league-table button'
   );
 
 const pounds = (value: number) => `£${value.toLocaleString('en-GB')}`;
@@ -727,6 +733,151 @@ const paintFullTime = (pane: HTMLElement, fullTime: FullTime) => {
   pane.replaceChildren(...parts);
 };
 
+/** A Continue button, the yellow primary, in its own row. */
+const continueRow = (done: Readonly<{ enabled: boolean; id: string }>) => {
+  const actions = document.createElement('div');
+  actions.className = 'pick-actions';
+  actions.append(actionButton('Continue', done.id, 'choice', done.enabled));
+  return actions;
+};
+
+/**
+ * Modern mode's week's results: every match in the division, the managed
+ * club's first and marked, then Continue.
+ */
+const paintWeekResults = (pane: HTMLElement, results: WeekResults) => {
+  const title = document.createElement('h2');
+  title.className = 'league-title';
+  title.textContent = results.title;
+  const list = document.createElement('ul');
+  list.className = 'week-results';
+  list.append(
+    ...results.rows.map(row => {
+      const item = document.createElement('li');
+      if (row.own) {
+        item.className = 'own';
+      }
+      item.append(
+        clubLabel(row.home),
+        cell('week-score', `${row.score[0]}–${row.score[1]}`),
+        clubLabel(row.away)
+      );
+      return item;
+    })
+  );
+  pane.replaceChildren(title, list, continueRow(results.done));
+};
+
+const zoneNames: Record<LeagueZone, readonly [key: string, outcome: string]> = {
+  champions: ['Champions', 'Champions'],
+  promotion: ['Promotion', 'Promoted'],
+  relegation: ['Relegation', 'Relegated']
+};
+
+/** Places moved since last week: ▲2, ▼1 or a dash, with a spoken label. */
+const moveCell = (move: number) => {
+  const td = document.createElement('td');
+  td.className = `league-move ${move > 0 ? 'up' : move < 0 ? 'down' : 'same'}`;
+  td.textContent = move > 0 ? `▲${move}` : move < 0 ? `▼${-move}` : '–';
+  td.setAttribute(
+    'aria-label',
+    move === 0 ? 'No change' : `${move > 0 ? 'Up' : 'Down'} ${Math.abs(move)}`
+  );
+  return td;
+};
+
+const signed = (value: number) =>
+  value > 0 ? `+${value}` : value < 0 ? `−${-value}` : '0';
+
+/**
+ * Modern mode's league table: the division in order, each club's goals,
+ * goal difference and points, the managed club's row marked and the
+ * promotion and relegation places tinted. Each week a column shows the
+ * places moved; at the season end the zones name their outcomes instead.
+ */
+const paintLeagueTable = (pane: HTMLElement, table: LeagueTable) => {
+  const caption = document.createElement('h2');
+  caption.className = 'league-title';
+  caption.textContent = table.caption;
+  const element = document.createElement('table');
+  element.className = 'league-table';
+  const moves = table.rows.some(row => row.move !== undefined);
+  const head = element.createTHead().insertRow();
+  for (const [label, name] of [
+    ['Pos', 'Position'],
+    ...(moves ? [['', 'Movement']] : []),
+    ['Club', 'Club'],
+    ['F', 'Goals for'],
+    ['A', 'Goals against'],
+    ['GD', 'Goal difference'],
+    ['Pts', 'Points']
+  ] as const) {
+    const th = document.createElement('th');
+    th.scope = 'col';
+    th.textContent = label;
+    th.setAttribute('aria-label', name);
+    head.append(th);
+  }
+  const body = element.createTBody();
+  for (const row of table.rows) {
+    body.append(leagueRow(row, moves, table.final));
+  }
+  const parts: HTMLElement[] = [caption, element];
+  const zones = [
+    ...new Set(table.rows.flatMap(row => (row.zone ? [row.zone] : [])))
+  ];
+  if (zones.length && !table.final) {
+    const key = document.createElement('ul');
+    key.className = 'league-key';
+    key.setAttribute('aria-label', 'Key');
+    key.append(
+      ...zones.map(zone => {
+        const item = document.createElement('li');
+        item.className = `zone-${zone}`;
+        item.textContent = zoneNames[zone][0];
+        return item;
+      })
+    );
+    parts.push(key);
+  }
+  parts.push(continueRow(table.done));
+  pane.replaceChildren(...parts);
+};
+
+const leagueRow = (row: LeagueRow, moves: boolean, final: boolean) => {
+  const tr = document.createElement('tr');
+  tr.className = [row.zone ? `zone-${row.zone}` : '', row.own ? 'own' : '']
+    .filter(Boolean)
+    .join(' ');
+  if (row.own) {
+    tr.setAttribute('aria-current', 'true');
+  }
+  const position = document.createElement('td');
+  position.textContent = String(row.position);
+  tr.append(position);
+  if (moves) {
+    tr.append(moveCell(row.move ?? 0));
+  }
+  const club = document.createElement('td');
+  club.className = 'league-club';
+  club.append(clubLabel(row.club));
+  if (final && row.zone) {
+    club.append(cell('league-outcome', zoneNames[row.zone][1]));
+  }
+  tr.append(club);
+  for (const value of [
+    row.for,
+    row.against,
+    signed(row.difference),
+    row.points
+  ]) {
+    const td = document.createElement('td');
+    td.textContent = String(value);
+    tr.append(td);
+  }
+  return tr;
+};
+
 /** Labelled money rows, as on the status screen. */
 const moneyRows = (rows: readonly (readonly [string, number])[]) => {
   const facts = document.createElement('dl');
@@ -993,6 +1144,8 @@ export const createBrowserDom = (app: HTMLElement) => {
   <section id="highlights" class="modern-highlights" aria-label="Match highlights" hidden></section>
   <section id="status" class="modern-status" aria-label="Club status" hidden></section>
   <section id="amount-prompt" class="modern-amount" aria-label="Amount" hidden></section>
+  <section id="week-results" class="modern-amount modern-week-results" aria-label="Results" hidden></section>
+  <section id="league-table" class="modern-amount modern-league-table" aria-label="League table" hidden></section>
   <section id="full-time" class="modern-amount modern-full-time" aria-label="Full time" hidden></section>
   <section id="message" class="modern-amount modern-message" aria-label="Message" role="status" hidden></section>
   <div id="context-bar" class="context-bar" aria-label="Answers" hidden></div>
@@ -1031,6 +1184,8 @@ export const createBrowserDom = (app: HTMLElement) => {
   const amountPane = find<HTMLElement>('#amount-prompt');
   const messagePane = find<HTMLElement>('#message');
   const fullTimePane = find<HTMLElement>('#full-time');
+  const weekResultsPane = find<HTMLElement>('#week-results');
+  const leagueTablePane = find<HTMLElement>('#league-table');
   // Modern mode's own pitch, kept between attacks as the original's is not.
   const modernPitch = document.createElement('canvas');
   modernPitch.className = 'modern-pitch';
@@ -1073,6 +1228,17 @@ export const createBrowserDom = (app: HTMLElement) => {
       paint: ({ highlights }) =>
         paintHighlights(highlightsPane, modernPitch, clipPitch, highlights),
       pane: highlightsPane
+    },
+    'league-table': {
+      classes: ['has-amount'],
+      paint: ({ table }) => paintLeagueTable(leagueTablePane, table),
+      pane: leagueTablePane
+    },
+    'week-results': {
+      classes: ['has-amount'],
+      paint: ({ weekResults }) =>
+        paintWeekResults(weekResultsPane, weekResults),
+      pane: weekResultsPane
     },
     // Beside the Home pane, the status shows while the menu waits.
     home: {

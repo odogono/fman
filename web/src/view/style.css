@@ -1706,3 +1706,159 @@ button.latest-moment:focus-visible,
     font-size: 20px;
   }
 }
+/* Modern mode's week's results and league table. */
+.league-title {
+  margin: 0;
+  font-family: Spectrum, monospace;
+  font-size: 14px;
+  font-weight: normal;
+  font-synthesis: none;
+  text-align: center;
+}
+.week-results {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.week-results li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 6px;
+  border-bottom: 1px solid var(--normal-0);
+  font-weight: 600;
+}
+.week-results .club-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.week-results .club-name:first-child {
+  justify-self: end;
+}
+.week-results li.own {
+  background: var(--bright-7);
+  box-shadow: inset 4px 0 var(--normal-0);
+}
+.week-score {
+  padding: 2px 8px;
+  background: var(--normal-0);
+  color: var(--bright-7);
+  font-family: Spectrum, monospace;
+  font-weight: normal;
+  font-synthesis: none;
+  font-variant-numeric: tabular-nums;
+}
+.league-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+.league-table th {
+  padding: 4px;
+  background: var(--normal-1);
+  color: var(--bright-7);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: right;
+}
+.league-table td {
+  padding: 0 4px;
+  height: 30px;
+  border-bottom: 1px solid #bbb;
+  text-align: right;
+}
+.league-table th:nth-child(-n + 3),
+.league-table td.league-club {
+  text-align: left;
+}
+.league-table td:first-child,
+.league-table th:first-child {
+  width: 28px;
+  text-align: right;
+}
+.league-table tr > :first-child {
+  border-left: 4px solid transparent;
+}
+.league-table td.league-club {
+  width: 100%;
+  max-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.league-table .club-name {
+  font-weight: 600;
+}
+.league-table tr.own td {
+  background: var(--bright-7);
+  font-weight: 700;
+}
+.league-table tr.zone-promotion > :first-child {
+  border-left-color: #00a000;
+}
+.league-table tr.zone-champions > :first-child {
+  border-left-color: var(--normal-6);
+}
+.league-table tr.zone-relegation > :first-child {
+  border-left-color: var(--normal-2);
+}
+.league-move {
+  width: 32px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.league-move.up {
+  color: #007a00;
+}
+.league-move.down {
+  color: var(--normal-2);
+}
+.league-move.same {
+  color: #666;
+}
+.league-outcome {
+  margin-left: 6px;
+  padding: 0 4px;
+  background: var(--normal-0);
+  color: var(--bright-7);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.league-table tr.zone-promotion .league-outcome {
+  background: #007a00;
+}
+.league-table tr.zone-champions .league-outcome {
+  background: var(--normal-6);
+  color: var(--normal-0);
+}
+.league-table tr.zone-relegation .league-outcome {
+  background: var(--normal-2);
+}
+.league-key {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+}
+.league-key li {
+  padding-left: 8px;
+  border-left: 4px solid;
+}
+.league-key .zone-promotion {
+  border-color: #00a000;
+}
+.league-key .zone-champions {
+  border-color: var(--normal-6);
+}
+.league-key .zone-relegation {
+  border-color: var(--normal-2);
+}

@@ -9,6 +9,7 @@ import {
   type WeekResults
 } from './league-screens';
 import { amountPromptFor, type ModernAmount } from './modern-amount';
+import { billsFor, type ModernBills } from './modern-bills';
 import {
   highlightsFor,
   type ClipProgress,
@@ -39,6 +40,8 @@ export type ModernScreen =
   | Readonly<{ kind: 'week-results'; weekResults: WeekResults }>
   /** The league table, each week and at the season end. */
   | Readonly<{ kind: 'league-table'; table: LeagueTable }>
+  /** The weekly bills, and the dismissal over them. */
+  | Readonly<{ bills: ModernBills; kind: 'bills' }>
   /** A balance or a plain text message. */
   | Readonly<{ kind: 'message'; message: ModernMessage }>;
 
@@ -96,6 +99,11 @@ export const modernScreenFor = (
     case 'season-table': {
       const table = leagueTableFor(view);
       return table && { kind: 'league-table', table };
+    }
+    case 'bills':
+    case 'dismissal': {
+      const bills = billsFor(view);
+      return bills && { bills, kind: 'bills' };
     }
     case 'status': {
       const status = statusFor(view);

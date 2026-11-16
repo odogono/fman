@@ -196,6 +196,8 @@ export const payWeeklyBills = (game: Game) => {
   return {
     bills: {
       balance: cash - game.debt - game.previousNet,
+      /** What was borrowed to pay them when the cash ran out. */
+      borrowed: Math.max(0, -cash),
       interest,
       loanIncreased: cash < 0,
       rent,

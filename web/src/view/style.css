@@ -1878,3 +1878,49 @@ button.latest-moment:focus-visible,
 .home-warning.sacked {
   background: var(--normal-0);
 }
+/* Modern mode's weekly bills, and the dismissal over them. */
+.bills-charges div:last-child {
+  font-weight: 700;
+}
+.bills-balance {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 16px;
+  padding: 8px 12px;
+  border: 2px solid var(--normal-0);
+  background: var(--bright-7);
+}
+.bills-balance-label {
+  font-weight: 600;
+}
+.bills-balance-value {
+  font-family: Spectrum, monospace;
+  font-size: 20px;
+  font-synthesis: none;
+  font-variant-numeric: tabular-nums;
+}
+.bills-balance.up .bills-balance-value {
+  color: #007a00;
+}
+.bills-balance.down .bills-balance-value {
+  color: var(--normal-2);
+}
+.bills-balance-note {
+  grid-column: 1 / -1;
+  color: #444;
+  font-size: 13px;
+}
+.bills-alert,
+.bills-sacked {
+  padding: 8px 12px;
+  color: var(--bright-7);
+  font-weight: 600;
+}
+.bills-alert {
+  background: var(--normal-2);
+}
+.bills-sacked {
+  background: var(--normal-0);
+  font-size: 18px;
+  text-align: center;
+}

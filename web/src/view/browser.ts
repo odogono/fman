@@ -23,6 +23,7 @@ import type {
   WeekResults
 } from './league-screens';
 import type { BidPlayer, ModernAmount } from './modern-amount';
+import type { ModernBills } from './modern-bills';
 import {
   continueId,
   drawerIds,
@@ -203,7 +204,7 @@ const amountPanel = (entry: AmountEntry) => {
 /** The context bar or Home screen button an event came from, if any. */
 const barButton = (event: Event) =>
   (event.target as Element).closest<HTMLButtonElement>(
-    '#context-bar button, #home button, #pick-team button, #highlights button, #status button, #amount-prompt button, #message button, #full-time button, #week-results button, #league-table button'
+    '#context-bar button, #home button, #pick-team button, #highlights button, #status button, #amount-prompt button, #message button, #full-time button, #week-results button, #league-table button, #bills button'
   );
 
 const pounds = (value: number) => `£${value.toLocaleString('en-GB')}`;
@@ -743,11 +744,71 @@ const paintFullTime = (pane: HTMLElement, fullTime: FullTime) => {
 };
 
 /** A Continue button, the yellow primary, in its own row. */
-const continueRow = (done: Readonly<{ enabled: boolean; id: string }>) => {
+const continueRow = (
+  done: Readonly<{ enabled: boolean; id: string; label?: string }>
+) => {
   const actions = document.createElement('div');
   actions.className = 'pick-actions';
-  actions.append(actionButton('Continue', done.id, 'choice', done.enabled));
+  actions.append(
+    actionButton(done.label ?? 'Continue', done.id, 'choice', done.enabled)
+  );
   return actions;
+};
+
+/** A signed amount of money, as `+£12,000` or `−£4,500`. */
+const signedPounds = (value: number) =>
+  value < 0 ? `−${pounds(-value)}` : `+${pounds(value)}`;
+
+/**
+ * Modern mode's weekly bills: each charge and their total, the weekly
+ * balance, any loan taken to pay them, the grace period, then the cash and
+ * the loan against the credit limit. A dismissal ends with the sacking.
+ */
+const paintBills = (pane: HTMLElement, bills: ModernBills) => {
+  const charges = moneyRows([...bills.rows, ['Total', bills.total]]);
+  charges.className = 'bills-charges';
+  const balance = document.createElement('div');
+  balance.className = `bills-balance ${bills.balance < 0 ? 'down' : 'up'}`;
+  balance.append(
+    cell('bills-balance-label', 'Weekly balance'),
+    cell('bills-balance-value', signedPounds(bills.balance)),
+    cell('bills-balance-note', 'Change in cash less loan since last week')
+  );
+  const parts: HTMLElement[] = [charges, balance];
+  if (bills.borrowed !== undefined) {
+    parts.push(
+      cell(
+        'bills-alert',
+        `Loan increased by ${pounds(bills.borrowed)} to pay the bills`
+      )
+    );
+  }
+  if (bills.grace) {
+    const { over, weeks } = bills.grace;
+    parts.push(
+      cell(
+        'bills-alert',
+        `${pounds(over)} over your credit limit – ${
+          weeks === 1 ? 'last week' : `${weeks} weeks`
+        } to clear it`
+      )
+    );
+  }
+  const standing = moneyRows([
+    ['Cash', bills.cash],
+    ['Loan', `${pounds(bills.debt)} of ${pounds(bills.limit)}`]
+  ]);
+  parts.push(standing);
+  if (bills.dismissal) {
+    parts.push(
+      cell(
+        'bills-sacked',
+        `Sacked – you owe over ${pounds(bills.dismissal.limit)}, the club's credit limit`
+      )
+    );
+  }
+  parts.push(continueRow(bills.done));
+  pane.replaceChildren(...parts);
 };
 
 /**
@@ -888,14 +949,14 @@ const leagueRow = (row: LeagueRow, moves: boolean, final: boolean) => {
 };
 
 /** Labelled money rows, as on the status screen. */
-const moneyRows = (rows: readonly (readonly [string, number])[]) => {
+const moneyRows = (rows: readonly (readonly [string, number | string])[]) => {
   const facts = document.createElement('dl');
   for (const [term, value] of rows) {
     const row = document.createElement('div');
     const dt = document.createElement('dt');
     dt.textContent = term;
     const dd = document.createElement('dd');
-    dd.textContent = pounds(value);
+    dd.textContent = typeof value === 'number' ? pounds(value) : value;
     row.append(dt, dd);
     facts.append(row);
   }
@@ -1155,6 +1216,7 @@ export const createBrowserDom = (app: HTMLElement) => {
   <section id="amount-prompt" class="modern-amount" aria-label="Amount" hidden></section>
   <section id="week-results" class="modern-amount modern-week-results" aria-label="Results" hidden></section>
   <section id="league-table" class="modern-amount modern-league-table" aria-label="League table" hidden></section>
+  <section id="bills" class="modern-amount modern-bills" aria-label="Weekly bills" hidden></section>
   <section id="full-time" class="modern-amount modern-full-time" aria-label="Full time" hidden></section>
   <section id="message" class="modern-amount modern-message" aria-label="Message" role="status" hidden></section>
   <div id="context-bar" class="context-bar" aria-label="Answers" hidden></div>
@@ -1195,6 +1257,7 @@ export const createBrowserDom = (app: HTMLElement) => {
   const fullTimePane = find<HTMLElement>('#full-time');
   const weekResultsPane = find<HTMLElement>('#week-results');
   const leagueTablePane = find<HTMLElement>('#league-table');
+  const billsPane = find<HTMLElement>('#bills');
   // Modern mode's own pitch, kept between attacks as the original's is not.
   const modernPitch = document.createElement('canvas');
   modernPitch.className = 'modern-pitch';
@@ -1226,6 +1289,11 @@ export const createBrowserDom = (app: HTMLElement) => {
       classes: ['has-amount'],
       paint: ({ amount }) => paintAmount(amountPane, amount),
       pane: amountPane
+    },
+    bills: {
+      classes: ['has-amount'],
+      paint: ({ bills }) => paintBills(billsPane, bills),
+      pane: billsPane
     },
     'full-time': {
       classes: ['has-amount'],

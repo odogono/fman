@@ -79,6 +79,13 @@ Style is "paper & ink": light grey paper, black text with red and blue ink rows,
   - The managed club's row is marked in white and bold, in place of the original's "Lge.Pos." line.
   - A coloured edge marks the places the season end moves: the top three promoted (green) where there is a division above, the top club champions (yellow) in Division 1, and the bottom three relegated (red) where there is a division below, with a key under the table.
   - At the season end there is no movement column, and the zones are labelled as outcomes on each club: Promoted, Relegated, Champions.
+- **Weekly bills**: replaces the original's bills, and its dismissal printed over them.
+  - Wages, Ground rent and Loan interest as money rows, then their Total.
+  - The weekly balance in a box of its own, signed and coloured (green up, red down), with "Change in cash less loan since last week" under it, since the original's label reads like the bills' total.
+  - When the cash ran out, a red bar says how much was borrowed: "Loan increased by £8,400 to pay the bills".
+  - Under a grace period, a red bar says how far over the credit limit the loan is and how long is left: "£42,000 over your credit limit – 3 weeks to clear it", or "last week".
+  - Then Cash, and the Loan against the credit limit ("£180,000 of £750,000"). This is where crossing the limit matters, so the limit shows here, though the loan screen doesn't show it.
+  - A dismissal shows the same bills and ends with a black bar, "Sacked – you owe over £750,000, the club's credit limit". Its button reads "Leave the club", since Enter clears the game rather than starting a new one; the original's green `+` art is dropped.
 - **Print faults**: when the original's printing stops on a renamed name, every Modern screen steps aside for the original screen, which shows where printing stopped.
 - **Status** (`s`, "Print score etc"): the original's facts only, without the league record the mockup invents.
   - The club name in its name colour, with the manager and the colours under it. A black bar reads "Managerial rating 37 / 100".

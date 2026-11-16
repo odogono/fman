@@ -104,6 +104,10 @@ _Avoid_: Feed, commentary
 The short animation of one moment in Modern mode's highlights: the build-up, the moment itself and the reaction. The clip decides how long its moment is shown. Everything in it except the moment is made up for show and changes nothing in the game.
 _Avoid_: Replay, which names a cup match; highlight
 
+**Scoreboard**:
+The strip above the pitch in Modern mode's highlights: both clubs, the score and the minute of the moment on show.
+_Avoid_: Header, title bar
+
 **Gate receipts**:
 The income credited to the managed club for a match, including a cup replay.
 

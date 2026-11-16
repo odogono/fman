@@ -1063,6 +1063,143 @@ button.latest-moment:focus-visible,
   position: static;
   padding: 0 0 8px;
 }
+/* Sprite highlights on a phone: the pitch takes the screen. One strip
+   above it (the scoreboard, with the game menu in place of the top bar),
+   one row below it, and no page furniture. */
+:root.modern.at-highlights:has(.clip-stage) main {
+  padding: max(8px, env(safe-area-inset-top))
+    max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom))
+    max(8px, env(safe-area-inset-left));
+}
+:root.modern.at-highlights:has(.clip-stage) .top-bar,
+:root.modern.at-highlights:has(.clip-stage) .build-note,
+:root.modern.at-highlights:has(.clip-stage) .version,
+:root.modern.at-highlights:has(.clip-stage) .notice:empty {
+  display: none;
+}
+.modern-highlights:has(.clip-stage) {
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  row-gap: 6px;
+  height: calc(
+    100dvh - max(8px, env(safe-area-inset-top)) -
+      max(8px, env(safe-area-inset-bottom))
+  );
+  max-height: none;
+}
+.clip-scoreboard {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto minmax(0, 1fr) 40px;
+  gap: 8px;
+  align-items: center;
+  padding: 0;
+  border-bottom: 0;
+  font-size: 17px;
+  font-weight: 600;
+}
+.clip-scoreboard .scoreboard-menu {
+  width: 40px;
+  min-height: 40px;
+  padding: 0;
+  border: 1px solid var(--normal-0);
+  background: var(--normal-1);
+  color: var(--bright-7);
+  cursor: pointer;
+}
+.clip-scoreboard .club-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.clip-scoreboard .club-name:nth-child(2) {
+  justify-self: end;
+}
+.clip-scoreboard .club-name:nth-child(4) {
+  justify-self: start;
+}
+.clip-scoreboard .scoreboard-goals {
+  padding: 2px 8px;
+  background: var(--normal-0);
+  color: var(--bright-7);
+  font-family: Spectrum, monospace;
+  font-weight: normal;
+  font-synthesis: none;
+}
+.scoreboard-clock {
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+/* Names too long for a phone's strip give way to their three letters. */
+@media (max-width: 479px) {
+  .clip-scoreboard.long-names .club-name[data-short] {
+    font-size: 0;
+  }
+  .clip-scoreboard.long-names .club-name[data-short]::after {
+    content: attr(data-short);
+    font-size: 17px;
+  }
+}
+.clip-frame {
+  height: min(100cqh, 200cqw);
+}
+.clip-frame .clip-pitch {
+  height: 100%;
+  aspect-ratio: auto;
+}
+.clip-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: stretch;
+}
+.clip-controls .latest-moment {
+  display: grid;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 4px;
+  font-weight: 600;
+}
+.clip-controls button.latest-moment {
+  grid-template-columns: auto auto minmax(0, 1fr) auto auto;
+  border: 1px solid var(--normal-0);
+}
+.clip-controls .primary {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 2px solid var(--normal-0);
+  background: var(--bright-6);
+  color: var(--normal-0);
+  font-family: Spectrum, monospace;
+  font-size: 16px;
+  font-synthesis: none;
+  white-space: nowrap;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.clip-controls .primary:focus-visible {
+  outline: 3px solid var(--normal-0);
+  outline-offset: 2px;
+}
+/* On a wide window the panel holds the moments: Skip all stands alone. */
+@media (min-width: 900px) and (min-aspect-ratio: 1) {
+  .clip-controls .latest-moment {
+    display: none;
+  }
+  .clip-controls .primary {
+    grid-column: 2;
+  }
+}
+@media (max-width: 360px) {
+  .clip-controls .primary {
+    padding: 0 8px;
+    font-size: 13px;
+  }
+  .clip-controls .ticker-score {
+    display: none;
+  }
+}
 /* The highlights screen stands in for the original's and the ticker's bar. */
 :root.modern.at-highlights .machine,
 :root.modern.at-highlights .context-bar {

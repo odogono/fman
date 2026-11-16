@@ -17,6 +17,7 @@ import { rasterText, rasterizeCells } from './glyphs';
 import type { ClubName, Home } from './home';
 import type { BidPlayer, ModernAmount } from './modern-amount';
 import {
+  continueId,
   drawerIds,
   type ModernHighlights,
   type ModernTickerLine
@@ -355,6 +356,50 @@ const scoreboard = (highlights: ModernHighlights) => {
   return board;
 };
 
+/** A club's name, carrying its three letters for a narrow scoreboard. */
+const scoreboardClub = (name: ClubName, short?: string) => {
+  const label = clubLabel(name);
+  if (short) {
+    label.dataset.short = short;
+    label.setAttribute('aria-label', name.name);
+  }
+  return label;
+};
+
+/**
+ * The sprite highlights' scoreboard: one strip with the game menu, both
+ * clubs, the score and the clock. Names too long for a phone's strip give
+ * way to their three letters.
+ */
+const clipScoreboard = (highlights: ModernHighlights) => {
+  const board = document.createElement('section');
+  board.className = 'scoreboard clip-scoreboard';
+  board.setAttribute('aria-label', `Score: ${highlights.title}`);
+  const menu = document.createElement('button');
+  menu.type = 'button';
+  menu.className = 'menu-button scoreboard-menu';
+  menu.setAttribute('aria-haspopup', 'dialog');
+  menu.setAttribute('aria-label', 'Game menu');
+  menu.title = 'Game menu';
+  menu.innerHTML =
+    '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-width="2.5" stroke-linecap="square" /></svg>';
+  const longest = Math.max(
+    highlights.home.name.length,
+    highlights.away.name.length
+  );
+  if (highlights.short && longest > 10) {
+    board.classList.add('long-names');
+  }
+  board.append(
+    menu,
+    scoreboardClub(highlights.home, highlights.short?.[0]),
+    cell('scoreboard-goals', `${highlights.score[0]}–${highlights.score[1]}`),
+    scoreboardClub(highlights.away, highlights.short?.[1]),
+    cell('scoreboard-clock', highlights.clock ?? '')
+  );
+  return board;
+};
+
 /** One ticker line's cells: minute, word, name and score. */
 const tickerCells = (line: ModernTickerLine) => [
   cell('ticker-minute', line.minute),
@@ -393,6 +438,7 @@ const latestMoment = (
   if (!latest || !shown) {
     const empty = document.createElement('div');
     empty.className = 'latest-moment';
+    empty.textContent = shown ? 'Kick-off' : 'Full time';
     return empty;
   }
   const button = document.createElement('button');
@@ -405,8 +451,9 @@ const latestMoment = (
   button.setAttribute('aria-controls', 'moments-drawer');
   button.append(
     ...tickerCells(latest),
-    cell('latest-all', `All moments (${lines.length}) ›`)
+    cell('latest-all', `☰ ${lines.length}`)
   );
+  button.setAttribute('aria-label', `All moments (${lines.length})`);
   return button;
 };
 
@@ -474,7 +521,9 @@ const paintHighlights = (
   clipPitch: HTMLCanvasElement,
   highlights: ModernHighlights
 ) => {
-  const parts: HTMLElement[] = [scoreboard(highlights)];
+  const parts: HTMLElement[] = [
+    highlights.clip ? clipScoreboard(highlights) : scoreboard(highlights)
+  ];
   if (highlights.clip && highlights.ticker) {
     // Sprite highlights (#144): the clip's pitch, with the latest moment's
     // line under it, or after Skip the whole ticker over it. The moments
@@ -495,19 +544,20 @@ const paintHighlights = (
       overlay.classList.add('full-ticker');
       stage.append(overlay);
     }
-    const actions = document.createElement('div');
-    actions.className = 'pick-actions';
-    actions.append(actionButton('Skip', 'ticker.skip', 'skip', ticker.skip));
+    // One row under the pitch: the latest moment, then Skip all, which
+    // becomes Continue once the last clip has played.
+    const controls = document.createElement('div');
+    controls.className = 'clip-controls';
+    controls.append(
+      latestMoment(ticker.lines, clip.drawer, !clip.full),
+      ticker.fullTime
+        ? actionButton('Continue', continueId, 'continue', true)
+        : actionButton('Skip all', 'ticker.skip', 'skip', ticker.skip)
+    );
     const before = document.activeElement?.closest<HTMLElement>(
       '[data-view-control]'
     )?.dataset.viewControl;
-    pane.replaceChildren(
-      momentsPanel(ticker),
-      ...parts,
-      stage,
-      latestMoment(ticker.lines, clip.drawer, !clip.full),
-      actions
-    );
+    pane.replaceChildren(momentsPanel(ticker), ...parts, stage, controls);
     const focus = focusAfter(before, clip.drawer);
     if (focus) {
       pane
@@ -1243,6 +1293,11 @@ export const createBrowserDom = (app: HTMLElement) => {
     });
     menu.addEventListener('close', target.menuClosed);
     menuButton.addEventListener('click', target.openMenu);
+    highlightsPane.addEventListener('click', event => {
+      if ((event.target as Element).closest('.scoreboard-menu')) {
+        target.openMenu();
+      }
+    });
     loadInput.addEventListener('change', async () => {
       const file = loadInput.files?.[0];
       if (!file) {

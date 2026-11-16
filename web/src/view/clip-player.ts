@@ -36,7 +36,9 @@ export type ClipState = Readonly<{
  * the screen repaints, not just the clip.
  */
 export const screenKey = (state: ClipState | undefined) =>
-  state ? `${state.progress.shown}:${state.progress.full}` : '';
+  state
+    ? `${state.progress.shown}:${state.progress.full}:${state.progress.playing ?? ''}`
+    : '';
 
 type TickerView = Readonly<{
   fixture: MatchFixture;
@@ -165,9 +167,15 @@ export const createClipPlayer = () => {
     };
     return shot;
   };
-  const progressOf = (ticker: Ticker, shown: number, full: boolean) => ({
+  const progressOf = (
+    ticker: Ticker,
+    shown: number,
+    full: boolean,
+    playing?: number
+  ) => ({
     drawer: !full && shown > 0 && drawer === ticker,
     full,
+    ...(playing === undefined ? {} : { playing }),
     shown
   });
   const stateOf = (view: TickerView): ClipState => {
@@ -200,7 +208,7 @@ export const createClipPlayer = () => {
     const shown = stage.index + (at >= script.momentFrame ? 1 : 0);
     return {
       phase: 'clip',
-      progress: progressOf(ticker, shown, false),
+      progress: progressOf(ticker, shown, false, stage.index),
       score: ticker.scoreAfter(shown),
       shot
     };

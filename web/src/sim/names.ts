@@ -1,5 +1,6 @@
 import type { Club } from './catalogue';
 import type { Game } from './management';
+import { plainNames } from './ruleset';
 
 export const decodeName = (bytes: readonly number[]) =>
   bytes
@@ -67,6 +68,9 @@ export class NameRuntimeError extends Error {
   }
 }
 
+/** A control code, such as INK or AT, which can stop a name's PRINT. */
+const control = (byte: number) => byte < 32;
+
 export const renameClub = (game: Game, id: number, text: string): Game => {
   if (!game.clubs[id - 1]) {
     throw new RangeError('TEAM NUMBER OUT OF RANGE');
@@ -75,10 +79,16 @@ export const renameClub = (game: Game, id: number, text: string): Game => {
   if (bytes.length === 0) {
     return game;
   }
+  // Under plain names (ADR 0014) a colour without a name is refused, where
+  // the original stops on a missing subscript.
+  const plain = plainNames(game.ruleset);
   let ink: number | null = null;
   let start = 0;
   if (bytes[0] === 16) {
     if (bytes.length < 2) {
+      if (plain) {
+        throw new RangeError('INVALID TEAM NAME');
+      }
       throw new NameRuntimeError(9472);
     }
     ink = bytes[1]!;
@@ -86,11 +96,18 @@ export const renameClub = (game: Game, id: number, text: string): Game => {
       throw new RangeError('INVALID COLOUR');
     }
     if (bytes.length < 3) {
+      if (plain) {
+        throw new RangeError('INVALID TEAM NAME');
+      }
       throw new NameRuntimeError(9473);
     }
     start = 2;
   }
-  if (bytes[start]! < 65 || bytes[start]! > 122) {
+  if (
+    bytes[start]! < 65 ||
+    bytes[start]! > 122 ||
+    (plain && bytes.slice(start).some(control))
+  ) {
     throw new RangeError('INVALID TEAM NAME');
   }
   if (bytes.length > (start === 2 ? 12 : 10)) {
@@ -120,7 +137,11 @@ export const renamePlayer = (game: Game, id: number, text: string): Game => {
   if (bytes.length === 0) {
     return game;
   }
-  if (bytes[0]! < 65 || bytes[0]! > 122) {
+  if (
+    bytes[0]! < 65 ||
+    bytes[0]! > 122 ||
+    (plainNames(game.ruleset) && bytes.some(control))
+  ) {
     throw new RangeError('INVALID PLAYER NAME');
   }
   if (bytes.length > 8) {

@@ -36,6 +36,7 @@ Rulesets ([ADR-0007](adr/0007-experimental-rules-as-rulesets.md), [ADR-0009](adr
 - [moment-highlights.md](moment-highlights.md): a match decided as a list of goals, saves and near misses, shown as a ticker in place of the pitch (Enhanced version 7)
 - [clearances.md](clearances.md): defenders intercepting or blocking a chance and clearing it, as a moment of its own (Enhanced version 8)
 - [match-injuries.md](match-injuries.md): injuries happen in the match, as a moment of the highlights, instead of before team selection (Enhanced version 9)
+- [plain-names.md](plain-names.md): new names can't carry control codes beyond a club's colour, so no print fault can stop the game (Enhanced version 10, [ADR-0014](adr/0014-enhanced-rules-drop-print-faults.md))
 - [sprite-highlights.md](sprite-highlights.md): Modern mode shows moments as clips on a top-down pitch with tiny sprites ([ADR-0013](adr/0013-clips-set-their-own-length.md))
 
 Gameplay baseline: [gameplay-baseline.md](gameplay-baseline.md): automated runs by strategy and difficulty level, and how to compare rulesets against [the original's baseline](baseline/original.md).

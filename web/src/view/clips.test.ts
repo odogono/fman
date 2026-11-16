@@ -1625,6 +1625,35 @@ const slid = (script: ClipScript, i: number) =>
     .slice(0, 20)
     .includes('tackle');
 
+/** A player in the penalty area of the goal their side attacks. */
+const inBox = (p: Readonly<{ x: number; y: number }>, up: boolean) => {
+  const out = up ? p.y : pitchLength - p.y;
+  return out < 16.5 && Math.abs(p.x - pitchWidth / 2) < 20.16;
+};
+
+test('an injured player goes down outside the box, where no one could ask for a penalty', () => {
+  for (const shooter of [9, 6, 2]) {
+    for (let seed = 0; seed < 40; seed++) {
+      for (const tackled of [true, false]) {
+        const attackingUp = seed % 2 === 0;
+        const script = createClipScript(
+          input({ attackingUp, kind: 'injury', seed, shooter, tackled })
+        );
+        for (const at of [script.momentFrame, script.length - 1]) {
+          const down = script.frame(at).players[shooter]!;
+          expect({
+            at,
+            in: inBox(down, attackingUp),
+            seed,
+            shooter,
+            tackled
+          }).toEqual({ at, in: false, seed, shooter, tackled });
+        }
+      }
+    }
+  }
+}, 60_000);
+
 test('an injured player is tackled by the named defender, or pulls up, and stays down', () => {
   for (const shooter of [9, 6, 2]) {
     for (let seed = 0; seed < 12; seed++) {
@@ -1646,6 +1675,10 @@ test('an injured player is tackled by the named defender, or pulls up, and stays
         expect(
           new Set(posesFrom(script, script.momentFrame + 12, shooter))
         ).toEqual(new Set(['fall']));
+        // And stays where they fell, however the camera moves.
+        const fell = script.frame(script.momentFrame + 12).players[shooter]!;
+        const last = script.frame(script.length - 1).players[shooter]!;
+        expect([last.x, last.y]).toEqual([fell.x, fell.y]);
         // The named defender slides in; pulling up, nobody does.
         expect(slid(script, attackers + 3)).toBe(tackled);
         if (!tackled) {

@@ -1001,6 +1001,27 @@ test('the seed picks every finish; corners and defenders head it, clearances sho
   expect([...seen].sort()).toEqual([...finishes].sort());
 });
 
+test('a header runs onto a cross from out wide at a pace a player can run', () => {
+  let wide = 0;
+  const scripts = finished('header', 100);
+  for (const script of scripts) {
+    const cross = script.passes.at(-1)!;
+    if (cross.kind !== 'cross') {
+      continue;
+    }
+    const from = script.frame(cross.start).ball;
+    if (from.x < 15 || from.x > pitchWidth - 15) {
+      wide++;
+    }
+    for (let f = cross.start + 1; f <= cross.end; f++) {
+      const a = script.frame(f - 1).players[cross.receiver]!;
+      const b = script.frame(f).players[cross.receiver]!;
+      expect(Math.hypot(b.x - a.x, b.y - a.y) * clipFps).toBeLessThan(12);
+    }
+  }
+  expect(wide).toBeGreaterThan(scripts.length * 0.6);
+});
+
 test('a header meets a cross at head height, with a crouch and a leap first', () => {
   for (const script of finished('header')) {
     if (script.outcome === 'claim') {

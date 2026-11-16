@@ -1581,7 +1581,9 @@ test('Skip ends every clip and shows the whole ticker for the final hold', () =>
 
 test('reopening the page mid-clip picks the clip up where it was', () => {
   const run = modernMoments();
-  run.wait(tickerLeadIn + tickerPause + 400);
+  // Mid-clip, clear of its moment, so the frame waited after reopening
+  // doesn't carry it past the moment.
+  run.wait(tickerLeadIn + tickerPause + 300);
   run.app.pageHide();
   const reopened = harness({
     autosave: run.stored.get('fman:autosave')!,

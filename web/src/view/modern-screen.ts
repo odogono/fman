@@ -24,6 +24,7 @@ import {
 } from './modern-highlights';
 import { messageFor, type ModernMessage } from './modern-message';
 import { statusFor, statusOf, type ModernStatus } from './modern-status';
+import { namesFor, type ModernNames } from './name-screens';
 import { pickTeamFor, type PickTeam } from './pick-team';
 import { saleOfferFor, type SaleOffer } from './sale-offer';
 import {
@@ -71,6 +72,8 @@ export type ModernScreen =
   | Readonly<{ kind: 'sale-offer'; offer: SaleOffer }>
   /** Setting up a game, changing its level, or playing on after a save. */
   | Readonly<{ kind: 'setup'; setup: ModernSetup }>
+  /** Renaming clubs and players. */
+  | Readonly<{ kind: 'names'; names: ModernNames }>
   /** A balance or a plain text message. */
   | Readonly<{ kind: 'message'; message: ModernMessage }>;
 
@@ -167,6 +170,10 @@ export const modernScreenFor = (
     case 'save-question': {
       const setup = setupFor(view);
       return setup && { kind: 'setup', setup };
+    }
+    case 'names': {
+      const names = namesFor(view);
+      return names && { kind: 'names', names };
     }
     case 'status': {
       const status = statusFor(view);

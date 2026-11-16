@@ -48,7 +48,8 @@ original program or snapshot.
 
 The browser still uses its native line editor. Spectrum keyboard mode/colour
 chords and the ROM cursor are not reproduced; a raw prefix can be supplied as
-control bytes, but there is no added colour-picker flow. Unsupported Unicode
+control bytes. Modern mode's rename screen has a colour picker that builds the
+prefix (see [mobile-play.md](mobile-play.md)). Unsupported Unicode
 is refused. Embedded controls, token text, block graphics and runtime UDGs now follow
 the [bounded name PRINT protocol](name-print-fidelity.md), including retained
 assignments and original reports on malformed sequences. The [screen-layout fidelity pass](name-layout-fidelity.md) now verifies repeated

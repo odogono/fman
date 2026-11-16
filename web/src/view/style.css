@@ -2065,12 +2065,12 @@ button.latest-moment:focus-visible,
   text-align: center;
 }
 /* Modern mode's setup screens. */
-.setup-name label {
+.setup-name > label {
   display: grid;
   gap: 8px;
   font-weight: 600;
 }
-.setup-name input {
+.setup-name input[name='name'] {
   min-height: 48px;
   padding: 0 12px;
   border: 2px solid var(--normal-0);
@@ -2140,4 +2140,49 @@ button.latest-moment:focus-visible,
 .modern-setup .setup-pair button.setup-choice {
   min-height: 56px;
   text-align: center;
+}
+/* Modern mode's name editing. */
+.names-current {
+  margin: 0;
+  font-size: 18px;
+}
+.names-current .club-name {
+  font-weight: 700;
+}
+.names-error {
+  padding: 6px 10px;
+  background: var(--normal-2);
+  color: var(--bright-7);
+  font-weight: 600;
+}
+.names-colours {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--normal-0);
+}
+.names-swatch {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  min-height: 36px;
+  font-weight: normal;
+  cursor: pointer;
+}
+.names-swatch input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+}
+.names-chip {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--normal-0);
+}
+.names-note {
+  color: #444;
+  font-size: 14px;
 }

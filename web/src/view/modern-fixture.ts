@@ -28,7 +28,7 @@ export type ModernFixture = Readonly<{
 }>;
 
 /** A place as an ordinal: 1st, 2nd, 3rd, 4th, 11th, 12th, 13th, 21st. */
-const ordinal = (n: number) => {
+export const ordinal = (n: number) => {
   const teen = n % 100 >= 11 && n % 100 <= 13;
   const suffix = teen ? 'th' : (['th', 'st', 'nd', 'rd'][n % 10] ?? 'th');
   return `${n}${suffix}`;

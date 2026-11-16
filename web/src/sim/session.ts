@@ -73,15 +73,14 @@ export type ScreenView =
   | { changing: true; game: Game; screen: 'level' }
   | { game?: Game; message: Message; screen: 'message' }
   | Each<
-      | 'save-question'
-      | 'menu'
-      | 'status'
-      | 'borrow'
-      | 'repay'
-      | 'end-season'
-      | 'season-table',
+      'save-question' | 'menu' | 'status' | 'borrow' | 'repay' | 'season-table',
       { game: Game }
     >
+  /**
+   * The season's end. `cupWon`: the final, always the season's last
+   * fixture, was won.
+   */
+  | { cupWon: boolean; game: Game; screen: 'end-season' }
   /** Asks for a cup replay of `fixture`, the drawn tie. */
   | { fixture: MatchFixture; game: Game; screen: 'replay' }
   | { game: Game; pickedCount: number; screen: 'squad' }
@@ -829,9 +828,14 @@ export const createSession = (
       case 'status':
       case 'borrow':
       case 'repay':
-      case 'end-season':
       case 'season-table':
         return { game, screen };
+      case 'end-season':
+        return {
+          cupWon: settled?.kind === 'cup' && settled.cupWon,
+          game,
+          screen
+        };
       case 'replay':
         return { fixture: matchday!.fixture, game, screen };
       case 'names':

@@ -1,6 +1,7 @@
 import type { View } from '../sim/session';
 import { startAmount, type AmountEntry } from './amount-entry';
 import { answersFor } from './answers';
+import { fullTimeFor, type FullTime } from './full-time';
 import { amountPromptFor, type ModernAmount } from './modern-amount';
 import {
   highlightsFor,
@@ -26,6 +27,8 @@ export type ModernScreen =
   | Readonly<{ kind: 'status'; status: ModernStatus }>
   /** A loan, repayment or transfer bid. */
   | Readonly<{ amount: ModernAmount; kind: 'amount' }>
+  /** The final score, as the Full-time screen. */
+  | Readonly<{ fullTime: FullTime; kind: 'full-time' }>
   /** A balance or a plain text message. */
   | Readonly<{ kind: 'message'; message: ModernMessage }>;
 
@@ -66,6 +69,10 @@ export const modernScreenFor = (
     case 'highlights': {
       const highlights = highlightsFor(view, context.clips);
       return highlights && { highlights, kind: 'highlights' };
+    }
+    case 'result': {
+      const fullTime = fullTimeFor(view);
+      return fullTime && { fullTime, kind: 'full-time' };
     }
     case 'status': {
       const status = statusFor(view);

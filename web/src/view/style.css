@@ -1972,3 +1972,42 @@ button.latest-moment:focus-visible,
   font-synthesis: none;
   text-align: center;
 }
+/* Modern mode's next fixture: both clubs, home on the left. */
+.fixture-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 16px 8px;
+  border-top: 2px solid var(--normal-0);
+  border-bottom: 2px solid var(--normal-0);
+}
+.fixture-side {
+  display: grid;
+  gap: 4px;
+  justify-items: center;
+  text-align: center;
+}
+.fixture-side .club-name {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 22px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fixture-standing {
+  color: #444;
+  font-size: 14px;
+}
+.fixture-v {
+  padding-top: 4px;
+  font-family: Spectrum, monospace;
+  font-size: 18px;
+  font-synthesis: none;
+}
+.fixture-venue {
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+}

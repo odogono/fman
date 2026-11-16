@@ -1,5 +1,6 @@
 import { fixtureSides } from '../sim/league';
 import type { Message, View } from '../sim/session';
+import { fixtureTitle } from './home';
 
 const gameName = 'Football Manager';
 
@@ -51,7 +52,7 @@ export const screenTitle = (view: View): string => {
     case 'save-question':
       return 'Save game';
     case 'fixture':
-      return view.roundName ?? 'League match';
+      return fixtureTitle(view.game, view.fixture);
     case 'team':
       return 'Picked team';
     case 'selection':

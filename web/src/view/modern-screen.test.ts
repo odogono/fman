@@ -67,7 +67,7 @@ test('each original screen shows its Modern screen, or the original', () => {
     'repay: amount',
     'message: message',
     'menu: home',
-    'fixture: original',
+    'fixture: fixture',
     'team: pick-team',
     'highlights: highlights'
   ]);

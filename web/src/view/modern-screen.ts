@@ -16,6 +16,7 @@ import {
 } from './league-screens';
 import { amountPromptFor, type ModernAmount } from './modern-amount';
 import { billsFor, type ModernBills } from './modern-bills';
+import { modernFixtureFor, type ModernFixture } from './modern-fixture';
 import {
   highlightsFor,
   type ClipProgress,
@@ -52,6 +53,8 @@ export type ModernScreen =
   | Readonly<{ cupResult: CupResult; kind: 'cup-result' }>
   /** A drawn cup round, to be replayed at the other ground. */
   | Readonly<{ cupReplay: CupReplay; kind: 'cup-replay' }>
+  /** The next fixture, before the team is picked. */
+  | Readonly<{ fixture: ModernFixture; kind: 'fixture' }>
   /** A balance or a plain text message. */
   | Readonly<{ kind: 'message'; message: ModernMessage }>;
 
@@ -123,6 +126,10 @@ export const modernScreenFor = (
     case 'replay': {
       const cupReplay = cupReplayFor(view);
       return cupReplay && { cupReplay, kind: 'cup-replay' };
+    }
+    case 'fixture': {
+      const fixture = modernFixtureFor(view);
+      return fixture && { fixture, kind: 'fixture' };
     }
     case 'status': {
       const status = statusFor(view);

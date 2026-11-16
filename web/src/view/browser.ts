@@ -38,6 +38,7 @@ import type { ModernScreen, ModernScreenKind } from './modern-screen';
 import type { ModernStatus } from './modern-status';
 import type { PickTeam, PickTeamRow, Strengths } from './pick-team';
 import { paintAttack, paintEmptyPitch } from './pitch';
+import type { SaleOffer } from './sale-offer';
 import type { EndOfSeason, SeasonSummary } from './season-end';
 import { tickerLines, tickerText } from './ticker-layout';
 
@@ -208,7 +209,7 @@ const amountPanel = (entry: AmountEntry) => {
 /** The context bar or Home screen button an event came from, if any. */
 const barButton = (event: Event) =>
   (event.target as Element).closest<HTMLButtonElement>(
-    '#context-bar button, #home button, #pick-team button, #highlights button, #status button, #amount-prompt button, #message button, #full-time button, #week-results button, #league-table button, #bills button, #next-fixture button, #end-of-season button, #season-summary button, #cup-result button, #cup-replay button'
+    '#context-bar button, #home button, #pick-team button, #highlights button, #status button, #amount-prompt button, #message button, #full-time button, #week-results button, #league-table button, #bills button, #next-fixture button, #sale-offer button, #end-of-season button, #season-summary button, #cup-result button, #cup-replay button'
   );
 
 const pounds = (value: number) => `£${value.toLocaleString('en-GB')}`;
@@ -310,7 +311,7 @@ const cell = (className: string, text: string | number) => {
 };
 
 /** One pick team row: a button while the original takes its number. */
-const pickRow = (row: PickTeamRow, adding: boolean) => {
+const pickRow = (row: PickTeamRow, verb: 'Add' | 'Drop' | 'Sell') => {
   const element = document.createElement(row.answer ? 'button' : 'div');
   element.className = `pick-row ${row.status}`;
   if (row.answer) {
@@ -319,7 +320,7 @@ const pickRow = (row: PickTeamRow, adding: boolean) => {
     element.dataset.kind = 'choice';
     element.setAttribute(
       'aria-label',
-      `${adding ? 'Add' : 'Drop'} ${row.name}, number ${row.number}`
+      `${verb} ${row.name}, number ${row.number}`
     );
   }
   element.append(
@@ -1101,6 +1102,39 @@ const paintSeasonSummary = (pane: HTMLElement, summary: SeasonSummary) => {
   pane.replaceChildren(...parts);
 };
 
+/**
+ * Modern mode's sale offer: the player, the buyer's offer against his value,
+ * then Accept, and Refuse with what turning it down may cost.
+ */
+const paintSaleOffer = (pane: HTMLElement, offer: SaleOffer) => {
+  const line = document.createElement('p');
+  line.className = 'sale-line';
+  line.append(clubLabel(offer.buyer), ` offer ${pounds(offer.amount)}`);
+  const actions = document.createElement('div');
+  actions.className = 'pick-actions';
+  const accept = actionButton(
+    'Accept',
+    offer.accept.id,
+    'choice',
+    offer.accept.enabled
+  );
+  const refuse = actionButton(
+    'Refuse',
+    offer.refuse.id,
+    'choice',
+    offer.refuse.enabled
+  );
+  refuse.className = 'red';
+  actions.append(accept, refuse);
+  pane.replaceChildren(
+    bidPlayer(offer.player),
+    line,
+    cell('sale-comparison', offer.comparison),
+    actions,
+    cell('sale-warning', offer.warning)
+  );
+};
+
 /** Labelled money rows, as on the status screen. */
 const moneyRows = (rows: readonly (readonly [string, number | string])[]) => {
   const facts = document.createElement('dl');
@@ -1334,7 +1368,8 @@ const paintPickTeam = (pane: HTMLElement, pick: PickTeam) => {
     hint.textContent = pick.hint;
     parts.push(hint);
   }
-  const adding = pick.picked <= 11;
+  const verb =
+    pick.prompt === 'squad' ? 'Sell' : pick.picked <= 11 ? 'Add' : 'Drop';
   for (const group of pick.groups) {
     const section = document.createElement('section');
     section.className = `pick-group category-${group.category}`;
@@ -1353,7 +1388,7 @@ const paintPickTeam = (pane: HTMLElement, pick: PickTeam) => {
       cell('pick-marker', '')
     );
     const rows = group.players.length
-      ? group.players.map(row => pickRow(row, adding))
+      ? group.players.map(row => pickRow(row, verb))
       : [cell('pick-none', 'None')];
     section.append(title, header, ...rows);
     parts.push(section);
@@ -1408,6 +1443,7 @@ export const createBrowserDom = (app: HTMLElement) => {
   <section id="next-fixture" class="modern-amount modern-fixture" aria-label="Next fixture" hidden></section>
   <section id="end-of-season" class="modern-amount modern-season" aria-label="End of season" hidden></section>
   <section id="season-summary" class="modern-amount modern-season" aria-label="Season summary" hidden></section>
+  <section id="sale-offer" class="modern-amount modern-sale" aria-label="Sale offer" hidden></section>
   <section id="full-time" class="modern-amount modern-full-time" aria-label="Full time" hidden></section>
   <section id="message" class="modern-amount modern-message" aria-label="Message" role="status" hidden></section>
   <div id="context-bar" class="context-bar" aria-label="Answers" hidden></div>
@@ -1450,6 +1486,7 @@ export const createBrowserDom = (app: HTMLElement) => {
   const leagueTablePane = find<HTMLElement>('#league-table');
   const billsPane = find<HTMLElement>('#bills');
   const fixturePane = find<HTMLElement>('#next-fixture');
+  const salePane = find<HTMLElement>('#sale-offer');
   const endOfSeasonPane = find<HTMLElement>('#end-of-season');
   const seasonSummaryPane = find<HTMLElement>('#season-summary');
   const cupResultPane = find<HTMLElement>('#cup-result');
@@ -1527,6 +1564,11 @@ export const createBrowserDom = (app: HTMLElement) => {
       classes: ['has-amount'],
       paint: ({ table }) => paintLeagueTable(leagueTablePane, table),
       pane: leagueTablePane
+    },
+    'sale-offer': {
+      classes: ['has-amount'],
+      paint: ({ offer }) => paintSaleOffer(salePane, offer),
+      pane: salePane
     },
     'season-summary': {
       classes: ['has-amount'],

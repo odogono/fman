@@ -30,6 +30,7 @@ For a change to see in the real app (layout, touch controls, the game menu, the 
 | `#cup-result`, `#cup-replay`        | Modern mode's cup result and winners' celebration, and the replay notice, with Continue.                       |
 | `#next-fixture`                     | Modern mode's next fixture, with Pick team.                                                                    |
 | `#end-of-season`, `#season-summary` | Modern mode's season end and its summary, with Final table and New season.                                     |
+| `#sale-offer`                       | Modern mode's sale offer, with Accept and Refuse. The squad uses `#pick-team`.                                 |
 | `#bills`                            | Modern mode's weekly bills and dismissal, with Continue or Leave the club.                                     |
 | `#full-time`                        | Modern mode's Full-time screen: scoreboard, scorers, injuries and gate receipts, with Continue.                |
 

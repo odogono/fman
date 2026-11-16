@@ -25,6 +25,7 @@ import {
 import { messageFor, type ModernMessage } from './modern-message';
 import { statusFor, statusOf, type ModernStatus } from './modern-status';
 import { pickTeamFor, type PickTeam } from './pick-team';
+import { saleOfferFor, type SaleOffer } from './sale-offer';
 import {
   endOfSeasonFor,
   seasonSummaryFor,
@@ -65,6 +66,8 @@ export type ModernScreen =
   | Readonly<{ endOfSeason: EndOfSeason; kind: 'end-of-season' }>
   /** The season settled: promotion, the bonus and the rating. */
   | Readonly<{ kind: 'season-summary'; summary: SeasonSummary }>
+  /** A club's offer for a player put up for sale. */
+  | Readonly<{ kind: 'sale-offer'; offer: SaleOffer }>
   /** A balance or a plain text message. */
   | Readonly<{ kind: 'message'; message: ModernMessage }>;
 
@@ -102,7 +105,8 @@ export const modernScreenFor = (
     case 'menu':
       return { kind: 'home', status: statusOf(view.game) };
     case 'team':
-    case 'selection': {
+    case 'selection':
+    case 'squad': {
       const pickTeam = pickTeamFor(view);
       return pickTeam && { kind: 'pick-team', pickTeam };
     }
@@ -148,6 +152,10 @@ export const modernScreenFor = (
     case 'season-summary': {
       const summary = seasonSummaryFor(view);
       return summary && { kind: 'season-summary', summary };
+    }
+    case 'sale': {
+      const offer = saleOfferFor(view);
+      return offer && { kind: 'sale-offer', offer };
     }
     case 'status': {
       const status = statusFor(view);

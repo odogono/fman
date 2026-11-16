@@ -62,7 +62,7 @@ test('each original screen shows its Modern screen, or the original', () => {
     'borrow: amount',
     'message: message',
     'menu: home',
-    'squad: original',
+    'squad: pick-team',
     'menu: home',
     'repay: amount',
     'message: message',

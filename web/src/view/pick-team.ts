@@ -57,7 +57,8 @@ export type PickTeam = Readonly<{
   /** What a tap on a live row does, on the selection prompt only. */
   hint?: string;
   picked: number;
-  prompt: 'team' | 'selection';
+  /** The squad prompt stands in for "Sell or list your players". */
+  prompt: 'team' | 'selection' | 'squad';
   /** The team prompt's strengths. */
   strengths?: Strengths;
   /**
@@ -73,9 +74,10 @@ const strengthNames = ['Energy', 'Morale', 'Defence', 'Midfield', 'Attack'];
 const rowFor = (
   player: Player,
   weeksOut: boolean,
-  offered: ReadonlySet<string>
+  offered: ReadonlySet<string>,
+  prompt: 'selection' | 'squad' = 'selection'
 ): PickTeamRow => {
-  const answer = `selection.player.${player.id}`;
+  const answer = `${prompt}.player.${player.id}`;
   const status =
     player.status === 2
       ? 'picked'
@@ -116,10 +118,15 @@ export const strengthsFor = (game: Game, fixture: MatchFixture): Strengths => {
 };
 
 export const pickTeamFor = (view: View): PickTeam | undefined => {
-  if (view.screen !== 'team' && view.screen !== 'selection') {
+  if (
+    view.screen !== 'team' &&
+    view.screen !== 'selection' &&
+    view.screen !== 'squad'
+  ) {
     return undefined;
   }
   const { game, pickedCount: picked } = view;
+  const prompt = view.screen === 'squad' ? 'squad' : 'selection';
   const weeksOut = tiringInjuries(game.ruleset);
   const longest = weeksOut ? { weeksOut: longestInjury(game.ruleset) } : {};
   const offered = new Set(answersFor(view).map(answer => answer.id));
@@ -133,7 +140,7 @@ export const pickTeamFor = (view: View): PickTeam | undefined => {
     category,
     players: squad
       .filter(player => playerCategory(player) === category)
-      .map(player => rowFor(player, weeksOut, offered)),
+      .map(player => rowFor(player, weeksOut, offered, prompt)),
     title
   }));
   if (view.screen === 'team') {
@@ -146,6 +153,18 @@ export const pickTeamFor = (view: View): PickTeam | undefined => {
       picked,
       prompt: 'team',
       strengths: strengthsFor(game, view.fixture),
+      ...longest
+    };
+  }
+  // Every owned player can be offered for sale, injured or not: the
+  // original answers an injured one with its own message.
+  if (view.screen === 'squad') {
+    return {
+      actions: [action('squad.back', 'Done', 'primary')],
+      groups,
+      hint: 'Tap a player to sell',
+      picked,
+      prompt: 'squad',
       ...longest
     };
   }

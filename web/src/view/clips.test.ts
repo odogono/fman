@@ -23,6 +23,7 @@ import {
   tiredPerSide,
   type ClipFrame,
   type ClipInput,
+  type ClipScript,
   type ClipSide,
   type Line
 } from './clips';
@@ -1612,8 +1613,47 @@ test('a goal is announced from its moment for 2.5 s, naming the scorer in place 
   }
 });
 
-test('until injuries have clips of their own, an injury plays as a tackle', () => {
-  for (let seed = 0; seed < 50; seed++) {
-    expect(seededOutcome(seed, 'injury')).toBe('tackle');
+/** Player `i`'s poses from frame `from` to the end of the clip. */
+const posesFrom = (script: ClipScript, from: number, i: number) =>
+  Array.from(
+    { length: script.length - from },
+    (_, k) => script.frame(from + k).players[i]!.pose
+  );
+/** Player `i` slid in around the clip's moment. */
+const slid = (script: ClipScript, i: number) =>
+  posesFrom(script, script.momentFrame - 10, i)
+    .slice(0, 20)
+    .includes('tackle');
+
+test('an injured player is tackled by the named defender, or pulls up, and stays down', () => {
+  for (const shooter of [9, 6, 2]) {
+    for (let seed = 0; seed < 12; seed++) {
+      for (const tackled of [true, false]) {
+        const script = createClipScript(
+          input({
+            attackingUp: seed % 2 === 0,
+            kind: 'injury',
+            seed,
+            shooter,
+            tackled,
+            ...(tackled ? { tackler: 3 } : {})
+          })
+        );
+        expect(script.outcome).toBe('tackle');
+        expect(checkClip(script)).toEqual([]);
+        const attackers = script.input.attack.players.length;
+        // Down from just after the moment to the end of the clip.
+        expect(
+          new Set(posesFrom(script, script.momentFrame + 12, shooter))
+        ).toEqual(new Set(['fall']));
+        // The named defender slides in; pulling up, nobody does.
+        expect(slid(script, attackers + 3)).toBe(tackled);
+        if (!tackled) {
+          for (let j = 0; j < script.input.defence.players.length; j++) {
+            expect(slid(script, attackers + j)).toBe(false);
+          }
+        }
+      }
+    }
   }
-});
+}, 30_000);

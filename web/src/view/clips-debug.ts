@@ -5,7 +5,12 @@ import type { Moment } from '../sim/moments';
 import { tickerPause } from '../sim/ticker';
 import { fitClipCanvas, paintClip } from './clip-canvas';
 import { checkClip, clipIssueKinds, type ClipIssue } from './clip-checks';
-import { clipInputFor, inkColours, keeperColoursFor } from './clip-match';
+import {
+  clipInputFor,
+  goneOff,
+  inkColours,
+  keeperColoursFor
+} from './clip-match';
 import {
   clipStage,
   paintShot,
@@ -72,7 +77,9 @@ const settings = {
   restart: 'seed' as Restart | 'seed',
   seedBase: 1,
   side: 'home' as 'away' | 'home',
-  speed: 1
+  speed: 1,
+  /** For an injury (#110): tackled, or pulling up. */
+  tackled: 'yes' as 'no' | 'yes'
 };
 
 /** A match loaded from a save, while its moments are being replayed. */
@@ -192,6 +199,9 @@ const settingsInput = (seedBase = settings.seedBase): ClipInput => {
     ...(settings.rebound === 'seed'
       ? {}
       : { rebound: settings.rebound === 'yes' }),
+    ...(settings.kind === 'injury'
+      ? { tackled: settings.tackled === 'yes' }
+      : {}),
     seed: hashSeed(
       [
         'debug',
@@ -214,7 +224,9 @@ const outcomesFor = (kind: Moment['kind']): readonly ClipOutcome[] =>
         [...saveOutcomes, 'claim']
       : kind === 'clearance'
         ? clearanceOutcomes
-        : missOutcomes;
+        : kind === 'injury'
+          ? ['tackle']
+          : missOutcomes;
 
 // The page: the pitch and transport on the left, the controls on the right.
 const canvas = element('canvas', { className: 'clip-pitch' });
@@ -245,7 +257,8 @@ const rebuild = () => {
         loaded.game,
         loaded.fixture,
         loaded.moments[loaded.moment]!,
-        loaded.moment
+        loaded.moment,
+        goneOff(loaded.moments, loaded.moment)
       )
     : settingsInput();
   script = createClipScript(input);
@@ -311,7 +324,8 @@ const renderControls = () => {
           ['goal', 'Goal'],
           ['save', 'Save'],
           ['clearance', 'Clearance'],
-          ['near-miss', 'Near miss']
+          ['near-miss', 'Near miss'],
+          ['injury', 'Injury']
         ],
         settings.kind,
         value => {
@@ -330,6 +344,17 @@ const renderControls = () => {
         ],
         settings.outcome,
         value => change('outcome')(value as ClipOutcome | 'seed')
+      )
+    ),
+    labelled(
+      'Injury',
+      select(
+        [
+          ['yes', 'Tackled'],
+          ['no', 'Pulled up']
+        ],
+        settings.tackled,
+        value => change('tackled')(value as 'no' | 'yes')
       )
     ),
     labelled(
@@ -528,7 +553,13 @@ const runSurvey = () => {
   const flagged: { open: () => void; text: string }[] = [];
   const clips = loaded
     ? loaded.moments.map((m, i) => ({
-        input: clipInputFor(loaded!.game, loaded!.fixture, m, i),
+        input: clipInputFor(
+          loaded!.game,
+          loaded!.fixture,
+          m,
+          i,
+          goneOff(loaded!.moments, i)
+        ),
         open: () => {
           loaded!.moment = i;
           rebuild();

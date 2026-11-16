@@ -21,6 +21,7 @@ export type ClipSettings = {
   restart?: string;
   seedBase?: number;
   side?: 'away' | 'home';
+  tackled?: 'no' | 'yes';
 };
 
 export type Scenario = { name: string; settings: ClipSettings };
@@ -110,10 +111,11 @@ export const defaultScenarios: readonly Scenario[] = [
   settings: { rebound: 'no', ...scenario.settings } as ClipSettings
 }));
 
-const kinds = ['goal', 'save', 'clearance', 'near-miss'];
+const kinds = ['goal', 'save', 'clearance', 'near-miss', 'injury'];
 const outcomes: Record<string, readonly string[]> = {
   clearance: clearanceOutcomes,
   goal: ['goal'],
+  injury: ['tackle'],
   'near-miss': missOutcomes,
   save: [...saveOutcomes, 'claim']
 };
@@ -132,6 +134,7 @@ Clip options (anything left out comes from the seed):
   --rebound   yes, no
   --minute    1 to 90 (default 30; after 45 the home side attacks down the screen)
   --side      home, away: the side that has the chance (default home)
+  --tackled   yes, no: an injury's tackle, or pulling up (default yes)
   --seeds     a seed, a list (3,7,9) or a range (1-5); default 1
   --name      the files' name (default from the options)
 
@@ -205,6 +208,7 @@ export const parseOptions = (args: readonly string[]): Options => {
       sequence: { type: 'boolean' },
       side: { type: 'string' },
       step: { type: 'string' },
+      tackled: { type: 'string' },
       url: { type: 'string' }
     },
     strict: true
@@ -218,7 +222,8 @@ export const parseOptions = (args: readonly string[]): Options => {
     'rebound',
     'restart',
     'seeds',
-    'side'
+    'side',
+    'tackled'
   ] as const;
   const custom = own.some(key => values[key] !== undefined);
   if (custom && values.only !== undefined) {
@@ -274,6 +279,12 @@ export const parseOptions = (args: readonly string[]): Options => {
       ? {
           side: oneOf('side', values.side, ['home', 'away']) as 'away' | 'home'
         }
+      : {}),
+    ...(values.tackled
+      ? {
+          tackled: oneOf('tackled', values.tackled, ['yes', 'no']) as
+            'no' | 'yes'
+        }
       : {})
   };
   const name =
@@ -285,7 +296,8 @@ export const parseOptions = (args: readonly string[]): Options => {
       settings.finish,
       settings.rebound === 'yes' ? 'rebound' : undefined,
       settings.minute === undefined ? undefined : `min${settings.minute}`,
-      settings.side === 'away' ? 'away' : undefined
+      settings.side === 'away' ? 'away' : undefined,
+      settings.tackled === 'no' ? 'pulled-up' : undefined
     ]
       .filter(Boolean)
       .join('-');
@@ -328,5 +340,6 @@ export const withDefaults = (settings: ClipSettings) => ({
   restart: 'seed',
   seedBase: 1,
   side: 'home',
+  tackled: 'yes',
   ...settings
 });

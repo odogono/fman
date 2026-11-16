@@ -26,6 +26,7 @@ import {
   cameraAspect,
   pitchLength,
   pitchWidth,
+  tallestCameraAspect,
   type ClipFrame,
   type ClipSide
 } from './clips';
@@ -53,13 +54,19 @@ const surround = '#245f28';
 const line = 'rgba(255, 255, 255, 0.85)';
 
 /**
- * Sizes `canvas` to its box at the screen's resolution, keeping the
- * camera's shape, and returns its size in CSS pixels.
+ * Sizes `canvas` to its box at the screen's resolution, and returns its
+ * size in CSS pixels. The camera keeps its width, so a box taller than the
+ * camera's shape shows more of the pitch's length, up to the tallest shape.
  */
 export const fitClipCanvas = (canvas: HTMLCanvasElement) => {
   const ratio = globalThis.devicePixelRatio || 1;
   const width = Math.max(1, canvas.clientWidth);
-  const height = width * cameraAspect;
+  const height =
+    width *
+    Math.min(
+      tallestCameraAspect,
+      Math.max(cameraAspect, canvas.clientHeight / width)
+    );
   const pixelsWide = Math.round(width * ratio);
   const pixelsHigh = Math.round(height * ratio);
   if (canvas.width !== pixelsWide || canvas.height !== pixelsHigh) {
@@ -199,7 +206,20 @@ export const paintClip = (
   overlays: ClipOverlays = {}
 ) => {
   const { height, ratio, width } = size;
-  const { camera } = frame;
+  const aspect = height / width;
+  // A taller patch than the clip framed is kept as far onto the pitch as
+  // the clip's own; the ball stays in shot, since the patch only grew.
+  const halfLength = (frame.camera.width * aspect) / 2;
+  const camera = {
+    ...frame.camera,
+    y:
+      halfLength * 2 > pitchLength + 16
+        ? pitchLength / 2
+        : Math.min(
+            Math.max(frame.camera.y, halfLength - 8),
+            pitchLength - halfLength + 8
+          )
+  };
   const scale = width / camera.width;
   ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
   ctx.fillStyle = surround;
@@ -250,7 +270,7 @@ export const paintClip = (
   ]) {
     if (
       Math.abs(piece.at.x - camera.x) > reach ||
-      Math.abs(piece.at.y - camera.y) > reach * cameraAspect
+      Math.abs(piece.at.y - camera.y) > reach * aspect
     ) {
       continue;
     }
@@ -412,9 +432,9 @@ export const paintClip = (
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
     ctx.strokeRect(
       left + (camera.x - camera.width / 2) * unit,
-      top + (camera.y - (camera.width * cameraAspect) / 2) * unit,
+      top + (camera.y - (camera.width * aspect) / 2) * unit,
       camera.width * unit,
-      camera.width * cameraAspect * unit
+      camera.width * aspect * unit
     );
     for (const player of frame.players) {
       ctx.fillStyle = colourOf(sides, player);

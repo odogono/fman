@@ -86,6 +86,8 @@ export const buildSite = async ({
     `<link rel="apple-touch-icon" href="${base}apple-touch-icon.png" />`,
     `<meta name="theme-color" content="${themeColor}" />`,
     '<meta name="mobile-web-app-capable" content="yes" />',
+    // Older iOS opens a home-screen copy without Safari's bars only on this.
+    '<meta name="apple-mobile-web-app-capable" content="yes" />',
     '<meta name="apple-mobile-web-app-status-bar-style" content="black" />'
   ].join('');
   if (!html.includes('</head>')) {

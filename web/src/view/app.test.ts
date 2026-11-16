@@ -1677,6 +1677,30 @@ test('Skip closes the drawer for the full list', () => {
   });
 });
 
+test("the scoreboard's clock shows a clip's minute from its start, before its moment", () => {
+  const run = modernMoments();
+  expect(run.page.highlights!.clock).toBe('0′');
+  while (run.page.highlights!.clip!.playing === undefined) {
+    run.wait(1);
+  }
+  const first = run.ticker().moments[0]!;
+  expect(run.page.highlights!.clip!.shown).toBe(0);
+  expect(run.page.highlights!.clock).toBe(`${first.minute}′`);
+});
+
+test('Continue ends the final hold after Skip', () => {
+  const run = toFirstMoment();
+  run.app.tap('ticker.skip');
+  run.wait(1);
+  expect(run.page.highlights!.clip!.full).toBe(true);
+  expect(run.page.highlights!.ticker!.fullTime).toBe(true);
+  expect(run.page.highlights!.clock).toBe('FT');
+  run.app.tap('ticker.continue');
+  run.app.pointerUp();
+  run.wait(2);
+  expect(run.view().screen).not.toBe('highlights');
+});
+
 test('Classic mode hands the sim no clip lengths', () => {
   const run = atTicker();
   expect(run.ticker()!.lengths).toBeUndefined();

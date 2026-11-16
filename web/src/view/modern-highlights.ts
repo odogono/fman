@@ -10,6 +10,8 @@ import { lineName } from './ticker-layout';
 export type ClipProgress = Readonly<{
   drawer: boolean;
   full: boolean;
+  /** The clip on show, by its moment's index; absent at kick-off and full time. */
+  playing?: number;
   shown: number;
 }>;
 
@@ -18,6 +20,9 @@ export const drawerIds = {
   close: 'moments.close',
   open: 'moments.open'
 } as const;
+
+/** After the last clip, Continue ends the final hold as a keypress would. */
+export const continueId = 'ticker.continue';
 
 /** One moment as a line of Modern mode's ticker. */
 export type ModernTickerLine = Readonly<{
@@ -43,6 +48,11 @@ export type ModernHighlights = Readonly<{
    * a phone, the moments drawer (#145) is open over the pitch.
    */
   clip?: ClipProgress;
+  /**
+   * Under sprite highlights, the scoreboard's clock: the minute of the clip
+   * on show from the clip's start, 0′ before the first and FT after the last.
+   */
+  clock?: string;
   home: ClubName;
   pitch?: Readonly<{
     /** The club whose attack is on the pitch, if one is. */
@@ -52,7 +62,14 @@ export type ModernHighlights = Readonly<{
     strengths: Strengths;
   }>;
   score: readonly number[];
+  /**
+   * The clubs' names in three letters, home first, for a scoreboard too
+   * narrow for their full names; absent when the two would read the same.
+   */
+  short?: readonly [string, string];
   ticker?: Readonly<{
+    /** The moments are over: the final hold, or after it. */
+    fullTime: boolean;
     /** Newest first. */
     lines: readonly ModernTickerLine[];
     /** Skip ends the remaining moments' pauses, as in Classic mode. */
@@ -69,6 +86,32 @@ const words: Record<Moment['kind'], string> = {
   'near-miss': 'Missed',
   save: 'Saved'
 };
+
+/** A club's name in three letters, as `LIV`. */
+const shortName = (club: ClubName) =>
+  club.name
+    .replaceAll(/[^A-Za-z]/g, '')
+    .slice(0, 3)
+    .toUpperCase();
+
+/** Both clubs' short names, unless they would read the same. */
+const shortNames = (home: ClubName, away: ClubName) => {
+  const names = [shortName(home), shortName(away)] as const;
+  return names[0] === names[1] || names.some(name => name.length < 3)
+    ? undefined
+    : names;
+};
+
+const clockOf = (
+  moments: readonly Moment[],
+  clip: ClipProgress,
+  fullTime: boolean
+) =>
+  clip.playing !== undefined
+    ? `${moments[clip.playing]?.minute ?? 0}′`
+    : fullTime
+      ? 'FT'
+      : '0′';
 
 const tickerLines = (
   game: Game,
@@ -118,12 +161,24 @@ export const highlightsFor = (
     const shown = clips
       ? ticker.moments.slice(0, clips.progress.shown)
       : ticker.shown;
+    const short = clips && shortNames(home, away);
     return {
       away,
-      ...(clips ? { clip: clips.progress } : {}),
+      ...(clips
+        ? {
+            clip: clips.progress,
+            clock: clockOf(
+              ticker.moments,
+              clips.progress,
+              ticker.stage.kind === 'full-time'
+            )
+          }
+        : {}),
       home,
       score: clips?.score ?? ticker.score,
+      ...(short ? { short } : {}),
       ticker: {
+        fullTime: ticker.stage.kind === 'full-time',
         lines: tickerLines(game, fixture, shown),
         skip: !ticker.done
       },

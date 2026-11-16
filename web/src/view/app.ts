@@ -15,7 +15,7 @@ import { createClipPlayer, screenKey, type ClipShot } from './clip-player';
 import { barFor, tickerBar, type BarButton } from './context-bar';
 import { createFrameSampler } from './frame-sampler';
 import { homeFor, type Home } from './home';
-import { drawerIds } from './modern-highlights';
+import { continueId, drawerIds } from './modern-highlights';
 import { modernScreenFor, type ModernScreen } from './modern-screen';
 import {
   isRules,
@@ -731,6 +731,19 @@ export const createApp = ({
     render();
     persist();
   };
+  /** Continue after the last clip: a brief keypress ends the final hold. */
+  const endHold = () => {
+    if (menuOpen) {
+      return;
+    }
+    advanceTo(clock.now());
+    if (!journal.session.view.paused) {
+      return;
+    }
+    journal.press('Enter', 'brief');
+    render();
+    persist();
+  };
   /** Submits at the current moment, unless input waits; then shows the result. */
   const answer = (send: () => Effect | undefined) => {
     void beeper.unlock();
@@ -919,6 +932,10 @@ export const createApp = ({
       }
       if (id === tickerBar[0]!.answer.id) {
         skip();
+        return;
+      }
+      if (id === continueId) {
+        endHold();
         return;
       }
       answer(() => {

@@ -19,6 +19,12 @@ export const cameraZoomed = 30;
 /** The camera's patch is this much taller than it is wide. */
 export const cameraAspect = 5 / 4;
 /**
+ * The tallest the camera's patch may grow, height over width, where the
+ * screen leaves a taller box: the width stays the same, so a tall phone
+ * sees more of the pitch's length, never a closer picture.
+ */
+export const tallestCameraAspect = 2;
+/**
  * The match-time card shows over a clip's first 1.5 s, or until a restart
  * is taken, sliding in and out over this many frames.
  */

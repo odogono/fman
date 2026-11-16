@@ -112,7 +112,10 @@ _Avoid_: Feed, commentary
 The short animation of one moment in Modern mode's highlights: the build-up, the moment itself and the reaction. The clip decides how long its moment is shown. Everything in it except the moment is made up for show and changes nothing in the game.
 _Avoid_: Replay, which names a cup match; highlight
 
-**Scoreboard**:
+**Cup celebration**:
+Modern mode's scene after the managed club wins the F.A. Cup final: the winners gather and lift the cup on the pitch while the losers sink to the turf. Like a clip, it is made up for show and changes nothing in the game.
+_Avoid_: Cup winners screen, trophy animation
+
 The strip above Modern mode's highlights: both clubs, the score and, where the highlights have minutes, the minute of the moment on show.
 _Avoid_: Header, title bar
 

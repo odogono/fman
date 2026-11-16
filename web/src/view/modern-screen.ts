@@ -1,6 +1,12 @@
 import type { View } from '../sim/session';
 import { startAmount, type AmountEntry } from './amount-entry';
 import { answersFor } from './answers';
+import {
+  cupReplayFor,
+  cupResultFor,
+  type CupReplay,
+  type CupResult
+} from './cup-screens';
 import { fullTimeFor, type FullTime } from './full-time';
 import {
   leagueTableFor,
@@ -42,6 +48,10 @@ export type ModernScreen =
   | Readonly<{ kind: 'league-table'; table: LeagueTable }>
   /** The weekly bills, and the dismissal over them. */
   | Readonly<{ bills: ModernBills; kind: 'bills' }>
+  /** A cup round decided: through, out or won, after any celebration. */
+  | Readonly<{ cupResult: CupResult; kind: 'cup-result' }>
+  /** A drawn cup round, to be replayed at the other ground. */
+  | Readonly<{ cupReplay: CupReplay; kind: 'cup-replay' }>
   /** A balance or a plain text message. */
   | Readonly<{ kind: 'message'; message: ModernMessage }>;
 
@@ -104,6 +114,15 @@ export const modernScreenFor = (
     case 'dismissal': {
       const bills = billsFor(view);
       return bills && { bills, kind: 'bills' };
+    }
+    case 'cup-result':
+    case 'cup-celebration': {
+      const cupResult = cupResultFor(view);
+      return cupResult && { cupResult, kind: 'cup-result' };
+    }
+    case 'replay': {
+      const cupReplay = cupReplayFor(view);
+      return cupReplay && { cupReplay, kind: 'cup-replay' };
     }
     case 'status': {
       const status = statusFor(view);

@@ -127,7 +127,10 @@ export type ScreenView =
         /** The trophy's star rows shown so far, 0 to 9, when the cup was won. */
         celebration: number | undefined;
         celebrationProgress?: { stars: number; text: number; trophy: number };
+        /** The decided tie: its last leg's fixture and score, home first. */
+        fixture: MatchFixture;
         game: Game;
+        score: readonly number[];
       }
     >
   | Each<'other-matches' | 'table', { completion: MatchCompletion; game: Game }>
@@ -897,7 +900,9 @@ export const createSession = (
           ...(screen === 'cup-celebration'
             ? { celebrationProgress: textProgress()! }
             : {}),
+          fixture: matchday!.fixture,
           game,
+          score: matchday!.score!,
           screen
         };
       case 'other-matches':

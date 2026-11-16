@@ -1,6 +1,7 @@
 import type { Paint } from './grid';
 
-const trophy = [
+/** The cup winners' trophy, 32 cells wide, as the original prints it. */
+export const trophy = [
   '            ██████              ',
   '          ██████████            ',
   '          █ ██████ █            ',

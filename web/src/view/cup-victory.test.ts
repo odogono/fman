@@ -30,6 +30,7 @@ test('the final names its round and the trophy keeps nine star rows and flashing
   const winner = {
     ...view,
     celebration: 9,
+    score: [1, 0],
     screen: 'cup-result' as const
   };
   const normal = makeScreen(winner);
@@ -56,12 +57,20 @@ test('cup printing reveals partial trophy, title and star rows and flashes on UL
     manager: 'alex',
     seed: 0
   });
+  const final = prepareCupMatch({
+    ...game,
+    cupRound: 7,
+    leagueMatches: 15,
+    scheduleCounter: 2
+  });
   const view = {
     celebration: 1,
     celebrationProgress: { stars: 5, text: 12, trophy: 14 },
+    fixture: final,
     frames: 0,
     game,
     paused: true,
+    score: [1, 0],
     screen: 'cup-celebration' as const,
     ulaFrames: 16
   };

@@ -13,6 +13,7 @@ import type { App, Dom, MenuControl } from './app';
 import { fitClipCanvas } from './clip-canvas';
 import { paintShot } from './clip-wipe';
 import type { BarButton } from './context-bar';
+import type { FullTime } from './full-time';
 import { rasterText, rasterizeCells } from './glyphs';
 import type { ClubName, Home } from './home';
 import type { BidPlayer, ModernAmount } from './modern-amount';
@@ -196,7 +197,7 @@ const amountPanel = (entry: AmountEntry) => {
 /** The context bar or Home screen button an event came from, if any. */
 const barButton = (event: Event) =>
   (event.target as Element).closest<HTMLButtonElement>(
-    '#context-bar button, #home button, #pick-team button, #highlights button, #status button, #amount-prompt button, #message button'
+    '#context-bar button, #home button, #pick-team button, #highlights button, #status button, #amount-prompt button, #message button, #full-time button'
   );
 
 const pounds = (value: number) => `£${value.toLocaleString('en-GB')}`;
@@ -640,6 +641,92 @@ const paintMessage = (pane: HTMLElement, message: ModernMessage) => {
   pane.replaceChildren(text, actions);
 };
 
+/** One club's scorers on the Full-time screen, as `Smith 12′, 77′`. */
+const scorerList = (
+  scorers: FullTime['goals'] & {},
+  side: 0 | 1,
+  club: ClubName
+) => {
+  const list = document.createElement('ul');
+  list.className = 'full-time-scorers';
+  list.setAttribute('aria-label', `${club.name} scorers`);
+  list.append(
+    ...scorers[side].map(scorer => {
+      const item = document.createElement('li');
+      if (scorer.name) {
+        item.append(cell('full-time-scorer', scorer.name), ' ');
+      }
+      item.append(cell('full-time-minutes', scorer.minutes.join(', ')));
+      return item;
+    })
+  );
+  return list;
+};
+
+/**
+ * Modern mode's Full-time screen: the scoreboard at full time, the goals
+ * under each club, the managed club's injuries, the gate receipts, then
+ * Continue.
+ */
+const paintFullTime = (pane: HTMLElement, fullTime: FullTime) => {
+  const title = cell('full-time-title', fullTime.title);
+  const board = document.createElement('div');
+  board.className = 'full-time-board';
+  const longest = Math.max(
+    fullTime.home.name.length,
+    fullTime.away.name.length
+  );
+  if (fullTime.short && longest > 10) {
+    board.classList.add('long-names');
+  }
+  board.setAttribute(
+    'aria-label',
+    `Full time: ${fullTime.home.name} ${fullTime.score[0]}, ${fullTime.away.name} ${fullTime.score[1]}`
+  );
+  board.append(
+    scoreboardClub(fullTime.home, fullTime.short?.[0]),
+    cell('scoreboard-goals', `${fullTime.score[0]}–${fullTime.score[1]}`),
+    scoreboardClub(fullTime.away, fullTime.short?.[1]),
+    cell('scoreboard-clock', fullTime.clock ?? '')
+  );
+  const parts: HTMLElement[] = [title, board];
+  if (fullTime.goals?.some(side => side.length)) {
+    const goals = document.createElement('div');
+    goals.className = 'full-time-goals';
+    goals.append(
+      scorerList(fullTime.goals, 0, fullTime.home),
+      scorerList(fullTime.goals, 1, fullTime.away)
+    );
+    parts.push(goals);
+  }
+  if (fullTime.replay) {
+    parts.push(cell('full-time-replay', 'Drawn – a replay to come'));
+  }
+  if (fullTime.injuries?.length) {
+    const injuries = document.createElement('ul');
+    injuries.className = 'full-time-injuries';
+    injuries.setAttribute('aria-label', 'Injured');
+    injuries.append(
+      ...fullTime.injuries.map(({ matches, name }) => {
+        const item = document.createElement('li');
+        item.append(
+          cell('full-time-injury', 'Injured'),
+          ` ${name}, out for ${matches} ${matches === 1 ? 'match' : 'matches'}`
+        );
+        return item;
+      })
+    );
+    parts.push(injuries);
+  }
+  const actions = document.createElement('div');
+  actions.className = 'pick-actions';
+  actions.append(
+    actionButton('Continue', fullTime.done.id, 'choice', fullTime.done.enabled)
+  );
+  parts.push(moneyRows([['Gate receipts', fullTime.gate]]), actions);
+  pane.replaceChildren(...parts);
+};
+
 /** Labelled money rows, as on the status screen. */
 const moneyRows = (rows: readonly (readonly [string, number])[]) => {
   const facts = document.createElement('dl');
@@ -906,6 +993,7 @@ export const createBrowserDom = (app: HTMLElement) => {
   <section id="highlights" class="modern-highlights" aria-label="Match highlights" hidden></section>
   <section id="status" class="modern-status" aria-label="Club status" hidden></section>
   <section id="amount-prompt" class="modern-amount" aria-label="Amount" hidden></section>
+  <section id="full-time" class="modern-amount modern-full-time" aria-label="Full time" hidden></section>
   <section id="message" class="modern-amount modern-message" aria-label="Message" role="status" hidden></section>
   <div id="context-bar" class="context-bar" aria-label="Answers" hidden></div>
   <pre id="transcript" class="sr-only" aria-live="polite" aria-atomic="true"></pre>
@@ -942,6 +1030,7 @@ export const createBrowserDom = (app: HTMLElement) => {
   const statusPane = find<HTMLElement>('#status');
   const amountPane = find<HTMLElement>('#amount-prompt');
   const messagePane = find<HTMLElement>('#message');
+  const fullTimePane = find<HTMLElement>('#full-time');
   // Modern mode's own pitch, kept between attacks as the original's is not.
   const modernPitch = document.createElement('canvas');
   modernPitch.className = 'modern-pitch';
@@ -973,6 +1062,11 @@ export const createBrowserDom = (app: HTMLElement) => {
       classes: ['has-amount'],
       paint: ({ amount }) => paintAmount(amountPane, amount),
       pane: amountPane
+    },
+    'full-time': {
+      classes: ['has-amount'],
+      paint: ({ fullTime }) => paintFullTime(fullTimePane, fullTime),
+      pane: fullTimePane
     },
     highlights: {
       classes: ['at-highlights'],
@@ -1353,14 +1447,11 @@ export const createBrowserDom = (app: HTMLElement) => {
         target.amount(JSON.parse(action) as AmountAction);
       }
     });
-    for (const pane of [
+    // Every Modern screen's pane takes taps on its buttons.
+    for (const pane of new Set([
       homePane,
-      pickPane,
-      highlightsPane,
-      statusPane,
-      amountPane,
-      messagePane
-    ]) {
+      ...Object.values(modernPanes).map(({ pane }) => pane)
+    ])) {
       pane.addEventListener('pointerdown', pressed);
       pane.addEventListener('click', event => {
         const button = barButton(event);

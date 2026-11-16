@@ -24,6 +24,7 @@ import {
   type MatchHighlights,
   type Matchday
 } from './matchday';
+import type { Moment } from './moments';
 import { createNameEditor, type NameEditor } from './name-editor';
 import { screenPrintFault } from './name-print-fault';
 import { createPauseKeyboard, type PauseKeyboardState } from './pause-keyboard';
@@ -112,6 +113,11 @@ export type ScreenView =
   | {
       fixture: MatchFixture;
       game: Game;
+      /**
+       * Under moment highlights, the moments that decided the match; absent
+       * when the original's attacks did.
+       */
+      moments?: readonly Moment[];
       score: readonly number[];
       screen: 'result';
     }
@@ -873,6 +879,9 @@ export const createSession = (
         return {
           fixture: matchday!.fixture,
           game,
+          ...(matchday!.highlights?.kind === 'moments'
+            ? { moments: matchday!.highlights.result.moments }
+            : {}),
           score: matchday!.score!,
           screen
         };

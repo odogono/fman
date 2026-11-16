@@ -184,6 +184,10 @@ _Avoid_: Own screen or pane
 Modern mode's form of the original's management menu: the club summary, the next fixture and the menu's choices. On a wide window it stays beside the other screens while a game is in play, except the highlights.
 _Avoid_: Home or dashboard, since home already names the home club, gate and kit
 
+**Full-time screen**:
+Modern mode's form of the original's final score: the scoreboard at full time, the goals and the managed club's injuries from the match's moments, and the gate receipts.
+_Avoid_: Result screen, since result already names a match's outcome and the cup result; match report
+
 **Next fixture**:
 The league match or cup round the managed club plays next, as shown before it is started.
 

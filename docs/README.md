@@ -40,7 +40,7 @@ Rulesets ([ADR-0007](adr/0007-experimental-rules-as-rulesets.md), [ADR-0009](adr
 
 Gameplay baseline: [gameplay-baseline.md](gameplay-baseline.md): automated runs by strategy and difficulty level, and how to compare rulesets against [the original's baseline](baseline/original.md).
 
-Phase-two design: [mobile-play.md](mobile-play.md): touch and mobile play.
+Phase-two design: [mobile-play.md](mobile-play.md): touch and mobile play; [full-time-screen.md](full-time-screen.md): Modern mode's final score.
 
 Exploration:
 

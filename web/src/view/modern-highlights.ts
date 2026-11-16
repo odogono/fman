@@ -97,7 +97,7 @@ const shortName = (club: ClubName) =>
     .toUpperCase();
 
 /** Both clubs' short names, unless they would read the same. */
-const shortNames = (home: ClubName, away: ClubName) => {
+export const shortNames = (home: ClubName, away: ClubName) => {
   const names = [shortName(home), shortName(away)] as const;
   return names[0] === names[1] || names.some(name => name.length < 3)
     ? undefined

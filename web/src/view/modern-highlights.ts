@@ -134,7 +134,9 @@ const tickerLines = (
         minute: `${moment.minute}′`,
         name: lineName(game, fixture, moment),
         ...(score ? { score } : {}),
-        word: words[moment.kind]
+        word: moment.penalty
+          ? `Penalty ${words[moment.kind].toLowerCase()}`
+          : words[moment.kind]
       };
     })
     .reverse();

@@ -42,11 +42,11 @@ const letters = (word: string) => [...word].map(c => c.charCodeAt(0));
 const enhanced = game(latestEnhanced);
 const original = game('original');
 
-test('plain names join Enhanced in version 10, which new Enhanced games start with', () => {
+test('plain names join Enhanced in version 10, and stay in later versions', () => {
   expect(plainNames('original')).toBe(false);
   expect(plainNames('enhanced-9')).toBe(false);
   expect(plainNames('enhanced-10')).toBe(true);
-  expect(latestEnhanced).toBe('enhanced-10');
+  expect(plainNames(latestEnhanced)).toBe(true);
 });
 
 test('Enhanced version 10 is version 9 with plain names', () => {

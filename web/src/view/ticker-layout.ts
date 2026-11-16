@@ -11,6 +11,10 @@ const kindWords: Record<Moment['kind'], string> = {
   save: 'SAVED:'
 };
 
+/** The word that opens a moment's line: a penalty's (#211) says so. */
+const momentWord = (moment: Moment) =>
+  `${moment.penalty ? 'PEN ' : ''}${kindWords[moment.kind]}`;
+
 /** One ticker line in Classic mode's 32 columns and capitals. */
 export type TickerLine = Readonly<{
   kind: Moment['kind'];
@@ -64,7 +68,8 @@ export const tacklerName = (
 
 /**
  * What a moment's line names: the player or club, and for an injury
- * caused by a tackle, who made it, as `Pryce, tackled by Smith`. `room`
+ * caused by a tackle, who made it, as `Pryce, tackled by Smith`, or
+ * `Pryce, fouled by Smith` for a foul that gave a penalty (#211). `room`
  * drops the tackle when the whole doesn't fit.
  */
 export const lineName = (
@@ -75,7 +80,9 @@ export const lineName = (
 ) => {
   const name = named(game, fixture, moment).trim();
   const tackler = tacklerName(game, fixture, moment);
-  const full = tackler ? `${name}, tackled by ${tackler}` : name;
+  const full = tackler
+    ? `${name}, ${moment.foul ? 'fouled' : 'tackled'} by ${tackler}`
+    : name;
   return full.length <= room ? full : name;
 };
 
@@ -92,7 +99,7 @@ export const tickerLines = (
   const score = [0, 0];
   const lines = shown.map((moment): TickerLine => {
     const minute = `${moment.minute}'`.padStart(3);
-    const word = kindWords[moment.kind];
+    const word = momentWord(moment);
     let goals: string | undefined;
     if (moment.kind === 'goal') {
       const homeSide = fixture.home ? 'club' : 'opponent';

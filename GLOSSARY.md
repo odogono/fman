@@ -97,12 +97,16 @@ One attacking sequence of the original's highlights, played out on the pitch. Or
 _Avoid_: Chance, which is the strength test behind either
 
 **Moment**:
-One decisive event in a match: a goal, a save, a clearance or a near miss, at a minute, for the side that made the chance. It names the player who shot: for the managed club one of its picked players, and, when clubs own squads, for an opponent one of its squad. Under match injuries a moment can also be an injury to one of the managed club's picked players, naming the opponent who made the tackle when one did.
+One decisive event in a match: a goal, a save, a clearance or a near miss, at a minute, for the side that made the chance. It names the player who shot: for the managed club one of its picked players, and, when clubs own squads, for an opponent one of its squad. Under match injuries a moment can also be an injury to one of the managed club's picked players, naming the opponent who made the tackle when one did. Under penalties a goal, save or near miss can be a penalty.
 _Avoid_: Event, highlight
 
 **Clearance**:
 A moment in which a defender stops a chance before it reaches goal, by intercepting the final pass or blocking the shot, and clears the ball. It names the attacker the chance fell to.
 _Avoid_: Tackle or interception as the name of the moment
+
+**Penalty**:
+Under penalties, a chance either side can win for a foul in the box: a goal, save or near miss marked as a penalty, scored as often as any other chance. For the managed club it can follow an injury to one of its players, the tackle that caused it being the **foul**, and someone else takes it.
+_Avoid_: Spot kick; penalty shoot-out, which the game has none of
 
 **Ticker**:
 The list of a match's moments, shown one at a time in minute order as the match is played. In Modern mode the moments play as clips and the ticker lists them alongside. Original-rules matches have no ticker; their highlights are shown on the pitch.

@@ -1,5 +1,6 @@
 import type { Player } from './management';
 import { drawInjuries } from './match-injuries';
+import { drawPenalties } from './penalties';
 import { createRng, type Rng } from './rng';
 import { playerCategory, positionCategory, type SquadPlayer } from './squads';
 
@@ -12,10 +13,17 @@ import { playerCategory, positionCategory, type SquadPlayer } from './squads';
  * Under match injuries (#110) it can also be an injury to a managed club's
  * player, on the club's side: whether a tackle caused it, the tackler's
  * index in the opponent's squad, and how many matches the player misses.
+ *
+ * Under penalties (#211) a goal, save or near miss can be a penalty, and
+ * an injury from a tackle can be the foul in the box that gave one.
  */
 export type Moment = Readonly<{
+  /** For an injury: the tackle was a foul in the box, and a penalty follows. */
+  foul?: true;
   kind: 'clearance' | 'goal' | 'injury' | 'near-miss' | 'save';
   minute: number;
+  /** For a goal, save or near miss: it was a penalty. */
+  penalty?: true;
   player?: number;
   side: 'club' | 'opponent';
   squadPlayer?: number;
@@ -32,9 +40,9 @@ export type ChanceKind = Exclude<Moment['kind'], 'injury'>;
  * original's attacks that end in a goal (about 55%, measured with even
  * strengths). Like the original's collision checks, it ignores the strengths.
  */
-const goalRoll = 55;
+export const goalRoll = 55;
 /** Of the rest, a save up to this roll and a near miss above it. */
-const saveRoll = 77;
+export const saveRoll = 77;
 /**
  * With clearances (#150), the rest split as the original's missed attacks
  * end: a save (off the keeper, about 25% of them) up to the first roll, a
@@ -63,7 +71,7 @@ const weighted = (rng: Rng, weights: readonly number[]) => {
 };
 
 /** A picked player, weighted by skill and leaning towards attackers. */
-const pickShooter = (rng: Rng, players: readonly Player[]) => {
+export const pickShooter = (rng: Rng, players: readonly Player[]) => {
   const picked = players.filter(p => p.status === 2);
   const i = weighted(
     rng,
@@ -76,7 +84,7 @@ const pickShooter = (rng: Rng, players: readonly Player[]) => {
  * An opponent's shooter (#124): anyone in its squad, since other clubs don't
  * pick a team, weighted as `pickShooter` weights the managed club's.
  */
-const pickSquadShooter = (rng: Rng, squad: readonly SquadPlayer[]) =>
+export const pickSquadShooter = (rng: Rng, squad: readonly SquadPlayer[]) =>
   weighted(
     rng,
     squad.map(p => p.skill * categoryWeight[positionCategory(p.position)]!)
@@ -107,6 +115,8 @@ export const decideMoments = (input: {
   injuries?: boolean;
   opponent: readonly number[];
   opponentSquad?: readonly SquadPlayer[];
+  /** Either side can win a penalty (#211). */
+  penalties?: boolean;
   players: readonly Player[];
   seed: number;
   squadSeed?: number;
@@ -163,11 +173,7 @@ export const decideMoments = (input: {
     chance(homeSide);
     chance(homeSide === 'club' ? 'opponent' : 'club');
   }
-  const goals = (side: Moment['side']) =>
-    drawn.filter(m => m.kind === 'goal' && m.side === side).length;
-  const club = goals('club');
-  const opponent = goals('opponent');
-  const injuries = input.injuries
+  const drawnInjuries = input.injuries
     ? drawInjuries({
         chances: drawn,
         ...(opponentSquad ? { opponentSquad } : {}),
@@ -175,9 +181,30 @@ export const decideMoments = (input: {
         seed: input.seed
       })
     : [];
+  const { afterFoul, injuries, penalties } = input.penalties
+    ? drawPenalties({
+        injuries: drawnInjuries,
+        ...(opponentSquad ? { opponentSquad } : {}),
+        players: input.players,
+        seed: input.seed
+      })
+    : { afterFoul: [], injuries: drawnInjuries, penalties: [] };
+  const chances = [...drawn, ...penalties, ...afterFoul];
+  const goals = (side: Moment['side']) =>
+    chances.filter(m => m.kind === 'goal' && m.side === side).length;
+  const club = goals('club');
+  const opponent = goals('opponent');
+  // An injury in the minute of the player's last chance comes after it,
+  // and a penalty for a foul straight after the injury.
+  const moments = [...drawn, ...penalties, ...injuries].toSorted(
+    (a, b) => a.minute - b.minute
+  );
+  const foul = moments.findIndex(m => m.foul);
+  if (foul >= 0) {
+    moments.splice(foul + 1, 0, ...afterFoul);
+  }
   return {
-    // An injury in the minute of the player's last chance comes after it.
-    moments: [...drawn, ...injuries].toSorted((a, b) => a.minute - b.minute),
+    moments,
     score: input.home ? [club, opponent] : [opponent, club],
     seed: rng.seed
   };

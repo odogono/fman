@@ -52,10 +52,10 @@ test('each original screen shows its Modern screen, or the original', () => {
     view => `${view.screen}: ${modernScreenFor(view)?.kind ?? 'original'}`
   );
   expect(shown).toEqual([
-    'manager: original',
-    'clubs: original',
-    'level: original',
-    'colours: original',
+    'manager: setup',
+    'clubs: setup',
+    'level: setup',
+    'colours: setup',
     'menu: home',
     'status: status',
     'menu: home',

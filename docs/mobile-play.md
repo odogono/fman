@@ -48,6 +48,12 @@ Style is "paper & ink": light grey paper, black text with red and blue ink rows,
 | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
 | ![Transfer bid](https://gist.githubusercontent.com/odogono/00dcc8e44efa42a79b1c8599d68c7496/raw/transfer-bid.jpg) | ![Loan](https://gist.githubusercontent.com/odogono/00dcc8e44efa42a79b1c8599d68c7496/raw/loan.jpg) | ![Status](https://gist.githubusercontent.com/odogono/00dcc8e44efa42a79b1c8599d68c7496/raw/status.jpg) |
 
+- **Setup**: the new game's screens, before the Home screen.
+  - Manager: "Your name" in a text field, kept to the original's 20 characters, and Next, which submits it as the original's answer.
+  - Club: one division at a time, as each page of the original's list is one division's clubs, "Division 1" over its 16 clubs as buttons in their name colours, "You'll start in Division 4" (the chosen club always swaps into Division 4's last place), and "Next: Division 2" (`99`, wrapping round). A tap is one answer, so another division is a Next away rather than a single tap.
+  - Level: seven buttons, each number and name in the level's own colours, as the original prints them. Changed from the menu, the current level is marked, with Home beside it on a wide window.
+  - Colours (Original rules only): Black and White. After a save, "Do you want to play some more?" with Keep playing (`y`) and Stop (`n`).
+  - Before a game there is no Home screen, so on a wide window the setup screens stand alone.
 - **Home screen**: replaces the menu prompt.
   - Club summary: the club name in its name colour, manager, division, league position ("—" before the first league match), cash, loan, morale and difficulty level by name.
   - Next fixture: a league match names its opponent, which nothing can change. A cup round names only the round, such as "F.A. Cup – Round 5": the draw follows a seed that is redrawn each time play returns to the menu, so showing the opponent would let players save until they get an easy one.

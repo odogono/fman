@@ -32,12 +32,12 @@ export type CelebrationSides = Readonly<{
 }>;
 
 /** Where the winners gather: near the top goal, under the top stand. */
-const huddle = { x: pitchWidth / 2, y: 16 } as const;
+const huddle = { x: pitchWidth / 2, y: 13 } as const;
 /** How far round the captain the others stand, across and up the pitch. */
 const ring = { x: 4.6, y: 3.2 } as const;
 /** The losers stay at least this far from the huddle. */
 const clearOfHuddle = 9;
-const cameraWidth = 30;
+const cameraWidth = 22;
 /** The frames a jump for joy holds each of its two frames. */
 const jumpFrames = 9;
 const bursts = 9;
@@ -188,7 +188,7 @@ export const celebrationFrame = (
     ball: { height: 0, x: huddle.x, y: huddle.y },
     // High enough to show the top stand over the huddle; the painter keeps
     // the camera from going further.
-    camera: { width: cameraWidth, x: huddle.x, y: huddle.y - 10 },
+    camera: { width: cameraWidth, x: huddle.x, y: huddle.y - 6 },
     cheer: still || lift > 0,
     ...(confetti.length ? { confetti } : {}),
     minimap: false,

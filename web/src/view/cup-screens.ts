@@ -1,7 +1,9 @@
 import { cupRoundName } from '../sim/cup';
 import { fixtureSides } from '../sim/league';
-import { flashPhase, type View } from '../sim/session';
+import type { View } from '../sim/session';
 import { answersFor } from './answers';
+import { celebrationSidesFor } from './clip-match';
+import type { CelebrationProgress, CelebrationSides } from './cup-celebration';
 import { clubName, fixtureTitle, type ClubName } from './home';
 
 type Done = Readonly<{ enabled: boolean; id: string }>;
@@ -15,15 +17,14 @@ export type CupReplay = Readonly<{
 }>;
 
 /**
- * How far the cup winners' celebration has got, as the original draws it:
- * the share of the trophy and of the title shown, the rows of stars, and
- * whether they flash inverted.
+ * The cup celebration as it stands: how far the original's timed
+ * celebration has got, the frames since it began, which keep the scene
+ * moving once it holds, and both sides in the final's kits.
  */
 export type CupCelebration = Readonly<{
-  flash: boolean;
-  stars: number;
-  text: number;
-  trophy: number;
+  clock: number;
+  progress: CelebrationProgress;
+  sides: CelebrationSides;
 }>;
 
 /**
@@ -41,9 +42,10 @@ export type CupResult = Readonly<{
   title: string;
 }>;
 
-/** The trophy's cells and the title's characters, as the original prints them. */
+/** The trophy's cells, the title's characters and the stars, as the original prints them. */
 const trophyCells = 10 * 32;
 const titleLength = 64;
+const starCells = 9 * 32;
 
 const doneFor = (view: View, id: string): Done => ({
   enabled: answersFor(view).some(answer => answer.id === id),
@@ -86,10 +88,15 @@ export const cupResultFor = (view: View): CupResult | undefined => {
     ...(won
       ? {
           celebration: {
-            flash: flashPhase(view),
-            stars: view.celebration!,
-            text: progress ? progress.text / titleLength : 1,
-            trophy: progress ? progress.trophy / trophyCells : 1
+            clock: view.ulaFrames ?? view.frames,
+            progress: progress
+              ? {
+                  stars: progress.stars / starCells,
+                  text: progress.text / titleLength,
+                  trophy: progress.trophy / trophyCells
+                }
+              : { stars: 1, text: 1, trophy: 1 },
+            sides: celebrationSidesFor(game, fixture)
           }
         }
       : {}),

@@ -32,6 +32,7 @@ For a change to see in the real app (layout, touch controls, the game menu, the 
 | `#end-of-season`, `#season-summary` | Modern mode's season end and its summary, with Final table and New season.                                                                                     |
 | `#sale-offer`                       | Modern mode's sale offer, with Accept and Refuse. The squad uses `#pick-team`.                                                                                 |
 | `#setup`                            | Modern mode's setup: the name field (`input[name=name]`, submit its form), `.setup-clubs` and `.setup-next`, `.setup-levels`, and the colours or play-on pair. |
+| `#names`                            | Modern mode's name editing: `button[data-id]` for the questions and lists, and the rename form (`input[name=name]`, `input[name=ink]`), submitted as a form.   |
 | `#bills`                            | Modern mode's weekly bills and dismissal, with Continue or Leave the club.                                                                                     |
 | `#full-time`                        | Modern mode's Full-time screen: scoreboard, scorers, injuries and gate receipts, with Continue.                                                                |
 

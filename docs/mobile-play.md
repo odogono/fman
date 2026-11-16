@@ -54,6 +54,9 @@ Style is "paper & ink": light grey paper, black text with red and blue ink rows,
   - Level: seven buttons, each number and name in the level's own colours, as the original prints them. Changed from the menu, the current level is marked, with Home beside it on a wide window.
   - Colours (Original rules only): Black and White. After a save, "Do you want to play some more?" with Keep playing (`y`) and Stop (`n`).
   - Before a game there is no Home screen, so on a wide window the setup screens stand alone.
+- **Change names** (`change`): the editor's questions as buttons, "Change club names?" and "Change player names?" with Change and Skip, and "Any more changes?" with Rename another and Done.
+  - The lists as on setup's club chooser: a division's 16 clubs in their name colours, or a page of 8 players under its title (Defence, Midfield, Attack, or "Players 1–8" under club squads), with Next to the following page.
+  - Renaming: "Renaming Arsenal" in its colour, a field filled with the current name, and for a club a colour picker, Black, Blue, Red, Magenta, Green or Plain, starting on its own. The answer is the original's INK prefix for the colour, then the name, so the field takes 10 characters with a colour and 12 with Plain; a player takes 8. A club with a background of its own notes that renaming replaces it. A name the original refuses keeps the screen, its message above the field.
 - **Home screen**: replaces the menu prompt.
   - Club summary: the club name in its name colour, manager, division, league position ("—" before the first league match), cash, loan, morale and difficulty level by name.
   - Next fixture: a league match names its opponent, which nothing can change. A cup round names only the round, such as "F.A. Cup – Round 5": the draw follows a seed that is redrawn each time play returns to the menu, so showing the opponent would let players save until they get an easy one.

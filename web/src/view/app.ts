@@ -1,5 +1,10 @@
 import type { SoundEvent } from '../sim/beeper';
-import { createJournal, openSave, type Journal } from '../sim/journal';
+import {
+  createJournal,
+  openSave,
+  type Hold,
+  type Journal
+} from '../sim/journal';
 import type { Game } from '../sim/management';
 import { clubSquads, squadStrength } from '../sim/ruleset';
 import type { Effect, View } from '../sim/session';
@@ -943,11 +948,13 @@ export const createApp = ({
       }
     },
     /**
-     * A context bar button. A finger presses Enter and holds it until it
-     * lifts; a keyboard activation already holds its own key. An amount's
-     * button submits the amount entered, closing the keypad first.
+     * A context bar button. A mouse presses Enter and holds it until it
+     * lifts; a finger, whose tap is only known once it has lifted, presses
+     * it briefly; a keyboard activation (`false`) already holds its own
+     * key. An amount's button submits the amount entered, closing the
+     * keypad first.
      */
-    tap: (id: string, pressEnter = true) => {
+    tap: (id: string, enter: Hold | false = 'held') => {
       if (id === drawerIds.open || id === drawerIds.close) {
         showDrawer(id === drawerIds.open);
         return;
@@ -972,11 +979,13 @@ export const createApp = ({
         } else {
           return;
         }
-        if (!pressEnter) {
+        if (!enter) {
           return journal.submit(text);
         }
-        touchHeld = !journal.session.timingState.keyboard.key;
-        return journal.submit(text, 'held');
+        if (enter === 'held') {
+          touchHeld = !journal.session.timingState.keyboard.key;
+        }
+        return journal.submit(text, enter);
       });
     },
     /** An animation frame at `now`. */

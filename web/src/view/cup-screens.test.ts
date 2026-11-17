@@ -49,7 +49,9 @@ test('a won tie names the next round and the win', () => {
 });
 
 const into = (round: number) =>
-  cupResultFor(tie(1, 0, { game: { ...game, cupRound: round } }))!.headline;
+  cupResultFor(
+    tie(1, 0, { game: { ...game, cupFinished: false, cupRound: round } })
+  )!.headline;
 
 test('the later rounds lead to the Semi-Final and the Final', () => {
   expect(into(6)).toBe('Through to the Semi-Final');

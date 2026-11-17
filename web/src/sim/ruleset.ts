@@ -15,7 +15,7 @@ import {
  * is retired once the change joins Enhanced (`even-difficulty`,
  * `grace-period`, `lasting-skill`, `steep-difficulty`, `tiring-injuries`,
  * `club-squads`, `moment-highlights`, `clearances`, `match-injuries`,
- * `penalties`, `club-form`).
+ * `penalties`, `club-form`, `squad-strength`).
  */
 export const rulesets = [
   'original',
@@ -30,12 +30,13 @@ export const rulesets = [
   'enhanced-9',
   'enhanced-10',
   'enhanced-11',
-  'enhanced-12'
+  'enhanced-12',
+  'enhanced-13'
 ] as const;
 export type Ruleset = (typeof rulesets)[number];
 
 /** The Enhanced version every new Enhanced game starts with. */
-export const latestEnhanced = 'enhanced-12' satisfies Ruleset;
+export const latestEnhanced = 'enhanced-13' satisfies Ruleset;
 
 export const isRuleset = (value: unknown): value is Ruleset =>
   rulesets.includes(value as Ruleset);
@@ -58,6 +59,7 @@ const changes: Record<
     penalties: boolean;
     plainNames: boolean;
     presentDay: boolean;
+    squadStrength: boolean;
     tiringInjuries: boolean;
   }
 > = {
@@ -73,6 +75,7 @@ const changes: Record<
     penalties: false,
     plainNames: false,
     presentDay: false,
+    squadStrength: false,
     tiringInjuries: false
   },
   'enhanced-10': {
@@ -87,6 +90,7 @@ const changes: Record<
     penalties: false,
     plainNames: true,
     presentDay: true,
+    squadStrength: false,
     tiringInjuries: true
   },
   'enhanced-11': {
@@ -101,6 +105,7 @@ const changes: Record<
     penalties: true,
     plainNames: true,
     presentDay: true,
+    squadStrength: false,
     tiringInjuries: true
   },
   'enhanced-12': {
@@ -115,6 +120,22 @@ const changes: Record<
     penalties: true,
     plainNames: true,
     presentDay: true,
+    squadStrength: false,
+    tiringInjuries: true
+  },
+  'enhanced-13': {
+    clearances: true,
+    clubForm: true,
+    clubSquads: true,
+    difficulty: 'steep',
+    gracePeriod: true,
+    lastingSkill: true,
+    matchInjuries: true,
+    momentHighlights: true,
+    penalties: true,
+    plainNames: true,
+    presentDay: true,
+    squadStrength: true,
     tiringInjuries: true
   },
   'enhanced-2': {
@@ -129,6 +150,7 @@ const changes: Record<
     penalties: false,
     plainNames: false,
     presentDay: false,
+    squadStrength: false,
     tiringInjuries: false
   },
   'enhanced-3': {
@@ -143,6 +165,7 @@ const changes: Record<
     penalties: false,
     plainNames: false,
     presentDay: true,
+    squadStrength: false,
     tiringInjuries: false
   },
   'enhanced-4': {
@@ -157,6 +180,7 @@ const changes: Record<
     penalties: false,
     plainNames: false,
     presentDay: true,
+    squadStrength: false,
     tiringInjuries: false
   },
   'enhanced-5': {
@@ -171,6 +195,7 @@ const changes: Record<
     penalties: false,
     plainNames: false,
     presentDay: true,
+    squadStrength: false,
     tiringInjuries: true
   },
   'enhanced-6': {
@@ -185,6 +210,7 @@ const changes: Record<
     penalties: false,
     plainNames: false,
     presentDay: true,
+    squadStrength: false,
     tiringInjuries: true
   },
   'enhanced-7': {
@@ -199,6 +225,7 @@ const changes: Record<
     penalties: false,
     plainNames: false,
     presentDay: true,
+    squadStrength: false,
     tiringInjuries: true
   },
   'enhanced-8': {
@@ -213,6 +240,7 @@ const changes: Record<
     penalties: false,
     plainNames: false,
     presentDay: true,
+    squadStrength: false,
     tiringInjuries: true
   },
   'enhanced-9': {
@@ -227,6 +255,7 @@ const changes: Record<
     penalties: false,
     plainNames: false,
     presentDay: true,
+    squadStrength: false,
     tiringInjuries: true
   },
   original: {
@@ -241,6 +270,7 @@ const changes: Record<
     penalties: false,
     plainNames: false,
     presentDay: false,
+    squadStrength: false,
     tiringInjuries: false
   }
 };
@@ -390,3 +420,12 @@ export const penalties = (ruleset: Ruleset) => changes[ruleset].penalties;
  * end.
  */
 export const clubForm = (ruleset: Ruleset) => changes[ruleset].clubForm;
+
+/**
+ * Whether an opponent's defence, midfield and attack come mostly from its
+ * squad strength, and other clubs' results lean towards the stronger squad
+ * (#119, measured as `squad-strength` against `enhanced-12`, then part of
+ * `enhanced-13`). It needs club squads and club form.
+ */
+export const squadStrength = (ruleset: Ruleset) =>
+  changes[ruleset].squadStrength;

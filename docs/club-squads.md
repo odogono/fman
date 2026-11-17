@@ -2,7 +2,7 @@
 
 [#113](https://github.com/odogono/fman/issues/113), [ADR 0012](adr/0012-every-club-owns-a-squad-of-invented-players.md). Under the Enhanced rules from version 6, every present-day club owns a squad of invented players, and the players who belong to no club are free agents. The change was measured as the experimental ruleset `club-squads`, which was `enhanced-5` with club squads ([ADR 0007](adr/0007-experimental-rules-as-rulesets.md)), then became [`enhanced-6`](enhanced-rules.md). The club list and the season-end changes need present-day clubs and lasting skill, so the measurement builds on `enhanced-5` rather than on `original`, as [steep difficulty](steep-difficulty.md) built on lasting skill.
 
-This version is groundwork. Squads don't change how matches play: opponent strength, the highlights and other clubs' results are as before.
+This version is groundwork. Squads don't change how matches play: opponent strength, the highlights and other clubs' results are as before. From [Enhanced version 13](squad-strength.md) squads decide most of an opponent's strength.
 
 ## The players
 

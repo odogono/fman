@@ -3,8 +3,9 @@ import { expect, test } from 'bun:test';
 import { spectrumClockHz, spectrumFrameT } from '../sim/frame-clock';
 import { createJournal } from '../sim/journal';
 import { creditLimit } from '../sim/management';
-import { latestEnhanced } from '../sim/ruleset';
+import { latestEnhanced, type Ruleset } from '../sim/ruleset';
 import type { View } from '../sim/session';
+import { categorySums } from '../sim/squad-strength';
 import { tickerLeadIn, tickerPause, type Ticker } from '../sim/ticker';
 import { submitInput } from '../test/input';
 import type { AmountEntry } from './amount-entry';
@@ -857,9 +858,9 @@ test('reopening the page mid-ticker resumes at the same moment', () => {
   expect(tickerIn(reopened.view())?.shown).toEqual(shown);
 });
 
-/** An enhanced-6 game, whose clubs all own squads (#113), at the management menu. */
-const clubSquadsSave = () => {
-  const journal = createJournal({ kind: 'title', ruleset: 'enhanced-6' });
+/** A game whose clubs all own squads (#113), at the management menu. */
+const clubSquadsSave = (ruleset: Ruleset = 'enhanced-6') => {
+  const journal = createJournal({ kind: 'title', ruleset });
   journal.advance(137);
   journal.skipPause();
   for (const text of ['alex', '1', '1']) {
@@ -894,6 +895,33 @@ test('under club squads the game menu lists every club’s squad, without skill'
   expect(squad().join()).not.toMatch(/\d/);
   run.press('Back');
   expect(run.page.menu?.title).toBe('Game menu');
+});
+
+test('under squad strength the clubs page shows skill and each squad’s strength', () => {
+  const run = harness({ autosave: clubSquadsSave('enhanced-13') });
+  run.app.openMenu();
+  run.press('Clubs');
+  const squad = () => {
+    const control = run.control('Squad');
+    if (control.kind !== 'list') {
+      throw new Error('Unexpected squad control');
+    }
+    return control.items;
+  };
+  expect(run.page.menu?.detail).toBe('Names, positions and skill.');
+  expect(squad().every(line => /, skill [1-5]$/.test(line))).toBe(true);
+  const club = run.control('Club');
+  if (club.kind !== 'select') {
+    throw new Error('Unexpected club control');
+  }
+  club.change('1');
+  const game = run.app.journal.session.view.game!;
+  const [defence, midfield, attack] = categorySums(game.clubs[0]!.squad!);
+  expect(run.page.menu?.detail).toBe(
+    `Squad strength: defence ${defence}, midfield ${midfield}, attack ${attack}.`
+  );
+  expect(squad()).toHaveLength(12);
+  expect(squad().every(line => /, skill [1-5]$/.test(line))).toBe(true);
 });
 
 test('under the Original rules the game menu has no clubs page', () => {

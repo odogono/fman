@@ -3,6 +3,7 @@ import { nextFixture, type MatchFixture } from './league';
 import { payWeeklyBills, type Game, type Player } from './management';
 import { createRng } from './rng';
 import { matchInjuries, opponentBonus, tiringInjuries } from './ruleset';
+import { rolledAttribute, squadTerms } from './squad-strength';
 
 const clamp = (n: number) => Math.max(1, Math.min(20, n));
 const gate = (game: Game, opponent: number, home: boolean) =>
@@ -41,10 +42,11 @@ export const prepareCupMatch = (game: Game): MatchFixture => {
   do {
     opponent = drawnFrom(cupRound) - 1 + rng.int(1, 8);
   } while (opponent === game.club);
-  const opponentStrength = Array.from({ length: 5 }, () =>
+  const terms = squadTerms(game, opponent);
+  const opponentStrength = Array.from({ length: 5 }, (_, i) =>
     clamp(
       Math.floor(
-        rng.int(1, 16) +
+        rolledAttribute(rng.int, terms, i, 16) +
           opponentBonus(game.ruleset, game.level) +
           formStrength(game, opponent) +
           (game.club - 1) / 16 -

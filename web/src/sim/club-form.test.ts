@@ -37,8 +37,8 @@ const allWith = (game: Game, results: readonly number[]): Game => ({
   recentResults: freshResults().map(() => results)
 });
 
-test('Enhanced version 12 is version 11 with club form, and new Enhanced games start with it', () => {
-  expect(latestEnhanced).toBe('enhanced-12');
+test('Enhanced version 12 is version 11 with club form, which later versions keep', () => {
+  expect(clubForm(latestEnhanced)).toBe(true);
   for (const accessor of [
     clearances,
     clubSquads,
@@ -60,8 +60,8 @@ test('Enhanced version 12 is version 11 with club form, and new Enhanced games s
   }
 });
 
-test('only enhanced-12 gives clubs form', () => {
-  expect(rulesets.filter(clubForm)).toEqual(['enhanced-12']);
+test('Enhanced version 12 and later give clubs form', () => {
+  expect(rulesets.filter(clubForm)).toEqual(['enhanced-12', 'enhanced-13']);
   expect(newGame().recentResults).toEqual(freshResults());
   expect(
     createNewGame({

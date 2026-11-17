@@ -1,8 +1,9 @@
 import type { SoundEvent } from '../sim/beeper';
 import { createJournal, openSave, type Journal } from '../sim/journal';
 import type { Game } from '../sim/management';
-import { clubSquads } from '../sim/ruleset';
+import { clubSquads, squadStrength } from '../sim/ruleset';
 import type { Effect, View } from '../sim/session';
+import { categorySums } from '../sim/squad-strength';
 import { positions } from '../sim/squads';
 import {
   changeAmount,
@@ -217,11 +218,32 @@ const squadLines = (game: Game, slot: number) => {
     slot === game.club
       ? game.players.filter(p => p.status > 0)
       : (game.clubs[slot - 1]!.squad ?? []);
+  const skill = squadStrength(game.ruleset);
   return [...squad]
     .sort(
       (a, b) => positions.indexOf(a.position!) - positions.indexOf(b.position!)
     )
-    .map(p => `${p.name}, ${positionNames[p.position!]}`);
+    .map(
+      p =>
+        `${p.name}, ${positionNames[p.position!]}${skill ? `, skill ${p.skill}` : ''}`
+    );
+};
+
+/**
+ * What the clubs page says above a squad: under squad strength (#119),
+ * another club's defence, midfield and attack; otherwise that skill is
+ * hidden.
+ */
+const squadDetail = (game: Game, slot: number) => {
+  if (!squadStrength(game.ruleset)) {
+    return 'Names and positions, without skill.';
+  }
+  const squad = game.clubs[slot - 1]!.squad;
+  if (slot === game.club || !squad) {
+    return 'Names, positions and skill.';
+  }
+  const [defence, midfield, attack] = categorySums(squad);
+  return `Squad strength: defence ${defence}, midfield ${midfield}, attack ${attack}.`;
 };
 
 export const createApp = ({
@@ -552,7 +574,7 @@ export const createApp = ({
       case 'clubs': {
         title = 'Clubs';
         const game = journal.session.view.game!;
-        detail = 'Names and positions, without skill.';
+        detail = squadDetail(game, shownClub);
         controls.push(
           {
             change: value => {

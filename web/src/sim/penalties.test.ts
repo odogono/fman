@@ -51,7 +51,8 @@ const seeds = Array.from({ length: 4000 }, (_, i) => (i * 7919 + 1) % 65_536);
 test('Enhanced version 11 is version 10 with penalties, which later versions keep', () => {
   expect(rulesets.filter(r => penalties(r))).toEqual([
     'enhanced-11',
-    'enhanced-12'
+    'enhanced-12',
+    'enhanced-13'
   ]);
   expect(penalties(latestEnhanced)).toBe(true);
   for (const accessor of [

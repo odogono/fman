@@ -533,6 +533,17 @@ test('a tap holds Enter until the finger lifts, as a key does', () => {
   expect(run.app.journal.session.timingState.keyboard.key).not.toBe('KeyS');
 });
 
+test("a finger's tap, known only once it lifts, presses Enter briefly", () => {
+  const run = harness({ coarsePointer: true });
+  run.toMenu();
+  run.settle();
+  run.app.tap('menu.status', 'brief');
+  expect(run.view().screen).toBe('status');
+  run.wait(2);
+  expect(run.app.journal.session.timingState.keyboard.key).not.toBe('Enter');
+  expect(run.app.journal.session.timingState.keyboard.key).not.toBe('KeyS');
+});
+
 test('a keyboard-activated bar button submits without pressing Enter again', () => {
   const run = harness({ coarsePointer: true });
   run.toMenu();

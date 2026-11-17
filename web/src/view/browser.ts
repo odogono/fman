@@ -2191,9 +2191,14 @@ export const createBrowserDom = (app: HTMLElement) => {
       )
     );
     document.addEventListener('pointerdown', target.pointerDown);
-    const pressed = (event: Event) => {
+    // A touch may yet become a scroll, so a finger's tap waits for the
+    // click the browser sends only when the touch didn't scroll.
+    let touched = false;
+    const pressed = (event: PointerEvent) => {
+      touched = event.pointerType === 'touch';
       const button = barButton(event);
       if (
+        touched ||
         !button?.dataset.id ||
         button.disabled ||
         button.dataset.kind === 'text'
@@ -2203,6 +2208,19 @@ export const createBrowserDom = (app: HTMLElement) => {
       // Submit on the way down, as a key does; keep focus off the button.
       event.preventDefault();
       target.tap(button.dataset.id!);
+    };
+    /** A click: from the keyboard, or a finger's tap that didn't scroll. */
+    const clicked = (button: HTMLButtonElement, event: MouseEvent) => {
+      if (event.detail === 0) {
+        // Activated from the keyboard, whose own key is already down.
+        target.tap(button.dataset.id!, false);
+      } else if (
+        touched &&
+        !button.disabled &&
+        button.dataset.kind !== 'text'
+      ) {
+        target.tap(button.dataset.id!, 'brief');
+      }
     };
     bar.addEventListener('pointerdown', pressed);
     amountPane.addEventListener('click', event => {
@@ -2219,9 +2237,8 @@ export const createBrowserDom = (app: HTMLElement) => {
       pane.addEventListener('pointerdown', pressed);
       pane.addEventListener('click', event => {
         const button = barButton(event);
-        // Activated from the keyboard, whose own key is already down.
-        if (button?.dataset.id && event.detail === 0) {
-          target.tap(button.dataset.id, false);
+        if (button?.dataset.id) {
+          clicked(button, event);
         }
       });
     }
@@ -2235,9 +2252,8 @@ export const createBrowserDom = (app: HTMLElement) => {
       } else if (button.dataset.kind === 'text') {
         // Typed answers use the soft keyboard, which opens only on a tap.
         input.focus({ preventScroll: true });
-      } else if (event.detail === 0) {
-        // Activated from the keyboard, whose own key is already down.
-        target.tap(button.dataset.id!, false);
+      } else if (button.dataset.id) {
+        clicked(button, event);
       }
     });
     machine.addEventListener('pointerdown', target.pressScreen);

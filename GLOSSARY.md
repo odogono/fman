@@ -53,6 +53,10 @@ _Avoid_: Training or growth, which suggest a change the manager causes
 **Morale**:
 The managed club's confidence, affected by match and cup results.
 
+**Form**:
+Under club form, how a club other than the managed club has done in its last three league matches: one up for each win and one down for each loss. It strengthens or weakens the club as an opponent and in the week's results, and starts again from nothing at the season end.
+_Avoid_: Morale when referring to other clubs; streak
+
 **Team strength**:
 The five attributes used to compare clubs for a match: Energy, Morale, Defence, Midfield and Attack.
 
@@ -120,6 +124,7 @@ _Avoid_: Replay, which names a cup match; highlight
 Modern mode's scene after the managed club wins the F.A. Cup final: the winners gather and lift the cup on the pitch while the losers sink to the turf. Like a clip, it is made up for show and changes nothing in the game.
 _Avoid_: Cup winners screen, trophy animation
 
+**Scoreboard**:
 The strip above Modern mode's highlights: both clubs, the score and, where the highlights have minutes, the minute of the moment on show.
 _Avoid_: Header, title bar
 

@@ -151,3 +151,25 @@ test('a print fault shows the original screen', () => {
     modernScreenFor({ ...firstTable, printFault: 'Fault' })
   ).toBeUndefined();
 });
+
+test('under club form each row shows its latest results', () => {
+  const recentResults = Array.from({ length: 16 }, (_, i) =>
+    i === 0 ? [1, 0, -1] : i === 1 ? [-1] : []
+  );
+  const view = {
+    ...firstTable,
+    game: { ...firstTable.game, recentResults }
+  };
+  const rows = leagueTableFor(view)!.rows;
+  firstTable.completion.order.forEach((index, rank) => {
+    expect(rows[rank]!.form).toEqual(
+      index === 0 ? ['W', 'D', 'L'] : index === 1 ? ['L'] : []
+    );
+  });
+});
+
+test('without club form no row has a form', () => {
+  const { recentResults: _, ...game } = firstTable.game;
+  const rows = leagueTableFor({ ...firstTable, game })!.rows;
+  expect(rows.every(row => row.form === undefined)).toBe(true);
+});

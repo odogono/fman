@@ -38,6 +38,7 @@ Rulesets ([ADR-0007](adr/0007-experimental-rules-as-rulesets.md), [ADR-0009](adr
 - [match-injuries.md](match-injuries.md): injuries happen in the match, as a moment of the highlights, instead of before team selection (Enhanced version 9)
 - [plain-names.md](plain-names.md): new names can't carry control codes beyond a club's colour, so no print fault can stop the game (Enhanced version 10, [ADR-0014](adr/0014-enhanced-rules-drop-print-faults.md))
 - [penalties.md](penalties.md): either side can win a penalty for a foul in the box, scored as often as any chance (Enhanced version 11)
+- [club-form.md](club-form.md): other clubs in the division have form from their last three league results, shown in Modern mode's table (Enhanced version 12)
 - [sprite-highlights.md](sprite-highlights.md): Modern mode shows moments as clips on a top-down pitch with tiny sprites ([ADR-0013](adr/0013-clips-set-their-own-length.md))
 
 Gameplay baseline: [gameplay-baseline.md](gameplay-baseline.md): automated runs by strategy and difficulty level, and how to compare rulesets against [the original's baseline](baseline/original.md).

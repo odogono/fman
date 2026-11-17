@@ -15,7 +15,7 @@ import {
  * is retired once the change joins Enhanced (`even-difficulty`,
  * `grace-period`, `lasting-skill`, `steep-difficulty`, `tiring-injuries`,
  * `club-squads`, `moment-highlights`, `clearances`, `match-injuries`,
- * `penalties`).
+ * `penalties`, `club-form`).
  */
 export const rulesets = [
   'original',
@@ -29,12 +29,13 @@ export const rulesets = [
   'enhanced-8',
   'enhanced-9',
   'enhanced-10',
-  'enhanced-11'
+  'enhanced-11',
+  'enhanced-12'
 ] as const;
 export type Ruleset = (typeof rulesets)[number];
 
 /** The Enhanced version every new Enhanced game starts with. */
-export const latestEnhanced = 'enhanced-11' satisfies Ruleset;
+export const latestEnhanced = 'enhanced-12' satisfies Ruleset;
 
 export const isRuleset = (value: unknown): value is Ruleset =>
   rulesets.includes(value as Ruleset);
@@ -47,6 +48,7 @@ const changes: Record<
   Ruleset,
   {
     clearances: boolean;
+    clubForm: boolean;
     clubSquads: boolean;
     difficulty: Difficulty;
     gracePeriod: boolean;
@@ -61,6 +63,7 @@ const changes: Record<
 > = {
   'enhanced-1': {
     clearances: false,
+    clubForm: false,
     clubSquads: false,
     difficulty: 'smooth',
     gracePeriod: false,
@@ -74,6 +77,7 @@ const changes: Record<
   },
   'enhanced-10': {
     clearances: true,
+    clubForm: false,
     clubSquads: true,
     difficulty: 'steep',
     gracePeriod: true,
@@ -87,6 +91,21 @@ const changes: Record<
   },
   'enhanced-11': {
     clearances: true,
+    clubForm: false,
+    clubSquads: true,
+    difficulty: 'steep',
+    gracePeriod: true,
+    lastingSkill: true,
+    matchInjuries: true,
+    momentHighlights: true,
+    penalties: true,
+    plainNames: true,
+    presentDay: true,
+    tiringInjuries: true
+  },
+  'enhanced-12': {
+    clearances: true,
+    clubForm: true,
     clubSquads: true,
     difficulty: 'steep',
     gracePeriod: true,
@@ -100,6 +119,7 @@ const changes: Record<
   },
   'enhanced-2': {
     clearances: false,
+    clubForm: false,
     clubSquads: false,
     difficulty: 'smooth',
     gracePeriod: true,
@@ -113,6 +133,7 @@ const changes: Record<
   },
   'enhanced-3': {
     clearances: false,
+    clubForm: false,
     clubSquads: false,
     difficulty: 'smooth',
     gracePeriod: true,
@@ -126,6 +147,7 @@ const changes: Record<
   },
   'enhanced-4': {
     clearances: false,
+    clubForm: false,
     clubSquads: false,
     difficulty: 'steep',
     gracePeriod: true,
@@ -139,6 +161,7 @@ const changes: Record<
   },
   'enhanced-5': {
     clearances: false,
+    clubForm: false,
     clubSquads: false,
     difficulty: 'steep',
     gracePeriod: true,
@@ -152,6 +175,7 @@ const changes: Record<
   },
   'enhanced-6': {
     clearances: false,
+    clubForm: false,
     clubSquads: true,
     difficulty: 'steep',
     gracePeriod: true,
@@ -165,6 +189,7 @@ const changes: Record<
   },
   'enhanced-7': {
     clearances: false,
+    clubForm: false,
     clubSquads: true,
     difficulty: 'steep',
     gracePeriod: true,
@@ -178,6 +203,7 @@ const changes: Record<
   },
   'enhanced-8': {
     clearances: true,
+    clubForm: false,
     clubSquads: true,
     difficulty: 'steep',
     gracePeriod: true,
@@ -191,6 +217,7 @@ const changes: Record<
   },
   'enhanced-9': {
     clearances: true,
+    clubForm: false,
     clubSquads: true,
     difficulty: 'steep',
     gracePeriod: true,
@@ -204,6 +231,7 @@ const changes: Record<
   },
   original: {
     clearances: false,
+    clubForm: false,
     clubSquads: false,
     difficulty: 'original',
     gracePeriod: false,
@@ -352,3 +380,13 @@ export const plainNames = (ruleset: Ruleset) => changes[ruleset].plainNames;
  * same match can be the one fouled. It needs moment highlights.
  */
 export const penalties = (ruleset: Ruleset) => changes[ruleset].penalties;
+
+/**
+ * Whether every club in the managed club's division but the managed club
+ * has form: the sum of its last three league results, +1 a win and −1 a
+ * loss (#99, measured as `club-form`, then part of `enhanced-12`). Half of
+ * form adds to its strength as an opponent, league or cup, and a third of
+ * it to its goals in the week's results. Form starts again at the season
+ * end.
+ */
+export const clubForm = (ruleset: Ruleset) => changes[ruleset].clubForm;

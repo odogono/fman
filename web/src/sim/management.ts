@@ -1,8 +1,10 @@
 import type { Club } from './catalogue';
+import { freshResults } from './club-form';
 import { emptyAttackCarry, type AttackCarry } from './highlights';
 import { add, divide, floor, fromNumber, multiply, toNumber } from './numeric';
 import { createRng } from './rng';
 import {
+  clubForm,
   clubSquads,
   gracePeriodWeeks,
   isRuleset,
@@ -72,6 +74,12 @@ export type Game = Readonly<{
   previousNet: number;
   rating: number;
   ratingTotal: number;
+  /**
+   * Each division club's latest league results, by place in the division,
+   * oldest first and at most three: 1 a win, 0 a draw, −1 a loss. Under
+   * `clubForm` (#99); absent otherwise.
+   */
+  recentResults?: readonly (readonly number[])[];
   ruleset: Ruleset;
   scheduleCounter: number;
   seasons: number;
@@ -168,6 +176,7 @@ export const createNewGame = (options: {
     previousNet: 0,
     rating: 0,
     ratingTotal: 0,
+    ...(clubForm(ruleset) ? { recentResults: freshResults() } : {}),
     ruleset,
     scheduleCounter: 1,
     seasons: 0,

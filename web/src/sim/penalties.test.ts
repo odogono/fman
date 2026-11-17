@@ -48,9 +48,12 @@ const decide = (seed: number, withPenalties = true) =>
 
 const seeds = Array.from({ length: 4000 }, (_, i) => (i * 7919 + 1) % 65_536);
 
-test('Enhanced version 11 is version 10 with penalties, and new Enhanced games start with it', () => {
-  expect(rulesets.filter(r => penalties(r))).toEqual(['enhanced-11']);
-  expect(latestEnhanced).toBe('enhanced-11');
+test('Enhanced version 11 is version 10 with penalties, which later versions keep', () => {
+  expect(rulesets.filter(r => penalties(r))).toEqual([
+    'enhanced-11',
+    'enhanced-12'
+  ]);
+  expect(penalties(latestEnhanced)).toBe(true);
   for (const accessor of [
     clearances,
     clubSquads,

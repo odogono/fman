@@ -33,6 +33,7 @@ const enhanced: Game = injured({ ...newGame(latestEnhanced), graceWeeks: 2 });
  * no data from a later rule.
  */
 const firstCarrying: Readonly<Record<string, Game>> = {
+  clubForm: newGame('enhanced-12'),
   clubSquads: newGame('enhanced-6'),
   gracePeriod: { ...newGame('enhanced-2'), graceWeeks: 2 },
   tiringInjuries: injured(newGame('enhanced-5'))

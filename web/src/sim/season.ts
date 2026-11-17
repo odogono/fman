@@ -1,8 +1,9 @@
 import type { Club } from './catalogue';
+import { freshResults } from './club-form';
 import type { Game } from './management';
 import { movementPrintReport } from './name-print-fault';
 import { createRng } from './rng';
-import { clubSquads, lastingSkill, tiringInjuries } from './ruleset';
+import { clubForm, clubSquads, lastingSkill, tiringInjuries } from './ruleset';
 import { releaseAndRelist, renewSkill } from './squads';
 
 export type ClubMovement = Readonly<{
@@ -164,6 +165,7 @@ export const completeSeason = (game: Game) => {
       players,
       rating: Math.min(100, Math.floor(ratingTotal / seasons) * 2),
       ratingTotal,
+      ...(clubForm(game.ruleset) ? { recentResults: freshResults() } : {}),
       scheduleCounter: 1,
       seasons,
       seed: rng.seed,

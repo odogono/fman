@@ -25,6 +25,7 @@ Enhanced rules are released in versions, stored as `enhanced-1`, `enhanced-2` an
 | `enhanced-9`  | Version 8, plus [injuries during the match](match-injuries.md), as moments                                                          | `match-injuries` ([#110](https://github.com/odogono/fman/issues/110))                                                                          |
 | `enhanced-10` | Version 9, plus [plain names](plain-names.md) that can't stop the game                                                              | None: only renamed names fault, and the bots never rename ([ADR-0014](adr/0014-enhanced-rules-drop-print-faults.md))                           |
 | `enhanced-11` | Version 10, plus [penalties](penalties.md) for fouls in the box                                                                     | `penalties` ([#211](https://github.com/odogono/fman/issues/211))                                                                               |
+| `enhanced-12` | Version 11, plus [form for other clubs](club-form.md)                                                                               | `club-form` ([#99](https://github.com/odogono/fman/issues/99))                                                                                 |
 
 Starting clubs and players are part of a ruleset too ([ADR 0011](adr/0011-rulesets-carry-starting-clubs-and-players.md)). A change that leaves every rule alone, as `enhanced-3`'s, needs no experimental ruleset: its baseline must match the previous version's.
 

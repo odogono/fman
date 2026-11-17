@@ -1,3 +1,4 @@
+import { formStrength } from './club-form';
 import { nextFixture, type MatchFixture } from './league';
 import { payWeeklyBills, type Game, type Player } from './management';
 import { createRng } from './rng';
@@ -45,6 +46,7 @@ export const prepareCupMatch = (game: Game): MatchFixture => {
       Math.floor(
         rng.int(1, 16) +
           opponentBonus(game.ruleset, game.level) +
+          formStrength(game, opponent) +
           (game.club - 1) / 16 -
           ((opponent - 1) / 16 + 1)
       )

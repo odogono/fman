@@ -1,4 +1,5 @@
 import {
+  clubForm,
   clubSquads,
   gracePeriodWeeks,
   longestInjury,
@@ -34,6 +35,28 @@ export type RuleData = Readonly<{
 
 /** Every rule that adds data to a saved game. */
 export const ruleData: Readonly<Record<string, RuleData>> = {
+  /**
+   * Each division club keeps its last three league results, the sum of
+   * which is its form (#99).
+   */
+  clubForm: {
+    game: {
+      keys: ['recentResults'],
+      valid: (game, on) =>
+        on
+          ? Array.isArray(game.recentResults) &&
+            game.recentResults.length === 16 &&
+            game.recentResults.every(
+              (results: unknown) =>
+                Array.isArray(results) &&
+                results.length <= 3 &&
+                results.every(r => integer(r, -1, 1))
+            )
+          : game.recentResults === undefined
+    },
+    on: clubForm,
+    since: 13
+  },
   /** Every club owns a squad (#113), drawn from a second random stream. */
   clubSquads: {
     club: {

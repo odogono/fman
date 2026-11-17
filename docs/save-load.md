@@ -77,7 +77,8 @@ largest save accepted from 100,000 to 200,000 characters, since a game with
 squads holds 872 more players. Version 12 adds a `clips` input to journals:
 the clip lengths the view hands the sim at kick-off under
 [sprite highlights](sprite-highlights.md) ([ADR 0013](adr/0013-clips-set-their-own-length.md)),
-so a match resumed mid-clip keeps the lengths it started with.
+so a match resumed mid-clip keeps the lengths it started with. Version 13 adds each
+division club's last three league results under [club form](club-form.md).
 Fractional browser phase is not stored; restoring starts a fresh phase and
 does not simulate time spent with the page closed.
 

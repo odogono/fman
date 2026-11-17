@@ -24,6 +24,9 @@ export type WeekResults = Readonly<{
   title: string;
 }>;
 
+/** One league result as the table's form column shows it. */
+export type FormResult = 'W' | 'D' | 'L';
+
 /** Where a place in the table leads at the season end. */
 export type LeagueZone = 'champions' | 'promotion' | 'relegation';
 
@@ -32,6 +35,11 @@ export type LeagueRow = Readonly<{
   club: ClubName;
   difference: number;
   for: number;
+  /**
+   * The club's latest league results, oldest first and at most three,
+   * under a ruleset with club form (#99); absent otherwise.
+   */
+  form?: readonly FormResult[];
   /**
    * Places gained since last week, negative when lost; absent on the
    * first week and at the season end, where there is nothing to compare.
@@ -104,11 +112,15 @@ const rowsOf = (
     const position = rank + 1;
     const zone = zoneOf(game.division, position);
     const before = previous?.[index];
+    const recent = game.recentResults?.[index];
     return {
       against: record.against,
       club: clubName(game.clubs[offset + index]!),
       difference: record.for - record.against,
       for: record.for,
+      ...(recent
+        ? { form: recent.map(r => (r > 0 ? 'W' : r < 0 ? 'L' : 'D')) }
+        : {}),
       ...(before === undefined ? {} : { move: before - position }),
       own: offset + index + 1 === game.club,
       points: record.points,

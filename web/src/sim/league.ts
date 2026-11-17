@@ -1,8 +1,9 @@
+import { addResults, formOf, formStrength } from './club-form';
 import { payWeeklyBills, type Game } from './management';
 import { scorePrintReport, tablePrintReport } from './name-print-fault';
 import { add, divide, floor, fromNumber, multiply, toNumber } from './numeric';
 import { createRng } from './rng';
-import { opponentBonus } from './ruleset';
+import { clubForm, opponentBonus } from './ruleset';
 import { playerCategory } from './squads';
 
 const clamp = (value: number) => Math.max(1, Math.min(20, value));
@@ -131,7 +132,9 @@ export const prepareLeagueMatch = (game: Game) => {
         floor(
           add(
             fromNumber(
-              rng.int(1, 14) + opponentBonus(game.ruleset, game.level)
+              rng.int(1, 14) +
+                opponentBonus(game.ruleset, game.level) +
+                formStrength(game, opponent)
             ),
             pointsPerMatch
           )
@@ -224,6 +227,24 @@ export const completeLeagueMatch = (
         ? Math.floor(game.morale / 2)
         : game.morale
   );
+  /**
+   * A club's goals in the week's results: its points per match plus up to
+   * four, and a third of its form under club form (#99), floored.
+   */
+  const goalsFor = (index: number, random: number) => {
+    const base = add(
+      divide(fromNumber(league[index]!.points), fromNumber(game.leagueMatches)),
+      multiply(fromNumber(random), fromNumber(4))
+    );
+    if (!clubForm(game.ruleset)) {
+      return toNumber(floor(base));
+    }
+    const form = formOf(game, index + offset + 1);
+    return Math.max(
+      0,
+      toNumber(floor(add(base, divide(fromNumber(form), fromNumber(3)))))
+    );
+  };
   const rng = createRng(game.seed);
   const used = new Set([user, opponent]);
   const retained = (): Game => ({
@@ -246,30 +267,7 @@ export const completeLeagueMatch = (
       away = rng.int(1, 16) - 1;
     } while (used.has(away));
     used.add(away);
-    const goals = [
-      toNumber(
-        floor(
-          add(
-            divide(
-              fromNumber(league[home]!.points),
-              fromNumber(game.leagueMatches)
-            ),
-            multiply(fromNumber(rng.next()), fromNumber(4))
-          )
-        )
-      ),
-      toNumber(
-        floor(
-          add(
-            divide(
-              fromNumber(league[away]!.points),
-              fromNumber(game.leagueMatches)
-            ),
-            multiply(fromNumber(rng.next()), fromNumber(4))
-          )
-        )
-      )
-    ];
+    const goals = [goalsFor(home, rng.next()), goalsFor(away, rng.next())];
     results.push({
       away: away + offset + 1,
       home: home + offset + 1,
@@ -342,7 +340,22 @@ export const completeLeagueMatch = (
     }
     league[index]!.position = rank + 1;
   }
-  const billed = payWeeklyBills(retained());
+  const settled = retained();
+  const billed = payWeeklyBills(
+    settled.recentResults
+      ? {
+          ...settled,
+          recentResults: addResults(
+            settled.recentResults,
+            [match, ...results].map(result => ({
+              away: result.away - offset - 1,
+              home: result.home - offset - 1,
+              score: result.score
+            }))
+          )
+        }
+      : settled
+  );
   return {
     ...billed,
     match,

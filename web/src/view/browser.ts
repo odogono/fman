@@ -19,6 +19,7 @@ import type { FullTime } from './full-time';
 import { rasterText, rasterizeCells } from './glyphs';
 import type { ClubName, Home } from './home';
 import type {
+  FormResult,
   LeagueRow,
   LeagueTable,
   LeagueZone,
@@ -863,6 +864,22 @@ const moveCell = (move: number) => {
   return td;
 };
 
+const formNames = { D: 'drawn', L: 'lost', W: 'won' } as const;
+
+/** A club's latest results, oldest first, as one letter each. */
+const formCell = (form: readonly FormResult[]) => {
+  const td = document.createElement('td');
+  td.className = 'league-form';
+  td.append(...form.map(result => cell(`form-${result}`, result)));
+  td.setAttribute(
+    'aria-label',
+    form.length
+      ? form.map(result => formNames[result]).join(', ')
+      : 'No results yet'
+  );
+  return td;
+};
+
 const signed = (value: number) =>
   value > 0 ? `+${value}` : value < 0 ? `−${-value}` : '0';
 
@@ -871,6 +888,7 @@ const signed = (value: number) =>
  * goal difference and points, the managed club's row marked and the
  * promotion and relegation places tinted. Each week a column shows the
  * places moved; at the season end the zones name their outcomes instead.
+ * Under club form (#99) a last column shows each club's latest results.
  */
 const paintLeagueTable = (pane: HTMLElement, table: LeagueTable) => {
   const caption = document.createElement('h2');
@@ -879,6 +897,7 @@ const paintLeagueTable = (pane: HTMLElement, table: LeagueTable) => {
   const element = document.createElement('table');
   element.className = 'league-table';
   const moves = table.rows.some(row => row.move !== undefined);
+  const form = table.rows.some(row => row.form !== undefined);
   const head = element.createTHead().insertRow();
   for (const [label, name] of [
     ['Pos', 'Position'],
@@ -887,7 +906,8 @@ const paintLeagueTable = (pane: HTMLElement, table: LeagueTable) => {
     ['F', 'Goals for'],
     ['A', 'Goals against'],
     ['GD', 'Goal difference'],
-    ['Pts', 'Points']
+    ['Pts', 'Points'],
+    ...(form ? [['Form', 'Latest results']] : [])
   ] as const) {
     const th = document.createElement('th');
     th.scope = 'col';
@@ -951,6 +971,9 @@ const leagueRow = (row: LeagueRow, moves: boolean, final: boolean) => {
     const td = document.createElement('td');
     td.textContent = String(value);
     tr.append(td);
+  }
+  if (row.form) {
+    tr.append(formCell(row.form));
   }
   return tr;
 };

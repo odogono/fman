@@ -60,6 +60,10 @@ _Avoid_: Morale when referring to other clubs; streak
 **Team strength**:
 The five attributes used to compare clubs for a match: Energy, Morale, Defence, Midfield and Attack.
 
+**Squad strength**:
+A club's defence, midfield and attack as the sums of its whole squad's skill in each playing category. Under squad strength it decides most of an opponent's team strength and moves other clubs' results.
+_Avoid_: Rating, which names the manager's score; team strength, which is all five attributes in one match
+
 **Managerial rating**:
 The manager's score out of 100, earned at each season end from the league finish and how far the club went in the F.A. Cup.
 

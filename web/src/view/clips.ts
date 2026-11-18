@@ -676,6 +676,14 @@ const facingWindow = 10;
 const facingSpeed = { start: 2.5, stop: 1.5 };
 /** Another defender must be this much nearer the ball to take over pressing it. */
 const pressingGive = 1.5;
+/** A defender runs to cut out a pass or block a shot at no more than this, in metres a second. */
+const clearerPace = 8;
+/** A keeper shuffles across their goal, keeping on the angle, at this pace, in metres a second. */
+const keeperShuffle = 6;
+/** No one on their feet goes faster than this, in metres a second, however they are moved. */
+const fastestRun = 8.5;
+/** Getting out of a pass's way, a player goes flat out, at this pace, in metres a second. */
+const flatOut = 9.5;
 /**
  * A defender goal side of the ball and within this many metres of it
  * jockeys, going no more than this much faster than the ball, in metres a
@@ -754,6 +762,8 @@ const keeperStride = 2;
 const runOntoIt = 4;
 /** The furthest, in metres, a winger carries the ball down the line to the byline for a cut-back. */
 const bylineRun = 35;
+/** A cross comes from at least this far out to the side, in metres from the middle of the pitch. */
+const crossWidth = 12;
 /** Beaten to a cross headed clear, the shooter is this far, in metres, from where the defender meets it. */
 const beatenBy = 1.6;
 /** About this share of each kind of chance comes from a ball in from wide that isn't headed at goal (#224). */
@@ -1594,7 +1604,7 @@ export const createClipScript = (input: ClipInput): ClipScript => {
             (i < attackers.length
               ? 6
               : i === keeperSlot
-                ? 4
+                ? keeperShuffle
                 : gap > recoveryGap
                   ? 7.5
                   : 5.5)
@@ -1624,6 +1634,21 @@ export const createClipScript = (input: ClipInput): ClipScript => {
         }
       }
     }
+    // Out of a pass's way, or pushed by a player on a run of their own,
+    // they go there at no more than a run, from where they were last shown,
+    // whatever moved them this frame (#226); out of a pass's way, flat out.
+    const most = perFrame(lane ? flatOut : fastestRun);
+    movers.forEach((mover, i) => {
+      const from = seen[i];
+      if (held.has(i) || i === down || !from) {
+        return;
+      }
+      const moved = distance(from, mover);
+      if (moved > most) {
+        mover.d = from.d + ((mover.d - from.d) / moved) * most;
+        mover.x = from.x + ((mover.x - from.x) / moved) * most;
+      }
+    });
   };
 
   const passes: ClipPass[] = [];
@@ -2082,10 +2107,11 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       );
     }
     // Played into space the receiver can't reach in time, the ball goes
-    // shorter, towards them.
+    // shorter, towards them. They meet it a stride short of where it goes,
+    // which may be a stride further to run (#226).
     for (let k = 0; k < 4; k++) {
       const gap = distance(runner, end);
-      const most = reach(flightTo(end, kind).frames);
+      const most = Math.max(0, reach(flightTo(end, kind).frames) - stride);
       if (gap <= most) {
         break;
       }
@@ -2711,6 +2737,12 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     cardEnd = Math.max(cardEnd, frame);
   }
 
+  // A cross to be headed clear comes from wide; with the ball still in the
+  // middle, the pass is cut out as any other is.
+  if (cross === 'headed-clear' && Math.abs(ball.x - 34) < crossWidth) {
+    cross = undefined;
+  }
+
   // The moment: the shot, and how it ends.
   const momentStart = frame;
   offside = false;
@@ -3012,42 +3044,57 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     const runner = movers[shooter]!;
     const short = distance(runner, meet) || 1;
     const stopAt = Math.min(short, beatenBy);
-    const runAt = bentRun(
-      shooter,
-      {
-        d: meet.d + ((runner.d - meet.d) / short) * stopAt,
-        x: meet.x + ((runner.x - meet.x) / short) * stopAt
-      },
-      flight
-    );
+    const runTo = {
+      d: meet.d + ((runner.d - meet.d) / short) * stopAt,
+      x: meet.x + ((runner.x - meet.x) / short) * stopAt
+    };
+    // From further off, only as far as a run takes them by then (#226).
+    const runFor = distance(runner, runTo);
+    const runMost = perFrame(clearerPace) * flight;
+    if (runFor > runMost) {
+      runTo.d = runner.d + ((runTo.d - runner.d) / runFor) * runMost;
+      runTo.x = runner.x + ((runTo.x - runner.x) / runFor) * runMost;
+    }
+    // Already past where it is met, or nearer it than their stride takes
+    // them, they pull up, their stride carrying them on a little, rather
+    // than overrun it and turn back for it.
+    const striding = steps[shooter] ?? { d: 0, x: 0 };
+    const carriesOn = Math.min(10, flight / 3);
+    if (
+      striding.d * (runTo.d - runner.d) + striding.x * (runTo.x - runner.x) <
+        0 ||
+      distance(runner, runTo) < Math.hypot(striding.d, striding.x) * carriesOn
+    ) {
+      runTo.d = runner.d + striding.d * carriesOn;
+      runTo.x = runner.x + striding.x * carriesOn;
+    }
+    const runAt = bentRun(shooter, runTo, flight);
     const held = new Set([clearer, shooter]);
+    /** The shooter has checked their stride, off their run, and where. */
+    let checked = false;
+    let checkedAt: Point = { d: 0, x: 0 };
+    /** How far the shooter was from the defender last frame. */
+    let lastGap = distance(movers[shooter]!, movers[clearer]!);
     for (let f = 1; f <= flight + afterArrival; f++) {
       const defender = movers[clearer]!;
-      if (f <= flight) {
+      if (f <= flight && !checked) {
         const run = movers[shooter]!;
         const was = { d: run.d, x: run.x };
         Object.assign(run, runAt(f / flight));
         run.pose = 'run';
         // Both on runs of their own, the shooter checks their stride rather
-        // than run into the defender, and steps clear only if the defender
-        // comes on into them.
-        if (
-          distance(run, defender) < personalSpace &&
-          distance(run, defender) < distance(was, defender)
-        ) {
-          Object.assign(run, was);
+        // than run into the defender, and once either's run brings them that
+        // close, moves as anyone does, stepping clear at a run (#226).
+        const near = distance(run, defender);
+        if (near < personalSpace && near < lastGap) {
+          if (near < distance(was, defender)) {
+            Object.assign(run, was);
+          }
+          checked = true;
+          checkedAt = { d: run.d, x: run.x };
+          held.delete(shooter);
         }
-        const apart = distance(run, defender);
-        if (apart < personalSpace) {
-          const way = apart
-            ? {
-                d: (run.d - defender.d) / apart,
-                x: (run.x - defender.x) / apart
-              }
-            : { d: -1, x: 0 };
-          run.d = defender.d + way.d * personalSpace;
-          run.x = defender.x + way.x * personalSpace;
-        }
+        lastGap = near;
       } else if (f === flight + 1) {
         held.delete(shooter);
       }
@@ -3055,8 +3102,8 @@ export const createClipScript = (input: ClipInput): ClipScript => {
         const u = f / flight;
         Object.assign(ball, bent(crossFrom, meet, u, swing));
         ball.height = Math.sin(Math.PI * u) * 0.6 + headHeight * u;
-        defender.d = lerp(from.d, meet.d + 0.4, ease(u));
-        defender.x = lerp(from.x, meet.x, ease(u));
+        defender.d = lerp(from.d, meet.d + 0.4, u);
+        defender.x = lerp(from.x, meet.x, u);
         const left = flight - f;
         defender.pose = left < jumpFrames ? 'header' : 'run';
         defender.poseFrame = left < 2 ? 2 : left < jumpFrames / 2 ? 1 : 0;
@@ -3069,7 +3116,13 @@ export const createClipScript = (input: ClipInput): ClipScript => {
         defender.pose = f - flight < landingFrames ? 'header' : 'run';
         defender.poseFrame = 0;
       }
-      steer(frame, held);
+      // Off their run, they stay where they checked, stepping clear of the
+      // defender only as they must.
+      steer(
+        frame,
+        held,
+        checked && f <= flight ? new Map([[shooter, checkedAt]]) : undefined
+      );
       record();
       frame++;
     }
@@ -3081,29 +3134,62 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     const towards = interception
       ? { d: Math.min(runner.d + 2, 100), x: runner.x }
       : { d: pitchLength, x: 34 + side * rng.between(0, goalHalf - 0.5) };
-    const along = interception
+    const drawn = interception
       ? rng.between(0.45, 0.7)
       : rng.between(0.3, 0.55);
-    const meet = {
-      d: lerp(shotFrom.d, towards.d, along),
-      x: lerp(shotFrom.x, towards.x, along)
+    const ballPace = perFrame(interception ? 15 : 25);
+    const pointAt = (u: number) => ({
+      d: lerp(shotFrom.d, towards.d, u),
+      x: lerp(shotFrom.x, towards.x, u)
+    });
+    const flightTo = (u: number) =>
+      Math.max(10, Math.ceil(distance(shotFrom, pointAt(u)) / ballPace));
+    // The defender who meets it, and where: as near the drawn point as a
+    // defender can get to at a sprint by the time the ball does (#226). With
+    // none who can, whoever needs the least pace, wherever that is. They
+    // meet it a little goal side of where it passes.
+    const pace = (i: number, u: number) => {
+      const at = pointAt(u);
+      return distance(movers[i]!, { d: at.d + 0.6, x: at.x }) / flightTo(u);
     };
-    let nearest = Infinity;
+    let along = drawn;
+    let best = Infinity;
+    let easiest = Infinity;
+    let easiestAt = { i: -1, u: drawn };
     defenders.forEach((p, j) => {
       const i = attackers.length + j;
-      const gap = distance(movers[i]!, meet);
-      if (p.line !== 'keeper' && gap < nearest) {
-        nearest = gap;
-        clearer = i;
+      if (p.line === 'keeper') {
+        return;
+      }
+      // A block well short of goal; a pass cut out short of the shooter.
+      const [low, high] = interception ? [0.3, 0.85] : [0.25, 0.75];
+      for (let u = low; u <= high; u += 0.025) {
+        const needs = pace(i, u);
+        const off = Math.abs(u - drawn);
+        if (needs <= perFrame(clearerPace) && off < best) {
+          best = off;
+          along = u;
+          clearer = i;
+        }
+        if (needs < easiest) {
+          easiest = needs;
+          easiestAt = { i, u };
+        }
       }
     });
+    // A pass or shot no one can get to at a run, the nearest throws
+    // themselves at, sliding the whole way.
+    let lunge = false;
+    if (clearer < 0 && easiestAt.i >= 0) {
+      clearer = easiestAt.i;
+      along = easiestAt.u;
+      lunge = true;
+    }
     if (clearer < 0) {
       clearer = keeperSlot;
     }
-    const flight = Math.max(
-      10,
-      Math.ceil(distance(shotFrom, meet) / perFrame(interception ? 15 : 25))
-    );
+    const meet = pointAt(along);
+    const flight = flightTo(along);
     momentFrame = momentStart + flight - 1;
     const from = clearer >= 0 ? { ...movers[clearer]! } : undefined;
     // Off a block the ball runs loose, back the way it came.
@@ -3129,7 +3215,7 @@ export const createClipScript = (input: ClipInput): ClipScript => {
           defender.d = lerp(from.d, meet.d + 0.6, u);
           defender.x = lerp(from.x, meet.x, u);
           // Some blocks are made sliding in, over the last of the flight.
-          if (slidingBlock && u > 0.55) {
+          if (lunge || (slidingBlock && u > 0.55)) {
             defender.pose = 'tackle';
             defender.poseFrame = 0;
           }
@@ -3236,25 +3322,58 @@ export const createClipScript = (input: ClipInput): ClipScript => {
         headAt.x = lerp(headAt.x, header.x, back);
       }
       crossFrames = floated(headAt);
+      // Still beyond a sprint, it is met nearer the header, though outside
+      // the box (#226).
+      for (let k = 0; k < 3; k++) {
+        const run = distance(header, headAt);
+        const most = perFrame(clearerPace) * crossFrames;
+        if (run <= most) {
+          break;
+        }
+        headAt.d = header.d + ((headAt.d - header.d) / run) * most;
+        headAt.x = header.x + ((headAt.x - header.x) / run) * most;
+        crossFrames = floated(headAt);
+      }
       // Coming for it, the keeper sets off as it is struck and catches it
       // a few metres short of the header.
       // Punching it (#224), they meet it the same way, but it flies off
       // their fists.
-      const claim =
+      let claim =
         (outcome === 'claim' || outcome === 'punch') && keeper
           ? keeper
           : undefined;
+      // A cross swings in or away.
+      const swing = curl(0.8, 2);
+      const crossAt = (u: number) => bent(crossFrom, headAt, u, swing);
       // At least a couple of metres short of the header, so the keeper
       // never meets it on top of them.
       const shortOf = Math.max(
         0.5,
         1 - claimGap / (distance(crossFrom, headAt) || 1)
       );
-      claimFrame = claim
-        ? Math.round(
-            crossFrames * Math.min(finishRng.between(0.8, 0.88), shortOf)
-          )
-        : 0;
+      // And no further from where they start than they can run by then:
+      // later, towards the header, if they need longer (#226).
+      const drawnClaim = Math.min(finishRng.between(0.8, 0.88), shortOf);
+      let claimAt = drawnClaim;
+      if (claim) {
+        const coming = claim;
+        const reaches = (u: number) =>
+          distance(coming, crossAt(u)) <=
+          perFrame(fastestRun) * u * crossFrames;
+        while (!reaches(claimAt) && claimAt < shortOf) {
+          claimAt = Math.min(shortOf, claimAt + 0.01);
+        }
+        // Out of their reach altogether, they stay on their line and save
+        // the header there instead, unless the debug page forced it.
+        if (!reaches(claimAt) && input.outcome === undefined) {
+          claim = undefined;
+          if (outcome === 'punch') {
+            cross = undefined;
+          }
+          outcome = outcome === 'punch' ? 'parry' : 'hold';
+        }
+      }
+      claimFrame = claim ? Math.round(crossFrames * claimAt) : 0;
       const claimFrom = claim ? { d: claim.d, x: claim.x } : undefined;
       /** Punched away: off the fists, up and out of the box, and down. */
       punched = (t: number) => {
@@ -3270,9 +3389,6 @@ export const createClipScript = (input: ClipInput): ClipScript => {
           x: lerp(hit.x, to.x, u)
         };
       };
-      // A cross swings in or away.
-      const swing = curl(0.8, 2);
-      const crossAt = (u: number) => bent(crossFrom, headAt, u, swing);
       const caught = crossAt(claimFrame / crossFrames);
       passes.push({
         ...(claim ? { cutOut: true as const } : {}),
@@ -3309,8 +3425,8 @@ export const createClipScript = (input: ClipInput): ClipScript => {
         if (claim && claimFrom) {
           if (f <= claimFrame) {
             Object.assign(claim, {
-              d: lerp(claimFrom.d, caught.d, ease(f / claimFrame)),
-              x: lerp(claimFrom.x, caught.x, ease(f / claimFrame))
+              d: lerp(claimFrom.d, caught.d, f / claimFrame),
+              x: lerp(claimFrom.x, caught.x, f / claimFrame)
             });
           } else if (outcome === 'punch') {
             Object.assign(ball, punched(f - claimFrame));
@@ -3351,6 +3467,20 @@ export const createClipScript = (input: ClipInput): ClipScript => {
           clearing = i;
         }
       });
+      // Out of their reach at a sprint, it drops nearer them, in the box
+      // (#226).
+      for (let k = 0; k < 3 && clearing >= 0; k++) {
+        const them = movers[clearing]!;
+        const run = distance(them, { d: into.d + 0.4, x: into.x });
+        const most = perFrame(clearerPace) * crossFlight(crossFrom, into);
+        if (run <= most) {
+          break;
+        }
+        const u = 1 - most / run;
+        into.d = Math.min(lerp(into.d, them.d, u), pitchLength - 3);
+        into.d = Math.max(into.d, pitchLength - boxDepth + 1);
+        into.x = lerp(into.x, them.x, u);
+      }
       const inFrames = crossFlight(crossFrom, into);
       const outFrames = Math.ceil(
         Math.max(
@@ -3381,8 +3511,8 @@ export const createClipScript = (input: ClipInput): ClipScript => {
           Object.assign(ball, bent(crossFrom, into, u, swing));
           ball.height = Math.sin(Math.PI * u) * 0.6 + headHeight * u;
           if (defender && from) {
-            defender.d = lerp(from.d, into.d + 0.4, ease(u));
-            defender.x = lerp(from.x, into.x, ease(u));
+            defender.d = lerp(from.d, into.d + 0.4, u);
+            defender.x = lerp(from.x, into.x, u);
             const left = inFrames - f;
             defender.pose = left < jumpFrames ? 'header' : 'run';
             defender.poseFrame = left < 2 ? 2 : left < jumpFrames / 2 ? 1 : 0;
@@ -3467,6 +3597,12 @@ export const createClipScript = (input: ClipInput): ClipScript => {
         reboundFrames =
           Math.max(firstFlight + spillFrames, followFrames) + reboundSettle;
         const keeperFrom = { d: keeper.d, x: keeper.x };
+        // Needing more than a run to get to the first effort, the keeper
+        // dives from the start (#226).
+        const flyingFirst =
+          (1.5 * distance(keeperFrom, firstAim)) /
+            Math.max(1, firstFlight - 2) >
+          perFrame(fastestRun);
         const recover = {
           d: pitchLength - 0.8,
           x: lerp(firstAim.x, 34, 0.6)
@@ -3501,7 +3637,7 @@ export const createClipScript = (input: ClipInput): ClipScript => {
             const k = ease(Math.min(1, f / Math.max(1, firstFlight - 2)));
             keeper.d = lerp(keeperFrom.d, firstAim.d, k);
             keeper.x = lerp(keeperFrom.x, firstAim.x, k);
-            keeper.pose = f > firstFlight * 0.4 ? 'dive' : 'run';
+            keeper.pose = flyingFirst || f > firstFlight * 0.4 ? 'dive' : 'run';
           } else {
             // Off the keeper it pops up and runs out, and stops.
             const u = Math.min(1, (f - firstFlight) / spillFrames);
@@ -3637,7 +3773,19 @@ export const createClipScript = (input: ClipInput): ClipScript => {
                   }
               : keeperFrom
           : undefined;
+      // Needing more than a run to get across, the keeper dives from the
+      // start, and a catch is made diving (#226). Easing in and out, they go
+      // half as fast again as on average at their quickest.
+      const flying =
+        keeperFrom !== undefined &&
+        keeperTo !== undefined &&
+        (1.5 * distance(keeperFrom, keeperTo)) / Math.max(1, flight - 2) >
+          perFrame(fastestRun);
+      if (flying && outcome === 'hold' && input.outcome === undefined) {
+        outcome = 'dive';
+      }
       const dives =
+        flying ||
         outcome === 'dive' ||
         outcome === 'parry' ||
         (outcome === 'goal' && Math.abs(aim.x - (keeperFrom?.x ?? 34)) > 1.5);
@@ -3683,7 +3831,7 @@ export const createClipScript = (input: ClipInput): ClipScript => {
           const u = Math.min(1, f / Math.max(1, flight - 2));
           keeper.d = lerp(keeperFrom.d, keeperTo.d, ease(u));
           keeper.x = lerp(keeperFrom.x, keeperTo.x, ease(u));
-          keeper.pose = dives && f > flight * 0.4 ? 'dive' : 'run';
+          keeper.pose = dives && (flying || f > flight * 0.4) ? 'dive' : 'run';
           if (stopsAtKeeper && f > flight && outcome !== 'parry') {
             // Caught diving, the keeper stays down with it until the
             // reaction gets them up.

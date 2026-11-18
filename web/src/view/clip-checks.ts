@@ -35,6 +35,7 @@ export type ClipIssueKind =
   | 'slow-build-up'
   | 'slow-pass'
   | 'through-boards'
+  | 'too-fast'
   | 'unlikely-scorer';
 
 export const clipIssueKinds: readonly ClipIssueKind[] = [
@@ -55,6 +56,7 @@ export const clipIssueKinds: readonly ClipIssueKind[] = [
   'slow-build-up',
   'slow-pass',
   'through-boards',
+  'too-fast',
   'unlikely-scorer'
 ];
 
@@ -95,6 +97,13 @@ export const clipLimits = {
   holderReach: 1.5,
   holderStill: 0.5,
   holderStillFrames: 0.4 * clipFps,
+  /**
+   * No one on their feet goes faster than this, in metres a second, over
+   * this many frames: the fastest footballers' sprint. Faster, and they
+   * were pushed or placed, not run.
+   */
+  fastest: 10,
+  fastestFrames: 5,
   /** A player who turns this many times within the frames after flickers. */
   flickerFrames: clipFps / 2,
   flickerTurns: 3,
@@ -455,15 +464,53 @@ export const checkClip = (script: ClipScript): ClipIssue[] => {
     }
   }
 
+  // No one on their feet goes faster than anyone runs. Sliding in, diving
+  // or going down, they can.
+  const off = new Set<string>([...grounded, 'slide']);
+  const span = clipLimits.fastestFrames;
+  for (let i = 0; i < count; i++) {
+    const tooFast = (at: number) => {
+      const [was, now] = [
+        frames[at - span]!.players[i]!,
+        frames[at]!.players[i]!
+      ];
+      return (
+        !off.has(was.pose) &&
+        !off.has(now.pose) &&
+        (gap(was, now) * clipFps) / span > clipLimits.fastest
+      );
+    };
+    const [found] = runs(span, frames.length - 1, tooFast, 1);
+    if (found) {
+      const speeds = Array.from(
+        { length: found.end - found.start + 1 },
+        (_, k) =>
+          (gap(
+            frames[found.start + k - span]!.players[i]!,
+            frames[found.start + k]!.players[i]!
+          ) *
+            clipFps) /
+          span
+      );
+      issues.push({
+        ...found,
+        kind: 'too-fast',
+        message: `${i < attackers ? `attack #${i}` : `defence #${i - attackers}`} moves at ${Math.max(...speeds).toFixed(1)} m/s`,
+        players: [i]
+      });
+    }
+  }
+
   // No one turns back and forth: three turns within half a second flicker.
-  // A turn to kick the ball, or going to ground, is meant, so it doesn't
-  // count.
+  // A turn to kick or head the ball, or going to ground, is meant, so it
+  // doesn't count.
   for (let i = 0; i < count; i++) {
     const turns: number[] = [];
     for (let at = 1; at < frames.length; at++) {
       const player = frames[at]!.players[i]!;
       if (
         player.pose !== 'kick' &&
+        player.pose !== 'header' &&
         !grounded.has(player.pose) &&
         player.facing !== frames[at - 1]!.players[i]!.facing
       ) {

@@ -551,8 +551,11 @@ export const checkClip = (script: ClipScript): ClipIssue[] => {
     struck.x - pitchWidth / 2,
     struck.y - (input.attackingUp ? 0 : pitchLength)
   );
+  // A ball in from wide (#224) has its moment start with the cross, as a
+  // header does.
   if (
     script.finish !== 'header' &&
+    !script.cross &&
     outcomeKind(script.outcome) !== 'clearance' &&
     out > clipLimits.longestShot
   ) {

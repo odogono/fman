@@ -22,6 +22,7 @@ import {
   clearanceOutcomes,
   clipFps,
   createClipScript,
+  crosses,
   finishes,
   hashSeed,
   missOutcomes,
@@ -31,6 +32,7 @@ import {
   type ClipOutcome,
   type ClipPlayer,
   type ClipScript,
+  type Cross,
   type Finish,
   type Line,
   type Restart
@@ -61,6 +63,8 @@ const settings = {
   attack: 2,
   awayEnergy: 20,
   awayKit: 1,
+  /** A ball in from wide that isn't headed at goal (#224), or none. */
+  cross: 'seed' as Cross | 'none' | 'seed',
   defence: 4,
   finish: 'seed' as Finish | 'seed',
   /** For a tackled injury (#211): a foul in the box. */
@@ -225,6 +229,9 @@ const settingsInput = (seedBase = settings.seedBase): ClipInput => {
     ...(settings.outcome === 'seed' ? {} : { outcome: settings.outcome }),
     ...(settings.restart === 'seed' ? {} : { restart: settings.restart }),
     ...(settings.finish === 'seed' ? {} : { finish: settings.finish }),
+    ...(settings.cross === 'seed'
+      ? {}
+      : { cross: settings.cross === 'none' ? null : settings.cross }),
     ...(settings.rebound === 'seed'
       ? {}
       : { rebound: settings.rebound === 'yes' }),
@@ -262,8 +269,9 @@ const outcomesFor = (kind: Moment['kind']): readonly ClipOutcome[] =>
   kind === 'goal'
     ? ['goal']
     : kind === 'save'
-      ? // A claim comes off a cross, so forcing one forces a header.
-        [...saveOutcomes, 'claim']
+      ? // A claim or a punch comes off a cross, so forcing one forces a
+        // header.
+        [...saveOutcomes, 'claim', 'punch']
       : kind === 'clearance'
         ? clearanceOutcomes
         : kind === 'injury'
@@ -330,6 +338,7 @@ const rebuild = () => {
     `outcome     ${script.outcome}`,
     `restart     ${script.restart}`,
     `finish      ${script.finish}${script.rebound ? ', after a rebound' : ''}`,
+    `cross       ${script.cross ?? '-'}`,
     `phases      build-up 0, zoom ${zoom}, moment ${moment}, reaction ${reaction}`,
     `seed        ${input.seed}`,
     `shooter     ${input.attack.players[input.shooter]?.label ?? '-'}`,
@@ -471,6 +480,21 @@ const renderControls = () => {
         [['seed', 'From the seed'], ...finishes.map(o => [o, o] as const)],
         settings.finish,
         value => change('finish')(value as Finish | 'seed')
+      )
+    ),
+    // A low ball or a cut-back is a shot, a half-clearance a shot from
+    // range, a headed clearance a clearance and a punch a save; each falls
+    // back to none where it can't be.
+    labelled(
+      'Cross',
+      select(
+        [
+          ['seed', 'From the seed'],
+          ['none', 'none'],
+          ...crosses.map(o => [o, o] as const)
+        ],
+        settings.cross,
+        value => change('cross')(value as Cross | 'none' | 'seed')
       )
     ),
     // Only a shot or header that reaches the keeper's goal can rebound.

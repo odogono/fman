@@ -182,3 +182,30 @@ test('a defender shooting after open play is unlikely; after a corner it is not'
     'unlikely-scorer'
   );
 });
+
+/**
+ * The pass stops dead at the receiver's feet on frame 30, and the build-up
+ * runs on until `zoom`, so the receiver stands on the ball until then.
+ */
+const standsOnIt = (zoom: number, restart?: Restart) => ({
+  ...clip({ deadStop: true, ...(restart ? { restart } : {}) }),
+  length: zoom + 22,
+  phases: { moment: zoom + 2, reaction: zoom + 12, zoom }
+});
+
+test('a holder standing still on the ball is flagged', () => {
+  // Still from frame 31 to the zoom at 78: nearly a second.
+  const found = checkClip(standsOnIt(78)).filter(
+    i => i.kind === 'holder-still'
+  );
+  expect(found).toHaveLength(1);
+  expect(found[0]).toMatchObject({ end: 77, players: [1], start: 31 });
+  // A moment's pause, 15 frames, is not standing still.
+  expect(kinds(standsOnIt(46))).not.toContain('holder-still');
+});
+
+test('a taker waiting to play a restart is not standing still on it', () => {
+  // The thrower holds the ball for 60 frames before the first pass.
+  const script = clip({ pass: { end: 80, start: 60 }, restart: 'throw-in' });
+  expect(kinds({ ...script, length: 100 })).not.toContain('holder-still');
+});

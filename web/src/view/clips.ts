@@ -358,6 +358,8 @@ const boxHalf = 20.16;
 /** A shooter found out of range carries it into range at this pace, in metres a second, done by this frame. */
 const intoRangePace = 7;
 const shooterReadyBy = 13.5 * clipFps;
+/** The final pass stops waiting for the shooter by this frame, so the moment starts in time. */
+const lastWaitBy = 11 * clipFps;
 /** A shooter found late takes the ball in this many frames at most. */
 const quickTouch = 25;
 /** The nearest to goal, in metres, a shot from range is set up. */
@@ -366,6 +368,23 @@ const longRange = 24;
 const highLine = 86;
 /** How far off their line, in metres, a keeper comes to meet a one-on-one. */
 const keeperRushes = 6;
+/** About how far, in metres, the holder carries it on before the final pass. */
+const carryReach = 6;
+/** The furthest, in metres, a shooter carries it after the final pass, into range to shoot. */
+const longestCarry = 7;
+/** The furthest out, in metres, a shot found beyond carrying range is struck from. */
+const stretchedShot = 25;
+/** How long past the build-up's time, in frames, the final pass still waits for the shooter. */
+const lateWait = 2 * clipFps;
+/** The furthest, in metres, the pass before the final one goes forward. */
+const longestForward = 35;
+/** The back line holds this many metres goal side of the ball, in metres. */
+const backLineAhead = 14;
+/**
+ * How far beyond the back line, in metres, a shooter waiting onside can run
+ * onto the final pass.
+ */
+const finalRunOn = 8;
 /** The furthest, in metres, a player carries the ball out wide to cross it. */
 const widestCarry = 25;
 /** The ball is this far ahead of a carrier's feet, in metres. */
@@ -813,7 +832,7 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     // Caught by a ball through, the defence was playing a high line.
     finish === 'one-on-one'
       ? clamp(ball.d + 8, 50, highLine)
-      : clamp(ball.d + 14, 55, 99);
+      : clamp(ball.d + backLineAhead, 55, 99);
   /**
    * The depth the back line holds while play goes on: where it wants to be,
    * but never more than `backLineGive` from any of its players but the one
@@ -835,7 +854,7 @@ export const createClipScript = (input: ClipInput): ClipScript => {
         line === 'defence'
           ? clamp(ball.d - 20, 12, 60)
           : line === 'midfield'
-            ? clamp(ball.d, 25, 80)
+            ? clamp(ball.d + 8, 25, 80)
             : clamp(ball.d + 16, 40, 92);
       const across = pitchWidth * attackSpots[i]! + 0.25 * (ball.x - 34);
       return {
@@ -1401,8 +1420,6 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     }
     // A challenger down on the ground stays there.
     const down = challengerDown(frame) ? challenge!.who : -1;
-    // Goal side of the ball and close to it, a defender jockeys: they keep
-    // pace with it, a little quicker, rather than sprinting in.
     const ballPace = ballWas ? distance(ball, ballWas) : 0;
     ballWas = { d: ball.d, x: ball.x };
     movers.forEach((mover, i) => {
@@ -1444,16 +1461,20 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       // that has gone behind.
       goal.d = clamp(goal.d, -playerStops.d, pitchLength + playerStops.d);
       goal.x = clamp(goal.x, -playerStops.x, pitchWidth + playerStops.x);
-      const gap = distance(mover, goal);
-      // A defender out of position, such as one the ball has gone past,
-      // sprints to get back.
+      // Goal side of the ball and close to it, a defender jockeys: they keep
+      // pace with it, a little quicker, rather than sprinting in. Once a ball
+      // through has beaten the defence, they all chase instead.
       const jockeying =
+        !beaten &&
         i >= attackers.length &&
         i !== keeperSlot &&
         !overrides.has(i) &&
         !paces.has(i) &&
         mover.d > ball.d &&
         distance(mover, ball) < jockeyRange;
+      const gap = distance(mover, goal);
+      // A defender out of position, such as one the ball has gone past,
+      // sprints to get back.
       const speed = Math.min(
         perFrame(
           paces.get(i) ??
@@ -1542,7 +1563,7 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     outcome !== 'claim' &&
     outcomeKind(outcome) !== 'clearance' &&
     (input.rebound ?? reboundRng.next() < reboundShare);
-  const passCount = others.length ? rng.int(2, 4) : 0;
+  let passCount = others.length ? rng.int(2, 4) : 0;
   const minBuildUp = 6 * clipFps;
   /**
    * Past this, no one carries the ball on; past the next, the shooter is
@@ -1728,18 +1749,23 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     }
   };
   let passesMade = 0;
+  /** Where the shooter took the final pass, for how far they carry it after. */
+  let foundAt: Point | undefined;
+  /** One more pass forward has been added, the ball being too far out. */
+  let extraPass = false;
   const passesLeft = () => passCount - passesMade;
 
   /**
    * Waiting on the ball while a team-mate gets into place, for up to
-   * `shooterWait` frames while `waiting` holds: the holder never stands on
+   * `longest` frames while `waiting` holds: the holder never stands on
    * it, but carries it on slowly, the way they were going, upfield and away
    * from the nearest defender, as if shielding it. The way is picked once,
    * so the ball doesn't swing round their feet as defenders move.
    */
   const waitOnIt = (
     waiting: () => boolean,
-    chase?: ReadonlyMap<number, Point>
+    chase?: ReadonlyMap<number, Point>,
+    longest = shooterWait
   ) => {
     const mover = movers[holder]!;
     let nearest: Point | undefined;
@@ -1754,12 +1780,12 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       x: carrying.x + (nearest ? (mover.x - nearest.x) / away : 0)
     };
     const size = Math.hypot(way.d, way.x) || 1;
-    const metres = perFrame(waitingPace) * shooterWait + 2;
+    const metres = perFrame(waitingPace) * longest + 2;
     const to = {
       d: clamp(mover.d + (way.d / size) * metres, 3, pitchLength - 3),
       x: clamp(mover.x + (way.x / size) * metres, 3, pitchWidth - 3)
     };
-    for (let f = 0; f < shooterWait && waiting(); f++) {
+    for (let f = 0; f < longest && waiting(); f++) {
       dribble(1, to, waitingPace, chase);
     }
   };
@@ -1882,10 +1908,23 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     if (receiver === shooter && !into) {
       placeFinish(end);
     }
-    if (receiver === shooter && kind === 'pass' && frame <= maxBuildUp) {
+    // Even running late, the final pass waits a moment for the shooter: a
+    // pass that finds them far out only sends them on a long run.
+    // A ball through for a one-on-one goes before the defence recovers.
+    const through = finish === 'one-on-one';
+    if (
+      receiver === shooter &&
+      kind === 'pass' &&
+      frame <= maxBuildUp + (through ? 0 : lateWait)
+    ) {
+      // Never so long that the moment can't start in time.
       waitOnIt(
-        () => distance(runner, end) > reach(flightTo(end, kind).frames),
-        new Map([[shooter, end]])
+        () =>
+          frame < lastWaitBy &&
+          distance(runner, end) > reach(flightTo(end, kind).frames),
+        new Map([[shooter, end]]),
+        // A shooter still coming up from behind the ball needs longer.
+        through ? shooterWait : (runner.d < ball.d ? 3 : 2) * shooterWait
       );
     }
     // Played into space the receiver can't reach in time, the ball goes
@@ -1962,6 +2001,9 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     }
     ball.height = 0;
     holder = receiver;
+    if (receiver === shooter) {
+      foundAt = { d: ball.d, x: ball.x };
+    }
     // The receiver takes the ball on the way it came, and the touch takes
     // the pace off it. A lofted ball has bounced, and comes down dead.
     const running = steps[receiver] ?? { d: 0, x: 0 };
@@ -2003,6 +2045,26 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     const choices = others.filter(i => i !== holder && onside(i));
     if (!choices.length) {
       return shooter;
+    }
+    // The pass before the final one goes forward, to whoever is furthest up
+    // ahead of the ball, so the back line drops off and the shooter, waiting
+    // onside, can be found in range. An open lane comes first.
+    if (passesLeft() === 2 && finish !== 'one-on-one') {
+      const forward = choices
+        .filter(
+          i =>
+            i !== shooter &&
+            movers[i]!.d > ball.d &&
+            distance(movers[i]!, ball) < longestForward
+        )
+        .toSorted(
+          (a, b) =>
+            Number(blocked(movers[a]!)) - Number(blocked(movers[b]!)) ||
+            movers[b]!.d - movers[a]!.d
+        );
+      if (forward.length) {
+        return forward[0]!;
+      }
     }
     const holderLine = lineOrder.indexOf(attackers[holder]!.line);
     const weights = choices.map(i => {
@@ -2206,10 +2268,13 @@ export const createClipScript = (input: ClipInput): ClipScript => {
         holder === shooter && finish === 'long-range'
           ? Math.max(0, distance(movers[holder]!, towards) - longRange)
           : Infinity;
+      // Found early, the shooter takes their time on it rather than run a
+      // long way with it.
       const reach = Math.min(
         seconds * speed,
         Math.max(0, distance(movers[holder]!, towards) - 4),
-        range
+        range,
+        holder === shooter ? longestCarry / 2 : Infinity
       );
       const gap = distance(movers[holder]!, towards) || 1;
       const to = {
@@ -2240,15 +2305,36 @@ export const createClipScript = (input: ClipInput): ClipScript => {
         Math.max(0, shooterReadyBy - frame - clipFps / 2);
       // A blocked shot stays a shot, carried only as far as there is time.
       const blocked = outcomeKind(outcome) === 'clearance';
-      if (finish === 'shot' && !blocked && out - reach > longestShot - 2) {
+      // Found further out than a short carry into range, they shoot from
+      // range instead, carried no nearer than 28 m, rather than run a long
+      // way with it.
+      const carried = foundAt ? distance(foundAt, movers[shooter]!) : 0;
+      const carryLeft = Math.max(0, longestCarry - carried);
+      // A shot found a little further out than that is struck from up to
+      // 25 m.
+      const tooFar = out - carryLeft > stretchedShot;
+      if (
+        finish === 'shot' &&
+        !blocked &&
+        (out - reach > longestShot - 2 || tooFar)
+      ) {
         finish = 'long-range';
       }
-      const furthest = finish === 'long-range' ? longestLongRange : longestShot;
+      const furthest =
+        finish === 'long-range'
+          ? longestLongRange
+          : Math.max(longestShot, Math.min(out - carryLeft, stretchedShot) + 2);
       if ((finish === 'shot' || finish === 'long-range') && out > furthest) {
         const metres = out - (furthest - 2);
         const way = distance(movers[shooter]!, shootingSpot) || 1;
-        // A shot from range is carried into range whatever the time.
-        const along = Math.min(metres, way, blocked ? reach : Infinity);
+        // A shot from range is carried into range whatever the time; one to
+        // be blocked, only a short way, as there is time, and it is blocked
+        // from there.
+        const along = Math.min(
+          metres,
+          way,
+          blocked ? Math.min(reach, carryLeft) : Infinity
+        );
         const to = {
           d:
             movers[shooter]!.d +
@@ -2270,13 +2356,35 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     }
     // Over time, the holder plays it at once, in the air if it is long.
     const overTime = frame > maxBuildUp;
+    // Still too far out for the shooter to be found in range, the holder
+    // plays one more pass forward first, while there is time for it.
+    const tooFar =
+      shootingSpot.d - backLineAhead - finalRunOn - ball.d > 2 * carryReach;
+    if (
+      passesLeft() === 1 &&
+      finish !== 'header' &&
+      finish !== 'one-on-one' &&
+      tooFar &&
+      !extraPass &&
+      frame + 2 * clipFps < maxBuildUp
+    ) {
+      extraPass = true;
+      passCount++;
+    }
     if (passesLeft() <= 1 && finish !== 'header' && !overTime) {
-      // Far from goal, the holder carries the ball on before the final pass.
+      // Far from goal, the holder carries the ball on before the final pass:
+      // into passing range of the shooter, and near enough that the back
+      // line, holding its distance from the ball, has dropped to where the
+      // shooter, waiting onside, can run onto the pass in range.
       const mover = movers[holder]!;
       const gap = distance(mover, shootingSpot);
-      if (gap > finalPassRange) {
+      const toLine = shootingSpot.d - backLineAhead - finalRunOn - mover.d;
+      if (gap > finalPassRange || toLine > 0) {
         const speed = rng.between(5.5, 7);
-        const metres = Math.min(gap - finalPassRange + 2, 2 * speed);
+        const metres = Math.min(
+          Math.max(gap - finalPassRange + 2, toLine + 2),
+          2 * speed
+        );
         const to = {
           d: mover.d + ((shootingSpot.d - mover.d) / gap) * metres,
           x: mover.x + ((shootingSpot.x - mover.x) / gap) * metres
@@ -3533,7 +3641,8 @@ export const createClipScript = (input: ClipInput): ClipScript => {
           ? { d: pitchLength - 4, x: 34 }
           : { d: ball.d, x: ball.x };
         const gap = distance(keeper, to);
-        const step = perFrame(walkPace + 1);
+        // Off their line, as after a one-on-one, they jog back for it.
+        const step = perFrame(!fetched && gap > 3 ? jogPace : walkPace + 1);
         if (gap > step) {
           keeper.d += ((to.d - keeper.d) / gap) * step;
           keeper.x += ((to.x - keeper.x) / gap) * step;

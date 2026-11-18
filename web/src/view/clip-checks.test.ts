@@ -209,3 +209,33 @@ test('a taker waiting to play a restart is not standing still on it', () => {
   const script = clip({ pass: { end: 80, start: 60 }, restart: 'throw-in' });
   expect(kinds({ ...script, length: 100 })).not.toContain('holder-still');
 });
+
+/**
+ * The receiver, the shooter, takes the pass on frame 30 and runs 0.3 m a
+ * frame with it until the zoom: 14.4 m by frame 78.
+ */
+const runsWithIt = (
+  zoom: number,
+  finish: ClipScript['finish'] = 'shot'
+): ClipScript => ({
+  ...clip({
+    change: (at, players) => {
+      players[1] = { ...players[1]!, travelled: Math.max(0, at - 30) * 0.3 };
+    }
+  }),
+  finish,
+  length: zoom + 22,
+  phases: { moment: zoom + 2, reaction: zoom + 12, zoom }
+});
+
+test('a shooter carrying the ball a long way to shoot is flagged', () => {
+  const found = checkClip(runsWithIt(78)).filter(i => i.kind === 'long-run');
+  expect(found).toHaveLength(1);
+  expect(found[0]).toMatchObject({ end: 78, players: [1], start: 30 });
+  // 9 m is a carry into range, not a long run.
+  expect(kinds(runsWithIt(60))).not.toContain('long-run');
+});
+
+test('a one-on-one runs on with the ball by design', () => {
+  expect(kinds(runsWithIt(78, 'one-on-one'))).not.toContain('long-run');
+});

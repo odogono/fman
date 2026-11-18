@@ -1001,6 +1001,80 @@ test('no one stands still on the ball while a team-mate gets into place', () => 
   expect(still).toEqual([]);
 }, 60_000);
 
+test('the final pass finds the shooter in range, not far out for a long run', () => {
+  let shots = 0;
+  const long: string[] = [];
+  for (const shooter of [9, 6]) {
+    for (let seed = 0; seed < 80; seed++) {
+      for (const kind of ['goal', 'save', 'near-miss', 'clearance'] as const) {
+        const script = createClipScript(
+          input({ attackingUp: seed % 2 === 0, kind, seed, shooter })
+        );
+        const found = script.passes.some(p => p.receiver === shooter);
+        if (
+          !found ||
+          (script.finish !== 'shot' && script.finish !== 'long-range')
+        ) {
+          continue;
+        }
+        shots++;
+        for (const issue of checkClip(script)) {
+          if (issue.kind === 'long-run') {
+            long.push(
+              `seed ${seed}, ${kind}, shooter ${shooter}: ${issue.message}`
+            );
+          }
+        }
+      }
+    }
+  }
+  expect(shots).toBeGreaterThan(300);
+  // A few found late and deep may still carry it on.
+  expect(long.length / shots).toBeLessThanOrEqual(0.05);
+}, 120_000);
+
+test('finding the shooter in range keeps the mix of finishes', () => {
+  // The shares measured before the final pass was placed by the back line
+  // (#223), as the seed picks them and the clip settles them: a one-on-one
+  // with the line too deep is a shot, and a shot found out of range and
+  // time is one from range.
+  const before = {
+    forward: {
+      header: 29.1,
+      'long-range': 6.9,
+      'one-on-one': 19.6,
+      shot: 44.4
+    },
+    midfielder: {
+      header: 20.4,
+      'long-range': 34,
+      'one-on-one': 8.7,
+      shot: 36.9
+    }
+  };
+  for (const [who, shooter] of [
+    ['forward', 9],
+    ['midfielder', 6]
+  ] as const) {
+    const seen = { header: 0, 'long-range': 0, 'one-on-one': 0, shot: 0 };
+    let clips = 0;
+    for (let seed = 0; seed < 150; seed++) {
+      for (const kind of ['goal', 'save', 'near-miss'] as const) {
+        const script = createClipScript(
+          input({ attackingUp: seed % 2 === 0, kind, seed, shooter })
+        );
+        seen[script.finish]++;
+        clips++;
+      }
+    }
+    for (const finish of finishes) {
+      expect(
+        Math.abs((seen[finish] / clips) * 100 - before[who][finish])
+      ).toBeLessThanOrEqual(5);
+    }
+  }
+}, 120_000);
+
 /** Paces are judged over 5 frames, so a step apart from a team-mate doesn't count. */
 const over = 5;
 /** The pace from `b` to `a` over those frames, in metres a second. */
@@ -1034,6 +1108,20 @@ test('the defender closing the ball down jockeys rather than sprinting in', () =
             (p.y - now.ball.y) * up > 0.5
         );
         if (closing < 0) {
+          continue;
+        }
+        // A carrier running into them shoves them along (#226): that's not
+        // closing in, so a defender within touching distance doesn't count.
+        const shoved = now.players.some(
+          (p, i) =>
+            p.side === 'attack' &&
+            i !== closing &&
+            Math.hypot(
+              p.x - now.players[closing]!.x,
+              p.y - now.players[closing]!.y
+            ) < 1.4
+        );
+        if (shoved) {
           continue;
         }
         // Their pace towards the ball: one pushed back off it isn't closing.

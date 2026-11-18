@@ -10,6 +10,7 @@ import {
   clearanceOutcomes,
   clipFps,
   createClipScript,
+  crosses,
   finishes,
   goalFrames,
   kickOffFrame,
@@ -95,7 +96,8 @@ test('clips run at real-world pace, within what the sim holds', () => {
       // At least a few seconds' build-up, and the moment within 15 s. A
       // cross can come quickly, as on the break; a shot is worked for.
       expect(zoom).toBeGreaterThanOrEqual(
-        (corner ? 3 : script.finish === 'header' ? 3.5 : 6) * clipFps
+        (corner ? 3 : script.finish === 'header' || script.cross ? 3.5 : 6) *
+          clipFps
       );
       expect(moment).toBeLessThanOrEqual(15 * clipFps);
       expect(zoom).toBeLessThan(moment);
@@ -122,7 +124,13 @@ test('the seed picks each outcome of a save, a clearance and a near miss', () =>
     }
   }
   expect([...seen].sort()).toEqual(
-    [...saveOutcomes, 'claim', ...clearanceOutcomes, ...missOutcomes].sort()
+    [
+      ...saveOutcomes,
+      'claim',
+      'punch',
+      ...clearanceOutcomes,
+      ...missOutcomes
+    ].sort()
   );
   expect(
     createClipScript(input({ kind: 'save', outcome: 'parry' })).outcome
@@ -442,8 +450,9 @@ test('an interception cuts out the final pass; a block stops the shot', () => {
         seed
       })
     );
-    // The shooter never receives: the pass to them is the one cut out.
-    expect(cut.passes.every(p => p.to !== '#d70000 9')).toBe(true);
+    // The shooter never receives: the pass to them is the one cut out, or
+    // a cross headed clear (#224) that never reaches them.
+    expect(cut.passes.every(p => p.to !== '#d70000 9' || p.cutOut)).toBe(true);
     const blocked = createClipScript(
       input({ kind: 'clearance', outcome: 'block', restart: 'open-play', seed })
     );
@@ -624,7 +633,10 @@ test('the defender clears upfield or into touch', () => {
   let upfield = 0;
   let touch = 0;
   for (let seed = 0; seed < 100; seed++) {
-    const script = createClipScript(input({ kind: 'clearance', seed }));
+    // A cross headed clear (#224) is cleared by the header itself.
+    const script = createClipScript(
+      input({ cross: null, kind: 'clearance', seed })
+    );
     const meet = script.frame(script.momentFrame).ball;
     const end = script.frame(script.length - 1).ball;
     if (end.x < 0 || end.x > 68) {
@@ -724,8 +736,9 @@ test('the passer and shooter kick, and players face the way they move', () => {
     const first = script.passes[0]!;
     const passer = Number(first.from.split(' ')[1]);
     expect(script.frame(first.start).players[passer]!.pose).toBe('kick');
-    // A header is met, not kicked: its own test follows.
-    if (script.finish === 'header') {
+    // A header is met, not kicked: its own test follows. A ball in from
+    // wide (#224) has its moment start with the cross, as a header does.
+    if (script.finish === 'header' || script.cross) {
       continue;
     }
     if (script.outcome === 'goal') {
@@ -1068,6 +1081,76 @@ test('a shooter found within range of a shot from range carries it only a short 
   expect(carries).toEqual([]);
 }, 60_000);
 
+test('every ball in from wide passes the clip checks', () => {
+  const kindsFor: Record<
+    NonNullable<ClipInput['cross']>,
+    readonly ClipInput['kind'][]
+  > = {
+    'cut-back': ['goal', 'save', 'near-miss'],
+    'half-clear': ['goal', 'save', 'near-miss'],
+    'headed-clear': ['clearance'],
+    low: ['goal', 'save', 'near-miss'],
+    punch: ['save']
+  };
+  const found: string[] = [];
+  for (const cross of crosses) {
+    for (const shooter of [9, 6]) {
+      // From any restart the seed picks.
+      for (let seed = 0; seed < 40; seed++) {
+        const kinds = kindsFor[cross];
+        const script = createClipScript(
+          input({ cross, kind: kinds[seed % kinds.length]!, seed, shooter })
+        );
+        for (const issue of checkClip(script)) {
+          found.push(
+            `${cross}, seed ${script.input.seed}, ${script.input.kind}, shooter ${shooter}: ${issue.message} (${issue.start}–${issue.end})`
+          );
+        }
+      }
+    }
+  }
+  expect(found).toEqual([]);
+}, 120_000);
+
+test('the seed puts about a third of chances in from wide without a header', () => {
+  const tally = new Map<string, [number, number]>();
+  const count = (key: string, crossed: boolean) => {
+    const [all, from] = tally.get(key) ?? [0, 0];
+    tally.set(key, [all + 1, from + (crossed ? 1 : 0)]);
+  };
+  const seen = new Set<string>();
+  for (const shooter of [9, 6]) {
+    for (let seed = 0; seed < 150; seed++) {
+      for (const kind of ['goal', 'save', 'near-miss', 'clearance'] as const) {
+        const script = createClipScript(input({ kind, seed, shooter }));
+        if (script.restart === 'corner' || script.restart === 'penalty') {
+          continue;
+        }
+        if (script.cross) {
+          seen.add(script.cross);
+        }
+        if (kind === 'clearance') {
+          count('clearance', script.cross === 'headed-clear');
+        } else if (script.finish === 'long-range') {
+          count('from range', script.cross === 'half-clear');
+        } else if (script.finish === 'shot') {
+          count('shot', script.cross === 'low' || script.cross === 'cut-back');
+        } else if (
+          script.finish === 'header' &&
+          kind === 'save' &&
+          script.outcome !== 'claim'
+        ) {
+          count('header saved', script.cross === 'punch');
+        }
+      }
+    }
+  }
+  for (const [key, [all, from]] of tally) {
+    expect([key, from / all > 0.22 && from / all < 0.45]).toEqual([key, true]);
+  }
+  expect([...seen].toSorted()).toEqual([...crosses].toSorted());
+}, 120_000);
+
 test('finding the shooter in range keeps the mix of finishes', () => {
   // The shares measured before the final pass was placed by the back line
   // (#223), as the seed picks them and the clip settles them: a one-on-one
@@ -1200,6 +1283,162 @@ const finished = (finish: (typeof finishes)[number], seeds = 30) => {
   return kept;
 };
 
+/** Clips with a cross forced, as the debug page forces it, from open play. */
+const crossed = (
+  cross: NonNullable<ClipInput['cross']>,
+  kinds: readonly ClipInput['kind'][],
+  seeds = 20
+) =>
+  Array.from({ length: seeds }, (_, seed) =>
+    createClipScript(
+      input({
+        cross,
+        kind: kinds[seed % kinds.length]!,
+        restart: 'open-play',
+        seed
+      })
+    )
+  );
+
+test('a low cross is driven in from wide for the shooter to strike first time', () => {
+  for (const script of crossed('low', ['goal', 'save', 'near-miss'])) {
+    expect(script.cross).toBe('low');
+    expect(script.finish).toBe('shot');
+    const cross = script.passes.at(-1)!;
+    expect(cross).toMatchObject({ kind: 'cross', receiver: 9 });
+    // From wide, low along the ground or just off it.
+    expect(
+      Math.abs(script.frame(cross.start).ball.x - pitchWidth / 2)
+    ).toBeGreaterThan(14);
+    for (let at = cross.start; at < cross.end; at++) {
+      expect(script.frame(at).ball.height).toBeLessThan(0.15);
+    }
+    // Met first time: the shooter runs onto it and strikes it as it arrives.
+    const [a, b] = [cross.end - 6, cross.end - 1].map(
+      at => script.frame(at).players[9]!
+    );
+    expect(
+      Math.hypot(b!.x - a!.x, b!.y - a!.y) * (clipFps / 5)
+    ).toBeGreaterThan(2);
+    const strikes = Array.from(
+      { length: 8 },
+      (_, k) => script.frame(cross.end + k).players[9]!.pose
+    );
+    expect(strikes).toContain('kick');
+  }
+});
+
+test('a cut-back is pulled back from the byline for the shooter to strike first time', () => {
+  const scripts = crossed('cut-back', ['goal', 'save', 'near-miss']);
+  // With the byline beyond a winger's run, the ball goes in low instead.
+  const kept = scripts.filter(script => script.cross === 'cut-back');
+  expect(kept.length).toBeGreaterThanOrEqual(scripts.length * 0.6);
+  expect(
+    scripts.every(
+      script => script.cross === 'cut-back' || script.cross === 'low'
+    )
+  ).toBe(true);
+  for (const script of kept) {
+    expect(script.finish).toBe('shot');
+    const cross = script.passes.at(-1)!;
+    expect(cross).toMatchObject({ kind: 'cross', receiver: 9 });
+    const from = script.frame(cross.start).ball;
+    const to = script.frame(cross.end - 1).ball;
+    // From the byline, within the depth of the six-yard box, back away
+    // from goal, to the shooter in the box.
+    expect(depth(from.y)).toBeGreaterThan(pitchLength - 5.5);
+    expect(depth(to.y)).toBeLessThan(depth(from.y) - 5);
+    const out = pitchLength - depth(to.y);
+    expect(out).toBeGreaterThan(9);
+    expect(out).toBeLessThan(17);
+    for (let at = cross.start; at < cross.end; at++) {
+      expect(script.frame(at).ball.height).toBeLessThan(0.15);
+    }
+    const strikes = Array.from(
+      { length: 8 },
+      (_, k) => script.frame(cross.end + k).players[9]!.pose
+    );
+    expect(strikes).toContain('kick');
+  }
+});
+
+test('a cross is headed clear by a defender', () => {
+  for (const script of crossed('headed-clear', ['clearance'])) {
+    expect(script.cross).toBe('headed-clear');
+    expect(script.outcome).toBe('interception');
+    const cross = script.passes.at(-1)!;
+    expect(cross).toMatchObject({ cutOut: true, kind: 'cross', receiver: 9 });
+    const at = script.momentFrame;
+    // In the air across the box, met in it by a defender's head.
+    const mid = script.frame(Math.round((cross.start + at) / 2)).ball;
+    expect(mid.height).toBeGreaterThan(0.3);
+    const met = script.frame(at);
+    expect(
+      met.players.some(p => p.side === 'defence' && p.pose === 'header')
+    ).toBe(true);
+    expect(pitchLength - depth(met.ball.y)).toBeLessThan(16.5);
+    // Headed away from goal at once, and that's the clearance: no one
+    // strikes it again in the reaction.
+    const later = script.frame(at + 20).ball;
+    expect(depth(later.y)).toBeLessThan(depth(met.ball.y) - 3);
+    const { reaction } = script.phases;
+    for (let f = reaction + 1; f < reaction + 80; f++) {
+      const [b0, b1] = [script.frame(f - 1).ball, script.frame(f).ball];
+      expect(Math.hypot(b1.x - b0.x, b1.y - b0.y) * clipFps).toBeLessThan(8);
+    }
+  }
+});
+
+test('a cross half-cleared to the edge of the box is struck from there', () => {
+  for (const script of crossed('half-clear', ['goal', 'save', 'near-miss'])) {
+    expect(script.cross).toBe('half-clear');
+    expect(script.finish).toBe('long-range');
+    const cross = script.passes.at(-1)!;
+    expect(cross).toMatchObject({ cutOut: true, kind: 'cross' });
+    // A defender heads it out of the box...
+    const frames = Array.from(
+      { length: script.momentFrame - cross.start },
+      (_, k) => script.frame(cross.start + k)
+    );
+    const headedOut = frames.findIndex(frame =>
+      frame.players.some(p => p.side === 'defence' && p.pose === 'header')
+    );
+    expect(headedOut).toBeGreaterThanOrEqual(0);
+    // ...and the shooter strikes it first time from the edge of the box.
+    const struck = frames.findIndex(
+      (frame, k) => k > headedOut && frame.players[9]!.pose === 'kick'
+    );
+    expect(struck).toBeGreaterThan(headedOut);
+    const out = pitchLength - depth(frames[struck]!.ball.y);
+    expect(out).toBeGreaterThan(16.5);
+    expect(out).toBeLessThan(30);
+  }
+});
+
+test('a keeper comes and punches a cross away', () => {
+  for (const script of crossed('punch', ['save'])) {
+    expect(script.cross).toBe('punch');
+    expect(script.outcome).toBe('punch');
+    expect(script.finish).toBe('header');
+    const cross = script.passes.at(-1)!;
+    expect(cross).toMatchObject({ cutOut: true, kind: 'cross' });
+    // Off their line, they meet it in the air...
+    const at = script.frame(script.momentFrame);
+    const keeper = at.players.find(p => p.side === 'defence' && p.keeper)!;
+    expect(depth(keeper.y)).toBeLessThan(pitchLength - 2);
+    expect(Math.hypot(keeper.x - at.ball.x, keeper.y - at.ball.y)).toBeLessThan(
+      1.5
+    );
+    expect(at.ball.height).toBeGreaterThan(0.3);
+    // ...and punch it away from goal, not hold it.
+    const later = script.frame(script.momentFrame + 20).ball;
+    expect(depth(later.y)).toBeLessThan(depth(at.ball.y) - 4);
+    const end = script.frame(script.phases.reaction + 60);
+    const held = end.players.find(p => p.side === 'defence' && p.keeper)!;
+    expect(held.pose).not.toBe('hold');
+  }
+});
+
 test('the seed picks every finish; corners and defenders head it, clearances shoot', () => {
   const seen = new Set<string>();
   for (let seed = 0; seed < 120; seed++) {
@@ -1240,7 +1479,7 @@ test('a header runs onto a cross from out wide at a pace a player can run', () =
 
 test('a header meets a cross at head height, with a crouch and a leap first', () => {
   for (const script of finished('header')) {
-    if (script.outcome === 'claim') {
+    if (script.outcome === 'claim' || script.outcome === 'punch') {
       continue;
     }
     const cross = script.passes.at(-1)!;
@@ -1543,7 +1782,10 @@ test('crosses and shots bend a little; passes along the ground do not', () => {
 
 test('a clearance lands, bounces and runs on before it stops', () => {
   for (let seed = 0; seed < 20; seed++) {
-    const script = createClipScript(input({ kind: 'clearance', seed }));
+    // A cross headed clear (#224) has landed by the reaction.
+    const script = createClipScript(
+      input({ cross: null, kind: 'clearance', seed })
+    );
     const balls = Array.from(
       { length: script.length - script.phases.reaction },
       (_, k) => script.frame(script.phases.reaction + k).ball
@@ -1787,7 +2029,12 @@ test('a shot is struck in range, however the build-up goes', () => {
       const script = createClipScript(
         input({ kind: seed % 2 ? 'goal' : 'save', seed, shooter })
       );
-      if (script.finish !== 'shot' && script.finish !== 'long-range') {
+      // A ball in from wide (#224) has its moment start with the cross:
+      // its own tests check where it is struck.
+      if (
+        (script.finish !== 'shot' && script.finish !== 'long-range') ||
+        script.cross
+      ) {
         continue;
       }
       const struck = script.frame(script.phases.moment).ball;

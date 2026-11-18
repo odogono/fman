@@ -26,6 +26,7 @@ export type ClipIssueKind =
   | 'holder-still'
   | 'long-back-pass'
   | 'long-ground-pass'
+  | 'long-run'
   | 'long-shot'
   | 'pass-through-defender'
   | 'receiver-misses'
@@ -45,6 +46,7 @@ export const clipIssueKinds: readonly ClipIssueKind[] = [
   'holder-still',
   'long-back-pass',
   'long-ground-pass',
+  'long-run',
   'long-shot',
   'pass-through-defender',
   'receiver-misses',
@@ -104,6 +106,11 @@ export const clipLimits = {
   passPace: 10,
   /** The receiver is this close to the ball as a pass arrives. */
   receiverReach: 1.5,
+  /**
+   * The shooter carries the ball no further than this, in metres, between
+   * the final pass and the zoom: further, and they were found far out.
+   */
+  longestRun: 12,
   /** A shot is struck within this far of goal, in metres. */
   longestShot: 32,
   /** The moment starts within this many frames of the clip's start. */
@@ -519,6 +526,23 @@ export const checkClip = (script: ClipScript): ClipIssue[] => {
       players: [],
       start: clipLimits.momentBy
     });
+  }
+
+  // The final pass finds the shooter in range, or near it: they don't run a
+  // long way with the ball to shoot. Through on goal, they run on by design.
+  const found = passes.findLast(p => p.receiver === input.shooter);
+  if (found && script.finish !== 'one-on-one' && found.end < phases.zoom) {
+    const runner = (at: number) => frames[at]!.players[input.shooter]!;
+    const metres = runner(phases.zoom).travelled - runner(found.end).travelled;
+    if (metres > clipLimits.longestRun) {
+      issues.push({
+        end: phases.zoom,
+        kind: 'long-run',
+        message: `the shooter carries it ${Math.round(metres)} m to shoot`,
+        players: [input.shooter],
+        start: found.end
+      });
+    }
   }
 
   // A shot is struck in range; a header's moment starts with the cross.

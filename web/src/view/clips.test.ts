@@ -1033,6 +1033,41 @@ test('the final pass finds the shooter in range, not far out for a long run', ()
   expect(long.length / shots).toBeLessThanOrEqual(0.05);
 }, 120_000);
 
+test('a shooter found within range of a shot from range carries it only a short way', () => {
+  // Found no further out than a shot from range is struck from, plus the
+  // 7 m carry, they carry it at most that far, with a short touch first.
+  const carries: string[] = [];
+  const seeds = [...Array.from({ length: 60 }, (_, seed) => seed), 277];
+  for (const shooter of [9, 6]) {
+    for (const seed of seeds) {
+      for (const kind of ['goal', 'save', 'near-miss', 'clearance'] as const) {
+        const script = createClipScript(input({ kind, seed, shooter }));
+        const found = script.passes.findLast(p => p.receiver === shooter);
+        if (
+          !found ||
+          (script.finish !== 'shot' && script.finish !== 'long-range')
+        ) {
+          continue;
+        }
+        const at = script.frame(found.end);
+        const out = Math.hypot(at.ball.x - pitchWidth / 2, at.ball.y);
+        if (out > 37) {
+          continue;
+        }
+        const metres =
+          script.frame(script.phases.zoom).players[shooter]!.travelled -
+          at.players[shooter]!.travelled;
+        if (metres > 9) {
+          carries.push(
+            `seed ${seed}, ${kind}, shooter ${shooter}: found ${out.toFixed(1)} m out, carries ${metres.toFixed(1)} m`
+          );
+        }
+      }
+    }
+  }
+  expect(carries).toEqual([]);
+}, 60_000);
+
 test('finding the shooter in range keeps the mix of finishes', () => {
   // The shares measured before the final pass was placed by the back line
   // (#223), as the seed picks them and the clip settles them: a one-on-one
@@ -1110,16 +1145,15 @@ test('the defender closing the ball down jockeys rather than sprinting in', () =
         if (closing < 0) {
           continue;
         }
-        // A carrier running into them shoves them along (#226): that's not
-        // closing in, so a defender within touching distance doesn't count.
+        // The carrier, with the ball at their feet, running into them shoves
+        // them along (#226): that's not closing in, so a defender within
+        // touching distance of the carrier doesn't count.
+        const defender = now.players[closing]!;
         const shoved = now.players.some(
-          (p, i) =>
+          p =>
             p.side === 'attack' &&
-            i !== closing &&
-            Math.hypot(
-              p.x - now.players[closing]!.x,
-              p.y - now.players[closing]!.y
-            ) < 1.4
+            Math.hypot(p.x - now.ball.x, p.y - now.ball.y) < 1.5 &&
+            Math.hypot(p.x - defender.x, p.y - defender.y) < 1.4
         );
         if (shoved) {
           continue;
@@ -1258,6 +1292,26 @@ test('one on one, the shooter has beaten the defence and the keeper comes out', 
     );
     expect(between).toEqual([]);
   }
+});
+
+test('through on goal, no midfielder pushes on to crowd the defence past the shooter', () => {
+  // Pushing on in support ahead of the ball, as in other build-ups, the
+  // midfielders would step the chasing defenders ahead of the shooter.
+  const script = createClipScript(
+    input({
+      finish: 'one-on-one',
+      kind: 'near-miss',
+      restart: 'open-play',
+      seed: 74
+    })
+  );
+  expect(script.finish).toBe('one-on-one');
+  const shot = script.frame(script.phases.moment);
+  const shooter = shot.players[9]!;
+  const between = shot.players.filter(
+    p => p.side === 'defence' && !p.keeper && depth(p.y) > depth(shooter.y) + 1
+  );
+  expect(between).toEqual([]);
 });
 
 test('players count the ground they cover, for their stride', () => {
@@ -1587,6 +1641,17 @@ test('after a goal a defender despairs and the keeper fetches the ball', () => {
       Math.hypot(keeper.x - end.ball.x, keeper.y - end.ball.y)
     ).toBeLessThan(1);
   }
+});
+
+test('a keeper off their line jogs back to fetch the ball from the net', () => {
+  // Beaten from off their line, the keeper is too far from the net to walk
+  // back in time.
+  const script = createClipScript(
+    input({ attackingUp: false, kind: 'goal', seed: 63 })
+  );
+  const end = script.frame(script.length - 1);
+  const keeper = end.players.find(p => p.side === 'defence' && p.keeper)!;
+  expect(keeper.pose).toBe('hold');
 });
 
 test('no one freezes once the ball arrives', () => {

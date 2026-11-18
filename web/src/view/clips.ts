@@ -631,6 +631,13 @@ const facingWindow = 10;
 const facingSpeed = { start: 2.5, stop: 1.5 };
 /** Another defender must be this much nearer the ball to take over pressing it. */
 const pressingGive = 1.5;
+/**
+ * A defender goal side of the ball and within this many metres of it
+ * jockeys, going no more than this much faster than the ball, in metres a
+ * second.
+ */
+const jockeyRange = 4;
+const jockeyGive = 1;
 /** After the moment, players walk or jog back at these paces, in metres a second. */
 const walkPace = 1.5;
 const jogPace = 3.5;
@@ -708,6 +715,8 @@ const runRamp = 0.3;
 const landingFrames = 8;
 /** The longest a passer holds the final pass for the shooter to get in reach. */
 const shooterWait = clipFps;
+/** Waiting on the ball for a team-mate, the holder carries it on at this pace, in metres a second. */
+const waitingPace = 2.5;
 /** A player turns at most once in this many frames, but to kick or aim. */
 const turnFrames = 20;
 
@@ -1345,6 +1354,8 @@ export const createClipScript = (input: ClipInput): ClipScript => {
 
   /** The defender closing the ball down, as last chosen. */
   let pressing = -1;
+  /** Where the ball was when players were last steered, for its pace. */
+  let ballWas: Point | undefined;
   // Every player not told otherwise heads for their place in the shape.
   const steer = (
     frame: number,
@@ -1390,6 +1401,10 @@ export const createClipScript = (input: ClipInput): ClipScript => {
     }
     // A challenger down on the ground stays there.
     const down = challengerDown(frame) ? challenge!.who : -1;
+    // Goal side of the ball and close to it, a defender jockeys: they keep
+    // pace with it, a little quicker, rather than sprinting in.
+    const ballPace = ballWas ? distance(ball, ballWas) : 0;
+    ballWas = { d: ball.d, x: ball.x };
     movers.forEach((mover, i) => {
       if (held.has(i) || i === down) {
         return;
@@ -1432,15 +1447,25 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       const gap = distance(mover, goal);
       // A defender out of position, such as one the ball has gone past,
       // sprints to get back.
-      const speed = perFrame(
-        paces.get(i) ??
-          (i < attackers.length
-            ? 6
-            : i === keeperSlot
-              ? 4
-              : gap > recoveryGap
-                ? 7.5
-                : 5.5)
+      const jockeying =
+        i >= attackers.length &&
+        i !== keeperSlot &&
+        !overrides.has(i) &&
+        !paces.has(i) &&
+        mover.d > ball.d &&
+        distance(mover, ball) < jockeyRange;
+      const speed = Math.min(
+        perFrame(
+          paces.get(i) ??
+            (i < attackers.length
+              ? 6
+              : i === keeperSlot
+                ? 4
+                : gap > recoveryGap
+                  ? 7.5
+                  : 5.5)
+        ),
+        jockeying ? ballPace + perFrame(jockeyGive) : Infinity
       );
       if (gap <= speed) {
         mover.d = goal.d;
@@ -1706,6 +1731,40 @@ export const createClipScript = (input: ClipInput): ClipScript => {
   const passesLeft = () => passCount - passesMade;
 
   /**
+   * Waiting on the ball while a team-mate gets into place, for up to
+   * `shooterWait` frames while `waiting` holds: the holder never stands on
+   * it, but carries it on slowly, the way they were going, upfield and away
+   * from the nearest defender, as if shielding it. The way is picked once,
+   * so the ball doesn't swing round their feet as defenders move.
+   */
+  const waitOnIt = (
+    waiting: () => boolean,
+    chase?: ReadonlyMap<number, Point>
+  ) => {
+    const mover = movers[holder]!;
+    let nearest: Point | undefined;
+    for (let i = attackers.length; i < count; i++) {
+      if (!nearest || distance(movers[i]!, ball) < distance(nearest, ball)) {
+        nearest = movers[i]!;
+      }
+    }
+    const away = nearest ? distance(mover, nearest) || 1 : 1;
+    const way = {
+      d: carrying.d + 0.5 + (nearest ? (mover.d - nearest.d) / away : 0),
+      x: carrying.x + (nearest ? (mover.x - nearest.x) / away : 0)
+    };
+    const size = Math.hypot(way.d, way.x) || 1;
+    const metres = perFrame(waitingPace) * shooterWait + 2;
+    const to = {
+      d: clamp(mover.d + (way.d / size) * metres, 3, pitchLength - 3),
+      x: clamp(mover.x + (way.x / size) * metres, 3, pitchWidth - 3)
+    };
+    for (let f = 0; f < shooterWait && waiting(); f++) {
+      dribble(1, to, waitingPace, chase);
+    }
+  };
+
+  /**
    * How a pass from the ball to `end` travels: along the ground, or in the
    * air for a restart other than a short free kick, or for any pass over
    * `longestGroundPass`; and the frames it takes at that pace.
@@ -1824,15 +1883,10 @@ export const createClipScript = (input: ClipInput): ClipScript => {
       placeFinish(end);
     }
     if (receiver === shooter && kind === 'pass' && frame <= maxBuildUp) {
-      const chase = new Map([[shooter, end]]);
-      for (
-        let f = 0;
-        f < shooterWait &&
-        distance(runner, end) > reach(flightTo(end, kind).frames);
-        f++
-      ) {
-        dribble(1, { d: movers[holder]!.d, x: movers[holder]!.x }, 1, chase);
-      }
+      waitOnIt(
+        () => distance(runner, end) > reach(flightTo(end, kind).frames),
+        new Map([[shooter, end]])
+      );
     }
     // Played into space the receiver can't reach in time, the ball goes
     // shorter, towards them.
@@ -1943,9 +1997,7 @@ export const createClipScript = (input: ClipInput): ClipScript => {
    */
   const nextReceiver = () => {
     if (passesLeft() <= 1) {
-      for (let f = 0; f < shooterWait && !onside(shooter); f++) {
-        dribble(1, { d: ball.d, x: ball.x }, 1);
-      }
+      waitOnIt(() => !onside(shooter));
       return shooter;
     }
     const choices = others.filter(i => i !== holder && onside(i));
@@ -2281,16 +2333,12 @@ export const createClipScript = (input: ClipInput): ClipScript => {
   // Waiting to cross, the crosser holds the ball while the header runs in,
   // so they can meet it at a pace a player can run.
   if (finish === 'header' && restart !== 'corner') {
-    const chase = new Map([[shooter, shootingSpot]]);
-    for (
-      let f = 0;
-      f < shooterWait &&
-      distance(movers[shooter]!, shootingSpot) >
-        reach(crossFlight(ball, shootingSpot) + clipFps / 2);
-      f++
-    ) {
-      dribble(1, { d: movers[holder]!.d, x: movers[holder]!.x }, 1, chase);
-    }
+    waitOnIt(
+      () =>
+        distance(movers[shooter]!, shootingSpot) >
+        reach(crossFlight(ball, shootingSpot) + clipFps / 2),
+      new Map([[shooter, shootingSpot]])
+    );
   }
 
   // Through on goal from further out, the shooter runs on with the ball.

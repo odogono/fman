@@ -23,6 +23,7 @@ export type ClipIssueKind =
   | 'crowded'
   | 'facing-away'
   | 'facing-flicker'
+  | 'holder-still'
   | 'long-back-pass'
   | 'long-ground-pass'
   | 'long-shot'
@@ -41,6 +42,7 @@ export const clipIssueKinds: readonly ClipIssueKind[] = [
   'crowded',
   'facing-away',
   'facing-flicker',
+  'holder-still',
   'long-back-pass',
   'long-ground-pass',
   'long-shot',
@@ -83,6 +85,14 @@ export const clipLimits = {
   defenderClearance: 0.9,
   /** A passer faces within this angle of the pass. */
   facingAngle: Math.PI / 3,
+  /**
+   * A holder with the ball at their feet, within this many metres, moving
+   * slower than this, in metres a second, for longer than this many frames,
+   * stands still on it.
+   */
+  holderReach: 1.5,
+  holderStill: 0.5,
+  holderStillFrames: 0.4 * clipFps,
   /** A player who turns this many times within the frames after flickers. */
   flickerFrames: clipFps / 2,
   flickerTurns: 3,
@@ -337,6 +347,34 @@ export const checkClip = (script: ClipScript): ClipIssue[] => {
       ...run,
       kind: 'ball-jumps',
       message: 'the ball jumps at its carrier’s feet',
+      players: [carrier(run.start)!]
+    });
+  }
+
+  // In the build-up, whoever has the ball keeps it moving: they never stand
+  // on it while a team-mate gets into place. Before the first pass, a
+  // restart's taker waits for both sides to set, which is meant.
+  const still = (at: number) => {
+    const holder = carrier(at);
+    if (at < 1 || inFlight(at) || holder === undefined) {
+      return false;
+    }
+    const { ball } = frames[at]!;
+    return (
+      gap(frames[at]!.players[holder]!, ball) < clipLimits.holderReach &&
+      gap(ball, frames[at - 1]!.ball) * clipFps < clipLimits.holderStill
+    );
+  };
+  for (const run of runs(
+    1,
+    phases.zoom - 1,
+    still,
+    clipLimits.holderStillFrames + 1
+  )) {
+    issues.push({
+      ...run,
+      kind: 'holder-still',
+      message: `stands still on the ball for ${((run.end - run.start + 1) / clipFps).toFixed(1)} s`,
       players: [carrier(run.start)!]
     });
   }

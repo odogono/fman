@@ -964,6 +964,99 @@ test('clips pass the clip checks, whoever shoots', () => {
   // 180 clips, each built and checked frame by frame: slow on a busy runner.
 }, 30_000);
 
+test('no one stands still on the ball while a team-mate gets into place', () => {
+  const still: string[] = [];
+  const check = (script: ClipScript, name: string) => {
+    for (const issue of checkClip(script)) {
+      if (issue.kind === 'holder-still') {
+        still.push(`${name}: ${issue.message} (${issue.start}–${issue.end})`);
+      }
+    }
+  };
+  // The final pass waiting for the shooter to get in reach or back onside,
+  // for a forward and a midfielder, and for an injury's run.
+  for (const shooter of [9, 6]) {
+    for (let seed = 0; seed < 40; seed++) {
+      for (const kind of [
+        'goal',
+        'save',
+        'near-miss',
+        'clearance',
+        'injury'
+      ] as const) {
+        check(
+          createClipScript(input({ kind, seed, shooter })),
+          `seed ${seed}, ${kind}, shooter ${shooter}`
+        );
+      }
+    }
+  }
+  // The crosser waiting for the header to run into the box.
+  for (let seed = 0; seed < 40; seed++) {
+    check(
+      createClipScript(input({ finish: 'header', seed })),
+      `seed ${seed}, header`
+    );
+  }
+  expect(still).toEqual([]);
+}, 60_000);
+
+/** Paces are judged over 5 frames, so a step apart from a team-mate doesn't count. */
+const over = 5;
+/** The pace from `b` to `a` over those frames, in metres a second. */
+const paceOver = (a: { x: number; y: number }, b: typeof a) =>
+  (Math.hypot(a.x - b.x, a.y - b.y) * clipFps) / over;
+
+test('the defender closing the ball down jockeys rather than sprinting in', () => {
+  const fast: string[] = [];
+  for (let seed = 0; seed < 40; seed++) {
+    for (const kind of ['goal', 'save', 'near-miss', 'clearance'] as const) {
+      const script = createClipScript(
+        input({ attackingUp: seed % 2 === 0, kind, seed })
+      );
+      const up = script.input.attackingUp ? -1 : 1;
+      const from = (script.passes[0]?.end ?? 0) + over;
+      for (let at = from; at < script.phases.zoom; at++) {
+        if (
+          script.passes.some(p => at >= p.start - over && at <= p.end + over)
+        ) {
+          continue;
+        }
+        const now = script.frame(at);
+        const was = script.frame(at - over);
+        // On their feet, within 3 m of the ball and goal side of it.
+        const closing = now.players.findIndex(
+          p =>
+            p.side === 'defence' &&
+            !p.keeper &&
+            (p.pose === 'run' || p.pose === 'stand') &&
+            Math.hypot(p.x - now.ball.x, p.y - now.ball.y) < 3 &&
+            (p.y - now.ball.y) * up > 0.5
+        );
+        if (closing < 0) {
+          continue;
+        }
+        // Their pace towards the ball: one pushed back off it isn't closing.
+        const [p, q] = [now.players[closing]!, was.players[closing]!];
+        const gap = Math.hypot(now.ball.x - q.x, now.ball.y - q.y) || 1;
+        const towards =
+          (((p.x - q.x) * (now.ball.x - q.x) +
+            (p.y - q.y) * (now.ball.y - q.y)) /
+            gap) *
+          (clipFps / over);
+        const extra = towards - paceOver(now.ball, was.ball);
+        if (extra > 1.5) {
+          fast.push(
+            `seed ${seed}, ${kind}, frame ${at}: defender ${closing} closes ${extra.toFixed(1)} m/s faster than the ball goes`
+          );
+          break;
+        }
+      }
+    }
+  }
+  expect(fast).toEqual([]);
+}, 60_000);
+
 /**
  * Clips of one finish, as the debug page forces it, from open play but for
  * headers. A one-on-one with the defence too deep to get in behind is a

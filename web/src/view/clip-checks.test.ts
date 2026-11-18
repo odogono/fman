@@ -239,3 +239,23 @@ test('a shooter carrying the ball a long way to shoot is flagged', () => {
 test('a one-on-one runs on with the ball by design', () => {
   expect(kinds(runsWithIt(78, 'one-on-one'))).not.toContain('long-run');
 });
+
+/** The defender, well wide, runs up the screen from frame 5, `metres` a frame, for 10 frames. */
+const runs = (metres: number, pose: FramePlayer['pose'] = 'run') =>
+  clip({
+    change: (at, players) => {
+      const on = Math.min(10, Math.max(0, at - 5));
+      players[2] = { ...players[2]!, pose, y: 50 - on * metres };
+    }
+  });
+
+test('a player on their feet faster than anyone runs is flagged', () => {
+  // 0.3 m a frame is 15 m/s.
+  const found = checkClip(runs(0.3)).filter(i => i.kind === 'too-fast');
+  expect(found).toHaveLength(1);
+  expect(found[0]!.players).toEqual([2]);
+  // 8 m/s is a sprint.
+  expect(kinds(runs(0.16))).not.toContain('too-fast');
+  // Sliding in, they can go faster.
+  expect(kinds(runs(0.3, 'tackle'))).not.toContain('too-fast');
+});

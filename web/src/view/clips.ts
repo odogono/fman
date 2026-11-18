@@ -2343,15 +2343,6 @@ export const createClipScript = (input: ClipInput): ClipScript => {
    * nearest, while the shooter makes for the box.
    */
   const goWide = () => {
-    // A cut-back the seed picked needs time to get to the byline; short of
-    // it, the ball goes in low from where it is instead.
-    if (
-      cross === 'cut-back' &&
-      input.cross === undefined &&
-      frame + 2 * clipFps > maxBuildUp
-    ) {
-      cross = 'low';
-    }
     // Never more than a few metres back from a holder already deep. For a
     // cut-back, all the way to the byline, inside the width of the box.
     const cutBack = cross === 'cut-back';

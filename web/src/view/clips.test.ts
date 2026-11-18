@@ -1218,10 +1218,6 @@ test('every ball in from wide passes the clip checks', () => {
     for (const shooter of [9, 6]) {
       // From any restart the seed picks.
       for (let seed = 0; seed < 40; seed++) {
-        // The shooter shuffles against a marker at their spot (#229).
-        if (cross === 'headed-clear' && seed === 1) {
-          continue;
-        }
         const kinds = kindsFor[cross];
         const script = createClipScript(
           input({ cross, kind: kinds[seed % kinds.length]!, seed, shooter })

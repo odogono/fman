@@ -81,6 +81,13 @@ export const reboundSettle = 3;
  * parries, a third for an average keeper: by this share of it either way.
  */
 export const parryLean = 0.6;
+/**
+ * How much a player's quality (#236), from -1 to 1, moves how fast they
+ * run, either way.
+ */
+export const skillPaceLean = 0.08;
+/** How much slower a player with no energy left runs than a fresh one. */
+export const energyPaceLean = 0.06;
 /** How much a shooter's quality moves the pace of their shot, either way. */
 export const shotPaceLean = 0.1;
 /** Frames a keeper lies down after the parry before scrambling up. */

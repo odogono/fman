@@ -201,6 +201,10 @@ _Avoid_: Pause when referring to the game menu, since a pause is the original's 
 **Prompt**:
 A point where the original waits for the manager to type a line and press Enter.
 
+**Prompt beep**:
+The short beep the original sounds as a prompt appears, holding input until it ends. Only Classic mode sounds it; in Modern mode a prompt takes an answer as soon as it appears.
+_Avoid_: Prompt sound when referring to clicks or match beeps, which both modes keep
+
 **Answer**:
 The text submitted to a prompt. An answer the original rejects with one of its own error messages is still an answer.
 _Avoid_: Command, action

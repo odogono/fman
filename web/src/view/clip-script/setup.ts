@@ -23,8 +23,10 @@ import {
   claimShare,
   crossShare,
   energyPaceLean,
+  finishLean,
   injuredFrom,
   parryLean,
+  passCountLean,
   penaltySpot,
   reboundShare,
   sixYards,
@@ -50,12 +52,16 @@ export const createClipRng = (seed: number) => {
   return {
     between: (low: number, high: number) => low + (high - low) * next(),
     /**
+     * A whole number from `low` to `high`, evenly, or leaning towards
+     * `high` for `lean` above 0 and `low` below it, as `leaning` does.
+     */
+    int: (low: number, high: number, lean = 0) =>
+      low + Math.floor(next() ** (2 ** -lean) * (high - low + 1)),
+    /**
      * As `between`, leaning towards `high` for `lean` above 0 and `low`
      * below it, from -1 to 1, as a player's quality does (#234). With no
      * lean it draws as `between`.
      */
-    int: (low: number, high: number) =>
-      low + Math.floor(next() * (high - low + 1)),
     leaning: (low: number, high: number, lean: number) =>
       low + (high - low) * next() ** (2 ** -lean),
     next,
@@ -266,17 +272,20 @@ export const decideClip = (input: ClipInput) => {
   /** How much each ball in the air bends, from a stream of its own. */
   const curlRng = createClipRng(hashSeed(`${input.seed}|curl`));
   const finishRoll = finishRng.next();
+  // A skilled shooter goes one-on-one or shoots from range more often, a
+  // weak one less (#237), at the plain shot's cost or to its gain.
+  const daring = 1 + finishLean * qualityOf(attackers[shooter]);
   const odds: readonly (readonly [Finish, number])[] =
     attackers[shooter]?.line === 'attack'
       ? [
           ['header', 0.25],
-          ['one-on-one', 0.2],
-          ['long-range', 0.05]
+          ['one-on-one', 0.2 * daring],
+          ['long-range', 0.05 * daring]
         ]
       : [
           ['header', 0.15],
-          ['one-on-one', 0.1],
-          ['long-range', 0.3]
+          ['one-on-one', 0.1 * daring],
+          ['long-range', 0.3 * daring]
         ];
   let roll = finishRoll;
   const drawnFinish: Finish =
@@ -467,7 +476,18 @@ export const decideClip = (input: ClipInput) => {
     outcome !== 'punch' &&
     outcomeKind(outcome) !== 'clearance' &&
     (input.rebound ?? reboundRng.next() < reboundShare);
-  const passCount = others.length ? rng.int(2, 4) : 0;
+  /**
+   * How good the side building up is (#237): the mean quality of its
+   * outfield players but the shooter, average with none.
+   */
+  const buildUpQuality = others.length
+    ? others.reduce((sum, i) => sum + qualityOf(attackers[i]), 0) /
+      others.length
+    : 0;
+  // A strong side needs fewer passes, a weak one more.
+  const passCount = others.length
+    ? rng.int(2, 4, -passCountLean * buildUpQuality)
+    : 0;
   const minBuildUp = 6 * clipFps;
   /**
    * Past this, no one carries the ball on; past the next, the shooter is
@@ -495,6 +515,7 @@ export const decideClip = (input: ClipInput) => {
     attackKeeper,
     attackSpots,
     ballStart,
+    buildUpQuality,
     count,
     cross,
     crossRng,

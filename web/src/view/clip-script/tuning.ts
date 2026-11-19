@@ -90,6 +90,24 @@ export const skillPaceLean = 0.08;
 export const energyPaceLean = 0.06;
 /** How much a shooter's quality moves the pace of their shot, either way. */
 export const shotPaceLean = 0.1;
+/**
+ * How much a shooter's quality (#237) moves their odds of a one-on-one and
+ * of a shot from range, either way, as a share of an average shooter's.
+ */
+export const finishLean = 0.5;
+/**
+ * How much the build-up's quality (#237) leans the number of passes: a
+ * strong side averages about 2.5, a weak one 3.5, an average one 3.
+ */
+export const passCountLean = 1.3;
+/**
+ * How much the build-up's quality (#237) moves the weight of a receiver
+ * more than `farPass` metres away, either way, and of a nearer one the
+ * other way: a weak side plays it short, a strong one long.
+ */
+export const passLengthLean = 0.5;
+/** A pass longer than this, in metres, is a long one, for `passLengthLean`. */
+export const farPass = 20;
 /** Frames a keeper lies down after the parry before scrambling up. */
 export const scrambleFrames = 15;
 /** The defender chasing a rebound gets no nearer the ball than this, in metres. */

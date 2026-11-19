@@ -52,7 +52,8 @@ test('Enhanced version 11 is version 10 with penalties, which later versions kee
   expect(rulesets.filter(r => penalties(r))).toEqual([
     'enhanced-11',
     'enhanced-12',
-    'enhanced-13'
+    'enhanced-13',
+    'enhanced-14'
   ]);
   expect(penalties(latestEnhanced)).toBe(true);
   for (const accessor of [

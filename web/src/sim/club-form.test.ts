@@ -61,7 +61,11 @@ test('Enhanced version 12 is version 11 with club form, which later versions kee
 });
 
 test('Enhanced version 12 and later give clubs form', () => {
-  expect(rulesets.filter(clubForm)).toEqual(['enhanced-12', 'enhanced-13']);
+  expect(rulesets.filter(clubForm)).toEqual([
+    'enhanced-12',
+    'enhanced-13',
+    'enhanced-14'
+  ]);
   expect(newGame().recentResults).toEqual(freshResults());
   expect(
     createNewGame({

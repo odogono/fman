@@ -1,5 +1,5 @@
 import type { Game } from './management';
-import { squadStrength } from './ruleset';
+import { evenTable, squadStrength } from './ruleset';
 import { positionCategory, type SquadPlayer } from './squads';
 
 /** How much of a squad's category sum counts in an opponent's attribute. */
@@ -82,5 +82,9 @@ export const squadGoals = (game: Game, own: number, other: number) => {
   if (!squadStrength(game.ruleset) || !a || !b) {
     return 0;
   }
-  return (squadMean(a) - squadMean(b)) / goalGap;
+  // Under an even table (#218), the gap moves them half as much.
+  return (
+    (squadMean(a) - squadMean(b)) /
+    (evenTable(game.ruleset) ? 2 * goalGap : goalGap)
+  );
 };

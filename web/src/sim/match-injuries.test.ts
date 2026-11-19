@@ -71,7 +71,8 @@ test('Enhanced version 9 is version 8 with match injuries', () => {
         ruleset === 'enhanced-10' ||
         ruleset === 'enhanced-11' ||
         ruleset === 'enhanced-12' ||
-        ruleset === 'enhanced-13'
+        ruleset === 'enhanced-13' ||
+        ruleset === 'enhanced-14'
     );
   }
   for (const accessor of [

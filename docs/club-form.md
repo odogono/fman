@@ -9,7 +9,7 @@
 - **The managed club has no form.** Its morale already moves with its results.
 - **Opponent strength.** Half of the opponent's form adds to each of its five attributes, on top of points per match, before the sum is floored and clamped to 1–20: `R(14) + difficulty bonus + points/matches + form/2`.
 - **Cup opponents** from the managed club's division bring their form the same way. Other divisions aren't simulated, so a cup opponent from one has none.
-- **The week's results.** A third of each side's form adds to its goals: `INT(points/matches + RND × 4 + form/3)`, never below 0.
+- **The week's results.** A third of each side's form adds to its goals: `INT(points/matches + RND × 4 + form/3)`, never below 0. From `enhanced-14`, form no longer adds to them ([even table](even-table.md)).
 - **Season end.** Every club's form starts again from nothing, which also covers a division the managed club has just joined.
 
 Form takes no random draws, so every draw is as under the rules without it, and the baseline comparison shows the rule alone.

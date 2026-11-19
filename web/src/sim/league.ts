@@ -3,7 +3,7 @@ import { payWeeklyBills, type Game } from './management';
 import { scorePrintReport, tablePrintReport } from './name-print-fault';
 import { add, divide, floor, fromNumber, multiply, toNumber } from './numeric';
 import { createRng } from './rng';
-import { clubForm, opponentBonus, squadStrength } from './ruleset';
+import { clubForm, evenTable, opponentBonus, squadStrength } from './ruleset';
 import { rolledAttribute, squadGoals, squadTerms } from './squad-strength';
 import { playerCategory } from './squads';
 
@@ -242,7 +242,9 @@ export const completeLeagueMatch = (
     if (!clubForm(game.ruleset)) {
       return toNumber(floor(base));
     }
-    const form = formOf(game, index + offset + 1);
+    // Under an even table (#218), form shapes only the managed club's
+    // opponent, not the other clubs' results.
+    const form = evenTable(game.ruleset) ? 0 : formOf(game, index + offset + 1);
     const withForm = add(base, divide(fromNumber(form), fromNumber(3)));
     const total = squadStrength(game.ruleset)
       ? add(

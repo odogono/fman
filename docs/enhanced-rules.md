@@ -27,6 +27,7 @@ Enhanced rules are released in versions, stored as `enhanced-1`, `enhanced-2` an
 | `enhanced-11` | Version 10, plus [penalties](penalties.md) for fouls in the box                                                                     | `penalties` ([#211](https://github.com/odogono/fman/issues/211))                                                                               |
 | `enhanced-12` | Version 11, plus [form for other clubs](club-form.md)                                                                               | `club-form` ([#99](https://github.com/odogono/fman/issues/99))                                                                                 |
 | `enhanced-13` | Version 12, plus [squad strength](squad-strength.md)                                                                                | `squad-strength` ([#119](https://github.com/odogono/fman/issues/119))                                                                          |
+| `enhanced-14` | Version 13, plus [an even table](even-table.md)                                                                                     | `even-table` ([#218](https://github.com/odogono/fman/issues/218))                                                                              |
 
 Starting clubs and players are part of a ruleset too ([ADR 0011](adr/0011-rulesets-carry-starting-clubs-and-players.md)). A change that leaves every rule alone, as `enhanced-3`'s, needs no experimental ruleset: its baseline must match the previous version's.
 

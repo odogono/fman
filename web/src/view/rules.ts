@@ -22,7 +22,7 @@ export const rulesOf = (ruleset: Ruleset): Rules =>
 export const rulesChoices = [
   {
     description:
-      'Matches told as a ticker of goals, saves, clearances and near misses, present-day clubs in their own colours, each with a squad of its own, players who keep their skill between seasons, injuries during matches, likelier for tired players and out for up to three weeks, penalties for fouls in the box, clubs on hot streaks and slumps, opponents as strong as their squads, a smoother difficulty curve, a few weeks to clear debts before dismissal, and no renamed name that can stop the game',
+      'Matches told as a ticker of goals, saves, clearances and near misses, present-day clubs in their own colours, each with a squad of its own, players who keep their skill between seasons, injuries during matches, likelier for tired players and out for up to three weeks, penalties for fouls in the box, opponents on hot streaks and slumps and as strong as their squads, a smoother difficulty curve, a few weeks to clear debts before dismissal, and no renamed name that can stop the game',
     name: 'Enhanced',
     rules: 'enhanced'
   },

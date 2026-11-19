@@ -241,13 +241,19 @@ export const playTackle = (clip: Clip) => {
       const sweeping =
         sitting && sweeper < 0 ? undefined : clip.movers[clip.clearer];
       if (sweeping) {
-        // A team-mate gets to the loose ball, facing upfield.
+        // A team-mate gets to the loose ball, facing upfield. Once there
+        // they stay on it, held, rather than be steered off it to close it
+        // down and step back onto it every few frames.
         const to = { d: clip.ball.d + 0.6, x: clip.ball.x };
         const gap = distance(sweeping, to);
         const step = perFrame(7);
         if (gap > step) {
           sweeping.d += ((to.d - sweeping.d) / gap) * step;
           sweeping.x += ((to.x - sweeping.x) / gap) * step;
+        } else {
+          held.add(clip.clearer);
+          sweeping.d = to.d;
+          sweeping.x = to.x;
         }
         sweeping.pose = 'run';
       }

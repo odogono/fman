@@ -138,6 +138,16 @@ export const stride = 0.8;
  * so no one is drawn standing inside anyone else.
  */
 export const personalSpace = 1.3;
+/**
+ * How far, in metres, beyond an opponent an attacker's spot on the far side
+ * of them comes round to their own side (#229).
+ */
+export const farSideReach = 4;
+/**
+ * How far, in metres, an attacker can be nudged beyond where they may wait
+ * before dropping straight back.
+ */
+export const offsideNudge = 0.3;
 /** A defender further than this from their place, in metres, sprints back. */
 export const recoveryGap = 3;
 /** How far apart, in metres, a back line lets its players get as it moves. */

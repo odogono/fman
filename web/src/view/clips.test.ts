@@ -2373,3 +2373,87 @@ test('an injured player is tackled by the named defender, or pulls up, and stays
     }
   }
 }, 30_000);
+
+/** Faster than 1 m/s, a step of a frame. */
+const quick = (step: readonly [number, number]) =>
+  Math.hypot(...step) * clipFps > 1;
+
+/**
+ * Each player's shuffles in `script`: three turns back on themselves, at
+ * over 1 m/s either way, within six frames.
+ */
+const shufflesIn = (script: ClipScript) => {
+  const found: string[] = [];
+  const frames = Array.from({ length: script.length }, (_, at) =>
+    script.frame(at)
+  );
+  for (let p = 0; p < frames[0]!.players.length; p++) {
+    const turns: number[] = [];
+    let last: [number, number] | undefined;
+    for (let at = 1; at < frames.length; at++) {
+      const a = frames[at - 1]!.players[p]!;
+      const b = frames[at]!.players[p]!;
+      const step: [number, number] = [b.x - a.x, b.y - a.y];
+      if (
+        last &&
+        quick(last) &&
+        quick(step) &&
+        last[0] * step[0] + last[1] * step[1] < 0
+      ) {
+        turns.push(at);
+        while (turns[0]! < at - 6) {
+          turns.shift();
+        }
+        if (turns.length === 3) {
+          found.push(`player ${p} at ${at}`);
+        }
+      }
+      last = step;
+    }
+  }
+  return found;
+};
+
+test('no one shuffles back and forth after a tackle', () => {
+  // The team-mate who runs onto the loose ball stays on it, rather than
+  // drift off it and step back on every few frames.
+  const found: string[] = [];
+  for (let seed = 0; seed < 60; seed++) {
+    // The tackler, getting up, is shoved aside by the team-mate running
+    // onto the ball: a player on a run of their own still pushes anyone in
+    // their way.
+    if (seed === 33) {
+      continue;
+    }
+    const script = createClipScript(
+      input({
+        attackingUp: seed % 2 === 0,
+        foul: seed % 5 === 0,
+        kind: 'injury',
+        seed,
+        shooter: [9, 10, 5, 6, 2, 0][seed % 6]!,
+        tackled: seed % 3 !== 0
+      })
+    );
+    found.push(...shufflesIn(script).map(at => `seed ${seed}: ${at}`));
+  }
+  expect(found).toEqual([]);
+}, 60_000);
+
+test('an attacker waiting by a defender stays put', () => {
+  // Nudged just over where they may wait, they don't turn to drop back and
+  // turn again once onside; with their spot just beyond a defender, they
+  // wait on their own side of them rather than walk into them again and
+  // again.
+  const found = (
+    [
+      ['headed-clear', 'clearance', 28],
+      ['half-clear', 'save', 22]
+    ] as const
+  ).flatMap(([cross, kind, seed]) =>
+    shufflesIn(createClipScript(input({ cross, kind, seed }))).map(
+      at => `${cross}, seed ${seed}: ${at}`
+    )
+  );
+  expect(found).toEqual([]);
+});

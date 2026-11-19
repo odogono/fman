@@ -616,6 +616,21 @@ const separate = (clip: Clip, held: ReadonlySet<number>) => {
   }
 };
 
+/**
+ * Moves `spot` across the pitch, if it is in `other`'s personal space, to
+ * stand beside them, on the side `mover` is already on, so that a spot
+ * about level with them doesn't swap from side to side as they sway.
+ */
+const besideOf = (spot: Point, other: Point, mover: Point) => {
+  const dd = spot.d - other.d;
+  const dx = spot.x - other.x;
+  if (dd * dd + dx * dx < personalSpace * personalSpace) {
+    const side = mover.x < other.x ? -1 : 1;
+    spot.x =
+      other.x + side * Math.sqrt(personalSpace * personalSpace - dd * dd);
+  }
+};
+
 // Every player not told otherwise heads for their place in the shape.
 export const steer = (
   clip: Clip,
@@ -693,6 +708,12 @@ export const steer = (
       // Caught beyond the line, a player first drops straight back.
       if (mover.d > line) {
         goal.x = mover.x;
+      }
+      // They wait beside an opponent rather than in their space, as one
+      // who did would be pushed out, step back in and take turns with
+      // them (#229). Opponents keep their shape whoever is near them.
+      for (let j = clip.attackers.length; j < clip.count; j++) {
+        besideOf(goal, clip.movers[j]!, mover);
       }
     } else {
       if (clip.keepAway && i !== clip.keeperSlot) {

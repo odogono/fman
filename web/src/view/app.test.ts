@@ -990,6 +990,29 @@ test('the Presentation option switches modes mid-game, and is remembered', () =>
   expect(reopened.page.applied.at(-1)?.presentation).toBe('modern');
 });
 
+test('only Classic mode sounds the prompt beep, whatever the session (ADR 0015)', () => {
+  const modern = harness({ options: modernOptions });
+  modern.toMenu();
+  expect(modern.app.journal.session.promptBeeps).toBe(false);
+  const classic = harness();
+  classic.toMenu();
+  expect(classic.app.journal.session.promptBeeps).toBe(true);
+  classic.app.openMenu();
+  classic.press('Options');
+  const presentation = classic.control('Presentation');
+  if (presentation.kind !== 'select') {
+    throw new Error('Unexpected presentation control');
+  }
+  presentation.change('modern');
+  expect(classic.app.journal.session.promptBeeps).toBe(false);
+  // A loaded or new game takes the mode's setting too.
+  const reopened = harness({
+    autosave: classic.stored.get('fman:autosave')!,
+    options: JSON.stringify({ presentation: 'classic' })
+  });
+  expect(reopened.app.journal.session.promptBeeps).toBe(true);
+});
+
 test('the Home screen sums up the club and offers the menu in the original order', () => {
   const run = harness({ options: modernOptions });
   run.toMenu();
@@ -1292,8 +1315,8 @@ test('Modern mode takes an exact amount from a physical keyboard', () => {
 test('in Modern mode a held key still cuts a timed pause short', () => {
   const run = harness({ options: modernOptions });
   run.toMenu();
-  run.app.tap('menu.status');
-  run.app.pointerUp();
+  // Modern mode has no prompt beep (ADR 0015); the highlights are timed.
+  kickOff(run);
   expect(run.view().paused).toBe(true);
   run.app.keyDown({
     code: 'KeyX',

@@ -1,6 +1,6 @@
 import type { View } from '../sim/session';
 import { startAmount, type AmountEntry } from './amount-entry';
-import { answersFor } from './answers';
+import { promptAnswersFor } from './answers';
 import {
   cupReplayFor,
   cupResultFor,
@@ -90,8 +90,9 @@ export type ModernScreenContext = Readonly<{
     Readonly<{ progress: ClipProgress; score: readonly number[] }> | undefined;
 }>;
 
+/** The amount the prompt starts at, known even while a pause holds input. */
 const freshAmount = (view: View) => {
-  const offered = answersFor(view).find(a => a.kind === 'amount');
+  const offered = promptAnswersFor(view).find(a => a.kind === 'amount');
   return offered?.kind === 'amount' ? startAmount(offered) : undefined;
 };
 

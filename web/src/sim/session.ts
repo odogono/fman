@@ -232,6 +232,8 @@ export const createSession = (
   let program = freshProgram(initialFrames, initialSeed);
   let soundTimeT = 0;
   let soundGeneration = 0;
+  /** Whether prompts sound the original's prompt beep (ADR 0015). */
+  let promptBeeps = true;
   const promptScreens = new Set<Screen>([
     'menu',
     'status',
@@ -255,6 +257,7 @@ export const createSession = (
   ]);
   const promptSound = (phase = program.ulaFrames * spectrumFrameT) => {
     if (
+      !promptBeeps ||
       !promptScreens.has(program.screen) ||
       screenPrintFault(screenView()) ||
       running() ||
@@ -1000,7 +1003,7 @@ export const createSession = (
         startT: soundTimeT + sound.t - timeline.elapsedT
       }));
       // The beep the next screen's prompt sounds once the timed screen ends.
-      if (!prompt && promptScreens.has(run!.next)) {
+      if (!prompt && promptBeeps && promptScreens.has(run!.next)) {
         events.push({
           ...beepRegisters(0.2, 0),
           id: `${soundGeneration}:prompt`,
@@ -1014,6 +1017,19 @@ export const createSession = (
       return soundTimeT;
     },
     submit,
+    /** Whether prompts still to come sound the prompt beep (ADR 0015). */
+    get promptBeeps() {
+      return promptBeeps;
+    },
+    /**
+     * Turns the prompt beep on or off for prompts still to come (ADR 0015);
+     * a beep already sounding plays out. Returns whether it changed.
+     */
+    setPromptBeeps: (on: boolean) => {
+      const changed = promptBeeps !== on;
+      promptBeeps = on;
+      return changed;
+    },
     get timingState() {
       return { keyboard: program.keyboard.state, ulaFrames: program.ulaFrames };
     },

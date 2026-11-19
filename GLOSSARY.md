@@ -54,7 +54,7 @@ _Avoid_: Training or growth, which suggest a change the manager causes
 The managed club's confidence, affected by match and cup results.
 
 **Form**:
-Under club form, how a club other than the managed club has done in its last three league matches: one up for each win and one down for each loss. It strengthens or weakens the club as an opponent and in the week's results, and starts again from nothing at the season end.
+Under club form, how a club other than the managed club has done in its last three league matches: one up for each win and one down for each loss. It strengthens or weakens the club as an opponent, and starts again from nothing at the season end.
 _Avoid_: Morale when referring to other clubs; streak
 
 **Team strength**:

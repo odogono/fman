@@ -15,7 +15,7 @@ import {
  * is retired once the change joins Enhanced (`even-difficulty`,
  * `grace-period`, `lasting-skill`, `steep-difficulty`, `tiring-injuries`,
  * `club-squads`, `moment-highlights`, `clearances`, `match-injuries`,
- * `penalties`, `club-form`, `squad-strength`).
+ * `penalties`, `club-form`, `squad-strength`, `even-table`).
  */
 export const rulesets = [
   'original',
@@ -31,18 +31,19 @@ export const rulesets = [
   'enhanced-10',
   'enhanced-11',
   'enhanced-12',
-  'enhanced-13'
+  'enhanced-13',
+  'enhanced-14'
 ] as const;
 export type Ruleset = (typeof rulesets)[number];
 
 /** The Enhanced version every new Enhanced game starts with. */
-export const latestEnhanced = 'enhanced-13' satisfies Ruleset;
+export const latestEnhanced = 'enhanced-14' satisfies Ruleset;
 
 export const isRuleset = (value: unknown): value is Ruleset =>
   rulesets.includes(value as Ruleset);
 
 /** The difficulty curves: what each level adds to an opponent's strength. */
-type Difficulty = 'original' | 'smooth' | 'steep';
+type Difficulty = 'original' | 'smooth' | 'steep' | 'steep-table';
 
 /** The rule changes each ruleset makes to the original. */
 const changes: Record<
@@ -52,6 +53,7 @@ const changes: Record<
     clubForm: boolean;
     clubSquads: boolean;
     difficulty: Difficulty;
+    evenTable: boolean;
     gracePeriod: boolean;
     lastingSkill: boolean;
     matchInjuries: boolean;
@@ -68,6 +70,7 @@ const changes: Record<
     clubForm: false,
     clubSquads: false,
     difficulty: 'smooth',
+    evenTable: false,
     gracePeriod: false,
     lastingSkill: false,
     matchInjuries: false,
@@ -83,6 +86,7 @@ const changes: Record<
     clubForm: false,
     clubSquads: true,
     difficulty: 'steep',
+    evenTable: false,
     gracePeriod: true,
     lastingSkill: true,
     matchInjuries: true,
@@ -98,6 +102,7 @@ const changes: Record<
     clubForm: false,
     clubSquads: true,
     difficulty: 'steep',
+    evenTable: false,
     gracePeriod: true,
     lastingSkill: true,
     matchInjuries: true,
@@ -113,6 +118,7 @@ const changes: Record<
     clubForm: true,
     clubSquads: true,
     difficulty: 'steep',
+    evenTable: false,
     gracePeriod: true,
     lastingSkill: true,
     matchInjuries: true,
@@ -128,6 +134,23 @@ const changes: Record<
     clubForm: true,
     clubSquads: true,
     difficulty: 'steep',
+    evenTable: false,
+    gracePeriod: true,
+    lastingSkill: true,
+    matchInjuries: true,
+    momentHighlights: true,
+    penalties: true,
+    plainNames: true,
+    presentDay: true,
+    squadStrength: true,
+    tiringInjuries: true
+  },
+  'enhanced-14': {
+    clearances: true,
+    clubForm: true,
+    clubSquads: true,
+    difficulty: 'steep-table',
+    evenTable: true,
     gracePeriod: true,
     lastingSkill: true,
     matchInjuries: true,
@@ -143,6 +166,7 @@ const changes: Record<
     clubForm: false,
     clubSquads: false,
     difficulty: 'smooth',
+    evenTable: false,
     gracePeriod: true,
     lastingSkill: false,
     matchInjuries: false,
@@ -158,6 +182,7 @@ const changes: Record<
     clubForm: false,
     clubSquads: false,
     difficulty: 'smooth',
+    evenTable: false,
     gracePeriod: true,
     lastingSkill: false,
     matchInjuries: false,
@@ -173,6 +198,7 @@ const changes: Record<
     clubForm: false,
     clubSquads: false,
     difficulty: 'steep',
+    evenTable: false,
     gracePeriod: true,
     lastingSkill: true,
     matchInjuries: false,
@@ -188,6 +214,7 @@ const changes: Record<
     clubForm: false,
     clubSquads: false,
     difficulty: 'steep',
+    evenTable: false,
     gracePeriod: true,
     lastingSkill: true,
     matchInjuries: false,
@@ -203,6 +230,7 @@ const changes: Record<
     clubForm: false,
     clubSquads: true,
     difficulty: 'steep',
+    evenTable: false,
     gracePeriod: true,
     lastingSkill: true,
     matchInjuries: false,
@@ -218,6 +246,7 @@ const changes: Record<
     clubForm: false,
     clubSquads: true,
     difficulty: 'steep',
+    evenTable: false,
     gracePeriod: true,
     lastingSkill: true,
     matchInjuries: false,
@@ -233,6 +262,7 @@ const changes: Record<
     clubForm: false,
     clubSquads: true,
     difficulty: 'steep',
+    evenTable: false,
     gracePeriod: true,
     lastingSkill: true,
     matchInjuries: false,
@@ -248,6 +278,7 @@ const changes: Record<
     clubForm: false,
     clubSquads: true,
     difficulty: 'steep',
+    evenTable: false,
     gracePeriod: true,
     lastingSkill: true,
     matchInjuries: true,
@@ -263,6 +294,7 @@ const changes: Record<
     clubForm: false,
     clubSquads: false,
     difficulty: 'original',
+    evenTable: false,
     gracePeriod: false,
     lastingSkill: false,
     matchInjuries: false,
@@ -308,9 +340,19 @@ const smoothDifficultyBonus = [1, 2, 2.75, 3, 3.5, 3.75, 4] as const;
  */
 const steepDifficultyBonus = [1, 3, 3.75, 4.25, 4.75, 5, 5.5] as const;
 
+/**
+ * The steep curve with Genius eased from 5.5 to 5.25 (#218, measured as
+ * `even-table`, then part of `enhanced-14`). Squad strength made Genius
+ * opponents stronger; with the table no longer spread by form and squad
+ * strength, this brings balanced play's promotions back to Enhanced
+ * version 11's.
+ */
+const steepTableDifficultyBonus = [1, 3, 3.75, 4.25, 4.75, 5, 5.25] as const;
+
 const difficultyBonus = {
   smooth: smoothDifficultyBonus,
-  steep: steepDifficultyBonus
+  steep: steepDifficultyBonus,
+  'steep-table': steepTableDifficultyBonus
 } as const;
 
 /**
@@ -429,3 +471,15 @@ export const clubForm = (ruleset: Ruleset) => changes[ruleset].clubForm;
  */
 export const squadStrength = (ruleset: Ruleset) =>
   changes[ruleset].squadStrength;
+
+/**
+ * Whether the other clubs' points spread no wider than before club form
+ * and squad strength (#218, measured as `even-table` against
+ * `enhanced-13`, then part of `enhanced-14`): form no longer adds to a
+ * club's goals in the week's other results, only to its strength as an
+ * opponent, and the squad-strength gap moves those goals half as much.
+ * Both spread the table so that the top three took more points to reach,
+ * and promotions fell from level 3 up. It needs club form and squad
+ * strength, and comes with the `steep-table` curve.
+ */
+export const evenTable = (ruleset: Ruleset) => changes[ruleset].evenTable;

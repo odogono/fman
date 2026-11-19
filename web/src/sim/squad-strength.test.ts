@@ -9,7 +9,6 @@ import {
   clubSquads,
   gracePeriodWeeks,
   lastingSkill,
-  latestEnhanced,
   matchInjuries,
   momentHighlights,
   opponentBonus,
@@ -69,9 +68,11 @@ const allSquads = (game: Game, squad: SquadPlayer[]): Game => ({
   )
 });
 
-test('Enhanced version 13 is version 12 with squad strength, and new Enhanced games start with it', () => {
-  expect(rulesets.filter(squadStrength)).toEqual(['enhanced-13']);
-  expect(latestEnhanced).toBe('enhanced-13');
+test('Enhanced version 13 is version 12 with squad strength, which later versions keep', () => {
+  expect(rulesets.filter(squadStrength)).toEqual([
+    'enhanced-13',
+    'enhanced-14'
+  ]);
   for (const accessor of [
     clearances,
     clubForm,

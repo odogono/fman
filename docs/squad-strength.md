@@ -10,7 +10,7 @@ A squad has 12 players, four in each playing category with the goalkeeper in def
 - **Cup opponent.** The same, with `R(5)` in place of the cup's `R(16)`, two more than the league's roll as the original's cup roll is. The cup's division-gap term stays: squads don't depend on division, so the gap is what makes a higher-division opponent tougher.
 - **Difficulty level** stays an additive bonus, as before.
 - **The whole squad counts.** Other clubs pick no team and don't tire or get injured. A club over 12 players after a signing counts each category up to 20.
-- **The week's results.** Each side's goals add `(own − other squad strength) / 8`, where a club's squad strength is the mean of its three category sums: a gap of 4 is worth half a goal. Goals never go below 0.
+- **The week's results.** Each side's goals add `(own − other squad strength) / 8`, where a club's squad strength is the mean of its three category sums: a gap of 4 is worth half a goal. Goals never go below 0. From `enhanced-14`, the gap moves them half as much ([even table](even-table.md)).
 - **Selling** a player strengthens the club that buys him, which the original draws at random. It can be the club you face next.
 
 ## Random draws

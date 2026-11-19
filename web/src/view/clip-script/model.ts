@@ -133,6 +133,11 @@ export type ClipPlayer = Readonly<{
   energy?: number;
   label: string;
   line: Line;
+  /**
+   * Football ability, 1 to 5 (#234); a player without one plays as an
+   * average one, 3.
+   */
+  skill?: number;
 }>;
 /** One side in a clip: its kit, its goalkeeper's colour and its 11 or fewer. */
 export type ClipSide = Readonly<{

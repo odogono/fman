@@ -76,6 +76,13 @@ export const followPace = 7;
 export const reboundRange = 20;
 /** Frames the ball sits loose before the rebound is struck. */
 export const reboundSettle = 3;
+/**
+ * How much a keeper's quality (#235), from -1 to 1, moves their share of
+ * parries, a third for an average keeper: by this share of it either way.
+ */
+export const parryLean = 0.6;
+/** How much a shooter's quality moves the pace of their shot, either way. */
+export const shotPaceLean = 0.1;
 /** Frames a keeper lies down after the parry before scrambling up. */
 export const scrambleFrames = 15;
 /** The defender chasing a rebound gets no nearer the ball than this, in metres. */

@@ -61,11 +61,15 @@ const inkNames = [
 
 const settings = {
   attack: 2,
+  /** Every attacking player's skill, 1 to 5 (#234). */
+  attackSkill: 3,
   awayEnergy: 20,
   awayKit: 1,
   /** A ball in from wide that isn't headed at goal (#224), or none. */
   cross: 'seed' as Cross | 'none' | 'seed',
   defence: 4,
+  /** Every defending player's skill, 1 to 5. */
+  defenceSkill: 3,
   finish: 'seed' as Finish | 'seed',
   /** For a tackled injury (#211): a foul in the box. */
   foul: 'no' as 'no' | 'yes',
@@ -217,13 +221,24 @@ const settingsInput = (seedBase = settings.seedBase): ClipInput => {
       settings.awayEnergy
     )
   };
-  const attack = settings.side === 'home' ? home : away;
+  const skilled = (team: typeof home | typeof away, skill: number) => ({
+    ...team,
+    players: team.players.map(p => ({ ...p, skill }))
+  });
+  const attack = skilled(
+    settings.side === 'home' ? home : away,
+    settings.attackSkill
+  );
+  const defence = skilled(
+    settings.side === 'home' ? away : home,
+    settings.defenceSkill
+  );
   const forward = attack.players.findIndex(p => p.line === 'attack');
   const shooter = forward >= 0 ? forward : attack.players.length - 1;
   return {
     attack,
     attackingUp: (settings.side === 'home') === settings.minute < 46,
-    defence: settings.side === 'home' ? away : home,
+    defence,
     kind: settings.kind,
     minute: settings.minute,
     ...(settings.outcome === 'seed' ? {} : { outcome: settings.outcome }),
@@ -495,6 +510,23 @@ const renderControls = () => {
         ],
         settings.cross,
         value => change('cross')(value as Cross | 'none' | 'seed')
+      )
+    ),
+    // Skill shapes how a chance is finished (#235), never its outcome.
+    labelled(
+      'Attack skill',
+      select(
+        [1, 2, 3, 4, 5].map(n => [String(n), String(n)] as const),
+        String(settings.attackSkill),
+        value => change('attackSkill')(Number(value))
+      )
+    ),
+    labelled(
+      'Defence skill',
+      select(
+        [1, 2, 3, 4, 5].map(n => [String(n), String(n)] as const),
+        String(settings.defenceSkill),
+        value => change('defenceSkill')(Number(value))
       )
     ),
     // Only a shot or header that reaches the keeper's goal can rebound.

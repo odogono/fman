@@ -114,7 +114,12 @@ const keeperOf = (
 };
 
 const lineUp = (
-  people: readonly { energy?: number; label: string; position?: Position }[],
+  people: readonly {
+    energy?: number;
+    label: string;
+    position?: Position;
+    skill?: number;
+  }[],
   shooter: number
 ): ClipPlayer[] => {
   const keeper = keeperOf(
@@ -129,8 +134,21 @@ const lineUp = (
         ? 'keeper'
         : i === shooter && p.position === 'GK'
           ? 'attack'
-          : lineOf(p.position)
+          : lineOf(p.position),
+    ...(p.skill === undefined ? {} : { skill: p.skill })
   }));
+};
+
+/**
+ * An unnamed opponent's skill (#234): the side's team strength in their
+ * line, Defence for keepers and defenders, from 1–20 to 1–5.
+ */
+const strengthSkill = (fixture: MatchFixture, position: Position) => {
+  const strength =
+    fixture.opponentStrength[
+      position === 'FW' ? 4 : position === 'MF' ? 3 : 2
+    ]!;
+  return 1 + ((strength - 1) * 4) / 19;
 };
 
 const squadOrder: readonly Position[] = ['GK', 'DF', 'MF', 'FW'];
@@ -247,7 +265,8 @@ const sidesFor = (
     picked.map(p => ({
       energy: p.energy,
       label: p.name.trim(),
-      ...(p.position ? { position: p.position } : {})
+      ...(p.position ? { position: p.position } : {}),
+      skill: p.skill
     })),
     clubShooter
   );
@@ -269,12 +288,18 @@ const sidesFor = (
         eleven.map(i => ({
           energy,
           label: squad[i]!.name.trim(),
-          position: squad[i]!.position
+          position: squad[i]!.position,
+          skill: squad[i]!.skill
         })),
         opponentShooter
       )
     : lineUp(
-        unnamedEleven.map(position => ({ energy, label: '', position })),
+        unnamedEleven.map(position => ({
+          energy,
+          label: '',
+          position,
+          skill: strengthSkill(fixture, position)
+        })),
         moment?.side === 'opponent' ? 10 : -1
       );
   const clubSide = (fixture.home ? 'home' : 'away') as 'away' | 'home';

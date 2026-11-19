@@ -2457,3 +2457,97 @@ test('an attacker waiting by a defender stays put', () => {
   );
   expect(found).toEqual([]);
 });
+
+/** `side` with every player's skill set to `skill`. */
+const withSkill = (side: ClipSide, skill: number): ClipSide => ({
+  ...side,
+  players: side.players.map(p => ({ ...p, skill }))
+});
+/** The mean of `values`. */
+const mean = (values: readonly number[]) =>
+  values.reduce((sum, v) => sum + v, 0) / values.length;
+/** How far across from the middle of the goal the ball is as it arrives. */
+const acrossAtMoment = (script: ClipScript) =>
+  Math.abs(script.frame(script.momentFrame).ball.x - pitchWidth / 2);
+/** The finishes of 60 seeds for an attack and a defence of these skills. */
+const finishesFor = (
+  attack: number,
+  defence: number,
+  overrides: Partial<ClipInput>
+) =>
+  Array.from({ length: 60 }, (_, seed) =>
+    createClipScript(
+      input({
+        attack: withSkill(side('#d70000'), attack),
+        cross: null,
+        defence: withSkill(side('#0000d7'), defence),
+        rebound: false,
+        seed,
+        ...overrides
+      })
+    )
+  );
+
+/** The ball's pace, in metres a second, just before it arrives. */
+const pace = (script: ClipScript) => {
+  const { ball: was } = script.frame(script.momentFrame - 2);
+  const { ball } = script.frame(script.momentFrame - 1);
+  return Math.hypot(ball.x - was.x, ball.y - was.y) * clipFps;
+};
+/** How far wide of the post the ball is as it arrives. */
+const wideBy = (script: ClipScript) => acrossAtMoment(script) - 3.66;
+/** The share of `scripts` that end in a parry. */
+const parried = (scripts: readonly ClipScript[]) =>
+  scripts.filter(s => s.outcome === 'parry').length / scripts.length;
+
+test('a player without a skill plays as an average one', () => {
+  for (const kind of ['goal', 'save', 'near-miss'] as const) {
+    const plain = createClipScript(input({ kind }));
+    const average = createClipScript(
+      input({
+        attack: withSkill(side('#d70000'), 3),
+        defence: withSkill(side('#0000d7'), 3),
+        kind
+      })
+    );
+    expect(average.length).toBe(plain.length);
+    for (const at of [0, plain.momentFrame, plain.length - 1]) {
+      expect(average.frame(at)).toEqual(plain.frame(at));
+    }
+  }
+});
+
+test('a skilled shooter places a goal nearer the post, and harder', () => {
+  const strong = finishesFor(5, 3, { kind: 'goal' });
+  const weak = finishesFor(1, 3, { kind: 'goal' });
+  for (const script of [...strong, ...weak]) {
+    expect(acrossAtMoment(script)).toBeLessThan(3.66);
+  }
+  expect(mean(strong.map(acrossAtMoment))).toBeGreaterThan(
+    mean(weak.map(acrossAtMoment)) + 0.6
+  );
+  expect(mean(strong.map(pace))).toBeGreaterThan(mean(weak.map(pace)) * 1.1);
+});
+
+test('a skilled shooter misses narrowly, a weak one by further', () => {
+  for (const outcome of ['wide-left', 'wide-right'] as const) {
+    const strong = finishesFor(5, 3, { kind: 'near-miss', outcome });
+    const weak = finishesFor(1, 3, { kind: 'near-miss', outcome });
+    expect(mean(weak.map(wideBy))).toBeGreaterThan(
+      mean(strong.map(wideBy)) + 0.6
+    );
+  }
+});
+
+test('a skilled keeper holds more saves and gets further across', () => {
+  const strong = finishesFor(3, 5, { kind: 'save' });
+  const weak = finishesFor(3, 1, { kind: 'save' });
+  expect(parried(weak)).toBeGreaterThan(parried(strong) + 0.2);
+  const reached = (defence: number) =>
+    mean(
+      finishesFor(3, defence, { kind: 'save', outcome: 'dive' }).map(
+        acrossAtMoment
+      )
+    );
+  expect(reached(5)).toBeGreaterThan(reached(1) + 0.3);
+});

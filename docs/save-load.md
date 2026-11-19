@@ -79,6 +79,9 @@ the clip lengths the view hands the sim at kick-off under
 [sprite highlights](sprite-highlights.md) ([ADR 0013](adr/0013-clips-set-their-own-length.md)),
 so a match resumed mid-clip keeps the lengths it started with. Version 13 adds each
 division club's last three league results under [club form](club-form.md).
+Version 14 adds a `prompt-beeps` input to journals: whether prompts beep,
+which Modern mode turns off ([ADR 0015](adr/0015-modern-mode-drops-the-prompt-beep.md)).
+A journal that turns them off starts again with that input after each menu checkpoint.
 Fractional browser phase is not stored; restoring starts a fresh phase and
 does not simulate time spent with the page closed.
 

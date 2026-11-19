@@ -298,3 +298,45 @@ test('the reachable management prompt sequence matches the original calls, inclu
   session.submit('100');
   expect(session.sounds).toEqual([]);
 });
+
+test('without prompt beeps, a prompt takes an answer as soon as it appears (ADR 0015)', () => {
+  const session = createSession();
+  session.advance(304);
+  expect(session.setPromptBeeps(false)).toBe(true);
+  expect(session.setPromptBeeps(false)).toBe(false);
+  for (const text of ['alex', '1', '1', '0']) {
+    session.submit(text);
+  }
+  expect(session.view.screen).toBe('menu');
+  expect(session.view.paused).toBe(false);
+  expect(session.sounds).toEqual([]);
+  // A beep already sounding plays out; only later prompts lose theirs.
+  session.setPromptBeeps(true);
+  session.submit('s');
+  expect(session.view.paused).toBe(true);
+  session.setPromptBeeps(false);
+  expect(session.view.paused).toBe(true);
+  expect(session.sounds.length).toBe(1);
+});
+
+test('a journal saves whether prompts beep, across menu checkpoints', () => {
+  const journal = createJournal();
+  journal.advance(304);
+  journal.promptBeeps(false);
+  for (const text of ['alex', '1', '1', '0']) {
+    journal.submit(text);
+  }
+  journal.advance(1);
+  expect(journal.session.view.screen).toBe('menu');
+  const saved = JSON.parse(journal.snapshot());
+  expect(saved.base.kind).toBe('menu');
+  expect(saved.inputs[0]).toEqual(['prompt-beeps', false]);
+  const restored = openSave(journal.snapshot());
+  journal.submit('s');
+  restored.submit('s');
+  expect(restored.session.view).toEqual(journal.session.view);
+  expect(restored.session.view.paused).toBe(false);
+  expect(() =>
+    openSave(JSON.stringify({ ...saved, version: saveVersion - 1 }))
+  ).toThrow(RangeError);
+});

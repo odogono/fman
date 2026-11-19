@@ -377,6 +377,8 @@ export const createApp = ({
   };
   const applyOptions = () => {
     beeper.muted = !options.sound;
+    // Only Classic mode sounds the prompt beep (ADR 0015).
+    journal.promptBeeps(!modern());
     dom.applyOptions(options, barShown());
   };
   const setOptions = (next: Options) => {
@@ -477,6 +479,7 @@ export const createApp = ({
   };
   const replaceJournal = (next: Journal, message: string) => {
     journal = next;
+    journal.promptBeeps(!modern());
     // Saves contain whole frames; a replacement starts a new browser phase.
     sampleFrames = createFrameSampler(clock.now());
     beeper.reset();

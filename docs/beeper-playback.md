@@ -73,6 +73,8 @@ sources before scheduling the revised sequence. Already expired events are
 never replayed; an active event restored or unlocked late resumes at its offset.
 
 Prompt BEEPs block submissions and keyboard scanning while ULA time continues.
+Only Classic mode sounds them: Modern mode turns prompt beeps off, so its
+prompts take an answer at once ([ADR 0015](adr/0015-modern-mode-drops-the-prompt-beep.md)).
 The session carries unused time from highlight/cup completion into the following
 prompt even in a single large advance. The trailing prompt is included in the
 audio forecast before that advance. Repeated render calls do not replay sounds.

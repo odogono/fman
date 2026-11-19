@@ -5,6 +5,7 @@ import { isRuleset, type Ruleset } from './ruleset';
 import {
   clipsSaveVersion,
   keptVersion,
+  promptBeepsSaveVersion,
   saveLimit,
   saveVersion,
   savedGame,
@@ -27,7 +28,8 @@ export type JournalInput =
   | ['skip']
   | ['saved']
   | ['reload']
-  | ['clips', number[]];
+  | ['clips', number[]]
+  | ['prompt-beeps', boolean];
 
 type Base =
   | {
@@ -84,7 +86,8 @@ export const createJournal = (
         game: view.game,
         kind: 'menu'
       };
-      inputs = [];
+      // The checkpoint keeps the session's setting, as its first input.
+      inputs = session.promptBeeps ? [] : [['prompt-beeps', false]];
     }
   };
   const log = (input: JournalInput) => {
@@ -176,6 +179,12 @@ export const createJournal = (
         setKey('');
       }
     },
+    /** Turns the prompt beep on or off for prompts to come (ADR 0015). */
+    promptBeeps: (on: boolean) => {
+      if (session.setPromptBeeps(on)) {
+        log(['prompt-beeps', on]);
+      }
+    },
     reload: () => {
       const done = session.reload();
       if (done) {
@@ -249,6 +258,12 @@ const validInput = (v: unknown, version: number): v is JournalInput => {
         Array.isArray(v[1]) &&
         v[1].length <= maxMoments &&
         validClipLengths(v[1], v[1].length)
+      );
+    case 'prompt-beeps':
+      return (
+        version >= promptBeepsSaveVersion &&
+        v.length === 2 &&
+        typeof v[1] === 'boolean'
       );
     case 'skip':
     case 'saved':
@@ -412,6 +427,9 @@ export const openSave = (data: string): Journal => {
           if (!journal.holdClips(input[1])) {
             throw invalid();
           }
+          break;
+        case 'prompt-beeps':
+          journal.promptBeeps(input[1]);
           break;
       }
     }

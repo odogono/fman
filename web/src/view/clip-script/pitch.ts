@@ -34,6 +34,7 @@ import {
   challengeSlide,
   facingSpeed,
   facingWindow,
+  farSideReach,
   fastestRun,
   flatOut,
   highLine,
@@ -44,6 +45,7 @@ import {
   kickFrames,
   laneClearance,
   laneWidth,
+  offsideNudge,
   penaltyArc,
   personalSpace,
   playerStops,
@@ -619,13 +621,16 @@ const separate = (clip: Clip, held: ReadonlySet<number>) => {
 /**
  * Moves `spot` across the pitch, if it is in `other`'s personal space, to
  * stand beside them, on the side `mover` is already on, so that a spot
- * about level with them doesn't swap from side to side as they sway.
+ * about level with them doesn't swap from side to side as they sway. A
+ * spot up to `farSideReach` beyond them, on the far side, comes round too:
+ * the way to it goes through them.
  */
 const besideOf = (spot: Point, other: Point, mover: Point) => {
   const dd = spot.d - other.d;
   const dx = spot.x - other.x;
-  if (dd * dd + dx * dx < personalSpace * personalSpace) {
-    const side = mover.x < other.x ? -1 : 1;
+  const side = mover.x < other.x ? -1 : 1;
+  const reach = dx * side < 0 ? farSideReach : personalSpace;
+  if (dd * dd + dx * dx < reach * reach && Math.abs(dd) < personalSpace) {
     spot.x =
       other.x + side * Math.sqrt(personalSpace * personalSpace - dd * dd);
   }
@@ -705,8 +710,10 @@ export const steer = (
           ? clip.injuredLimit - (clip.keptOut ? 3 : 0)
           : Infinity
       );
-      // Caught beyond the line, a player first drops straight back.
-      if (mover.d > line) {
+      // Caught beyond the line, a player first drops straight back; one
+      // only nudged over it, by a defender stepping into them, doesn't
+      // turn to, and turn back once onside again (#229).
+      if (mover.d > line + offsideNudge) {
         goal.x = mover.x;
       }
       // They wait beside an opponent rather than in their space, as one

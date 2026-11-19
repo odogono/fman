@@ -31,7 +31,6 @@ import {
   boardStops,
   boxDepth,
   boxHalf,
-  challengeSlide,
   facingSpeed,
   facingWindow,
   farSideReach,
@@ -98,10 +97,20 @@ export type Clip = Setup & {
   carryPace: number;
   /**
    * A defender's challenge in the build-up: who, the way and the pace they
-   * slide, the frame it starts, and the side the carrier skips to.
+   * slide, the frame it starts, the side the carrier skips to and how many
+   * frames into the slide they start to.
    */
   challenge:
-    | { at: number; pace: number; side: number; way: Point; who: number }
+    | {
+        at: number;
+        pace: number;
+        side: number;
+        skipFrom: number;
+        /** How many frames the slide takes. */
+        slide: number;
+        way: Point;
+        who: number;
+      }
     | undefined;
   /** For a clearance, the defender who meets the ball and clears it. */
   clearer: number;
@@ -156,6 +165,8 @@ export type Clip = Setup & {
   side: number;
   /** Some blocks are made sliding in. */
   slidingBlock: boolean;
+  /** For a block, the draw that decides whether it is made sliding in. */
+  slidingBlockRoll: number | undefined;
   steps: Point[];
   travelled: number[];
   travelLog: number[][];
@@ -305,6 +316,7 @@ export const setThePitch = (setup: Setup): Clip => {
     shotFrom: { d: 0, x: 0 },
     side: 0,
     slidingBlock: false,
+    slidingBlockRoll: undefined,
     steps: [],
     travelled: new Array<number>(count).fill(0),
     travelLog: [],
@@ -418,23 +430,24 @@ const toScreen = (clip: Clip, p: Point): [number, number] =>
 /** Whether the challenger is down, sliding or sitting, at `at`. */
 const challengerDown = (clip: Clip, at: number) =>
   clip.challenge !== undefined &&
-  at - clip.challenge.at < challengeSlide + sitFrames;
+  at - clip.challenge.at < clip.challenge.slide + sitFrames;
 
 export const record = (clip: Clip) => {
   // The challenger slides, slowing, then sits up until they get up.
   if (clip.challenge) {
     const t = clip.frame - clip.challenge.at;
     const slider = clip.movers[clip.challenge.who]!;
-    if (t < challengeSlide) {
-      const step = clip.challenge.pace * (1 - t / challengeSlide);
+    const { slide } = clip.challenge;
+    if (t < slide) {
+      const step = clip.challenge.pace * (1 - t / slide);
       slider.d += clip.challenge.way.d * step;
       slider.x += clip.challenge.way.x * step;
       slider.pose = 'tackle';
       slider.poseFrame = 0;
-    } else if (t < challengeSlide + sitFrames) {
+    } else if (t < slide + sitFrames) {
       slider.pose = 'tackle';
       slider.poseFrame = 1;
-    } else if (t === challengeSlide + sitFrames) {
+    } else if (t === slide + sitFrames) {
       // Up again, and from now on posed by the clip like anyone else.
       slider.pose = 'run';
     }

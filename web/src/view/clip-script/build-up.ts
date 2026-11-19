@@ -44,7 +44,6 @@ import {
   penaltyRunUp,
   quickTouch,
   shooterReadyBy,
-  slidingBlockShare,
   stretchedShot,
   tackleShare,
   throwBack
@@ -388,8 +387,9 @@ export const playBuildUp = (clip: Clip) => {
   if (clip.outcome === 'tackle' && clip.holder !== clip.shooter) {
     clip.outcome = 'block';
   }
-  clip.slidingBlock =
-    clip.outcome === 'block' && clip.tackleRng.next() < slidingBlockShare;
+  // Whether the block is made sliding in waits on who makes it (#238).
+  clip.slidingBlockRoll =
+    clip.outcome === 'block' ? clip.tackleRng.next() : undefined;
   // Left with the ball themselves, the shooter can't head a cross, nor
   // have one put in for them.
   if (fromWide(clip) && clip.holder === clip.shooter) {

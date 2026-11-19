@@ -1,12 +1,15 @@
 import { clamp, distance, lerp, perFrame, type Point } from './geometry';
 import { clipFps, pitchLength, pitchWidth } from './model';
 import { aimAt, record, steer, type Clip } from './pitch';
+import { byQuality } from './setup';
 import {
   afterArrival,
   boxDepth,
   intoRangePace,
   lieFrames,
   pullUpGap,
+  runOutFrames,
+  runOutPace,
   sitFrames,
   slideFrames,
   slidePace,
@@ -49,6 +52,10 @@ export const playTackle = (clip: Clip) => {
     nearest = distance(clip.movers[tackler]!, runner);
   }
   const defender = clip.movers[tackler]!;
+  /** Past the ball, a weak tackler's slide runs out further (#238). */
+  const quality = clip.qualities[tackler] ?? 0;
+  const runOut = Math.round(byQuality(quality, runOutFrames));
+  const runOutShare = byQuality(quality, runOutPace);
   /** Pulling up, the player goes down this many frames into the run. */
   const pullAt = clip.pulledUp ? Math.round(clip.tackleRng.between(20, 32)) : 0;
   const goal = { d: pitchLength, x: 34 };
@@ -224,16 +231,16 @@ export const playTackle = (clip: Clip) => {
       runner.pose = 'fall';
       runner.poseFrame = after <= stumbleFrames ? 0 : 1;
       // The slide runs out, and the tackler sits up.
-      if (after < 8 && slide) {
-        const step = perFrame(slidePace) * 0.4 * (1 - after / 8);
+      if (after < runOut && slide) {
+        const step = perFrame(slidePace) * runOutShare * (1 - after / runOut);
         defender.d += slide.d * step;
         defender.x += slide.x * step;
       }
       // Pulling up, nobody slid in, and the nearest defender takes it.
-      const sitting = !clip.pulledUp && after < 8 + sitFrames;
+      const sitting = !clip.pulledUp && after < runOut + sitFrames;
       if (!clip.pulledUp) {
         defender.pose = sitting ? 'tackle' : 'run';
-        defender.poseFrame = after < 8 ? 0 : 1;
+        defender.poseFrame = after < runOut ? 0 : 1;
       }
       if (!sitting && sweeper >= 0) {
         held.delete(tackler);

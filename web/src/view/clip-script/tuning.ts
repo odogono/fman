@@ -246,11 +246,21 @@ export const getUpFrames = 25;
 export const gettingUp = 12;
 /** Of the blocks of a shooter on the ball, this share are tackles instead. */
 export const tackleShare = 0.5;
-/** Of the other blocks, this share are made sliding in. */
-export const slidingBlockShare = 0.5;
+/**
+ * Of the other blocks, this share are made sliding in, by the blocker's
+ * skill, weak, average and strong (#238).
+ */
+export const slidingBlockShare = [0.75, 0.5, 0.25] as const;
 /** A tackler sprints in at this pace, in metres a second, and slides in from this near. */
 export const tacklePace = 8;
 export const slideReach = 3;
+/**
+ * Past the ball, a tackler's slide runs out over this many frames, from
+ * this share of `slidePace`, by their skill, weak, average and strong
+ * (#238): a weak one lunges on further, a strong one stops sooner.
+ */
+export const runOutFrames = [20, 8, 6] as const;
+export const runOutPace = [0.95, 0.4, 0.3] as const;
 /** A slide starts at this pace, in metres a second, and stops in this many frames. */
 export const slidePace = 8;
 export const slideFrames = 20;
@@ -267,13 +277,27 @@ export const pullUpGap = 3.5;
 export const challengeShare = 0.8;
 /**
  * A challenge comes from a defender this near the ball, in metres, and in
- * front of it. Their slide takes this many frames, and the carrier skips
- * aside from it over these frames, at up to this pace in metres a second.
+ * front of it, while the carry runs on long enough for an average
+ * challenger's slide, of this many frames, and sitting up. The carrier
+ * skips aside from it over this many frames, at up to this pace in metres
+ * a second.
  */
 export const challengeRange = [2, 5] as const;
 export const challengeSlide = 24;
-export const challengeSkip = [2, 22] as const;
+export const challengeSkip = 20;
 export const skipPace = 2.5;
+/**
+ * By the carrier's skill, weak, average and strong (#238): how many frames
+ * into the slide they start to skip aside.
+ */
+export const skipFrom = [6, 2, 0] as const;
+/**
+ * By the challenger's skill, weak, average and strong: how far past where
+ * it meets the ball, in metres, their slide runs on, and over how many
+ * frames, so a weak one lunges further and a strong one stops sooner.
+ */
+export const challengeOverrun = [2, 1, 0.5] as const;
+export const challengeSlides = [32, challengeSlide, 20] as const;
 /** A tackler sits up this many frames before getting up; a blocker, fewer. */
 export const sitFrames = 20;
 export const blockSitFrames = 10;

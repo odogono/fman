@@ -2779,3 +2779,161 @@ test('a shot from range after a throw-in is found in range', () => {
   }
   expect(found).toEqual([]);
 }, 60_000);
+
+/**
+ * Each slide in `script` by a defender, from `from` on: the frame it
+ * starts, who slides, and how far they go before they stop.
+ */
+const slidesIn = (script: ClipScript, from = 0) => {
+  const slides: { at: number; metres: number; who: number }[] = [];
+  const open = new Map<number, { at: number; travelled: number }>();
+  for (let at = from; at < script.length; at++) {
+    script.frame(at).players.forEach((p, i) => {
+      const sliding = p.side === 'defence' && p.pose === 'tackle';
+      const started = open.get(i);
+      if (sliding && !started) {
+        open.set(i, { at, travelled: p.travelled });
+      } else if (!sliding && started) {
+        slides.push({
+          at: started.at,
+          metres: p.travelled - started.travelled,
+          who: i
+        });
+        open.delete(i);
+      }
+    });
+  }
+  // A slide still under way at the end.
+  const last = script.frame(script.length - 1).players;
+  for (const [who, started] of open) {
+    slides.push({
+      at: started.at,
+      metres: last[who]!.travelled - started.travelled,
+      who
+    });
+  }
+  return slides;
+};
+/** 200 clips between sides of these skills. */
+const duelsBetween = (
+  attack: number,
+  defence: number,
+  overrides: Partial<ClipInput>
+) =>
+  Array.from({ length: 200 }, (_, seed) =>
+    createClipScript(
+      input({
+        attack: withSkill(side('#d70000'), attack),
+        defence: withSkill(side('#0000d7'), defence),
+        seed,
+        ...overrides
+      })
+    )
+  );
+
+/** How far each challenger slides, in a goal's build-up, for this defence. */
+const challengeSlides = (defence: number) =>
+  // In a goal's build-up, every slide is a challenge.
+  duelsBetween(3, defence, { kind: 'goal' }).flatMap(script =>
+    slidesIn(script).map(s => s.metres)
+  );
+
+test('a weak defender slides further in a challenge than a strong one', () => {
+  const weak = challengeSlides(1);
+  const strong = challengeSlides(5);
+  expect(weak.length).toBeGreaterThan(30);
+  expect(mean(weak)).toBeGreaterThan(mean(strong) + 0.8);
+}, 60_000);
+
+/**
+ * How far aside of the way they were going each carrier has moved, six
+ * frames into a challenge's slide, for this attack.
+ */
+const skippedAside = (attack: number) =>
+  duelsBetween(attack, 3, { kind: 'goal' }).flatMap(script => {
+    const [slide] = slidesIn(script);
+    if (!slide) {
+      return [];
+    }
+    const at = (n: number) => script.frame(slide.at + n);
+    const { ball, players } = at(0);
+    const carrier = players.reduce(
+      (best, p, i) =>
+        p.side === 'attack' &&
+        Math.hypot(p.x - ball.x, p.y - ball.y) <
+          Math.hypot(players[best]!.x - ball.x, players[best]!.y - ball.y)
+          ? i
+          : best,
+      0
+    );
+    const before = at(-1).players[carrier]!;
+    const start = players[carrier]!;
+    const later = at(6).players[carrier]!;
+    const way = { x: start.x - before.x, y: start.y - before.y };
+    const size = Math.hypot(way.x, way.y) || 1;
+    return [
+      Math.abs(
+        ((later.x - start.x) * way.y - (later.y - start.y) * way.x) / size
+      )
+    ];
+  });
+
+test('a skilled carrier skips aside from a challenge sooner', () => {
+  expect(mean(skippedAside(5))).toBeGreaterThan(mean(skippedAside(1)) + 0.08);
+}, 60_000);
+
+/** How far each tackler slides, ball won and run out, for this defence. */
+const tackleSlides = (defence: number) =>
+  duelsBetween(3, defence, {
+    cross: null,
+    kind: 'clearance',
+    outcome: 'tackle'
+  }).flatMap(script =>
+    slidesIn(script, script.momentFrame - 3 * clipFps)
+      .map(s => s.metres)
+      .slice(-1)
+  );
+
+test("a weak tackler's slide runs on further than a strong one's", () => {
+  const weak = tackleSlides(1);
+  const strong = tackleSlides(5);
+  expect(weak.length).toBeGreaterThan(150);
+  expect(mean(weak)).toBeGreaterThan(mean(strong) + 1);
+}, 60_000);
+
+/** Whether the defender on the ball at the moment slid in to block it. */
+const blockedSliding = (script: ClipScript) => {
+  const { ball, players } = script.frame(script.momentFrame);
+  const blocker = players.reduce(
+    (best, p, i) =>
+      p.side === 'defence' &&
+      (best < 0 ||
+        Math.hypot(p.x - ball.x, p.y - ball.y) <
+          Math.hypot(players[best]!.x - ball.x, players[best]!.y - ball.y))
+        ? i
+        : best,
+    -1
+  );
+  return Array.from(
+    { length: clipFps / 2 },
+    (_, k) => script.frame(script.momentFrame - k).players[blocker]!.pose
+  ).includes('tackle');
+};
+/** The share of blocks made sliding in, for this defence. */
+const slidingBlocks = (defence: number) =>
+  shareOf(
+    // Half the blocks of a shooter on the ball are tackles instead.
+    duelsBetween(3, defence, {
+      cross: null,
+      kind: 'clearance',
+      outcome: 'block'
+    }).filter(script => script.outcome === 'block'),
+    blockedSliding
+  );
+
+test('a weak defender blocks sliding in more often than a strong one', () => {
+  // A block no one can reach at a run is always made sliding in, so skill
+  // shows only in the rest: about a third.
+  expect(slidingBlocks(1)).toBeGreaterThan(slidingBlocks(3) + 0.05);
+  expect(slidingBlocks(3)).toBeGreaterThan(slidingBlocks(5) + 0.05);
+}, 60_000);

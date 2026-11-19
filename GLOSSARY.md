@@ -132,6 +132,14 @@ _Avoid_: Move, attack, which names the original's sequence
 How the player a moment names meets the chance in a clip: a shot, a header, a shot from range or a one-on-one. It shapes how the chance looks, never whether it goes in.
 _Avoid_: Shot type; outcome, which is what the moment decides
 
+**Challenge**:
+In a clip's build-up, a defender sliding in on the ball, which the player carrying it always skips past. It changes nothing about the moment.
+_Avoid_: Tackle, which wins the ball
+
+**Tackle**:
+In a clip, a defender sliding in and winning the ball from the player on it: one way a clearance plays, and how a tackled injury plays.
+_Avoid_: Tackle as the name of the moment, which is a clearance; challenge, which never wins the ball
+
 **Cup celebration**:
 Modern mode's scene after the managed club wins the F.A. Cup final: the winners gather and lift the cup on the pitch while the losers sink to the turf. Like a clip, it is made up for show and changes nothing in the game.
 _Avoid_: Cup winners screen, trophy animation

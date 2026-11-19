@@ -22,16 +22,18 @@ import {
   steer,
   type Clip
 } from './pitch';
-import { curl } from './setup';
+import { byQuality, curl } from './setup';
 import {
   ballSpinUp,
   ballTurn,
   bylineRun,
   carrierBrake,
   carrierPickUp,
+  challengeOverrun,
   challengeRange,
   challengeSkip,
   challengeSlide,
+  challengeSlides,
   farPass,
   gatherShare,
   holdingGap,
@@ -48,6 +50,7 @@ import {
   runOntoIt,
   shooterWait,
   sitFrames,
+  skipFrom,
   skipPace,
   stride,
   touchDrag,
@@ -165,11 +168,12 @@ export const dribble = (
           d: (meet.d - from.d) / length,
           x: (meet.x - from.x) / length
         };
-        // The slide's run, slowing to a stop, covers it all.
-        const pace = Math.min(
-          perFrame(14),
-          (2 * (length + 1)) / challengeSlide
-        );
+        // The slide's run, slowing to a stop, covers it all, and runs on
+        // past the ball further for a weaker challenger (#238).
+        const quality = clip.qualities[who]!;
+        const overrun = byQuality(quality, challengeOverrun);
+        const slide = Math.round(byQuality(quality, challengeSlides));
+        const pace = Math.min(perFrame(14), (2 * (length + overrun)) / slide);
         // The carrier skips to the side the slide doesn't end on.
         const end = {
           d: from.d + way.d * length,
@@ -182,18 +186,21 @@ export const dribble = (
           at: clip.frame,
           pace,
           side: across > 0 ? -1 : 1,
+          slide,
+          // A skilled carrier skips aside sooner, a weak one later.
+          skipFrom: Math.round(
+            byQuality(clip.qualities[clip.holder]!, skipFrom)
+          ),
           way,
           who
         };
       }
     }
     if (clip.challenge) {
-      const t = clip.frame - clip.challenge.at;
-      if (t >= challengeSkip[0] && t < challengeSkip[1]) {
-        const span = challengeSkip[1] - challengeSkip[0];
+      const t = clip.frame - clip.challenge.at - clip.challenge.skipFrom;
+      if (t >= 0 && t < challengeSkip) {
         const hop =
-          perFrame(skipPace) *
-          Math.sin((Math.PI * (t - challengeSkip[0])) / span);
+          perFrame(skipPace) * Math.sin((Math.PI * t) / challengeSkip);
         const aside = {
           d: -clip.carrying.x * clip.challenge.side * hop,
           x: clip.carrying.d * clip.challenge.side * hop

@@ -56,7 +56,11 @@ test('goalkeepers wear a colour unlike both kits and each other', () => {
 });
 
 const squad = (positions: readonly Position[]): SquadPlayer[] =>
-  positions.map((position, i) => ({ name: `S${i}`, position, skill: 3 }));
+  positions.map((position, i) => ({
+    name: `S${i}`,
+    position,
+    skill: (i % 5) + 1
+  }));
 
 test('an opponent fields a 4-4-2 in squad order, with the named player', () => {
   const players = squad([
@@ -197,7 +201,8 @@ test('a goalkeeper who shoots plays up front, and another keeps goal', () => {
   expect(input.attack.players[input.shooter]).toEqual({
     energy: 10,
     label: 'P2',
-    line: 'attack'
+    line: 'attack',
+    skill: 3
   });
   expect(input.attack.players.find(p => p.line === 'keeper')?.label).toBe('P1');
 });
@@ -257,6 +262,45 @@ test("picked players carry their own energy, an opponent's the side's team Energ
   expect(new Set(input.defence.players.map(p => p.energy))).toEqual(
     new Set([7])
   );
+});
+
+test("players carry their own skill; an unnamed opponent its line's team strength", () => {
+  const players = [{ ...player(1, 'GK'), skill: 5 }, player(2, 'FW')];
+  const moment: Moment = { kind: 'goal', minute: 70, player: 2, side: 'club' };
+  const named = clipInputFor(
+    gameWith(players),
+    { ...fixture, opponent: 2 } as MatchFixture,
+    moment,
+    0
+  );
+  expect(named.attack.players.map(p => p.skill)).toEqual([5, 3]);
+  expect(
+    clipInputFor(
+      gameWith(players),
+      fixture,
+      { kind: 'save', minute: 30, side: 'opponent', squadPlayer: 11 },
+      0
+    ).attack.players.find(p => p.label === 'S11')!.skill
+  ).toBe(opponentSquad[11]!.skill);
+  // A club without a named squad: Defence for its keeper and defenders,
+  // Midfield and Attack for the others, from 1–20 to 1–5.
+  const unnamed = clipInputFor(
+    gameWith(players),
+    {
+      ...fixture,
+      opponent: 3,
+      opponentStrength: [7, 10, 1, 20, 10]
+    } as MatchFixture,
+    moment,
+    0
+  );
+  const byLine = new Map(
+    unnamed.defence.players.map(p => [p.line, p.skill] as const)
+  );
+  expect(byLine.get('keeper')).toBe(1);
+  expect(byLine.get('defence')).toBe(1);
+  expect(byLine.get('midfield')).toBe(5);
+  expect(byLine.get('attack')).toBeCloseTo(1 + (9 * 4) / 19);
 });
 
 test('each clip carries the score after its moment, home first, for the goal announcement', () => {

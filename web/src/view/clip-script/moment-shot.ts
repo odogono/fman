@@ -23,6 +23,7 @@ import {
   reboundRange,
   reboundSettle,
   scrambleFrames,
+  shotPaceLean,
   spillPace
 } from './tuning';
 
@@ -89,7 +90,8 @@ export const playShot = (
         )
       );
       const spill = {
-        d: pitchLength - clip.reboundRng.between(5, 8),
+        // The worse the keeper, the further out they spill it.
+        d: pitchLength - clip.reboundRng.leaning(5, 8, -clip.keeperQuality),
         x: clamp(
           lerp(firstAim.x, striker.x, clip.reboundRng.between(0.3, 0.7)) +
             clip.reboundRng.between(-2.5, 2.5),
@@ -216,7 +218,10 @@ export const playShot = (
       clip.rebound && clip.keeper ? (clip.keeper.x <= 34 ? 1 : -1) : clip.side;
     switch (clip.outcome) {
       case 'goal': {
-        const x = 34 + shotSide * clip.rng.between(0.6, goalHalf - 0.4);
+        // The better the shooter, the nearer the post (#235).
+        const x =
+          34 +
+          shotSide * clip.rng.leaning(0.6, goalHalf - 0.4, clip.shooterQuality);
         aim = { d: pitchLength, x };
         rest = { d: pitchLength + 1.8, x: x + clip.side * 0.4 };
         break;
@@ -229,7 +234,8 @@ export const playShot = (
           clip.side *
             (clip.outcome === 'hold'
               ? clip.rng.between(0, 1.2)
-              : clip.rng.between(2, goalHalf - 0.3));
+              : // The better the keeper, the further across they reach.
+                clip.rng.leaning(2, goalHalf - 0.3, clip.keeperQuality));
         aim = outFor
           ? {
               d: outFor.d - 0.5,
@@ -258,7 +264,10 @@ export const playShot = (
       case 'wide-left':
       case 'wide-right': {
         const out = clip.outcome === 'wide-left' ? -1 : 1;
-        const x = 34 + out * (goalHalf + clip.rng.between(0.8, 3.5));
+        // The better the shooter, the nearer the post they miss by.
+        const x =
+          34 +
+          out * (goalHalf + clip.rng.leaning(0.8, 3.5, -clip.shooterQuality));
         aim = { d: pitchLength, x };
         rest = { d: pitchLength + 5, x: x + out * 1.5 };
         break;
@@ -278,7 +287,10 @@ export const playShot = (
       }
     }
     // A header is slower than a shot, a shot from range faster.
-    const pace = headed ? 14 : clip.finish === 'long-range' ? 28 : 25;
+    // The better the shooter, the harder they strike it.
+    const pace =
+      (headed ? 14 : clip.finish === 'long-range' ? 28 : 25) *
+      (1 + shotPaceLean * clip.shooterQuality);
     const flight = Math.max(
       10,
       Math.ceil(distance(clip.shotFrom, aim) / perFrame(pace))

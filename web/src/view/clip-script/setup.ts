@@ -11,16 +11,19 @@ import {
   type ClearanceOutcome,
   type ClipInput,
   type ClipOutcome,
+  type ClipPlayer,
   type Cross,
   type Finish,
   type MissOutcome,
-  type Restart
+  type Restart,
+  type SaveOutcome
 } from './model';
 import {
   challengeShare,
   claimShare,
   crossShare,
   injuredFrom,
+  parryLean,
   penaltySpot,
   reboundShare,
   sixYards
@@ -44,8 +47,15 @@ export const createClipRng = (seed: number) => {
   };
   return {
     between: (low: number, high: number) => low + (high - low) * next(),
+    /**
+     * As `between`, leaning towards `high` for `lean` above 0 and `low`
+     * below it, from -1 to 1, as a player's quality does (#234). With no
+     * lean it draws as `between`.
+     */
     int: (low: number, high: number) =>
       low + Math.floor(next() * (high - low + 1)),
+    leaning: (low: number, high: number, lean: number) =>
+      low + (high - low) * next() ** (2 ** -lean),
     next,
     pick: <T>(list: readonly T[]) => list[Math.floor(next() * list.length)]!
   };
@@ -68,16 +78,38 @@ export const drawMiss = (rng: ClipRng): MissOutcome => {
 };
 
 /**
- * The outcome the seed picks for a kind. An injury (#110) plays as the
- * injured player being tackled, or pulling up, and staying down.
+ * How good a player is, from -1 for the least skilled to 1 for the most,
+ * an average one or one without a skill 0 (#234).
  */
-export const drawOutcome = (rng: ClipRng, kind: Moment['kind']): ClipOutcome =>
+export const qualityOf = (player: ClipPlayer | undefined) =>
+  (clamp(player?.skill ?? 3, 1, 5) - 3) / 2;
+
+/**
+ * A save: a dive, a hold or a parry, evenly for an average keeper. A
+ * better keeper parries fewer, holding them instead (#235).
+ */
+const drawSave = (rng: ClipRng, keeper: number): SaveOutcome => {
+  const roll = rng.next();
+  const parries = (1 - parryLean * keeper) / 3;
+  return roll < 1 / 3 ? 'dive' : roll < 1 - parries ? 'hold' : 'parry';
+};
+
+/**
+ * The outcome the seed picks for a kind. An injury (#110) plays as the
+ * injured player being tackled, or pulling up, and staying down. `keeper`
+ * is the defending keeper's quality.
+ */
+export const drawOutcome = (
+  rng: ClipRng,
+  kind: Moment['kind'],
+  keeper = 0
+): ClipOutcome =>
   kind === 'injury'
     ? 'tackle'
     : kind === 'goal'
       ? 'goal'
       : kind === 'save'
-        ? rng.pick(saveOutcomes)
+        ? drawSave(rng, keeper)
         : kind === 'clearance'
           ? rng.pick(drawnClearances)
           : drawMiss(rng);
@@ -129,9 +161,11 @@ export const fromWide = (
 /** The decisions made before a clip plays, all from its seed. */
 export const decideClip = (input: ClipInput) => {
   const rng = createClipRng(input.seed);
-  const drawnOutcome = input.outcome ?? drawOutcome(rng, input.kind);
   const attackers = input.attack.players;
   const defenders = input.defence.players;
+  const keeperQuality = qualityOf(defenders.find(p => p.line === 'keeper'));
+  const drawnOutcome =
+    input.outcome ?? drawOutcome(rng, input.kind, keeperQuality);
   const count = attackers.length + defenders.length;
   const attackSpots = lateralSpots(attackers);
   const defenceSpots = lateralSpots(defenders);
@@ -460,6 +494,7 @@ export const decideClip = (input: ClipInput) => {
     injured,
     injuredLimit,
     input,
+    keeperQuality,
     keeperSlot,
     keptOut,
     lastCarry,
@@ -477,6 +512,7 @@ export const decideClip = (input: ClipInput) => {
     restart,
     rng,
     shooter,
+    shooterQuality: qualityOf(attackers[shooter]),
     shootingSpot,
     starter,
     tackleRng,

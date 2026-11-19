@@ -9,7 +9,7 @@ import {
   steer,
   type Clip
 } from './pitch';
-import { curl } from './setup';
+import { byQuality, curl } from './setup';
 import {
   afterArrival,
   beatenBy,
@@ -18,7 +18,8 @@ import {
   goalHalf,
   jumpFrames,
   landingFrames,
-  personalSpace
+  personalSpace,
+  slidingBlockShare
 } from './tuning';
 
 /** A cross headed clear by a defender before it reaches the shooter. */
@@ -228,6 +229,11 @@ export const playClearance = (clip: Clip) => {
   if (clip.clearer < 0) {
     clip.clearer = clip.keeperSlot;
   }
+  // A weak blocker slides in more often, a strong one less (#238).
+  clip.slidingBlock =
+    clip.slidingBlockRoll !== undefined &&
+    clip.slidingBlockRoll <
+      byQuality(clip.qualities[clip.clearer] ?? 0, slidingBlockShare);
   const meet = pointAt(along);
   const flight = flightTo(along);
   clip.momentFrame = clip.momentStart + flight - 1;

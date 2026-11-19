@@ -93,6 +93,18 @@ export const qualityOf = (player: ClipPlayer | undefined) =>
   (clamp(player?.skill ?? 3, 1, 5) - 3) / 2;
 
 /**
+ * The value for a quality from -1 to 1, between those for the least
+ * skilled, an average and the most skilled player (#238).
+ */
+export const byQuality = (
+  quality: number,
+  [weak, average, strong]: readonly [number, number, number]
+) =>
+  quality < 0
+    ? average + (average - weak) * quality
+    : average + (strong - average) * quality;
+
+/**
  * How fast a player runs, as a share of an average, fresh player's pace
  * (#236): quicker the more skilled, slower the less, and slower the more
  * spent. A player without an energy runs fresh.
@@ -531,7 +543,6 @@ export const decideClip = (input: ClipInput) => {
     input,
     keeperQuality,
     keeperSlot,
-    /** Each player's pace, as `runPaceOf` gives it, in mover order. */
     keptOut,
     lastCarry,
     maxBuildUp,
@@ -542,11 +553,14 @@ export const decideClip = (input: ClipInput) => {
     passCount,
     penaltyRng,
     pulledUp,
+    /** Each player's quality, as `qualityOf` gives it, in mover order. */
+    qualities: [...attackers, ...defenders].map(qualityOf),
     quirks,
     rebound,
     reboundRng,
     restart,
     rng,
+    /** Each player's pace, as `runPaceOf` gives it, in mover order. */
     runPaces: [...attackers, ...defenders].map(runPaceOf),
     shooter,
     shooterQuality: qualityOf(attackers[shooter]),

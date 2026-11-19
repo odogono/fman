@@ -53,10 +53,14 @@ const playerIds = (game: Game, keep: (status: number) => boolean) =>
  * The offered answers for the prompt on screen: only answers the original
  * accepts, none while a timed pause or a print fault holds input.
  */
-export const answersFor = (view: View): readonly OfferedAnswer[] => {
-  if (view.paused) {
-    return [];
-  }
+export const answersFor = (view: View): readonly OfferedAnswer[] =>
+  view.paused ? [] : promptAnswersFor(view);
+
+/**
+ * The answers the prompt on screen will take once nothing holds input, so a
+ * screen can show them, disabled, during a pause.
+ */
+export const promptAnswersFor = (view: View): readonly OfferedAnswer[] => {
   switch (view.screen) {
     case 'title':
     case 'cleared':

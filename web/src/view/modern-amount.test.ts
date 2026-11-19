@@ -7,9 +7,10 @@ import { startAmount } from './amount-entry';
 import { answersFor } from './answers';
 import { amountPromptFor } from './modern-amount';
 import { messageFor } from './modern-message';
+import { modernScreenFor } from './modern-screen';
 
 /** The transfer market offered after the first match, as in `transfers.test.ts`. */
-const atMarket = () => {
+const atMarket = (beepDone = true) => {
   const session = createSession(2 ** 24 - 5);
   session.advance(5);
   session.skipPause();
@@ -17,8 +18,14 @@ const atMarket = () => {
     submitInput(session, input);
   }
   session.advance(1_000_000);
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 3; i++) {
     submitInput(session, '');
+  }
+  // Enter on the bills, waiting out the market's beep only if asked.
+  if (beepDone) {
+    submitInput(session, '');
+  } else {
+    session.submit('');
   }
   return session;
 };
@@ -102,5 +109,20 @@ test('a full squad hears why no player can be bought', () => {
   expect(message).toMatchObject({
     kind: 'text',
     text: 'You cannot buy a player because you have 16 in your squad - thatis the maximum allowed under F.A. rules.'
+  });
+});
+
+test('a transfer bid shows, disabled, while its prompt beep sounds', () => {
+  const session = atMarket(false);
+  const view = viewOn(session, 'transfer');
+  expect(view.paused).toBe(true);
+  const player = view.game.players[view.playerId - 1]!;
+  expect(modernScreenFor(view)).toMatchObject({
+    amount: {
+      cancel: { enabled: false },
+      entry: { max: view.game.cash, value: player.value },
+      submit: { enabled: false }
+    },
+    kind: 'amount'
   });
 });

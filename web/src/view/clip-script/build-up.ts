@@ -46,7 +46,8 @@ import {
   shooterReadyBy,
   slidingBlockShare,
   stretchedShot,
-  tackleShare
+  tackleShare,
+  throwBack
 } from './tuning';
 
 /** The restart that starts the build-up, if any, played to a team-mate. */
@@ -115,10 +116,16 @@ export const playRestart = (clip: Clip) => {
       clip.frame++;
     }
     clip.keepAway = undefined;
-    const near = clip.others.filter(i => {
+    const within = clip.others.filter(i => {
       const gap = distance(clip.movers[i]!, clip.ball);
       return i !== clip.holder && gap > 6 && gap < 20;
     });
+    // A throw-in goes up the line or across, not back towards the
+    // thrower's own goal, which leaves the build-up too far to go (#241).
+    const upfield = within.filter(
+      i => clip.movers[i]!.d >= clip.ball.d - throwBack
+    );
+    const near = upfield.length ? upfield : within;
     // A goal kick goes long, to someone onside in the middle of the pitch.
     const long = clip.others.filter(
       i => onside(clip, i) && clip.movers[i]!.d > 30 && clip.movers[i]!.d < 75

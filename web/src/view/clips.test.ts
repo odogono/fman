@@ -2716,3 +2716,66 @@ test('skill and energy set how fast players run', () => {
     ).toEqual([]);
   }
 }, 60_000);
+
+test('weak and strong sides pass the clip checks, whoever shoots', () => {
+  const found: string[] = [];
+  for (const skill of [1, 5]) {
+    // A forward, a midfielder and a defender shoot, on both ends.
+    for (const shooter of [9, 6, 2]) {
+      for (let seed = 0; seed < 15; seed++) {
+        for (const kind of [
+          'goal',
+          'save',
+          'near-miss',
+          'clearance'
+        ] as const) {
+          const script = createClipScript(
+            input({
+              attack: withSkill(side('#d70000'), skill),
+              attackingUp: seed % 2 === 0,
+              defence: withSkill(side('#0000d7'), skill),
+              kind,
+              seed,
+              shooter
+            })
+          );
+          for (const issue of checkClip(script)) {
+            found.push(
+              `skill ${skill}, seed ${seed}, ${kind}, shooter ${shooter}: ${issue.message} (${issue.start}–${issue.end})`
+            );
+          }
+        }
+      }
+    }
+  }
+  expect(found).toEqual([]);
+  // 360 clips, each built and checked frame by frame.
+}, 60_000);
+
+test('a shot from range after a throw-in is found in range', () => {
+  // Thrown back towards the thrower's own goal from deep, the ball was
+  // still too far out when the final pass was due, and the shooter ran a
+  // long way with it (#241).
+  const found: string[] = [];
+  for (const skill of [1, 3]) {
+    for (let seed = 0; seed < 400; seed++) {
+      const script = createClipScript(
+        input({
+          attack: withSkill(side('#d70000'), skill),
+          cross: null,
+          finish: 'long-range',
+          kind: (['goal', 'save', 'near-miss'] as const)[seed % 3]!,
+          restart: 'throw-in',
+          seed,
+          shooter: seed % 3 ? 9 : 6
+        })
+      );
+      for (const issue of checkClip(script)) {
+        if (issue.kind === 'long-run' || issue.kind === 'slow-build-up') {
+          found.push(`skill ${skill}, seed ${seed}: ${issue.message}`);
+        }
+      }
+    }
+  }
+  expect(found).toEqual([]);
+}, 60_000);

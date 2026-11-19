@@ -316,3 +316,5 @@ export const turnFrames = 20;
  * the net, the keeper's hands or behind, before the reaction.
  */
 export const afterArrival = Math.round(0.8 * clipFps);
+/** The furthest back, in metres, a throw-in goes towards the thrower's own goal. */
+export const throwBack = 3;

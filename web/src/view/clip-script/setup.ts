@@ -22,11 +22,13 @@ import {
   challengeShare,
   claimShare,
   crossShare,
+  energyPaceLean,
   injuredFrom,
   parryLean,
   penaltySpot,
   reboundShare,
-  sixYards
+  sixYards,
+  skillPaceLean
 } from './tuning';
 
 /**
@@ -83,6 +85,18 @@ export const drawMiss = (rng: ClipRng): MissOutcome => {
  */
 export const qualityOf = (player: ClipPlayer | undefined) =>
   (clamp(player?.skill ?? 3, 1, 5) - 3) / 2;
+
+/**
+ * How fast a player runs, as a share of an average, fresh player's pace
+ * (#236): quicker the more skilled, slower the less, and slower the more
+ * spent. A player without an energy runs fresh.
+ */
+export const runPaceOf = (player: ClipPlayer) =>
+  1 +
+  skillPaceLean * qualityOf(player) +
+  (player.energy === undefined
+    ? 0
+    : (energyPaceLean * (clamp(player.energy, 1, 20) - 20)) / 19);
 
 /**
  * A save: a dive, a hold or a parry, evenly for an average keeper. A
@@ -496,6 +510,7 @@ export const decideClip = (input: ClipInput) => {
     input,
     keeperQuality,
     keeperSlot,
+    /** Each player's pace, as `runPaceOf` gives it, in mover order. */
     keptOut,
     lastCarry,
     maxBuildUp,
@@ -511,6 +526,7 @@ export const decideClip = (input: ClipInput) => {
     reboundRng,
     restart,
     rng,
+    runPaces: [...attackers, ...defenders].map(runPaceOf),
     shooter,
     shooterQuality: qualityOf(attackers[shooter]),
     shootingSpot,

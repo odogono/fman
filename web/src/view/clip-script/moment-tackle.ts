@@ -246,7 +246,7 @@ export const playTackle = (clip: Clip) => {
         // down and step back onto it every few frames.
         const to = { d: clip.ball.d + 0.6, x: clip.ball.x };
         const gap = distance(sweeping, to);
-        const step = perFrame(7);
+        const step = perFrame(7) * clip.runPaces[clip.clearer]!;
         if (gap > step) {
           sweeping.d += ((to.d - sweeping.d) / gap) * step;
           sweeping.x += ((to.x - sweeping.x) / gap) * step;

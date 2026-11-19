@@ -658,22 +658,21 @@ const spent = (kit: string, energy: number): ClipSide => {
   return { ...plain, players: plain.players.map(p => ({ ...p, energy })) };
 };
 
-test("energy shows only as status, never changing the clip's play", () => {
+test("energy slows players (#236) but never changes the clip's outcome", () => {
   for (let seed = 0; seed < 20; seed++) {
-    const fresh = createClipScript(input({ minute: 88, seed }));
-    const tired = createClipScript(
-      input({
-        attack: spent('#d70000', 1),
-        defence: spent('#0000d7', 1),
-        minute: 88,
-        seed
-      })
-    );
-    expect(tired.length).toBe(fresh.length);
-    for (const at of [0, fresh.momentFrame, fresh.length - 1]) {
-      const strip = (frame: ReturnType<typeof fresh.frame>) =>
-        frame.players.map(({ status: _, ...p }) => p);
-      expect(strip(tired.frame(at))).toEqual(strip(fresh.frame(at)));
+    for (const kind of ['goal', 'save', 'near-miss', 'clearance'] as const) {
+      const fresh = createClipScript(input({ kind, minute: 88, seed }));
+      const tired = createClipScript(
+        input({
+          attack: spent('#d70000', 1),
+          defence: spent('#0000d7', 1),
+          kind,
+          minute: 88,
+          seed
+        })
+      );
+      expect(tired.outcome).toBe(fresh.outcome);
+      expect(tired.passes.at(-1)?.to).toBe(fresh.passes.at(-1)?.to);
     }
   }
 });
@@ -2458,10 +2457,18 @@ test('an attacker waiting by a defender stays put', () => {
   expect(found).toEqual([]);
 });
 
-/** `side` with every player's skill set to `skill`. */
-const withSkill = (side: ClipSide, skill: number): ClipSide => ({
+/** `side` with every player's skill, and any energy, set. */
+const withSkill = (
+  side: ClipSide,
+  skill: number,
+  energy?: number
+): ClipSide => ({
   ...side,
-  players: side.players.map(p => ({ ...p, skill }))
+  players: side.players.map(p => ({
+    ...p,
+    ...(energy === undefined ? {} : { energy }),
+    skill
+  }))
 });
 /** The mean of `values`. */
 const mean = (values: readonly number[]) =>
@@ -2503,10 +2510,11 @@ const parried = (scripts: readonly ClipScript[]) =>
 test('a player without a skill plays as an average one', () => {
   for (const kind of ['goal', 'save', 'near-miss'] as const) {
     const plain = createClipScript(input({ kind }));
+    // Fresh, too: full energy slows no one.
     const average = createClipScript(
       input({
-        attack: withSkill(side('#d70000'), 3),
-        defence: withSkill(side('#0000d7'), 3),
+        attack: withSkill(side('#d70000'), 3, 20),
+        defence: withSkill(side('#0000d7'), 3, 20),
         kind
       })
     );
@@ -2551,3 +2559,62 @@ test('a skilled keeper holds more saves and gets further across', () => {
     );
   expect(reached(5)).toBeGreaterThan(reached(1) + 0.3);
 });
+
+/**
+ * How fast the players from `from` to `to` (screen order) run at the top
+ * of their pace, in metres a second, over `scripts`: the 90th percentile
+ * of their speeds while running, over 1.5 m/s, on their feet.
+ */
+const topPace = (scripts: readonly ClipScript[], from: number, to: number) => {
+  const speeds: number[] = [];
+  for (const script of scripts) {
+    for (let at = 1; at < script.length; at++) {
+      const was = script.frame(at - 1).players;
+      const now = script.frame(at).players;
+      for (let p = from; p < to; p++) {
+        const speed =
+          Math.hypot(now[p]!.x - was[p]!.x, now[p]!.y - was[p]!.y) * clipFps;
+        if (speed > 1.5 && now[p]!.pose === 'run') {
+          speeds.push(speed);
+        }
+      }
+    }
+  }
+  return speeds.toSorted((a, b) => a - b)[Math.floor(speeds.length * 0.9)]!;
+};
+/** 30 clips, goals and saves, between `attack` and `defence`. */
+const clipsBetween = (attack: ClipSide, defence: ClipSide) =>
+  Array.from({ length: 30 }, (_, seed) =>
+    createClipScript(
+      input({
+        attack,
+        defence,
+        kind: (['goal', 'save'] as const)[seed % 2]!,
+        seed
+      })
+    )
+  );
+
+test('skill and energy set how fast players run', () => {
+  // The best of them, fresh, and the worst, spent, against the same side.
+  const fresh = (kit: string) => withSkill(side(kit), 5, 20);
+  const spent = (kit: string) => withSkill(side(kit), 1, 1);
+  const red = side('#d70000');
+  const blue = side('#0000d7');
+  const defending = (defence: ClipSide) =>
+    topPace(clipsBetween(red, defence), 11, 22);
+  expect(defending(fresh('#0000d7'))).toBeGreaterThan(
+    defending(spent('#0000d7')) * 1.15
+  );
+  const attacking = (attack: ClipSide) =>
+    topPace(clipsBetween(attack, blue), 0, 11);
+  expect(attacking(fresh('#d70000'))).toBeGreaterThan(
+    attacking(spent('#d70000')) * 1.1
+  );
+  // No one runs faster than anyone could.
+  for (const script of clipsBetween(fresh('#d70000'), fresh('#0000d7'))) {
+    expect(
+      checkClip(script).filter(issue => issue.kind === 'too-fast')
+    ).toEqual([]);
+  }
+}, 60_000);

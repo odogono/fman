@@ -746,7 +746,7 @@ export const steer = (
       distance(mover, clip.ball) < jockeyRange;
     const gap = distance(mover, goal);
     // A defender out of position, such as one the ball has gone past,
-    // sprints to get back.
+    // sprints to get back. Each goes at their own pace (#236).
     const speed = Math.min(
       perFrame(
         paces.get(i) ??
@@ -757,7 +757,7 @@ export const steer = (
               : gap > recoveryGap
                 ? 7.5
                 : 5.5)
-      ),
+      ) * clip.runPaces[i]!,
       jockeying ? ballPace + perFrame(jockeyGive) : Infinity
     );
     if (gap <= speed) {

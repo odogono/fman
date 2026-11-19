@@ -124,6 +124,14 @@ _Avoid_: Feed, commentary
 The short animation of one moment in Modern mode's highlights: the build-up, the moment itself and the reaction. The clip decides how long its moment is shown. Everything in it except the moment is made up for show and changes nothing in the game.
 _Avoid_: Replay, which names a cup match; highlight
 
+**Build-up**:
+The part of a clip before its moment: the play from the restart, or open play, to the final ball that reaches the player the moment names. A penalty has none.
+_Avoid_: Move, attack, which names the original's sequence
+
+**Finish**:
+How the player a moment names meets the chance in a clip: a shot, a header, a shot from range or a one-on-one. It shapes how the chance looks, never whether it goes in.
+_Avoid_: Shot type; outcome, which is what the moment decides
+
 **Cup celebration**:
 Modern mode's scene after the managed club wins the F.A. Cup final: the winners gather and lift the cup on the pitch while the losers sink to the turf. Like a clip, it is made up for show and changes nothing in the game.
 _Avoid_: Cup winners screen, trophy animation

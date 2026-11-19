@@ -2,6 +2,7 @@ import { expect, setDefaultTimeout, test } from 'bun:test';
 
 import { longestClip } from '../sim/ticker';
 import { checkClip, type ClipIssueKind } from './clip-checks';
+import { decideClip } from './clip-script/setup';
 import {
   boardMetres,
   boardTop,
@@ -2559,6 +2560,103 @@ test('a skilled keeper holds more saves and gets further across', () => {
     );
   expect(reached(5)).toBeGreaterThan(reached(1) + 0.3);
 });
+
+/** The decisions of 1,000 seeds for an attack of this skill. */
+const decisionsFor = (attack: number, overrides: Partial<ClipInput> = {}) =>
+  Array.from({ length: 1000 }, (_, seed) =>
+    decideClip(
+      input({ attack: withSkill(side('#d70000'), attack), seed, ...overrides })
+    )
+  );
+/** The share of `list` for which `is` holds. */
+const shareOf = <T>(list: readonly T[], is: (item: T) => boolean) =>
+  list.filter(is).length / list.length;
+
+test('a skilled shooter goes one-on-one or shoots from range more often', () => {
+  // A forward, then a midfielder.
+  for (const shooter of [9, 5]) {
+    const daring = (skill: number) =>
+      shareOf(
+        decisionsFor(skill, { cross: null, shooter }),
+        d => d.finish === 'one-on-one' || d.finish === 'long-range'
+      );
+    expect(daring(5)).toBeGreaterThan(daring(3) + 0.08);
+    expect(daring(3)).toBeGreaterThan(daring(1) + 0.08);
+  }
+  // Headers and restarts come as they would for any side.
+  const average = decisionsFor(3);
+  for (const skill of [1, 5]) {
+    const decided = decisionsFor(skill);
+    expect(decided.map(d => d.restart)).toEqual(average.map(d => d.restart));
+    expect(decided.map(d => d.finish === 'header')).toEqual(
+      average.map(d => d.finish === 'header')
+    );
+  }
+});
+
+/** The mean number of passes 1,000 seeds decide on, for this skill. */
+const passesFor = (skill: number) =>
+  mean(decisionsFor(skill).map(d => d.passCount));
+
+test('a weak side builds up with more passes than a strong one', () => {
+  expect(passesFor(3)).toBeCloseTo(3, 1);
+  expect(passesFor(1)).toBeGreaterThan(3.4);
+  expect(passesFor(5)).toBeLessThan(2.6);
+});
+
+/**
+ * The passes in open play of `script`, but the final one to `shooter`, in
+ * metres.
+ */
+const passLengths = (script: ClipScript, shooter = input().shooter) =>
+  script.passes.flatMap(p => {
+    if (p.kind !== 'pass' || p.receiver === shooter) {
+      return [];
+    }
+    const { ball: from } = script.frame(p.start);
+    const { ball: to } = script.frame(p.end);
+    return [Math.hypot(to.x - from.x, to.y - from.y)];
+  });
+
+/** The mean pass length of 100 goals and saves, for this skill. */
+const passLengthFor = (skill: number) =>
+  mean(
+    Array.from({ length: 100 }, (_, seed) =>
+      createClipScript(
+        input({
+          attack: withSkill(side('#d70000'), skill),
+          kind: (['goal', 'save'] as const)[seed % 2]!,
+          restart: 'open-play',
+          seed
+        })
+      )
+    ).flatMap(script => passLengths(script))
+  );
+
+test('a weak side plays shorter passes than a strong one', () => {
+  expect(passLengthFor(5)).toBeGreaterThan(passLengthFor(1) + 2);
+}, 60_000);
+
+test('an average side plays as one without skill, seed after seed', () => {
+  for (let seed = 0; seed < 40; seed++) {
+    const kind = (['goal', 'save', 'near-miss', 'clearance'] as const)[
+      seed % 4
+    ]!;
+    const plain = createClipScript(input({ kind, seed }));
+    const average = createClipScript(
+      input({
+        attack: withSkill(side('#d70000'), 3),
+        defence: withSkill(side('#0000d7'), 3),
+        kind,
+        seed
+      })
+    );
+    expect(average.finish).toBe(plain.finish);
+    expect(average.restart).toBe(plain.restart);
+    expect(average.passes).toEqual(plain.passes);
+    expect(average.length).toBe(plain.length);
+  }
+}, 60_000);
 
 /**
  * How fast the players from `from` to `to` (screen order) run at the top

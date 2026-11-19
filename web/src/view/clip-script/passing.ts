@@ -32,6 +32,7 @@ import {
   challengeRange,
   challengeSkip,
   challengeSlide,
+  farPass,
   gatherShare,
   holdingGap,
   kickFrames,
@@ -42,6 +43,7 @@ import {
   longestBackPass,
   longestForward,
   longestGroundPass,
+  passLengthLean,
   passMinimum,
   runOntoIt,
   shooterWait,
@@ -520,9 +522,13 @@ export const nextReceiver = (clip: Clip) => {
             holderLine - lineOrder.indexOf(clip.attackers[i]!.line) <= 1
           ? 0.4
           : 0;
+    // A strong side looks further for a pass, a weak one nearer (#237).
+    const reach =
+      1 + passLengthLean * clip.buildUpQuality * (gap > farPass ? 1 : -1);
     return (
       (gap > 6 && gap < 35 ? 3 : 0.5) *
       back *
+      reach *
       (blocked(clip, clip.movers[i]!) ? 0.15 : 1)
     );
   });

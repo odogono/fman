@@ -2,6 +2,7 @@ import { fixtureSides, type MatchFixture } from '../sim/league';
 import type { Game } from '../sim/management';
 import type { Moment } from '../sim/moments';
 import type { View } from '../sim/session';
+import { matchLineUps, namedKey, type LineUpPlayer } from './clip-match';
 import { clubName, fixtureTitle, type ClubName } from './home';
 import { strengthsFor, type Strengths } from './pick-team';
 import { lineName } from './ticker-layout';
@@ -20,6 +21,40 @@ export type ClipProgress = Readonly<{
   /** The clip on show, by its moment's index; absent at kick-off and full time. */
   playing?: number;
   shown: number;
+  /** The column's tab on show beside the pitch (#256). */
+  tab: HighlightsTab;
+  /** A moment has arrived since the Moments tab was last on show. */
+  unseen: boolean;
+}>;
+
+/** The tabs of the column beside the clips' pitch (#256). */
+export type HighlightsTab = 'away' | 'home' | 'moments';
+export const highlightsTabs: readonly HighlightsTab[] = [
+  'moments',
+  'home',
+  'away'
+];
+/** A tab's button, which presses no key. */
+export const tabId = (tab: HighlightsTab) => `clips.tab.${tab}`;
+
+/** One player in a line-up (#256), with the moments reached so far. */
+export type LineUpRow = Readonly<{
+  /** The minute of each goal they have scored. */
+  goals: readonly string[];
+  /** The minute they were injured, if they were. */
+  injured?: string;
+  /** Empty for an opponent that owns no squad: only the position shows. */
+  name: string;
+  /** The clip on show is their moment. */
+  named: boolean;
+}>;
+
+/** A side's line-up beside the clips (#256), by position, and its strengths. */
+export type ModernLineUp = Readonly<{
+  club: ClubName;
+  groups: readonly Readonly<{ label: string; rows: readonly LineUpRow[] }>[];
+  kit: string;
+  strengths: readonly (readonly [string, number])[];
 }>;
 
 /** The moments drawer's buttons (#145), which press no key. */
@@ -70,6 +105,8 @@ export type ModernHighlights = Readonly<{
    */
   clock?: string;
   home: ClubName;
+  /** Under sprite highlights, both sides' line-ups (#256). */
+  lineUps?: Readonly<{ away: ModernLineUp; home: ModernLineUp }>;
   pitch?: Readonly<{
     /** The club whose attack is on the pitch, if one is. */
     attacking?: ClubName;
@@ -156,6 +193,81 @@ const tickerLines = (
     .reverse();
 };
 
+const groupLabels = [
+  ['GK', 'Goalkeeper'],
+  ['DF', 'Defence'],
+  ['MF', 'Midfield'],
+  ['FW', 'Attack']
+] as const;
+
+/**
+ * Both line-ups as the playhead has the match: each goal and injury marked
+ * once its clip reaches it, and the player the clip on show names.
+ */
+const lineUpsFor = (
+  game: Game,
+  fixture: MatchFixture,
+  moments: readonly Moment[],
+  clip: ClipProgress,
+  clubs: Readonly<{ away: ClubName; home: ClubName }>
+) => {
+  const goals = new Map<string, string[]>();
+  const injuries = new Map<string, string>();
+  for (const moment of moments.slice(0, clip.shown)) {
+    const minute = `${moment.minute}′`;
+    const key = namedKey(
+      moment.side,
+      moment.side === 'club' ? moment.player : moment.squadPlayer
+    );
+    if (key && moment.kind === 'goal') {
+      goals.set(key, [...(goals.get(key) ?? []), minute]);
+    }
+    if (key && moment.kind === 'injury') {
+      injuries.set(key, minute);
+    }
+  }
+  const playing =
+    clip.playing === undefined ? undefined : moments[clip.playing];
+  const named =
+    playing &&
+    namedKey(
+      playing.side,
+      playing.side === 'club' ? playing.player : playing.squadPlayer
+    );
+  const sides = matchLineUps(game, fixture, moments);
+  const strengths = strengthsFor(game, fixture);
+  const clubHome = fixture.home;
+  const lineUp = (
+    side: Readonly<{ kit: string; players: readonly LineUpPlayer[] }>,
+    club: ClubName,
+    ours: boolean
+  ): ModernLineUp => ({
+    club,
+    groups: groupLabels.flatMap(([position, label]) => {
+      const rows = side.players
+        .filter(p => p.position === position)
+        .map(p => {
+          const injured = injuries.get(p.key);
+          return {
+            goals: goals.get(p.key) ?? [],
+            ...(injured ? { injured } : {}),
+            name: p.name,
+            named: p.key === named
+          };
+        });
+      return rows.length > 0 ? [{ label, rows }] : [];
+    }),
+    kit: side.kit,
+    strengths: strengths.rows.map(
+      ([name, club, opponent]) => [name, ours ? club : opponent] as const
+    )
+  });
+  return {
+    away: lineUp(sides.away, clubs.away, !clubHome),
+    home: lineUp(sides.home, clubs.home, clubHome)
+  };
+};
+
 /**
  * `clips`: under sprite highlights, how far the clips have got and the
  * score after them, which the ticker alone can't tell, since a clip shows
@@ -184,7 +296,15 @@ export const highlightsFor = (
     const newest = shown.at(-1);
     return {
       away,
-      ...(clips ? { clip: clips.progress } : {}),
+      ...(clips
+        ? {
+            clip: clips.progress,
+            lineUps: lineUpsFor(game, fixture, ticker.moments, clips.progress, {
+              away,
+              home
+            })
+          }
+        : {}),
       // Without clips, the ticker's clock is the newest moment's minute.
       clock: clips
         ? clockOf(ticker.moments, clips.progress, fullTime)

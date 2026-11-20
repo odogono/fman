@@ -447,3 +447,87 @@ export const clubNames = (game: Game, fixture: MatchFixture) => {
   const { away, home } = fixtureSides(game, fixture);
   return { away: away.name.trim(), home: home.name.trim() };
 };
+
+/** One player in a line-up (#256), and how the match's moments name them. */
+export type LineUpPlayer = Readonly<{
+  /** `club:<id>` for the managed club's, `squad:<index>` for an opponent's. */
+  key: string;
+  /** Empty for an opponent that owns no squad. */
+  name: string;
+  position: Position;
+}>;
+
+/** The key a moment names a player by, on its side, if it names one. */
+export const namedKey = (
+  side: 'club' | 'opponent',
+  player: number | undefined
+) =>
+  player === undefined
+    ? undefined
+    : side === 'club'
+      ? `club:${player}`
+      : `squad:${player}`;
+
+/**
+ * Both sides' line-ups as the clips field them, home first, with each
+ * side's kit. The managed club fields its picked team; an opponent its 11
+ * from its squad in a 4-4-2, joined by anyone the moments name who would
+ * have come on in a clip, or, owning no squad, its shape alone.
+ */
+export const matchLineUps = (
+  game: Game,
+  fixture: MatchFixture,
+  moments: readonly Moment[]
+) => {
+  const inks = matchInks(game, fixture);
+  const club: LineUpPlayer[] = pickedTeam(game).map(p => ({
+    key: `club:${p.id}`,
+    name: p.name.trim(),
+    position: p.position ?? 'MF'
+  }));
+  const { squad } = game.clubs[fixture.opponent - 1]!;
+  let opponent: LineUpPlayer[];
+  if (squad) {
+    const eleven = opponentEleven(squad);
+    const named = moments.flatMap(m =>
+      m.side === 'opponent' && m.squadPlayer !== undefined
+        ? [m.squadPlayer]
+        : m.kind === 'injury' && m.tackler !== undefined
+          ? [m.tackler]
+          : []
+    );
+    const fielded = [
+      ...eleven,
+      ...new Set(named.filter(i => i < squad.length && !eleven.includes(i)))
+    ];
+    opponent = fielded
+      .map(i => ({
+        key: `squad:${i}`,
+        name: squad[i]!.name.trim(),
+        position: squad[i]!.position
+      }))
+      .toSorted(
+        (a, b) =>
+          squadOrder.indexOf(a.position) - squadOrder.indexOf(b.position)
+      );
+  } else {
+    opponent = unnamedEleven.map((position, i) => ({
+      key: `shape:${i}`,
+      name: '',
+      position
+    }));
+  }
+  const sides = {
+    club: {
+      kit: inkColours[fixture.home ? inks.home : inks.away]!,
+      players: club
+    },
+    opponent: {
+      kit: inkColours[fixture.home ? inks.away : inks.home]!,
+      players: opponent
+    }
+  };
+  return fixture.home
+    ? { away: sides.opponent, home: sides.club }
+    : { away: sides.club, home: sides.opponent };
+};

@@ -26,7 +26,13 @@ import {
 import { barFor, tickerBar, type BarButton } from './context-bar';
 import { createFrameSampler } from './frame-sampler';
 import { homeFor, type Home } from './home';
-import { continueId, drawerIds, playheadIds } from './modern-highlights';
+import {
+  continueId,
+  drawerIds,
+  highlightsTabs,
+  playheadIds,
+  tabId
+} from './modern-highlights';
 import { modernScreenFor, type ModernScreen } from './modern-screen';
 import {
   isRules,
@@ -1027,6 +1033,15 @@ export const createApp = ({
     tap: (id: string, enter: Hold | false = 'held') => {
       if (id === drawerIds.open || id === drawerIds.close) {
         showDrawer(id === drawerIds.open);
+        return;
+      }
+      const tab = highlightsTabs.find(t => tabId(t) === id);
+      if (tab) {
+        // A tab beside the pitch (#256) presses no key.
+        if (!menuOpen) {
+          clips.showTab(journal.session.view, tab);
+          render(false);
+        }
         return;
       }
       if (id === playheadIds.play) {

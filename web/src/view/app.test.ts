@@ -1672,7 +1672,9 @@ test('Skip ends every clip and shows the whole ticker for the final hold', () =>
     full: true,
     heard: count,
     paused: false,
-    shown: count
+    shown: count,
+    tab: 'moments',
+    unseen: false
   });
   expect(run.page.highlights!.ticker!.lines).toHaveLength(count);
   run.settle();
@@ -1903,4 +1905,71 @@ test('the playhead takes the keys during clips, and other keys do nothing', () =
   expect(run.ticker().shown).toHaveLength(2);
   expect(key(run, 'ArrowLeft')).toBe(true);
   expect(run.page.highlights!.clip!.playing).toBe(0);
+});
+
+test('a line-up tab shows a side beside the clips, and the tabs never switch by themselves (#256)', () => {
+  const run = modernMoments();
+  expect(run.page.highlights!.clip!.tab).toBe('moments');
+  const { away, home } = run.page.highlights!.lineUps!;
+  // The managed club fields its picked team; both sides show their kits.
+  const players = (side: typeof home) =>
+    side.groups.flatMap(group => group.rows);
+  expect(players(home).length + players(away).length).toBeGreaterThanOrEqual(
+    20
+  );
+  expect(home.kit).not.toBe(away.kit);
+  expect(home.strengths.map(([name]) => name)).toEqual([
+    'Energy',
+    'Morale',
+    'Defence',
+    'Midfield',
+    'Attack'
+  ]);
+  run.app.tap('clips.tab.home');
+  run.app.pointerUp();
+  expect(run.page.highlights!.clip!.tab).toBe('home');
+  // A tab presses no key: the match runs on, and the tab stays.
+  const elapsed = run.ticker().elapsedT;
+  run.wait(5);
+  expect(run.ticker().elapsedT).toBeGreaterThan(elapsed);
+  while (run.page.highlights!.clip!.shown === 0) {
+    run.wait(5);
+  }
+  expect(run.page.highlights!.clip).toMatchObject({
+    tab: 'home',
+    unseen: true
+  });
+  run.app.tap('clips.tab.moments');
+  run.app.pointerUp();
+  expect(run.page.highlights!.clip).toMatchObject({
+    tab: 'moments',
+    unseen: false
+  });
+});
+
+test('the line-ups mark each moment as the playhead reaches it, and the player on show', () => {
+  const run = modernMoments();
+  const first = run.ticker().moments[0]!;
+  const marked = () =>
+    [run.page.highlights!.lineUps!.home, run.page.highlights!.lineUps!.away]
+      .flatMap(side => side.groups.flatMap(group => group.rows))
+      .filter(row => row.goals.length > 0 || row.injured);
+  const named = () =>
+    [run.page.highlights!.lineUps!.home, run.page.highlights!.lineUps!.away]
+      .flatMap(side => side.groups.flatMap(group => group.rows))
+      .filter(row => row.named);
+  run.wait(tickerLeadIn + tickerPause + 10);
+  expect(marked()).toHaveLength(0);
+  if (first.side === 'club' || first.squadPlayer !== undefined) {
+    expect(named()).toHaveLength(1);
+  }
+  while (run.page.highlights!.clip!.shown === 0) {
+    run.wait(5);
+  }
+  expect(marked().length).toBe(
+    first.kind === 'goal' || first.kind === 'injury' ? 1 : 0
+  );
+  // Rewound, the marks go back with the playhead.
+  playhead(run, 'rewind');
+  expect(marked()).toHaveLength(0);
 });

@@ -2308,3 +2308,143 @@ button.latest-moment:focus-visible,
   color: #444;
   font-size: 14px;
 }
+/* The column beside the clips (#256): tabs for the moments and each side's
+   line-up, over the tab on show, which scrolls. */
+.moments-panel.tabbed {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+.panel-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  background: var(--normal-0);
+}
+.panel-tab {
+  position: relative;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 40px;
+  padding: 0 6px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: var(--bright-7);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.panel-tab[aria-selected='true'] {
+  border-bottom-color: var(--bright-6);
+  background: var(--normal-1);
+}
+.panel-tab:focus-visible {
+  outline: 3px solid var(--bright-6);
+  outline-offset: -3px;
+}
+.panel-tab-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.kit-swatch {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border: 1px solid var(--bright-7);
+}
+.unseen-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--bright-6);
+}
+.panel-tab-body {
+  min-height: 0;
+  overflow-y: auto;
+}
+.panel-tab-body > .modern-ticker {
+  overflow: visible;
+}
+.line-up {
+  padding: 0 0 8px;
+}
+.line-up h4 {
+  margin: 0;
+  padding: 6px 8px 2px;
+  border-bottom: 1px solid var(--normal-0);
+  color: var(--normal-1);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.line-up ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.line-up li {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 8px;
+  border-bottom: 1px solid color-mix(in srgb, var(--normal-0) 25%, transparent);
+  font-variant-numeric: tabular-nums;
+}
+.line-up li.named {
+  background: var(--bright-6);
+  font-weight: 700;
+}
+.line-up li.injured .line-up-name {
+  color: var(--normal-2);
+}
+.line-up-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.line-up-goal,
+.line-up-injury {
+  display: inline-flex;
+  gap: 3px;
+  align-items: center;
+  font-size: 13px;
+}
+.line-up-goal::before {
+  content: '';
+  width: 9px;
+  height: 9px;
+  border: 1.5px solid var(--normal-0);
+  border-radius: 50%;
+  background: var(--bright-7);
+}
+.line-up-injury::before {
+  content: '+';
+  color: var(--normal-2);
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1;
+}
+.line-up-strengths {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin: 8px 8px 0;
+  text-align: center;
+}
+.line-up-strengths dt {
+  font-size: 11px;
+  font-weight: 600;
+}
+.line-up-strengths dd {
+  margin: 0;
+  font-family: Spectrum, monospace;
+  font-size: 16px;
+}

@@ -181,9 +181,9 @@ export type ClipInput = Readonly<{
   restart?: Restart;
   /**
    * The score after this moment, home first, for the goal announcement;
-   * it plays no part in the clip. Left out, a goal makes it 1-0.
+   * it plays no part in the clip.
    */
-  score?: readonly number[];
+  score: readonly number[];
   seed: number;
   /** The named player: an index into `attack.players`. */
   shooter: number;

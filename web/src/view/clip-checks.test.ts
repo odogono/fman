@@ -99,6 +99,7 @@ const clip = (
       },
       kind: 'goal',
       minute: 30,
+      score: [1, 0],
       seed: 1,
       shooter: 1
     },

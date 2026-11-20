@@ -81,7 +81,7 @@ export const writeScript = (clip: Clip): ClipScript => {
           length: goalEnd - clip.momentFrame,
           minute: `${clip.input.minute}′`,
           name: shooterLabel,
-          score: clip.input.score ?? (clip.input.attack.home ? [1, 0] : [0, 1])
+          score: clip.input.score
         }
       : undefined;
 

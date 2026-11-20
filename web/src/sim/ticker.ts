@@ -35,6 +35,20 @@ export type TickerStage =
   | Readonly<{ kind: 'kick-off' }>
   | Readonly<{ index: number; kind: 'moment' }>;
 
+/** The score after a match's first `count` moments, home first. */
+export const scoreAfterMoments = (
+  moments: readonly Moment[],
+  count: number,
+  home: boolean
+): readonly number[] => {
+  const goals = (side: Moment['side']) =>
+    moments.slice(0, count).filter(m => m.kind === 'goal' && m.side === side)
+      .length;
+  const club = goals('club');
+  const opponent = goals('opponent');
+  return home ? [club, opponent] : [opponent, club];
+};
+
 /**
  * The ticker (#108): a match's moments shown one at a time in minute order,
  * each held for a PAUSE that a keypress ends early, as the original's PAUSE
@@ -70,14 +84,7 @@ export const createTicker = (
   const timeline = createTimeline(events, keyboard, event => {
     shown = event.shown;
   });
-  const scoreAfter = (count: number): readonly number[] => {
-    const goals = (side: Moment['side']) =>
-      moments.slice(0, count).filter(m => m.kind === 'goal' && m.side === side)
-        .length;
-    const club = goals('club');
-    const opponent = goals('opponent');
-    return home ? [club, opponent] : [opponent, club];
-  };
+  const scoreAfter = (count: number) => scoreAfterMoments(moments, count, home);
   return {
     advance: timeline.advance,
     advanceT: timeline.advanceT,

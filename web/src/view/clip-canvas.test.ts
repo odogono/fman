@@ -1,31 +1,23 @@
 import { expect, test } from 'bun:test';
 
-import { fitClipCanvas, onScreenPitch } from './clip-canvas';
-import { pitchLength } from './clips';
+import { patchFor } from './clip-canvas';
+import { pitchWidth } from './clips';
 
-/** A canvas laid out `width` by `height` CSS pixels. */
-const box = (width: number, height: number) =>
-  ({
-    clientHeight: height,
-    clientWidth: width,
-    height: 0,
-    width: 0
-  }) as unknown as HTMLCanvasElement;
-
-test('on its side, the pitch’s top end is the screen’s right', () => {
-  expect(onScreenPitch(true, 10, 0)).toEqual({ x: pitchLength, y: 10 });
-  expect(onScreenPitch(true, 10, pitchLength)).toEqual({ x: 0, y: 10 });
-  expect(onScreenPitch(false, 10, 20)).toEqual({ x: 10, y: 20 });
+test('down to square, the camera keeps its width and the box sets the length', () => {
+  expect(patchFor(40, 400, 500)).toEqual({ length: 50, width: 40 });
+  expect(patchFor(40, 400, 400)).toEqual({ length: 40, width: 40 });
 });
 
-test('on its side, the camera keeps its height and shows 1.25 to 2 times as much length', () => {
-  expect(fitClipCanvas(box(1000, 600), true)).toMatchObject({
-    height: 600,
-    landscape: true,
-    width: 1000
-  });
-  // Too long a box shows no more than twice the height; too short, 1.25.
-  expect(fitClipCanvas(box(2000, 600), true).width).toBe(1200);
-  expect(fitClipCanvas(box(700, 600), true).width).toBe(750);
-  expect(fitClipCanvas(box(400, 600)).height).toBe(600);
+test('wider than square, the box keeps a square’s length and widens, closing in', () => {
+  const patch = patchFor(40, 1600, 1000);
+  expect(patch.length).toBeCloseTo(40);
+  expect(patch.width).toBeCloseTo(64);
+  // The moment's tighter camera narrows it in the same way.
+  expect(patchFor(30, 1600, 1000).length).toBeCloseTo(30);
+});
+
+test('past the pitch and a little touchline, a wider box shows more length', () => {
+  const patch = patchFor(40, 2000, 1000);
+  expect(patch.width).toBe(pitchWidth + 12);
+  expect(patch.length).toBeCloseTo((pitchWidth + 12) / 2);
 });

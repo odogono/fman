@@ -15,9 +15,7 @@ import {
   kitColours,
   looksFor,
   rasterise,
-  spriteFor,
-  spriteOnScreen,
-  turnGrid
+  spriteFor
 } from './clip-sprites';
 import { headHeight } from './clips';
 
@@ -197,32 +195,4 @@ test('a celebrating run strides as a run, and a jump crouches then leaps', () =>
       ).toBe(grid)
     );
   }
-});
-
-const facingPlayer = (
-  facing: 'down' | 'left' | 'right' | 'up',
-  pose: 'dive' | 'stand' = 'stand'
-) => ({ facing, pose, travelled: 0 }) as const;
-
-test('on a pitch on its side, facings turn a quarter clockwise, and a dive turns with them', () => {
-  const player = facingPlayer;
-  // Up the pitch is the screen's right: the left art, mirrored.
-  expect(spriteOnScreen(player('up'), true)).toEqual(
-    spriteFor(player('right'))
-  );
-  expect(spriteOnScreen(player('down'), true)).toEqual(
-    spriteFor(player('left'))
-  );
-  expect(spriteOnScreen(player('left'), true)).toEqual(spriteFor(player('up')));
-  expect(spriteOnScreen(player('right'), true)).toEqual(
-    spriteFor(player('down'))
-  );
-  expect(spriteOnScreen(player('up'), false)).toEqual(spriteFor(player('up')));
-  const dive = spriteOnScreen(player('left', 'dive'), true);
-  expect(dive.grid).toEqual(turnGrid(playerArt.dive.left));
-  expect(dive.grid).toHaveLength(playerArt.dive.left[0]!.length);
-});
-
-test('a grid turns a quarter clockwise', () => {
-  expect(turnGrid(['ab', 'cd', 'ef'])).toEqual(['eca', 'fdb']);
 });

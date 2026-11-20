@@ -1,4 +1,4 @@
-import { paintClip, type ClipBox, type ClipSides } from './clip-canvas';
+import { paintClip, type ClipSides } from './clip-canvas';
 import { overlayUnit } from './clip-card';
 import { colourDistance } from './clip-match';
 import {
@@ -167,7 +167,7 @@ export const middleStripe = (home: string, away: string) =>
 export const paintShot = (
   ctx: CanvasRenderingContext2D,
   shot: ClipShot,
-  size: ClipBox
+  size: Readonly<{ height: number; ratio: number; width: number }>
 ) => {
   const { wipe } = shot;
   if (!wipe) {
@@ -179,7 +179,7 @@ export const paintShot = (
   paintClip(ctx, out.frame, out.sides, size);
   const deviceWidth = Math.round(size.width * size.ratio);
   const deviceHeight = Math.round(size.height * size.ratio);
-  const unit = overlayUnit(size.landscape ? deviceHeight : deviceWidth);
+  const unit = overlayUnit(deviceWidth);
   const columns = Math.ceil(deviceWidth / unit);
   const rows = Math.ceil(deviceHeight / unit);
   const lines = Array.from({ length: rows }, (_, row) =>

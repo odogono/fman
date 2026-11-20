@@ -24,22 +24,6 @@ import {
 // point and is drawn in depth order with the players, so a player can be
 // in front of or behind a goal. Nothing here draws or touches the seed.
 
-/**
- * The pitch as the screen shows it, in metres: up and down the screen, or
- * on its side on a wide window (#255), the home side attacking right first.
- * The ground is laid out on the screen's pitch, so the stands keep their
- * facings, towards the camera at the top and backs turned at the bottom.
- */
-export type ScreenPitch = Readonly<{ height: number; width: number }>;
-export const uprightPitch: ScreenPitch = {
-  height: pitchLength,
-  width: pitchWidth
-};
-export const sidewaysPitch: ScreenPitch = {
-  height: pitchWidth,
-  width: pitchLength
-};
-
 /** A piece of the ground: its art, the point it stands on, and its depth. */
 export type GroundPiece = Readonly<{
   /** Where its art's bottom row stands, in metres on the screen's pitch. */
@@ -79,66 +63,8 @@ const boardBackPalette: ArtPalette = Object.fromEntries(
   Object.keys(boardPalette).map(k => [k, k === 'o' ? '#141414' : '#5a5a5a'])
 );
 
-/** How tall the crossbar stands, in art pixels. */
-const crossbarPixels = Math.round(2.44 / artPixelMetres);
-/** How deep the net reaches behind the line, in art pixels. */
-const netPixels = Math.round(netDepthMetres / artPixelMetres);
-
-/**
- * A goal at the left end of a pitch on its side, drawn to scale by script:
- * the net, the crossbar with the far post, and the near post, each the same
- * width so they line up. Height goes straight up the screen, so the
- * crossbar runs up the screen above the line, and the net's roof slopes
- * from it to the ground behind.
- */
-export const sideGoalArt = (() => {
-  const mouth = goalArt.top.frame[0]!.length - 8;
-  const post = 4;
-  const width = netPixels + post;
-  const height = mouth + crossbarPixels;
-  const bar = '.'.repeat(netPixels) + 'owwo';
-  const net: string[] = [];
-  for (let row = 0; row < height; row++) {
-    let line = '';
-    for (let column = 0; column < width; column++) {
-      // The roof meets the ground at the back, the crossbar at the front.
-      const top = Math.round(
-        (crossbarPixels * (netPixels - Math.min(column, netPixels))) / netPixels
-      );
-      const inside = column < netPixels && row >= top && row < top + mouth;
-      const side = column < netPixels && row >= top + mouth - 1;
-      if (!inside && !side) {
-        line += '.';
-      } else if (
-        column === 0 ||
-        row === top ||
-        row === height - 1 ||
-        row === top + mouth - 1
-      ) {
-        line += 'm';
-      } else {
-        line +=
-          (row + column) % 4 === 0 || (row - column) % 4 === 0 ? 'l' : '.';
-      }
-    }
-    net.push(line);
-  }
-  const cap = '.'.repeat(netPixels) + 'oooo';
-  return {
-    /** The crossbar and far post: from the far post's top to the near post's. */
-    crossbar: [cap, ...Array.from({ length: mouth - 2 }, () => bar), cap],
-    /** The near post, from its top down to the line. */
-    mouth,
-    near: [cap, ...Array.from({ length: crossbarPixels - 1 }, () => bar), cap],
-    net
-  };
-})();
-
 /** The goals: each a net and a frame, placed apart in depth, and shadows. */
-export const goalPieces = (landscape = false): GroundPiece[] => {
-  if (landscape) {
-    return sideGoals();
-  }
+export const goalPieces = (): GroundPiece[] => {
   const x = pitchWidth / 2;
   // A shadow's grid is placed by its top-left corner, at the left of the
   // goal's footprint; it is drawn before anything stands on it.
@@ -192,61 +118,16 @@ export const goalPieces = (landscape = false): GroundPiece[] => {
   ];
 };
 
-/**
- * The goals at either end of a pitch on its side: the left one as drawn,
- * the right one mirrored. Each net sits behind anyone between the posts,
- * the crossbar with the far post, and the near post in front.
- */
-const sideGoals = (): GroundPiece[] => {
-  const { crossbar, mouth, near, net } = sideGoalArt;
-  const middle = sidewaysPitch.height / 2;
-  const far = middle - (mouth * artPixelMetres) / 2;
-  const close = middle + (mouth * artPixelMetres) / 2;
-  const lift = crossbarPixels * artPixelMetres;
-  // Each grid's middle column is half the net's depth behind the line.
-  const behind = (netPixels / 2) * artPixelMetres;
-  const pieces: GroundPiece[] = [];
-  for (const right of [false, true]) {
-    const x = right ? sidewaysPitch.width + behind : -behind;
-    pieces.push(
-      {
-        at: { x, y: close },
-        depth: far - 0.01,
-        grid: net,
-        mirrored: right,
-        palette: netPalette
-      },
-      {
-        at: { x, y: close - lift },
-        depth: far,
-        grid: crossbar,
-        mirrored: right,
-        palette: netPalette
-      },
-      {
-        at: { x, y: close },
-        depth: close,
-        grid: near,
-        mirrored: right,
-        palette: netPalette
-      }
-    );
-  }
-  return pieces;
-};
-
 /** One board panel turned to stand along a touchline. */
 const sideBoard: ArtGrid = boardArt[0]!
   .split('')
   .map((_, x) => boardArt.map(row => row[x]).join(''));
 
 /** The boards around the pitch, a panel run at a time. */
-export const boardPieces = (
-  pitch: ScreenPitch = uprightPitch
-): GroundPiece[] => {
+export const boardPieces = (): GroundPiece[] => {
   const pieces: GroundPiece[] = [];
   const along = boardArt[0]!.length * artPixelMetres;
-  for (let x = -boardMetres; x < pitch.width + boardMetres; x += along) {
+  for (let x = -boardMetres; x < pitchWidth + boardMetres; x += along) {
     const centre = x + along / 2;
     pieces.push(
       {
@@ -257,8 +138,8 @@ export const boardPieces = (
         palette: boardPalette
       },
       {
-        at: { x: centre, y: pitch.height + boardMetres },
-        depth: pitch.height + boardMetres,
+        at: { x: centre, y: pitchLength + boardMetres },
+        depth: pitchLength + boardMetres,
         grid: boardArt,
         mirrored: false,
         palette: boardBackPalette
@@ -266,8 +147,8 @@ export const boardPieces = (
     );
   }
   const down = sideBoard.length * artPixelMetres;
-  for (let y = -boardMetres + down; y < pitch.height + boardMetres; y += down) {
-    for (const x of [-boardMetres, pitch.width + boardMetres]) {
+  for (let y = -boardMetres + down; y < pitchLength + boardMetres; y += down) {
+    for (const x of [-boardMetres, pitchWidth + boardMetres]) {
       pieces.push({
         at: { x, y },
         depth: y,
@@ -311,8 +192,7 @@ const fanArt = (facing: Facing, cheering: boolean) => {
  */
 export const crowdPieces = (
   sides: Readonly<{ attack: ClipSide; defence: ClipSide }>,
-  cheer: boolean,
-  pitch: ScreenPitch = uprightPitch
+  cheer: boolean
 ): GroundPiece[] => {
   const home = sides.defence.home ? sides.defence : sides.attack;
   const away = home === sides.attack ? sides.defence : sides.attack;
@@ -344,13 +224,13 @@ export const crowdPieces = (
   };
   for (let row = 0; row < rows; row++) {
     const out = standMetres + row * rowMetres;
-    for (let x = -12, place = 0; x < pitch.width + 12; x += seat, place++) {
+    for (let x = -12, place = 0; x < pitchWidth + 12; x += seat, place++) {
       fan('top', row, place, { x, y: -out }, 'down');
-      fan('bottom', row, place, { x, y: pitch.height + out + 1 }, 'up');
+      fan('bottom', row, place, { x, y: pitchLength + out + 1 }, 'up');
     }
-    for (let y = -2, place = 0; y < pitch.height + 3; y += seat, place++) {
+    for (let y = -2, place = 0; y < pitchLength + 3; y += seat, place++) {
       fan('left', row, place, { x: -out, y }, 'right');
-      fan('right', row, place, { x: pitch.width + out, y }, 'left');
+      fan('right', row, place, { x: pitchWidth + out, y }, 'left');
     }
   }
   return pieces;

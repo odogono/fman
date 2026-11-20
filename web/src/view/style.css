@@ -956,8 +956,9 @@ button.latest-moment:focus-visible,
   display: none;
 }
 /* On a wide window (#255), the scoreboard runs across the top, the pitch
-   on its side fills the left as far as about 1600px wide, with the
-   playhead's row under it, and the moments take a column on the right. */
+   fills the left as far as about 1600px wide, still running up the screen,
+   with the playhead's row under it, and the moments take a column on the
+   right. */
 @media (min-width: 900px) and (min-aspect-ratio: 1) and (min-height: 501px) {
   .modern-highlights:has(.clip-stage) {
     grid-template-columns: minmax(0, 1fr) 320px;
@@ -977,14 +978,14 @@ button.latest-moment:focus-visible,
   .modern-highlights:has(.clip-stage) > .highlights-controls {
     grid-row: 3;
   }
-  /* The pitch keeps the camera's shape on its side: from 1.25 to twice as
-     long as it is tall. */
+  /* The pitch fills the stage, closing in rather than leaving bands: no
+     more than twice as wide as it is tall. */
   .modern-highlights .clip-stage {
     place-items: center;
   }
   .modern-highlights .clip-stage .clip-frame {
     width: min(100cqw, 200cqh);
-    height: min(100cqh, 80cqw);
+    height: min(100cqh, 200cqw);
   }
   .modern-highlights .moments-panel {
     display: grid;

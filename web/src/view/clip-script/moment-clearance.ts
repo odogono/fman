@@ -5,7 +5,7 @@ import {
   crossFlight,
   kick,
   label,
-  record,
+  nextFrame,
   steer,
   type Clip
 } from './pitch';
@@ -154,12 +154,10 @@ export const playHeadedClear = (clip: Clip) => {
     // defender only as they must.
     steer(
       clip,
-      clip.frame,
       held,
       checked && f <= flight ? new Map([[clip.shooter, checkedAt]]) : undefined
     );
-    record(clip);
-    clip.frame++;
+    nextFrame(clip);
   }
 };
 
@@ -303,14 +301,12 @@ export const playClearance = (clip: Clip) => {
     }
     steer(
       clip,
-      clip.frame,
       held,
       new Map([
         [clip.holder, where(clip.holder)],
         [clip.shooter, where(clip.shooter)]
       ])
     );
-    record(clip);
-    clip.frame++;
+    nextFrame(clip);
   }
 };

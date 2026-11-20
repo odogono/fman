@@ -432,7 +432,7 @@ const challengerDown = (clip: Clip, at: number) =>
   clip.challenge !== undefined &&
   at - clip.challenge.at < clip.challenge.slide + sitFrames;
 
-export const record = (clip: Clip) => {
+const record = (clip: Clip) => {
   // The challenger slides, slowing, then sits up until they get up.
   if (clip.challenge) {
     const t = clip.frame - clip.challenge.at;
@@ -649,10 +649,19 @@ const besideOf = (spot: Point, other: Point, mover: Point) => {
   }
 };
 
+/**
+ * Records the frame as the players and ball now stand, and moves the clock
+ * on to the next. Every stage ends each of its frames with this, once the
+ * players have moved and taken their poses.
+ */
+export const nextFrame = (clip: Clip) => {
+  record(clip);
+  clip.frame++;
+};
+
 // Every player not told otherwise heads for their place in the shape.
 export const steer = (
   clip: Clip,
-  frame: number,
   held: ReadonlySet<number>,
   overrides: ReadonlyMap<number, Point> = new Map(),
   /** A pass along the ground, from the ball to where it goes. */
@@ -660,6 +669,7 @@ export const steer = (
   /** Players who walk or jog, and how fast, in metres a second. */
   paces: ReadonlyMap<number, number> = new Map()
 ) => {
+  const frame = clip.frame;
   const line = clip.offside ? offsideLine(clip) - 0.5 : Infinity;
   // The defender nearest the ball closes it down, tackling only in a
   // challenge. The one already doing it keeps on unless another is clearly

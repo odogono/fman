@@ -15,7 +15,7 @@ import {
   pitchLength,
   pitchWidth
 } from './model';
-import { aimAt, kick, record, steer, target, type Clip } from './pitch';
+import { aimAt, kick, nextFrame, steer, target, type Clip } from './pitch';
 import {
   celebrateFor,
   celebrationPace,
@@ -483,7 +483,7 @@ export const playReaction = (clip: Clip) => {
         });
       }
     }
-    steer(clip, clip.frame, reactionHeld, overrides, undefined, paces);
+    steer(clip, reactionHeld, overrides, undefined, paces);
     for (const i of joiners) {
       // Once both are there, they throw their arms up and stay.
       if (
@@ -502,7 +502,6 @@ export const playReaction = (clip: Clip) => {
       );
       aimAt(clip, i, scorer, true);
     }
-    record(clip);
-    clip.frame++;
+    nextFrame(clip);
   }
 };

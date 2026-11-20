@@ -21,8 +21,8 @@ import {
 import {
   aimAt,
   crossFlight,
+  nextFrame,
   reach,
-  record,
   standBack,
   steer,
   type Clip
@@ -60,9 +60,8 @@ export const playRestart = (clip: Clip) => {
     clip.cardEnd = Math.max(cardFrames, waits);
     const everyone = new Set(clip.movers.keys());
     for (let f = 0; f < waits; f++) {
-      steer(clip, clip.frame, everyone);
-      record(clip);
-      clip.frame++;
+      steer(clip, everyone);
+      nextFrame(clip);
     }
   } else if (clip.restart !== 'open-play') {
     const waits =
@@ -110,9 +109,8 @@ export const playRestart = (clip: Clip) => {
     for (let f = 0; f < waits; f++) {
       taker.pose = clip.restart === 'throw-in' ? 'hold' : 'run';
       clip.ball.height = clip.restart === 'throw-in' ? 0.3 : 0;
-      steer(clip, clip.frame, new Set([clip.holder]), box);
-      record(clip);
-      clip.frame++;
+      steer(clip, new Set([clip.holder]), box);
+      nextFrame(clip);
     }
     clip.keepAway = undefined;
     const within = clip.others.filter(i => {
@@ -495,14 +493,12 @@ export const playZoom = (clip: Clip) => {
         taker.x += ((to.x - taker.x) / gap) * step;
       }
       aimAt(clip, clip.shooter, clip.ball, true);
-      steer(clip, clip.frame, new Set(clip.movers.keys()));
-      record(clip);
-      clip.frame++;
+      steer(clip, new Set(clip.movers.keys()));
+      nextFrame(clip);
     } else if (waiting) {
       // The ball stays on the corner spot until it is crossed.
-      steer(clip, clip.frame, new Set([clip.holder]), zoomChase);
-      record(clip);
-      clip.frame++;
+      steer(clip, new Set([clip.holder]), zoomChase);
+      nextFrame(clip);
     } else {
       dribble(clip, 1, touch, through ? 5.5 : 1.5, zoomChase);
     }

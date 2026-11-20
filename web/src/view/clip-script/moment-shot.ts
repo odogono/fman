@@ -9,7 +9,7 @@ import {
 } from './geometry';
 import { headHeight, pitchLength } from './model';
 import { type CrossIn } from './moment-cross';
-import { aimAt, kick, record, steer, type Clip } from './pitch';
+import { aimAt, kick, nextFrame, steer, type Clip } from './pitch';
 import { curl } from './setup';
 import {
   afterArrival,
@@ -65,9 +65,8 @@ export const playShot = (
           ? punched(since)
           : { d: clip.keeper.d, height: 0.5, x: clip.keeper.x }
       );
-      steer(clip, clip.frame, new Set([clip.keeperSlot]));
-      record(clip);
-      clip.frame++;
+      steer(clip, new Set([clip.keeperSlot]));
+      nextFrame(clip);
     }
   } else {
     // Only a chance from close in comes back to the shooter.
@@ -195,14 +194,8 @@ export const playShot = (
             x: spill.x + ((at.x - spill.x) / gap) * lateBy
           });
         }
-        steer(
-          clip,
-          clip.frame,
-          new Set([clip.shooter, clip.keeperSlot]),
-          overrides
-        );
-        record(clip);
-        clip.frame++;
+        steer(clip, new Set([clip.shooter, clip.keeperSlot]), overrides);
+        nextFrame(clip);
       }
       clip.shotFrom = { d: clip.ball.d, x: clip.ball.x };
       headed = false;
@@ -387,14 +380,8 @@ export const playShot = (
           clip.ball.x = clip.keeper.x;
         }
       }
-      steer(
-        clip,
-        clip.frame,
-        new Set([clip.shooter, clip.keeperSlot]),
-        new Map()
-      );
-      record(clip);
-      clip.frame++;
+      steer(clip, new Set([clip.shooter, clip.keeperSlot]), new Map());
+      nextFrame(clip);
     }
   }
 };

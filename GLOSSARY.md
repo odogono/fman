@@ -232,6 +232,10 @@ The presentation mode that reproduces the original Spectrum screens, scaled to f
 The presentation mode with screens redesigned for phones, where choices are made by tapping rather than typing.
 _Avoid_: Mobile mode, since both modes are meant to work on mobile
 
+**Wide window**:
+A window wider than it is tall with room for two of Modern mode's panes side by side, as on a desktop. Any other window, a phone's held either way, takes Modern mode's phone layouts.
+_Avoid_: Desktop, which names the device rather than the room the window gives
+
 **Modern screen**:
 A screen Modern mode draws in place of an original screen, such as the Home screen, pick team or highlights. Screens Modern mode has no design for show the original's, with the context bar.
 _Avoid_: Own screen or pane

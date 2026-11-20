@@ -3,9 +3,9 @@ import { headHeight, pitchLength, pitchWidth } from './model';
 import {
   bentRun,
   crossFlight,
+  finishFrame,
   kick,
   label,
-  nextFrame,
   steer,
   type Clip
 } from './pitch';
@@ -157,7 +157,7 @@ export const playHeadedClear = (clip: Clip) => {
       held,
       checked && f <= flight ? new Map([[clip.shooter, checkedAt]]) : undefined
     );
-    nextFrame(clip);
+    finishFrame(clip);
   }
 };
 
@@ -307,6 +307,6 @@ export const playClearance = (clip: Clip) => {
         [clip.shooter, where(clip.shooter)]
       ])
     );
-    nextFrame(clip);
+    finishFrame(clip);
   }
 };

@@ -3,9 +3,9 @@ import { clipFps, headHeight, pitchLength, pitchWidth } from './model';
 import {
   bentRun,
   crossFlight,
+  finishFrame,
   kick,
   label,
-  nextFrame,
   reach,
   steer,
   type Clip
@@ -213,7 +213,7 @@ export const playCrossIn = (clip: Clip) => {
       header.pose = headed && left < jumpFrames ? 'header' : 'run';
       header.poseFrame = left < jumpFrames / 2 ? 1 : 0;
       steer(clip, new Set([clip.shooter, ...(claim ? [clip.keeperSlot] : [])]));
-      nextFrame(clip);
+      finishFrame(clip);
     }
     clip.shotFrom = { d: clip.ball.d, x: clip.ball.x };
   } else if (clip.cross === 'half-clear') {
@@ -305,7 +305,7 @@ export const playCrossIn = (clip: Clip) => {
         clip,
         new Set([clip.shooter, ...(clearing >= 0 ? [clearing] : [])])
       );
-      nextFrame(clip);
+      finishFrame(clip);
     }
     clip.shotFrom = { d: clip.ball.d, x: clip.ball.x };
   }

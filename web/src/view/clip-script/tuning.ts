@@ -237,6 +237,11 @@ export const jumpCycle = 32;
 export const slideMetres = 3;
 /** Team-mates crowd a celebrating scorer this close, in metres. */
 export const huddleGap = 1.1;
+/**
+ * How close a team-mate joining the scorer must get, in metres, once the
+ * scorer has stopped, to have arrived and start celebrating.
+ */
+export const huddleReach = huddleGap + 0.8;
 /** A keeper down after a save is up again after this many frames. */
 export const getUpFrames = 25;
 /**

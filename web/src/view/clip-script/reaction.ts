@@ -15,7 +15,7 @@ import {
   pitchLength,
   pitchWidth
 } from './model';
-import { aimAt, kick, nextFrame, steer, target, type Clip } from './pitch';
+import { aimAt, finishFrame, kick, steer, target, type Clip } from './pitch';
 import {
   celebrateFor,
   celebrationPace,
@@ -24,6 +24,7 @@ import {
   fetchFrom,
   getUpFrames,
   huddleGap,
+  huddleReach,
   jogPace,
   jumpAir,
   jumpCrouch,
@@ -489,7 +490,7 @@ export const playReaction = (clip: Clip) => {
       if (
         f >= leapFrames &&
         distance(scorer, celebrateAt) < 0.01 &&
-        distance(clip.movers[i]!, scorer) < huddleGap + 0.8
+        distance(clip.movers[i]!, scorer) < huddleReach
       ) {
         huddled.add(i);
         reactionHeld.add(i);
@@ -502,6 +503,6 @@ export const playReaction = (clip: Clip) => {
       );
       aimAt(clip, i, scorer, true);
     }
-    nextFrame(clip);
+    finishFrame(clip);
   }
 };

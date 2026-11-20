@@ -3,7 +3,7 @@ import { expect, setDefaultTimeout, test } from 'bun:test';
 import { longestClip } from '../sim/ticker';
 import { checkClip, type ClipIssueKind } from './clip-checks';
 import { decideClip } from './clip-script/setup';
-import { huddleGap, leapFrames } from './clip-script/tuning';
+import { huddleReach, leapFrames } from './clip-script/tuning';
 import {
   boardMetres,
   boardTop,
@@ -2062,16 +2062,20 @@ test('after a goal the scorer wheels away and team-mates pile in', () => {
 });
 
 /**
- * Whether team-mate `i` has reached the scorer (shirt 9) at frame `f`: close
- * enough, with the scorer stopped where they celebrate, so staying put into
- * the next frame.
+ * Whether team-mate `i` has reached the scorer at frame `f`: close enough,
+ * with the scorer stopped where they celebrate, so staying put into the
+ * next frame.
  */
 const joinedScorer = (script: ClipScript, f: number, i: number) => {
+  const { shooter } = script.input;
   const now = script.frame(f).players;
   const next = script.frame(f + 1).players;
   const apart = (a: number, b: { x: number; y: number }) =>
     Math.hypot(now[a]!.x - b.x, now[a]!.y - b.y);
-  return apart(9, next[9]!) < 0.01 && apart(i, now[9]!) < huddleGap + 0.8;
+  return (
+    apart(shooter, next[shooter]!) < 0.01 &&
+    apart(i, now[shooter]!) < huddleReach
+  );
 };
 
 test('a team-mate joining the scorer jumps for joy on the frame they get there', () => {
@@ -2082,7 +2086,7 @@ test('a team-mate joining the scorer jumps for joy on the frame they get there',
     const script = createClipScript(input({ kind: 'goal', seed }));
     const from = script.phases.reaction + leapFrames;
     script.frame(from).players.forEach((p, i) => {
-      if (i === 9 || p.side !== 'attack') {
+      if (i === script.input.shooter || p.side !== 'attack') {
         return;
       }
       for (let f = from + 1; f < script.length; f++) {

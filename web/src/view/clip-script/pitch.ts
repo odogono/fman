@@ -650,11 +650,11 @@ const besideOf = (spot: Point, other: Point, mover: Point) => {
 };
 
 /**
- * Records the frame as the players and ball now stand, and moves the clock
- * on to the next. Every stage ends each of its frames with this, once the
- * players have moved and taken their poses.
+ * Finishes the frame: records it as the players and ball now stand, then
+ * moves the clock on to the next. Every stage ends each of its frames with
+ * this, once the players have moved and taken their poses.
  */
-export const nextFrame = (clip: Clip) => {
+export const finishFrame = (clip: Clip) => {
   record(clip);
   clip.frame++;
 };

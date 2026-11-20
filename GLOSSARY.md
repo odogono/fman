@@ -124,6 +124,14 @@ _Avoid_: Feed, commentary
 The short animation of one moment in Modern mode's highlights: the build-up, the moment itself and the reaction. The clip decides how long its moment is shown. Everything in it except the moment is made up for show and changes nothing in the game.
 _Avoid_: Replay, which names a cup match; highlight
 
+**Playhead**:
+The point in a match's clips that Modern mode's highlights have on show. The scoreboard, the moments listed and the line-ups show the match as it stood there; while the playhead is paused or behind, the match waits for it.
+_Avoid_: Cursor, position
+
+**Watching again**:
+Playing a clip whose moment has already been shown, after rewinding to it. It changes nothing in the game; the match waits until the playhead catches up.
+_Avoid_: Replay, which names a cup match; rewind, which names the control
+
 **Build-up**:
 The part of a clip before its moment: the play from the restart, or open play, to the final ball that reaches the player the moment names. A penalty has none.
 _Avoid_: Move, attack, which names the original's sequence
@@ -147,6 +155,10 @@ _Avoid_: Cup winners screen, trophy animation
 **Scoreboard**:
 The strip above Modern mode's highlights: both clubs, the score and, where the highlights have minutes, the minute of the moment on show.
 _Avoid_: Header, title bar
+
+**Line-up**:
+The players a side fields in a match's clips, by position, shown beside the pitch on a wide window: the managed club's picked team, and the opponent's eleven from its squad, or only their positions where the opponent owns no squad.
+_Avoid_: Picked team, which is only the managed club's; team sheet, formation
 
 **Gate receipts**:
 The income credited to the managed club for a match, including a cup replay.
@@ -231,6 +243,10 @@ The presentation mode that reproduces the original Spectrum screens, scaled to f
 **Modern mode**:
 The presentation mode with screens redesigned for phones, where choices are made by tapping rather than typing.
 _Avoid_: Mobile mode, since both modes are meant to work on mobile
+
+**Wide window**:
+A window wider than it is tall with room for two of Modern mode's panes side by side, as on a desktop. Any other window, a phone's held either way, takes Modern mode's phone layouts.
+_Avoid_: Desktop, which names the device rather than the room the window gives
 
 **Modern screen**:
 A screen Modern mode draws in place of an original screen, such as the Home screen, pick team or highlights. Screens Modern mode has no design for show the original's, with the context bar.

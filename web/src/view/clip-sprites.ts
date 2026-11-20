@@ -173,6 +173,51 @@ export const spriteFor = (
   return { grid: art[pose][drawn], mirrored };
 };
 
+/** Where a facing on the pitch points on a pitch turned on its side. */
+const turnedFacing = {
+  down: 'left',
+  left: 'up',
+  right: 'down',
+  up: 'right'
+} as const;
+
+/** A grid turned a quarter clockwise. */
+export const turnGrid = (grid: ArtGrid): ArtGrid => {
+  const width = grid[0]?.length ?? 0;
+  return Array.from({ length: width }, (_, row) =>
+    grid.map((_, column) => grid[grid.length - 1 - column]![row]).join('')
+  );
+};
+const turnedDives = new Map<boolean, ArtGrid>();
+
+/**
+ * The art for a player as the screen shows them. On a pitch turned on its
+ * side (#255), the pitch's up is the screen's right, so every facing turns
+ * a quarter clockwise. A dive, lying flat, turns with it; the other poses
+ * drawn side on only keep their side-on art.
+ */
+export const spriteOnScreen = (
+  player: Pick<FramePlayer, 'facing' | 'pose' | 'poseFrame' | 'travelled'>,
+  landscape: boolean
+): Sprite => {
+  if (!landscape) {
+    return spriteFor(player);
+  }
+  if (player.pose === 'dive') {
+    const right = player.facing === 'right';
+    let grid = turnedDives.get(right);
+    if (!grid) {
+      const dive = playerArt.dive.left;
+      grid = turnGrid(
+        right ? dive.map(row => row.split('').reverse().join('')) : dive
+      );
+      turnedDives.set(right, grid);
+    }
+    return { grid, mirrored: false };
+  }
+  return spriteFor({ ...player, facing: turnedFacing[player.facing] });
+};
+
 /** The ball's spin frame, turning as it rolls. */
 export const ballSprite = (x: number, y: number): ArtGrid =>
   ballArt[Math.abs(cell(x, y, spinMetres)) % ballArt.length]!;

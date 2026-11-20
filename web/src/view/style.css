@@ -955,21 +955,42 @@ button.latest-moment:focus-visible,
 .moments-panel {
   display: none;
 }
+/* On a wide window (#255), the scoreboard runs across the top, the pitch
+   on its side fills the left as far as about 1600px wide, with the
+   playhead's row under it, and the moments take a column on the right. */
 @media (min-width: 900px) and (min-aspect-ratio: 1) and (min-height: 501px) {
   .modern-highlights:has(.clip-stage) {
-    grid-template-columns: 360px 480px;
+    grid-template-columns: minmax(0, 1fr) 320px;
     grid-template-rows: auto minmax(0, 1fr) auto;
-    column-gap: 36px;
-    max-width: 876px;
+    column-gap: 16px;
+    max-width: calc(1600px + 336px);
   }
   .modern-highlights:has(.clip-stage) > * {
-    grid-column: 2;
+    grid-column: 1;
+  }
+  .modern-highlights:has(.clip-stage) > .strip-scoreboard {
+    grid-column: 1 / -1;
+  }
+  .modern-highlights:has(.clip-stage) > .clip-stage {
+    grid-row: 2;
+  }
+  .modern-highlights:has(.clip-stage) > .highlights-controls {
+    grid-row: 3;
+  }
+  /* The pitch keeps the camera's shape on its side: from 1.25 to twice as
+     long as it is tall. */
+  .modern-highlights .clip-stage {
+    place-items: center;
+  }
+  .modern-highlights .clip-stage .clip-frame {
+    width: min(100cqw, 200cqh);
+    height: min(100cqh, 80cqw);
   }
   .modern-highlights .moments-panel {
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
-    grid-column: 1;
-    grid-row: 1 / -1;
+    grid-column: 2;
+    grid-row: 2 / -1;
     min-height: 0;
   }
   .moments-panel h3 {
@@ -984,7 +1005,7 @@ button.latest-moment:focus-visible,
     display: none;
   }
   :root.modern.at-highlights:has(.clip-stage) .top-bar {
-    max-width: 876px;
+    max-width: calc(1600px + 336px);
   }
 }
 .highlights-strengths .pick-strengths {

@@ -1816,6 +1816,11 @@ export const createBrowserDom = (app: HTMLElement) => {
   clipPitch.setAttribute('role', 'img');
   clipPitch.setAttribute('aria-label', 'Pitch');
   const clipContext = clipPitch.getContext('2d')!;
+  // A wide window, as the stylesheet has it: the clips' pitch runs left to
+  // right there (#255), and turns at once when the window crosses it.
+  const wideWindow = matchMedia(
+    '(min-width: 900px) and (min-aspect-ratio: 1) and (min-height: 501px)'
+  );
   // How far the clip on show has got, with a tick at its moment.
   const clipBar = document.createElement('div');
   clipBar.className = 'clip-progress';
@@ -2068,7 +2073,11 @@ export const createBrowserDom = (app: HTMLElement) => {
     openMenu: () => menu.showModal(),
     paintClip: (shot, bar) => {
       if (clipPitch.isConnected) {
-        paintShot(clipContext, shot, fitClipCanvas(clipPitch));
+        paintShot(
+          clipContext,
+          shot,
+          fitClipCanvas(clipPitch, wideWindow.matches)
+        );
       }
       clipBar.hidden = !bar;
       if (bar) {

@@ -3,6 +3,7 @@ import type { Game, Player } from '../sim/management';
 import { matchInks } from '../sim/matchday';
 import type { Moment } from '../sim/moments';
 import type { Position, SquadPlayer } from '../sim/squads';
+import { scoreAfterMoments } from '../sim/ticker';
 import {
   createClipScript,
   hashSeed,
@@ -330,16 +331,18 @@ const sidesFor = (
 };
 
 /**
- * The input for the clip of the `index`th moment of a match, without the
- * players `off` injured before it.
+ * The input for the clip of a match's `index`th moment, as the match has
+ * gone by then: without the players injured before it, and with the score
+ * after it.
  */
 export const clipInputFor = (
   game: Game,
   fixture: MatchFixture,
-  moment: Moment,
-  index: number,
-  off: ReadonlySet<number> = new Set()
+  moments: readonly Moment[],
+  index: number
 ): ClipInput => {
+  const moment = moments[index]!;
+  const off = goneOff(moments, index);
   const sides = sidesFor(game, fixture, moment, off);
   const clubHome = fixture.home;
   const club = clubHome ? sides.home : sides.away;
@@ -370,6 +373,7 @@ export const clipInputFor = (
     defence: moment.side === 'club' ? opponent : club,
     kind: moment.kind,
     minute: moment.minute,
+    score: scoreAfterMoments(moments, index + 1, clubHome),
     seed: hashSeed(
       [
         game.club,
@@ -402,17 +406,9 @@ export const clipScriptsFor = (
   fixture: MatchFixture,
   moments: readonly Moment[]
 ): ClipScript[] =>
-  moments.map((moment, i) => {
-    const goals = (side: Moment['side']) =>
-      moments.slice(0, i + 1).filter(m => m.kind === 'goal' && m.side === side)
-        .length;
-    const club = goals('club');
-    const opponent = goals('opponent');
-    return createClipScript({
-      ...clipInputFor(game, fixture, moment, i, goneOff(moments, i)),
-      score: fixture.home ? [club, opponent] : [opponent, club]
-    });
-  });
+  moments.map((_, i) =>
+    createClipScript(clipInputFor(game, fixture, moments, i))
+  );
 
 /**
  * The still pitch under "Kick-off" or "Full time": both sides in shape,

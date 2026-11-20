@@ -5,12 +5,7 @@ import type { Moment } from '../sim/moments';
 import { tickerPause } from '../sim/ticker';
 import { fitClipCanvas, paintClip } from './clip-canvas';
 import { checkClip, clipIssueKinds, type ClipIssue } from './clip-checks';
-import {
-  clipInputFor,
-  goneOff,
-  inkColours,
-  keeperColoursFor
-} from './clip-match';
+import { clipInputFor, inkColours, keeperColoursFor } from './clip-match';
 import {
   clipStage,
   paintShot,
@@ -269,6 +264,8 @@ const settingsInput = (seedBase = settings.seedBase): ClipInput => {
         settings.side
       ].join('|')
     ),
+    // A lone clip's goal makes it 1-0 to the side that scored.
+    score: settings.side === 'home' ? [1, 0] : [0, 1],
     shooter: Math.max(0, shooter)
   };
 };
@@ -318,13 +315,7 @@ let playing = true;
 
 const rebuild = () => {
   const input = loaded
-    ? clipInputFor(
-        loaded.game,
-        loaded.fixture,
-        loaded.moments[loaded.moment]!,
-        loaded.moment,
-        goneOff(loaded.moments, loaded.moment)
-      )
+    ? clipInputFor(loaded.game, loaded.fixture, loaded.moments, loaded.moment)
     : settingsInput();
   script = createClipScript(input);
   path = Array.from({ length: script.length }, (_, i) => script.frame(i).ball);
@@ -695,14 +686,8 @@ const runSurvey = () => {
   const counts = new Map(clipIssueKinds.map(kind => [kind, 0]));
   const flagged: { open: () => void; text: string }[] = [];
   const clips = loaded
-    ? loaded.moments.map((m, i) => ({
-        input: clipInputFor(
-          loaded!.game,
-          loaded!.fixture,
-          m,
-          i,
-          goneOff(loaded!.moments, i)
-        ),
+    ? loaded.moments.map((_, i) => ({
+        input: clipInputFor(loaded!.game, loaded!.fixture, loaded!.moments, i),
         open: () => {
           loaded!.moment = i;
           rebuild();

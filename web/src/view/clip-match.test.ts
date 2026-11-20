@@ -14,6 +14,7 @@ import {
   keeperColoursFor,
   opponentEleven
 } from './clip-match';
+import { createClipScript } from './clips';
 
 const css = (name: string) => keeperColours.find(c => c.name === name)!.css;
 
@@ -158,7 +159,7 @@ test('a picked goalkeeper keeps goal; without one, the first-picked defender', (
     player(5, 'GK', false)
   ];
   const moment: Moment = { kind: 'goal', minute: 10, player: 4, side: 'club' };
-  const withKeeper = clipInputFor(gameWith(players), fixture, moment, 0);
+  const withKeeper = clipInputFor(gameWith(players), fixture, [moment], 0);
   const keeper = withKeeper.attack.players.find(p => p.line === 'keeper');
   expect(keeper?.label).toBe('P2');
   expect(withKeeper.attack.players).toHaveLength(4);
@@ -172,7 +173,7 @@ test('a picked goalkeeper keeps goal; without one, the first-picked defender', (
       player(4, 'FW')
     ]),
     fixture,
-    moment,
+    [moment],
     0
   );
   expect(noKeeper.attack.players.find(p => p.line === 'keeper')?.label).toBe(
@@ -182,7 +183,7 @@ test('a picked goalkeeper keeps goal; without one, the first-picked defender', (
   const unplaced = clipInputFor(
     gameWith([player(1, 'GK'), player(2, undefined), player(4, 'FW')]),
     fixture,
-    moment,
+    [moment],
     0
   );
   expect(unplaced.attack.players.find(p => p.label === 'P2')?.line).toBe(
@@ -195,7 +196,7 @@ test('a goalkeeper who shoots plays up front, and another keeps goal', () => {
   const input = clipInputFor(
     gameWith([player(1, 'DF'), player(2, 'GK'), player(3, 'MF')]),
     fixture,
-    moment,
+    [moment],
     0
   );
   expect(input.attack.players[input.shooter]).toEqual({
@@ -216,7 +217,7 @@ test('an opponent moment names its shooter from the squad, and the sides change 
     side: 'opponent',
     squadPlayer: 11
   };
-  const input = clipInputFor(game, fixture, first, 2);
+  const input = clipInputFor(game, fixture, [first], 0);
   expect(input.attack.players).toHaveLength(11);
   expect(input.attack.players[input.shooter]!.label).toBe('S11');
   expect(input.attack.kit).toBe(inkColours[1]);
@@ -224,13 +225,13 @@ test('an opponent moment names its shooter from the squad, and the sides change 
   // The away side shoots down the screen before half-time, up after.
   expect(input.attackingUp).toBe(false);
   expect(
-    clipInputFor(game, fixture, { ...first, minute: 46 }, 2).attackingUp
+    clipInputFor(game, fixture, [{ ...first, minute: 46 }], 0).attackingUp
   ).toBe(true);
   expect(
     clipInputFor(
       game,
       fixture,
-      { kind: 'goal', minute: 30, player: 3, side: 'club' },
+      [{ kind: 'goal', minute: 30, player: 3, side: 'club' }],
       0
     ).attackingUp
   ).toBe(true);
@@ -250,14 +251,14 @@ test("a clip's seed comes from the match and the moment, never the game's random
   expect(a[1]!.input.seed).not.toBe(a[0]!.input.seed);
   // Its place in the list counts too.
   expect(
-    clipInputFor(gameWith(players), fixture, moments[0]!, 1).seed
+    clipInputFor(gameWith(players), fixture, [moments[1]!, moments[0]!], 1).seed
   ).not.toBe(a[0]!.input.seed);
 });
 
 test("picked players carry their own energy, an opponent's the side's team Energy", () => {
   const players = [{ ...player(1, 'GK'), energy: 4 }, player(2, 'FW')];
   const moment: Moment = { kind: 'goal', minute: 70, player: 2, side: 'club' };
-  const input = clipInputFor(gameWith(players), fixture, moment, 0);
+  const input = clipInputFor(gameWith(players), fixture, [moment], 0);
   expect(input.attack.players.map(p => p.energy)).toEqual([4, 10]);
   expect(new Set(input.defence.players.map(p => p.energy))).toEqual(
     new Set([7])
@@ -270,7 +271,7 @@ test("players carry their own skill; an unnamed opponent its line's team strengt
   const named = clipInputFor(
     gameWith(players),
     { ...fixture, opponent: 2 } as MatchFixture,
-    moment,
+    [moment],
     0
   );
   expect(named.attack.players.map(p => p.skill)).toEqual([5, 3]);
@@ -278,7 +279,7 @@ test("players carry their own skill; an unnamed opponent its line's team strengt
     clipInputFor(
       gameWith(players),
       fixture,
-      { kind: 'save', minute: 30, side: 'opponent', squadPlayer: 11 },
+      [{ kind: 'save', minute: 30, side: 'opponent', squadPlayer: 11 }],
       0
     ).attack.players.find(p => p.label === 'S11')!.skill
   ).toBe(opponentSquad[11]!.skill);
@@ -291,7 +292,7 @@ test("players carry their own skill; an unnamed opponent its line's team strengt
       opponent: 3,
       opponentStrength: [7, 10, 1, 20, 10]
     } as MatchFixture,
-    moment,
+    [moment],
     0
   );
   const byLine = new Map(
@@ -311,15 +312,29 @@ test('each clip carries the score after its moment, home first, for the goal ann
     { kind: 'save', minute: 55, player: 3, side: 'club' },
     { kind: 'goal', minute: 70, player: 3, side: 'club' }
   ];
-  const scripts = clipScriptsFor(gameWith(players), fixture, moments);
-  const homeFirst = (club: number, opponent: number) =>
-    fixture.home ? [club, opponent] : [opponent, club];
-  expect(scripts.map(s => s.input.score)).toEqual([
-    homeFirst(1, 0),
-    homeFirst(1, 1),
-    homeFirst(1, 1),
-    homeFirst(2, 1)
-  ]);
+  for (const home of [true, false]) {
+    const at = { ...fixture, home } as MatchFixture;
+    const game = gameWith(players);
+    const homeFirst = (club: number, opponent: number) =>
+      home ? [club, opponent] : [opponent, club];
+    const scripts = clipScriptsFor(game, at, moments);
+    expect(scripts.map(s => s.input.score)).toEqual([
+      homeFirst(1, 0),
+      homeFirst(1, 1),
+      homeFirst(1, 1),
+      homeFirst(2, 1)
+    ]);
+    // One moment on its own, as the debug page opens it from a saved
+    // match, plays as it does in the whole match (#247).
+    moments.forEach((_, i) => {
+      expect(clipInputFor(game, at, moments, i)).toEqual(scripts[i]!.input);
+    });
+    // The minute-70 goal announces the same score through both paths.
+    const alone = createClipScript(clipInputFor(game, at, moments, 3));
+    const announced = alone.frame(alone.momentFrame).goal;
+    expect(announced?.score).toEqual(homeFirst(2, 1));
+    expect(scripts[3]!.frame(scripts[3]!.momentFrame).goal).toEqual(announced);
+  }
 });
 
 test('an injury’s clip has the named opponent make the tackle', () => {
@@ -333,7 +348,7 @@ test('an injury’s clip has the named opponent make the tackle', () => {
     tackler: 11,
     weeksOut: 1
   };
-  const input = clipInputFor(gameWith(players), fixture, injury, 0);
+  const input = clipInputFor(gameWith(players), fixture, [injury], 0);
   expect(input.kind).toBe('injury');
   expect(input.attack.players[input.shooter]!.label).toBe('P3');
   expect(input.tackled).toBe(true);
@@ -342,7 +357,7 @@ test('an injury’s clip has the named opponent make the tackle', () => {
   const pulledUp = clipInputFor(
     gameWith(players),
     fixture,
-    { kind: 'injury', minute: 51, player: 3, side: 'club', weeksOut: 1 },
+    [{ kind: 'injury', minute: 51, player: 3, side: 'club', weeksOut: 1 }],
     0
   );
   expect(pulledUp.tackled).toBe(false);
@@ -366,4 +381,10 @@ test('a player injured in a clip is left out of the later ones', () => {
   expect(labels[1]).toContain('P3');
   expect(labels[2]).not.toContain('P3');
   expect(labels[2]).toHaveLength(2);
+  // A moment on its own leaves them out just the same (#247).
+  const game = gameWith(players);
+  const alone = moments.map((_, i) =>
+    clipInputFor(game, fixture, moments, i).attack.players.map(p => p.label)
+  );
+  expect(alone).toEqual(labels);
 });

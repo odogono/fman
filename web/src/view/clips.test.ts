@@ -62,6 +62,7 @@ const input = (overrides: Partial<ClipInput> = {}): ClipInput => ({
   defence: side('#0000d7'),
   kind: 'goal',
   minute: 34,
+  score: [1, 0],
   seed: 1234,
   shooter: 9,
   ...overrides
@@ -2211,15 +2212,6 @@ test('a goal is announced from its moment for 2.5 s, naming the scorer in place 
   expect(end).toBeLessThanOrEqual(goal.length - 20);
   expect(goal.frame(end - 1).goal).toBeDefined();
   expect(goal.frame(end).goal).toBeUndefined();
-  // Left out, the score is the goal alone, home first.
-  const away = createClipScript(
-    input({
-      attack: side('#d70000'),
-      defence: { ...side('#0000d7'), home: true },
-      outcome: 'goal'
-    })
-  );
-  expect(away.frame(away.momentFrame).goal?.score).toEqual([0, 1]);
   // No other outcome is announced.
   const saved = createClipScript(input({ kind: 'save', outcome: 'hold' }));
   for (let at = 0; at < saved.length; at += 5) {

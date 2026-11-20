@@ -227,3 +227,27 @@ test('a save holding other clip lengths wipes on the lengths it holds', () => {
     )[0]!.frame(lengths[0]! - 1)
   );
 });
+
+test('rewound from full time, the last clip plays again while the hold waits', () => {
+  const { journal, player, scripts, state } = playing();
+  const total = scripts.reduce((sum, s) => sum + s.length, 0);
+  journal.advance(tickerLeadIn + tickerPause + total + 5);
+  expect(state().phase).toBe('full-time');
+  const elapsed = tickerOf(journal).ticker.elapsedT;
+  player.rewind(journal.session.view);
+  expect(player.holding(journal.session.view)).toBe(true);
+  expect(state()).toMatchObject({
+    phase: 'clip',
+    progress: { playing: scripts.length - 1 }
+  });
+  expect(state().bar?.at).toBe(0);
+  const last = scripts.at(-1)!;
+  // Pause and Next wait for full time; Continue ends it.
+  player.playPause(journal.session.view);
+  expect(state().progress.paused).toBe(true);
+  player.playPause(journal.session.view);
+  expect(player.advance(journal.session.view, last.length)).toBe(true);
+  expect(state().phase).toBe('full-time');
+  expect(player.advance(journal.session.view, 10)).toBe(false);
+  expect(tickerOf(journal).ticker.elapsedT).toBe(elapsed);
+});

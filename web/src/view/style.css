@@ -1167,6 +1167,76 @@ button.latest-moment:focus-visible,
 .highlights-controls > .primary {
   grid-column: 2;
 }
+/* Under clips (ADR 0016): the latest moment on a row of its own, then the
+   playhead's controls, with Skip all at the row's right end. */
+.highlights-controls:has(.transport) {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+.highlights-controls:has(.transport) > .latest-moment {
+  grid-column: 1 / -1;
+}
+.highlights-controls:has(.transport) > .transport {
+  grid-column: 1;
+}
+.highlights-controls:has(.transport) > .primary {
+  grid-column: 3;
+}
+.transport {
+  display: flex;
+  gap: 6px;
+}
+.playhead-button {
+  display: grid;
+  place-items: center;
+  min-width: 48px;
+  min-height: 44px;
+  padding: 0;
+  border: 2px solid var(--normal-0);
+  background: var(--bright-7);
+  color: var(--normal-0);
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.playhead-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.playhead-button:focus-visible {
+  outline: 3px solid var(--normal-0);
+  outline-offset: 2px;
+}
+/* How far the clip has got, along the pitch's foot, with a tick at its
+   moment. */
+.clip-progress {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 5px;
+  background: rgb(0 0 0 / 35%);
+  pointer-events: none;
+}
+.clip-progress[hidden] {
+  display: none;
+}
+.clip-progress::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: calc(var(--at, 0) * 100%);
+  background: var(--bright-7);
+}
+.clip-progress::after {
+  content: '';
+  position: absolute;
+  top: -3px;
+  bottom: 0;
+  left: calc(var(--moment, 0) * 100%);
+  width: 3px;
+  background: var(--bright-6);
+}
 .highlights-controls .primary:focus-visible {
   outline: 3px solid var(--normal-0);
   outline-offset: 2px;
@@ -1178,6 +1248,9 @@ button.latest-moment:focus-visible,
   }
   .highlights-controls .primary {
     grid-column: 2;
+  }
+  .highlights-controls:has(.transport) > .primary {
+    grid-column: 3;
   }
 }
 @media (max-width: 360px) {
@@ -1273,8 +1346,12 @@ button.latest-moment:focus-visible,
   .clip-stage .full-ticker {
     display: none;
   }
-  .modern-highlights:has(.clip-stage) .highlights-controls > .primary {
+  .modern-highlights:has(.clip-stage) .highlights-controls > .primary,
+  .modern-highlights:has(.clip-stage) .highlights-controls > .transport {
     grid-column: 1;
+  }
+  .highlights-controls .transport > .playhead-button {
+    flex: 1;
   }
 }
 /* On its side, the original's pitch takes the full height between the

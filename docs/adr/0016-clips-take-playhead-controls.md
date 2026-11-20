@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 ---
 
 # Clips take playhead controls; the match waits for the playhead

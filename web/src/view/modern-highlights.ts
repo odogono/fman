@@ -10,6 +10,13 @@ import { lineName } from './ticker-layout';
 export type ClipProgress = Readonly<{
   drawer: boolean;
   full: boolean;
+  /**
+   * The moments screen readers have heard: each as the match first reaches
+   * it, so watching a clip again says none twice.
+   */
+  heard: number;
+  /** The playhead is paused (ADR 0016). */
+  paused: boolean;
   /** The clip on show, by its moment's index; absent at kick-off and full time. */
   playing?: number;
   shown: number;
@@ -19,6 +26,13 @@ export type ClipProgress = Readonly<{
 export const drawerIds = {
   close: 'moments.close',
   open: 'moments.open'
+} as const;
+
+/** The playhead's controls (ADR 0016), which press no key but Next's. */
+export const playheadIds = {
+  next: 'clips.next',
+  play: 'clips.play',
+  rewind: 'clips.rewind'
 } as const;
 
 /** After the last clip, Continue ends the final hold as a keypress would. */

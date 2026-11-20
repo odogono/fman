@@ -1313,7 +1313,8 @@ test('Modern mode takes an exact amount from a physical keyboard', () => {
 });
 
 test('in Modern mode a held key still cuts a timed pause short', () => {
-  const run = harness({ options: modernOptions });
+  // Without clips: during them the playhead takes the keys (ADR 0016).
+  const run = harness({ options: modernOptions, reducedMotion: true });
   run.toMenu();
   // Modern mode has no prompt beep (ADR 0015); the highlights are timed.
   kickOff(run);
@@ -1626,16 +1627,34 @@ test('Modern mode hands the sim the clip lengths at kick-off and shows what the 
   expect(run.page.clips.at(-1)).toEqual(state.shot.frame);
 });
 
-test('a tap ends the clip, showing its moment first, and the next clip starts', () => {
+/** A playhead control, tapped with a mouse. */
+const playhead = (
+  run: ReturnType<typeof modernMoments>,
+  control: 'next' | 'play' | 'rewind'
+) => {
+  run.app.tap(`clips.${control}`);
+  run.app.pointerUp();
+};
+
+test("a tap on the clips' pitch does nothing (ADR 0016)", () => {
+  const run = modernMoments();
+  run.wait(tickerLeadIn + tickerPause + 30);
+  const elapsed = run.ticker().elapsedT;
+  run.app.pressScreen();
+  run.app.pointerUp();
+  expect(run.ticker().shown).toHaveLength(1);
+  expect(run.ticker().elapsedT).toBe(elapsed);
+});
+
+test('Next ends the clip, showing its moment first, and the next clip starts', () => {
   const run = modernMoments();
   if (run.ticker().moments.length < 2) {
     throw new Error('Needs two moments');
   }
   run.wait(tickerLeadIn + tickerPause + 30);
   expect(run.page.highlights!.clip!.shown).toBe(0);
-  run.app.pressScreen();
+  playhead(run, 'next');
   run.wait(2);
-  run.app.pointerUp();
   expect(run.ticker().shown).toHaveLength(2);
   expect(run.page.highlights!.clip!.shown).toBe(1);
   expect(run.page.clips.at(-1)!.card?.minute).toBe(
@@ -1651,6 +1670,8 @@ test('Skip ends every clip and shows the whole ticker for the final hold', () =>
   expect(run.page.highlights!.clip).toEqual({
     drawer: false,
     full: true,
+    heard: count,
+    paused: false,
     shown: count
   });
   expect(run.page.highlights!.ticker!.lines).toHaveLength(count);
@@ -1714,13 +1735,12 @@ test('the moments drawer opens and closes without ending the clip', () => {
   expect(run.page.highlights!.clip!.drawer).toBe(false);
 });
 
-test('a tap on the pitch ends the clip and leaves the drawer open', () => {
+test('Next ends the clip and leaves the drawer open', () => {
   const run = toFirstMoment();
   run.app.tap('moments.open');
   run.app.pointerUp();
-  run.app.pressScreen();
+  playhead(run, 'next');
   run.wait(2);
-  run.app.pointerUp();
   expect(run.ticker().shown).toHaveLength(2);
   expect(run.page.highlights!.clip!.drawer).toBe(true);
 });
@@ -1804,4 +1824,83 @@ test('Classic mode hands the sim no clip lengths', () => {
   const run = atTicker();
   expect(run.ticker()!.lengths).toBeUndefined();
   expect(run.page.clips).toEqual([]);
+});
+
+/** Plays a match's clips to the result, and says what the game became. */
+const finished = (run: ReturnType<typeof modernMoments>) => {
+  run.settle();
+  expect(run.view().screen).not.toBe('highlights');
+  return run.app.journal.snapshot();
+};
+
+test('pausing holds the match, and leaves the game as it would have been', () => {
+  const plain = modernMoments();
+  const run = modernMoments();
+  run.wait(tickerLeadIn + tickerPause + 40);
+  playhead(run, 'play');
+  expect(run.page.highlights!.clip!.paused).toBe(true);
+  const elapsed = run.ticker().elapsedT;
+  const frame = run.page.clips.at(-1);
+  run.wait(500);
+  expect(run.ticker().elapsedT).toBe(elapsed);
+  expect(run.page.clips.at(-1)).toEqual(frame);
+  playhead(run, 'play');
+  expect(run.page.highlights!.clip!.paused).toBe(false);
+  run.wait(10);
+  expect(run.ticker().elapsedT).toBeGreaterThan(elapsed);
+  expect(finished(run)).toEqual(finished(plain));
+});
+
+test('rewound, a clip is watched again with the match as it stood, then it carries on', () => {
+  const plain = modernMoments();
+  const run = toFirstMoment();
+  // Into the second clip, past rewind's two seconds.
+  while (run.page.highlights!.clip!.playing !== 1) {
+    run.wait(10);
+  }
+  run.wait(200);
+  const score = run.page.highlights!.score;
+  const heard = run.page.highlights!.clip!.heard;
+  const elapsed = run.ticker().elapsedT;
+  // Back to the start of this clip, then at once to the one before.
+  playhead(run, 'rewind');
+  expect(run.page.highlights!.clip!.playing).toBe(1);
+  playhead(run, 'rewind');
+  expect(run.page.highlights!.clip).toMatchObject({
+    heard,
+    playing: 0,
+    shown: 0
+  });
+  expect(run.page.highlights!.score).toEqual([0, 0]);
+  expect(run.page.clips.at(-1)!.card?.minute).toBe(
+    `${run.ticker().moments[0]!.minute}′`
+  );
+  // The match waits while the first clip plays again.
+  run.wait(100);
+  expect(run.ticker().elapsedT).toBe(elapsed);
+  expect(run.page.highlights!.clip!.heard).toBe(heard);
+  // Next goes on to the clip the match is on, where it had got.
+  playhead(run, 'next');
+  expect(run.page.highlights!.clip!.playing).toBe(1);
+  expect(run.page.highlights!.score).toEqual(score);
+  run.wait(10);
+  expect(run.ticker().elapsedT).toBeGreaterThan(elapsed);
+  expect(finished(run)).toEqual(finished(plain));
+});
+
+test('the playhead takes the keys during clips, and other keys do nothing', () => {
+  const run = modernMoments();
+  run.wait(tickerLeadIn + tickerPause + 30);
+  expect(key(run, ' ', 'Space')).toBe(true);
+  expect(run.page.highlights!.clip!.paused).toBe(true);
+  expect(key(run, ' ', 'Space')).toBe(true);
+  expect(run.page.highlights!.clip!.paused).toBe(false);
+  expect(key(run, 'a', 'KeyA')).toBe(false);
+  run.wait(2);
+  expect(run.ticker().shown).toHaveLength(1);
+  expect(key(run, 'ArrowRight')).toBe(true);
+  run.wait(2);
+  expect(run.ticker().shown).toHaveLength(2);
+  expect(key(run, 'ArrowLeft')).toBe(true);
+  expect(run.page.highlights!.clip!.playing).toBe(0);
 });

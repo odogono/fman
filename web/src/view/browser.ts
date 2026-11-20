@@ -31,6 +31,8 @@ import type { ModernFixture } from './modern-fixture';
 import {
   continueId,
   drawerIds,
+  playheadIds,
+  type ClipProgress,
   type ModernHighlights,
   type ModernTickerLine
 } from './modern-highlights';
@@ -523,18 +525,71 @@ const actionButton = (
   return element;
 };
 
+const icons = {
+  next: '<path d="M5 5l9 7-9 7zM16 5h3v14h-3z" fill="currentColor" />',
+  pause: '<path d="M6 5h4v14H6zM14 5h4v14h-4z" fill="currentColor" />',
+  play: '<path d="M7 4l13 8-13 8z" fill="currentColor" />',
+  rewind: '<path d="M19 5l-9 7 9 7zM5 5h3v14H5z" fill="currentColor" />'
+};
+
+/** One of the playhead's buttons, drawn as its icon and named for readers. */
+const playheadButton = (
+  label: string,
+  icon: keyof typeof icons,
+  id: string,
+  enabled: boolean
+) => {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'playhead-button';
+  button.disabled = !enabled;
+  button.dataset.id = id;
+  button.dataset.viewControl = id;
+  button.setAttribute('aria-label', label);
+  button.title = label;
+  button.innerHTML = `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">${icons[icon]}</svg>`;
+  return button;
+};
+
+/**
+ * The playhead's controls (ADR 0016): rewind, play or pause, and next.
+ * At full time only rewind is left, to watch the last clip again.
+ */
+const transport = (clip: ClipProgress, fullTime: boolean) => {
+  const group = document.createElement('div');
+  group.className = 'transport';
+  group.setAttribute('role', 'group');
+  group.setAttribute('aria-label', 'Playback');
+  group.append(
+    playheadButton('Rewind', 'rewind', playheadIds.rewind, true),
+    clip.paused
+      ? playheadButton('Play', 'play', playheadIds.play, !fullTime)
+      : playheadButton('Pause', 'pause', playheadIds.play, !fullTime),
+    playheadButton('Next', 'next', playheadIds.next, !fullTime)
+  );
+  return group;
+};
+
 /**
  * The row under the highlights: Skip all, which becomes Continue for the
- * final hold, after the latest moment's line where one is given.
+ * final hold, after the latest moment's line where one is given, and under
+ * clips the playhead's controls before it.
  */
 const highlightsControls = (
   ticker: NonNullable<ModernHighlights['ticker']>,
-  latest?: HTMLElement
+  latest?: HTMLElement,
+  clip?: ClipProgress
 ) => {
   const controls = document.createElement('div');
   controls.className = 'highlights-controls';
   if (latest) {
     controls.append(latest);
+  }
+  if (clip && !clip.full) {
+    // At full time, or watching the last clip again on the way back to it.
+    controls.append(
+      transport(clip, clip.playing === undefined && ticker.fullTime)
+    );
   }
   controls.append(
     ticker.fullTime
@@ -552,6 +607,7 @@ const paintHighlights = (
   pane: HTMLElement,
   pitch: HTMLCanvasElement,
   clipPitch: HTMLCanvasElement,
+  clipBar: HTMLElement,
   highlights: ModernHighlights
 ) => {
   const parts: HTMLElement[] = [stripScoreboard(highlights)];
@@ -566,6 +622,9 @@ const paintHighlights = (
     const frame = document.createElement('div');
     frame.className = 'clip-frame';
     frame.append(clipPitch);
+    if (!clip.full) {
+      frame.append(clipBar);
+    }
     if (clip.drawer && !clip.full) {
       frame.append(momentsDrawer(ticker));
     }
@@ -575,11 +634,12 @@ const paintHighlights = (
       overlay.classList.add('full-ticker');
       stage.append(overlay);
     }
-    // One row under the pitch: the latest moment, then Skip all, which
-    // becomes Continue once the last clip has played.
+    // Under the pitch: the latest moment, then the playhead's controls and
+    // Skip all, which becomes Continue once the last clip has played.
     const controls = highlightsControls(
       ticker,
-      latestMoment(ticker.lines, clip.drawer, !clip.full)
+      latestMoment(ticker.lines, clip.drawer, !clip.full),
+      clip
     );
     const before = document.activeElement?.closest<HTMLElement>(
       '[data-view-control]'
@@ -1756,6 +1816,10 @@ export const createBrowserDom = (app: HTMLElement) => {
   clipPitch.setAttribute('role', 'img');
   clipPitch.setAttribute('aria-label', 'Pitch');
   const clipContext = clipPitch.getContext('2d')!;
+  // How far the clip on show has got, with a tick at its moment.
+  const clipBar = document.createElement('div');
+  clipBar.className = 'clip-progress';
+  clipBar.setAttribute('aria-hidden', 'true');
   let barKey = '';
   let homeKey = '';
   /**
@@ -1808,7 +1872,13 @@ export const createBrowserDom = (app: HTMLElement) => {
     highlights: {
       classes: ['at-highlights'],
       paint: ({ highlights }) =>
-        paintHighlights(highlightsPane, modernPitch, clipPitch, highlights),
+        paintHighlights(
+          highlightsPane,
+          modernPitch,
+          clipPitch,
+          clipBar,
+          highlights
+        ),
       pane: highlightsPane
     },
     'league-table': {
@@ -1996,9 +2066,14 @@ export const createBrowserDom = (app: HTMLElement) => {
       notice.textContent = text;
     },
     openMenu: () => menu.showModal(),
-    paintClip: shot => {
+    paintClip: (shot, bar) => {
       if (clipPitch.isConnected) {
         paintShot(clipContext, shot, fitClipCanvas(clipPitch));
+      }
+      clipBar.hidden = !bar;
+      if (bar) {
+        clipBar.style.setProperty('--at', String(bar.at));
+        clipBar.style.setProperty('--moment', String(bar.moment));
       }
     },
     get reducedMotion() {
@@ -2092,7 +2167,7 @@ export const createBrowserDom = (app: HTMLElement) => {
               view.game,
               view.fixture,
               highlights?.clip
-                ? ticker.moments.slice(0, highlights.clip.shown)
+                ? ticker.moments.slice(0, highlights.clip.heard)
                 : ticker.shown
             )[0]
           : undefined;
@@ -2252,7 +2327,8 @@ export const createBrowserDom = (app: HTMLElement) => {
     }
     machine.addEventListener('pointerdown', target.pressScreen);
     modernPitch.addEventListener('pointerdown', target.pressScreen);
-    clipPitch.addEventListener('pointerdown', target.pressScreen);
+    // A tap on the clips' pitch does nothing: the playhead's controls take
+    // its place (ADR 0016).
     // The manager's name, typed on the setup screen, is the answer.
     setupPane.addEventListener('submit', event => {
       event.preventDefault();

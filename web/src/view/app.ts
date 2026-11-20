@@ -17,11 +17,16 @@ import {
   type AmountEntry
 } from './amount-entry';
 import { answersFor, printAccepted, type OfferedAnswer } from './answers';
-import { createClipPlayer, screenKey, type ClipShot } from './clip-player';
+import {
+  createClipPlayer,
+  screenKey,
+  type ClipShot,
+  type ClipState
+} from './clip-player';
 import { barFor, tickerBar, type BarButton } from './context-bar';
 import { createFrameSampler } from './frame-sampler';
 import { homeFor, type Home } from './home';
-import { continueId, drawerIds } from './modern-highlights';
+import { continueId, drawerIds, playheadIds } from './modern-highlights';
 import { modernScreenFor, type ModernScreen } from './modern-screen';
 import {
   isRules,
@@ -95,7 +100,8 @@ export type Dom = {
    * Paints a frame of Modern mode's sprite highlights (#144) on their
    * pitch, at every animation frame while they show.
    */
-  paintClip: (clip: ClipShot) => void;
+  /** Paints a clip's frame, and its progress bar where one shows. */
+  paintClip: (clip: ClipShot, bar?: ClipState['bar']) => void;
   /** The browser asks for less motion, so the highlights show the ticker. */
   readonly reducedMotion: boolean;
   render: (screen: {
@@ -349,7 +355,7 @@ export const createApp = ({
       return;
     }
     if (state) {
-      dom.paintClip(state.shot);
+      dom.paintClip(state.shot, state.bar);
     }
   };
   /** Opens or closes the moments drawer; it presses no key. */
@@ -429,7 +435,7 @@ export const createApp = ({
     const state = clipState();
     clipKey = screenKey(state);
     if (state) {
-      dom.paintClip(state.shot);
+      dom.paintClip(state.shot, state.bar);
     }
   };
   const syncSound = () => {
@@ -440,6 +446,13 @@ export const createApp = ({
   const advanceTo = (now: number) => {
     const session = journal.session;
     const elapsed = sampleFrames(now);
+    // A paused or rewound playhead holds the match, as the menu does
+    // (ADR 0016): the frames go to the playhead, never the sim.
+    if (modern() && clips.holding(session.view)) {
+      clips.advance(session.view, elapsed);
+      paintClips();
+      return;
+    }
     const before = session.view.screen;
     holdClips();
     const repaint = journal.advance(elapsed);
@@ -756,16 +769,64 @@ export const createApp = ({
     if (!tickerRunning()) {
       return;
     }
-    journal.skipPause();
     clips.skip(journal.session.view);
+    journal.skipPause();
     render();
     persist();
+  };
+  /**
+   * The playhead's controls (ADR 0016). Play/pause and rewind press no key;
+   * Next presses one briefly only to end the clip the match is on.
+   */
+  const playhead = (control: 'next' | 'play' | 'rewind') => {
+    if (menuOpen) {
+      return;
+    }
+    advanceTo(clock.now());
+    const view = journal.session.view;
+    if (control === 'play') {
+      clips.playPause(view);
+    } else if (control === 'rewind') {
+      clips.rewind(view);
+    } else if (clips.next(view) && view.paused) {
+      journal.press('Enter', 'brief');
+      persist();
+    }
+    render(false);
+  };
+  /** Under clips, until Skip all, the playhead takes the keys. */
+  const playheadKey = (event: KeyDown) => {
+    const state = clipState();
+    if (!state || state.progress.full || event.modified) {
+      return undefined;
+    }
+    if (event.repeat) {
+      return true;
+    }
+    const fullTime = state.phase === 'full-time';
+    if (event.key === 'ArrowLeft') {
+      playhead('rewind');
+    } else if (event.key === ' ' && !fullTime) {
+      playhead('play');
+    } else if (event.key === 'ArrowRight' || event.key === 'Enter') {
+      if (fullTime) {
+        endHold();
+      } else {
+        playhead('next');
+      }
+    } else {
+      // Every other key does nothing during clips.
+      return false;
+    }
+    return true;
   };
   /** Continue after the last clip: a brief keypress ends the final hold. */
   const endHold = () => {
     if (menuOpen) {
       return;
     }
+    // Continue while the last clip is watched again ends the hold too.
+    clips.release();
     advanceTo(clock.now());
     if (!journal.session.view.paused) {
       return;
@@ -853,6 +914,10 @@ export const createApp = ({
       }
       unlockSound();
       advanceTo(clock.now());
+      const taken = modern() ? playheadKey(event) : undefined;
+      if (taken !== undefined) {
+        return taken;
+      }
       if (modern() && amountEntry?.typing !== undefined && !event.modified) {
         const action = amountKey(event.key);
         if (action) {
@@ -924,11 +989,13 @@ export const createApp = ({
     },
     /**
      * A finger went down on the screen. During a timed pause it is a
-     * keypress until it lifts (ADR 0006); otherwise it does nothing.
+     * keypress until it lifts (ADR 0006); otherwise it does nothing, as on
+     * the clips' pitch, where the playhead's controls take its place
+     * (ADR 0016).
      */
     pressScreen: () => {
       unlockSound();
-      if (menuOpen) {
+      if (menuOpen || clipState()) {
         return;
       }
       advanceTo(clock.now());
@@ -960,6 +1027,18 @@ export const createApp = ({
     tap: (id: string, enter: Hold | false = 'held') => {
       if (id === drawerIds.open || id === drawerIds.close) {
         showDrawer(id === drawerIds.open);
+        return;
+      }
+      if (id === playheadIds.play) {
+        playhead('play');
+        return;
+      }
+      if (id === playheadIds.rewind) {
+        playhead('rewind');
+        return;
+      }
+      if (id === playheadIds.next) {
+        playhead('next');
         return;
       }
       if (id === tickerBar[0]!.answer.id) {

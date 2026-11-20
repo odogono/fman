@@ -209,11 +209,15 @@ const amountPanel = (entry: AmountEntry) => {
   ];
 };
 
-/** The context bar or Home screen button an event came from, if any. */
-const barButton = (event: Event) =>
-  (event.target as Element).closest<HTMLButtonElement>(
-    '#context-bar button, #home button, #pick-team button, #highlights button, #status button, #amount-prompt button, #message button, #full-time button, #week-results button, #league-table button, #bills button, #setup button, #names button, #next-fixture button, #sale-offer button, #end-of-season button, #season-summary button, #cup-result button, #cup-replay button'
-  );
+/**
+ * The button an event came from, if it lies within the element handling the
+ * event: the context bar, the Home screen or a Modern screen's pane.
+ */
+const paneButton = (event: Event) => {
+  const pane = event.currentTarget as Node | null;
+  const button = (event.target as Element).closest<HTMLButtonElement>('button');
+  return button && pane?.contains(button) ? button : undefined;
+};
 
 const pounds = (value: number) => `£${value.toLocaleString('en-GB')}`;
 
@@ -2196,7 +2200,7 @@ export const createBrowserDom = (app: HTMLElement) => {
     let touched = false;
     const pressed = (event: PointerEvent) => {
       touched = event.pointerType === 'touch';
-      const button = barButton(event);
+      const button = paneButton(event);
       if (
         touched ||
         !button?.dataset.id ||
@@ -2222,40 +2226,30 @@ export const createBrowserDom = (app: HTMLElement) => {
         target.tap(button.dataset.id!, 'brief');
       }
     };
-    bar.addEventListener('pointerdown', pressed);
-    amountPane.addEventListener('click', event => {
-      const action = barButton(event)?.dataset.action;
-      if (action) {
-        target.amount(JSON.parse(action) as AmountAction);
-      }
-    });
-    // Every Modern screen's pane takes taps on its buttons.
-    for (const pane of new Set([
+    // The context bar, the Home screen and every Modern screen take taps
+    // on their buttons; registering a Modern screen is all it needs.
+    const inputPanes = new Set([
+      bar,
       homePane,
       ...Object.values(modernPanes).map(({ pane }) => pane)
-    ])) {
+    ]);
+    for (const pane of inputPanes) {
       pane.addEventListener('pointerdown', pressed);
       pane.addEventListener('click', event => {
-        const button = barButton(event);
-        if (button?.dataset.id) {
+        const button = paneButton(event);
+        if (!button) {
+          return;
+        }
+        if (button.dataset.action) {
+          target.amount(JSON.parse(button.dataset.action) as AmountAction);
+        } else if (pane === bar && button.dataset.kind === 'text') {
+          // Typed answers use the soft keyboard, which opens only on a tap.
+          input.focus({ preventScroll: true });
+        } else if (button.dataset.id) {
           clicked(button, event);
         }
       });
     }
-    bar.addEventListener('click', event => {
-      const button = barButton(event);
-      if (!button) {
-        return;
-      }
-      if (button.dataset.action) {
-        target.amount(JSON.parse(button.dataset.action) as AmountAction);
-      } else if (button.dataset.kind === 'text') {
-        // Typed answers use the soft keyboard, which opens only on a tap.
-        input.focus({ preventScroll: true });
-      } else if (button.dataset.id) {
-        clicked(button, event);
-      }
-    });
     machine.addEventListener('pointerdown', target.pressScreen);
     modernPitch.addEventListener('pointerdown', target.pressScreen);
     clipPitch.addEventListener('pointerdown', target.pressScreen);

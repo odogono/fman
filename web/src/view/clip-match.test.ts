@@ -329,8 +329,11 @@ test('each clip carries the score after its moment, home first, for the goal ann
     moments.forEach((_, i) => {
       expect(clipInputFor(game, at, moments, i)).toEqual(scripts[i]!.input);
     });
-    const late = createClipScript(clipInputFor(game, at, moments, 3));
-    expect(late.frame(late.momentFrame).goal?.score).toEqual(homeFirst(2, 1));
+    // The minute-70 goal announces the same score through both paths.
+    const alone = createClipScript(clipInputFor(game, at, moments, 3));
+    const announced = alone.frame(alone.momentFrame).goal;
+    expect(announced?.score).toEqual(homeFirst(2, 1));
+    expect(scripts[3]!.frame(scripts[3]!.momentFrame).goal).toEqual(announced);
   }
 });
 

@@ -3,6 +3,7 @@ import { expect, setDefaultTimeout, test } from 'bun:test';
 import { longestClip } from '../sim/ticker';
 import { checkClip, type ClipIssueKind } from './clip-checks';
 import { decideClip } from './clip-script/setup';
+import { huddleReach, leapFrames } from './clip-script/tuning';
 import {
   boardMetres,
   boardTop,
@@ -2058,6 +2059,51 @@ test('after a goal the scorer wheels away and team-mates pile in', () => {
     );
     expect(huddle.length).toBeGreaterThanOrEqual(1);
   }
+});
+
+/**
+ * Whether team-mate `i` has reached the scorer at frame `f`: close enough,
+ * with the scorer stopped where they celebrate, so staying put into the
+ * next frame.
+ */
+const joinedScorer = (script: ClipScript, f: number, i: number) => {
+  const { shooter } = script.input;
+  const now = script.frame(f).players;
+  const next = script.frame(f + 1).players;
+  const apart = (a: number, b: { x: number; y: number }) =>
+    Math.hypot(now[a]!.x - b.x, now[a]!.y - b.y);
+  return (
+    apart(shooter, next[shooter]!) < 0.01 &&
+    apart(i, now[shooter]!) < huddleReach
+  );
+};
+
+test('a team-mate joining the scorer jumps for joy on the frame they get there', () => {
+  // Their pose is chosen after everyone moves, so it shows on the frame
+  // they arrive, not the one after (#248).
+  let arrivals = 0;
+  for (let seed = 0; seed < 20; seed++) {
+    const script = createClipScript(input({ kind: 'goal', seed }));
+    const from = script.phases.reaction + leapFrames;
+    script.frame(from).players.forEach((p, i) => {
+      if (i === script.input.shooter || p.side !== 'attack') {
+        return;
+      }
+      for (let f = from + 1; f < script.length; f++) {
+        const pose = script.frame(f).players[i]!.pose;
+        if (pose === 'jump' || pose === 'celebrate') {
+          if (script.frame(f - 1).players[i]!.pose !== 'run') {
+            break;
+          }
+          expect(joinedScorer(script, f, i)).toBe(true);
+          expect(joinedScorer(script, f - 1, i)).toBe(false);
+          arrivals++;
+          break;
+        }
+      }
+    });
+  }
+  expect(arrivals).toBeGreaterThan(10);
 });
 
 test('after a catch the keeper walks out with the ball as a team-mate breaks wide', () => {

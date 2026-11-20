@@ -1,6 +1,6 @@
 import { clamp, distance, lerp, perFrame, type Point } from './geometry';
 import { clipFps, pitchLength, pitchWidth } from './model';
-import { aimAt, record, steer, type Clip } from './pitch';
+import { aimAt, finishFrame, steer, type Clip } from './pitch';
 import { byQuality } from './setup';
 import {
   afterArrival,
@@ -265,9 +265,8 @@ export const playTackle = (clip: Clip) => {
         sweeping.pose = 'run';
       }
     }
-    steer(clip, clip.frame, held);
-    record(clip);
-    clip.frame++;
+    steer(clip, held);
+    finishFrame(clip);
   }
   clip.momentFrame = clip.momentStart + contact - 1;
   // Injured, the player stays down.

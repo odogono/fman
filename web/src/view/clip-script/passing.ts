@@ -14,11 +14,11 @@ import { clipFps, pitchLength, pitchWidth, type ClipPass } from './model';
 import {
   aimAt,
   bentRun,
+  finishFrame,
   kick,
   label,
   offsideLine,
   reach,
-  record,
   steer,
   type Clip
 } from './pitch';
@@ -231,9 +231,8 @@ export const dribble = (
     if (clip.holder !== clip.shooter && passesLeft(clip) <= 1) {
       overrides.set(clip.shooter, waitingSpot(clip));
     }
-    steer(clip, clip.frame, new Set([clip.holder]), overrides);
-    record(clip);
-    clip.frame++;
+    steer(clip, new Set([clip.holder]), overrides);
+    finishFrame(clip);
   }
 };
 
@@ -441,13 +440,11 @@ export const pass = (
     }
     steer(
       clip,
-      clip.frame,
       new Set([receiver]),
       overrides,
       lofted ? undefined : { from: { d: clip.ball.d, x: clip.ball.x }, to: end }
     );
-    record(clip);
-    clip.frame++;
+    finishFrame(clip);
   }
   clip.ball.height = 0;
   clip.holder = receiver;

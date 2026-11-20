@@ -148,6 +148,10 @@ _Avoid_: Cup winners screen, trophy animation
 The strip above Modern mode's highlights: both clubs, the score and, where the highlights have minutes, the minute of the moment on show.
 _Avoid_: Header, title bar
 
+**Line-up**:
+The players a side fields in a match's clips, by position, shown beside the pitch on a wide window: the managed club's picked team, and the opponent's eleven from its squad, or only their positions where the opponent owns no squad.
+_Avoid_: Picked team, which is only the managed club's; team sheet, formation
+
 **Gate receipts**:
 The income credited to the managed club for a match, including a cup replay.
 

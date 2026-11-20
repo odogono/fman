@@ -2448,3 +2448,33 @@ button.latest-moment:focus-visible,
   font-family: Spectrum, monospace;
   font-size: 16px;
 }
+/* On a wide window (#257), the original's pitch grows by whole multiples
+   (its width is set by script) with the strengths beside it, under the
+   scoreboard; the ticker without clips is a wider list. */
+@media (min-width: 900px) and (min-aspect-ratio: 1) and (min-height: 501px) {
+  .modern-highlights:has(.modern-pitch:not([hidden])) {
+    grid-template-columns: auto 280px;
+    grid-template-rows: auto auto;
+    column-gap: 24px;
+    align-items: start;
+    max-width: none;
+    width: auto;
+  }
+  .modern-highlights:has(.modern-pitch:not([hidden])) > .strip-scoreboard {
+    grid-column: 1 / -1;
+  }
+  .modern-highlights > .modern-pitch {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .modern-highlights:has(.modern-pitch:not([hidden])) > .highlights-strengths {
+    grid-column: 2;
+    grid-row: 2;
+  }
+  .modern-highlights:has(.modern-ticker):not(:has(.clip-stage)) {
+    max-width: 720px;
+  }
+  :root.modern.at-highlights:not(:has(.clip-stage)) .top-bar {
+    max-width: 720px;
+  }
+}

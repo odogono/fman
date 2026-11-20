@@ -13,7 +13,7 @@ import {
   type ClipStage
 } from './clip-wipe';
 import { wipeFrames } from './clips';
-import type { ClipProgress } from './modern-highlights';
+import type { ClipProgress, HighlightsTab } from './modern-highlights';
 
 export type { ClipShot } from './clip-wipe';
 
@@ -48,6 +48,8 @@ export const screenKey = (state: ClipState | undefined) =>
         state.progress.heard,
         state.progress.full,
         state.progress.paused,
+        state.progress.tab,
+        state.progress.unseen,
         state.progress.playing ?? ''
       ].join(':')
     : '';
@@ -103,6 +105,11 @@ export const createClipPlayer = () => {
    * the playhead is where the ticker is.
    */
   let held: (Place & { paused: boolean; ticker: Ticker }) | undefined;
+  /**
+   * The tab on show beside the pitch (#256), and the moments shown when the
+   * Moments tab was last on show, to mark any that have arrived since.
+   */
+  let tabbed: { seen: number; tab: HighlightsTab; ticker: Ticker } | undefined;
   /** The most moments heard so far, so watching again says none twice. */
   let heard: { count: number; ticker: Ticker } | undefined;
   /**
@@ -282,11 +289,18 @@ export const createClipPlayer = () => {
       place.index > 0 && place.index < stages.length - 1
         ? place.index - 1
         : undefined;
+    if (tabbed?.ticker !== ticker) {
+      tabbed = { seen: shown, tab: 'moments', ticker };
+    } else if (tabbed.tab === 'moments' || shown < tabbed.seen) {
+      tabbed = { ...tabbed, seen: shown };
+    }
     const progress: ClipProgress = {
       drawer: !full && shown > 0 && drawer === ticker,
       full,
       heard: full ? ticker.moments.length : heard.count,
       paused: hold?.paused ?? false,
+      tab: tabbed.tab,
+      unseen: tabbed.tab !== 'moments' && shown > tabbed.seen,
       ...(playing === undefined ? {} : { playing }),
       shown
     };
@@ -434,6 +448,17 @@ export const createClipPlayer = () => {
         open && now && now.progress.shown > 0 && !now.progress.full
           ? tickerView(view)!.ticker
           : undefined;
+    },
+    /**
+     * Shows a tab beside the pitch (#256). It never changes by itself, and
+     * each match starts on Moments.
+     */
+    showTab: (view: View, tab: HighlightsTab) => {
+      const ticker = tickerView(view)?.ticker;
+      if (ticker) {
+        state(view);
+        tabbed = { seen: tabbed?.seen ?? 0, tab, ticker };
+      }
     },
     /** Skip was pressed: the whole ticker shows for its final hold. */
     skip: (view: View) => {

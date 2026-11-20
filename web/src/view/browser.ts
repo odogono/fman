@@ -31,9 +31,13 @@ import type { ModernFixture } from './modern-fixture';
 import {
   continueId,
   drawerIds,
+  highlightsTabs,
   playheadIds,
+  tabId,
   type ClipProgress,
+  type HighlightsTab,
   type ModernHighlights,
+  type ModernLineUp,
   type ModernTickerLine
 } from './modern-highlights';
 import type { ModernMessage } from './modern-message';
@@ -502,6 +506,109 @@ const momentsPanel = (ticker: NonNullable<ModernHighlights['ticker']>) => {
   return panel;
 };
 
+/** A side's line-up (#256): its players by position, then its strengths. */
+const lineUpPanel = (lineUp: ModernLineUp) => {
+  const body = document.createElement('div');
+  body.className = 'line-up';
+  for (const group of lineUp.groups) {
+    const heading = document.createElement('h4');
+    heading.textContent = group.label;
+    const list = document.createElement('ul');
+    list.setAttribute('aria-label', group.label);
+    for (const row of group.rows) {
+      const item = document.createElement('li');
+      item.classList.toggle('named', row.named);
+      item.classList.toggle('injured', row.injured !== undefined);
+      if (row.named) {
+        item.setAttribute('aria-current', 'true');
+      }
+      item.append(cell('line-up-name', row.name || '–'));
+      for (const minute of row.goals) {
+        const goal = cell('line-up-goal', minute);
+        goal.setAttribute('aria-label', `Goal, ${minute}`);
+        item.append(goal);
+      }
+      if (row.injured) {
+        const injury = cell('line-up-injury', row.injured);
+        injury.setAttribute('aria-label', `Injured, ${row.injured}`);
+        item.append(injury);
+      }
+      list.append(item);
+    }
+    body.append(heading, list);
+  }
+  const strengths = document.createElement('dl');
+  strengths.className = 'line-up-strengths';
+  strengths.setAttribute('aria-label', 'Team strengths');
+  for (const [name, value] of lineUp.strengths) {
+    const row = document.createElement('div');
+    const term = document.createElement('dt');
+    term.textContent = name;
+    const amount = document.createElement('dd');
+    amount.textContent = String(value);
+    row.append(term, amount);
+    strengths.append(row);
+  }
+  body.append(strengths);
+  return body;
+};
+
+/**
+ * The column beside the clips' pitch (#256): tabs for the moments and each
+ * side's line-up, the clubs' tabs named for them with their kits. Only the
+ * tab on show is drawn.
+ */
+const tabbedPanel = (
+  ticker: NonNullable<ModernHighlights['ticker']>,
+  lineUps: NonNullable<ModernHighlights['lineUps']>,
+  clip: NonNullable<ModernHighlights['clip']>
+) => {
+  const panel = document.createElement('section');
+  panel.className = 'moments-panel tabbed';
+  panel.setAttribute('aria-label', 'Moments and line-ups');
+  const tabs = document.createElement('div');
+  tabs.className = 'panel-tabs';
+  tabs.setAttribute('role', 'tablist');
+  const label = (tab: HighlightsTab) =>
+    tab === 'moments' ? 'Moments' : lineUps[tab].club.name;
+  for (const tab of highlightsTabs) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'panel-tab';
+    button.id = `panel-tab-${tab}`;
+    button.dataset.id = tabId(tab);
+    button.dataset.viewControl = tabId(tab);
+    button.setAttribute('role', 'tab');
+    button.setAttribute('aria-selected', String(tab === clip.tab));
+    button.setAttribute('aria-controls', 'panel-tab-body');
+    button.tabIndex = tab === clip.tab ? 0 : -1;
+    if (tab !== 'moments') {
+      const swatch = document.createElement('span');
+      swatch.className = 'kit-swatch';
+      swatch.style.background = lineUps[tab].kit;
+      swatch.setAttribute('aria-hidden', 'true');
+      button.append(swatch);
+    }
+    button.append(cell('panel-tab-name', label(tab)));
+    if (tab === 'moments' && clip.unseen) {
+      const dot = cell('unseen-dot', '');
+      dot.setAttribute('aria-label', 'New moments');
+      button.append(dot);
+    }
+    tabs.append(button);
+  }
+  const body = document.createElement('div');
+  body.className = 'panel-tab-body';
+  body.id = 'panel-tab-body';
+  body.setAttribute('role', 'tabpanel');
+  body.setAttribute('aria-labelledby', `panel-tab-${clip.tab}`);
+  body.append(
+    clip.tab === 'moments' ? tickerList(ticker) : lineUpPanel(lineUps[clip.tab])
+  );
+  panel.append(tabs, body);
+  return panel;
+};
+
 /**
  * The drawer control to focus after a repaint, given the one focused
  * before: the same one, or the latest line once the drawer has closed.
@@ -644,7 +751,10 @@ const paintHighlights = (
     const before = document.activeElement?.closest<HTMLElement>(
       '[data-view-control]'
     )?.dataset.viewControl;
-    pane.replaceChildren(momentsPanel(ticker), ...parts, stage, controls);
+    const panel = highlights.lineUps
+      ? tabbedPanel(ticker, highlights.lineUps, clip)
+      : momentsPanel(ticker);
+    pane.replaceChildren(panel, ...parts, stage, controls);
     const focus = focusAfter(before, clip.drawer);
     if (focus) {
       pane
@@ -2247,6 +2357,34 @@ export const createBrowserDom = (app: HTMLElement) => {
       target.submit(input.value);
     });
     document.addEventListener('keydown', event => {
+      // In the tabs beside the clips (#256), the arrows move between tabs
+      // and never reach the playhead.
+      const tab = document.activeElement?.closest<HTMLElement>('[role=tab]');
+      if (
+        tab &&
+        (event.key === 'ArrowLeft' || event.key === 'ArrowRight') &&
+        !event.metaKey &&
+        !event.ctrlKey &&
+        !event.altKey
+      ) {
+        event.preventDefault();
+        const tabs = [
+          ...(tab.parentElement?.querySelectorAll<HTMLElement>('[role=tab]') ??
+            [])
+        ];
+        const step = event.key === 'ArrowRight' ? 1 : -1;
+        const next =
+          tabs[(tabs.indexOf(tab) + step + tabs.length) % tabs.length];
+        if (next?.dataset.id) {
+          target.tap(next.dataset.id, false);
+          highlightsPane
+            .querySelector<HTMLElement>(
+              `[data-view-control="${next.dataset.id}"]`
+            )
+            ?.focus({ preventScroll: true });
+        }
+        return;
+      }
       if (
         target.keyDown({
           code: event.code,

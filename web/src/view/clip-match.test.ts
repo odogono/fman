@@ -12,6 +12,7 @@ import {
   inkColours,
   keeperColours,
   keeperColoursFor,
+  matchLineUps,
   opponentEleven
 } from './clip-match';
 import { createClipScript } from './clips';
@@ -387,4 +388,35 @@ test('a player injured in a clip is left out of the later ones', () => {
     clipInputFor(game, fixture, moments, i).attack.players.map(p => p.label)
   );
   expect(alone).toEqual(labels);
+});
+
+test('the line-ups field the picked team and the opponent’s eleven, with anyone named who came on (#256)', () => {
+  const players = [player(1, 'GK'), player(2, 'DF'), player(3, 'FW', false)];
+  // Squad player 11, the third forward, is named, so joins the eleven.
+  const moments: Moment[] = [
+    { kind: 'goal', minute: 30, side: 'opponent', squadPlayer: 11 }
+  ];
+  const { away, home } = matchLineUps(gameWith(players), fixture, moments);
+  expect(home.players.map(p => p.key)).toEqual(['club:1', 'club:2']);
+  expect(away.players).toHaveLength(12);
+  expect(away.players.at(-1)).toMatchObject({
+    key: 'squad:11',
+    position: 'FW'
+  });
+  expect(home.kit).toBe(inkColours[2]);
+  // Away, the managed club's line-up comes second.
+  const swapped = matchLineUps(
+    gameWith(players),
+    { ...fixture, home: false } as MatchFixture,
+    []
+  );
+  expect(swapped.away.players.map(p => p.key)).toEqual(['club:1', 'club:2']);
+  // An opponent owning no squad shows its 4-4-2 by position alone.
+  const shape = matchLineUps(
+    gameWith(players),
+    { ...fixture, opponent: 3 } as MatchFixture,
+    []
+  ).away.players;
+  expect(shape.map(p => p.position).join('')).toBe('GKDFDFDFDFMFMFMFMFFWFW');
+  expect(shape.every(p => p.name === '')).toBe(true);
 });

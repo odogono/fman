@@ -1919,6 +1919,30 @@ export const createBrowserDom = (app: HTMLElement) => {
   modernPitch.height = 176;
   modernPitch.setAttribute('role', 'img');
   const modernPitchContext = modernPitch.getContext('2d')!;
+  // A wide window, as the stylesheet has it (#257).
+  const wideWindow = matchMedia(
+    '(min-width: 900px) and (min-aspect-ratio: 1) and (min-height: 501px)'
+  );
+  /**
+   * On a wide window, the original's pitch at the largest whole multiple
+   * of its 256 by 176 pixels that fits beside the strengths and under the
+   * scoreboard, so its pixels stay crisp (#257). Elsewhere the stylesheet
+   * sizes it.
+   */
+  const fitOriginalPitch = () => {
+    if (!wideWindow.matches || !modernPitch.isConnected) {
+      modernPitch.style.width = '';
+      return;
+    }
+    const board =
+      highlightsPane.querySelector<HTMLElement>('.strip-scoreboard')
+        ?.offsetHeight ?? 40;
+    const wide = innerWidth - 16 - 280 - 24;
+    const high = innerHeight - 16 - board - 6;
+    const times = Math.max(1, Math.floor(Math.min(wide / 256, high / 176)));
+    modernPitch.style.width = `${256 * times}px`;
+  };
+  addEventListener('resize', fitOriginalPitch);
   let modernPitchFor: unknown;
   // The sprite highlights' pitch (#144), at the screen's resolution.
   const clipPitch = document.createElement('canvas');
@@ -2097,6 +2121,7 @@ export const createBrowserDom = (app: HTMLElement) => {
     if (view.highlights.kind !== 'attacks') {
       return;
     }
+    fitOriginalPitch();
     const playback = view.highlights.timeline;
     const current = playback.current;
     const fresh = modernPitchFor !== playback;

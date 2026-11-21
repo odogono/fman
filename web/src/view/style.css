@@ -956,7 +956,7 @@ button.latest-moment:focus-visible,
   display: none;
 }
 /* On a wide window (#255), the scoreboard runs across the top, the pitch
-   fills the left as far as about 1600px wide, still running up the screen,
+   fills the left, still running up the screen,
    with the playhead's row under it, and the moments take a column on the
    right. */
 @media (min-width: 900px) and (min-aspect-ratio: 1) and (min-height: 501px) {
@@ -964,7 +964,7 @@ button.latest-moment:focus-visible,
     grid-template-columns: minmax(0, 1fr) 320px;
     grid-template-rows: auto minmax(0, 1fr) auto;
     column-gap: 16px;
-    max-width: calc(1600px + 336px);
+    max-width: none;
   }
   .modern-highlights:has(.clip-stage) > * {
     grid-column: 1;
@@ -1006,7 +1006,7 @@ button.latest-moment:focus-visible,
     display: none;
   }
   :root.modern.at-highlights:has(.clip-stage) .top-bar {
-    max-width: calc(1600px + 336px);
+    max-width: none;
   }
 }
 .highlights-strengths .pick-strengths {

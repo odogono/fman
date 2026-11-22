@@ -52,8 +52,8 @@ export type ClipOverlays = Readonly<{
   problems?: readonly Readonly<{ players: readonly number[]; text: string }>[];
 }>;
 
-const grass = ['#2f7d32', '#2a7230'] as const;
-const surround = '#245f28';
+export const grass = ['#2f7d32', '#2a7230'] as const;
+export const surround = '#245f28';
 const line = 'rgba(255, 255, 255, 0.85)';
 
 /**
@@ -92,7 +92,7 @@ export const fitClipCanvas = (canvas: HTMLCanvasElement) => {
   return { height, ratio, width };
 };
 
-const markings = (ctx: CanvasRenderingContext2D) => {
+export const markings = (ctx: CanvasRenderingContext2D) => {
   ctx.strokeStyle = line;
   ctx.lineWidth = 0.15;
   ctx.strokeRect(0, 0, pitchWidth, pitchLength);

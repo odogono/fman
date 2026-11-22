@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "bun --hot ./index.html ./clips.html",
+    "dev": "bun --hot ./index.html ./clips.html ./ground.html",
     "build": "bun src/site/build.ts",
     "typecheck": "tsc -p src/sim && tsc -p src/view && tsc -p src/offline && tsc -p src/site && tsc -p tsconfig.test.json",
     "test": "bun test src"
@@ -12,7 +12,11 @@
   "devDependencies": {
     "@happy-dom/global-registrator": "^21.0.4",
     "@types/bun": "^1.4.4",
+    "@types/three": "0.180.0",
     "happy-dom": "^21.0.4",
     "typescript": "^5.9.0"
+  },
+  "dependencies": {
+    "three": "0.180.0"
   }
 }

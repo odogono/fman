@@ -3,6 +3,7 @@ import {
   CanvasTexture,
   ColorManagement,
   DirectionalLight,
+  Group,
   LinearSRGBColorSpace,
   Mesh,
   MeshBasicMaterial,
@@ -33,21 +34,16 @@ import {
   spriteFor,
   statusSprite
 } from '../clip-sprites';
-import {
-  boardPieces,
-  goalPieces,
-  shadowPalette,
-  type GroundPiece
-} from '../clip-stadium';
+import { boardPieces, shadowPalette, type GroundPiece } from '../clip-stadium';
 import { boardMetres, pitchLength, pitchWidth, type ClipFrame } from '../clips';
-import { createAtlas, createBillboards, type Billboard } from './billboards';
+import { createAtlas, createLayers, type Billboard } from './billboards';
+import { goalModels } from './goals';
 import { fans, standsMesh, towardsSun } from './stands';
 
 // The prototype's painter (#263): a clip's frame drawn over a 3D ground
-// with three.js. The ground and the stands are geometry, lit by a sun that
-// casts the stands' shadows across the pitch; the players, the ball, the
-// goals, the boards and the fans are today's sprites, standing on their
-// points. The scene is rendered at one pixel to an art pixel and scaled up
+// with three.js. The ground, the stands and the goals are geometry, lit by
+// a sun that casts their shadows across the pitch; the players, the ball,
+// the boards and the fans are today's sprites, standing on their points. The scene is rendered at one pixel to an art pixel and scaled up
 // in whole pixels, so it reads as the same art.
 
 /** The camera's field of view, top to bottom: narrow, so near-flat. */
@@ -111,7 +107,6 @@ const boards = boardPieces().map(piece => {
     ? { ...fromPiece(piece), flat: true, order: -Infinity }
     : fromPiece(piece);
 });
-const goals = goalPieces().map(fromPiece);
 
 export type GroundView = ReturnType<typeof createGroundView>;
 
@@ -142,7 +137,12 @@ export const createGroundView = (
   shade.receiveShadow = true;
   shade.renderOrder = 1;
   scene.add(shade);
-  scene.add(standsMesh());
+  // The stands and the goals, sheared so their heights also lean up the
+  // screen as the sprites' do (`oblique`).
+  const solid = new Group();
+  solid.matrixAutoUpdate = false;
+  solid.add(standsMesh());
+  scene.add(solid);
 
   const sun = new DirectionalLight(0xff_ff_ff, 1);
   const centre = new Vector3(pitchWidth / 2, 0, pitchLength / 2);
@@ -162,8 +162,17 @@ export const createGroundView = (
   scene.add(sun, sun.target);
 
   const atlas = createAtlas();
-  const billboards = createBillboards(atlas);
-  scene.add(billboards.mesh);
+  // The sprites, drawn in layers between the goals' nets and frames.
+  const goals = goalModels().toSorted((a, b) => a.order - b.order);
+  const billboards = createLayers(
+    atlas,
+    goals.map(goal => goal.order)
+  );
+  goals.forEach((goal, i) => {
+    goal.mesh.renderOrder = 9 + 2 * (i + 1);
+    solid.add(goal.mesh);
+  });
+  scene.add(...billboards.meshes);
 
   const camera = new PerspectiveCamera(fieldOfView, 1, 1, 1000);
   camera.up.set(0, 0, -1);
@@ -183,7 +192,8 @@ export const createGroundView = (
     frame: ClipFrame,
     sides: ClipSides,
     box: Readonly<{ height: number; ratio: number; width: number }>,
-    tilt: number
+    tilt: number,
+    oblique = true
   ) => {
     const { height, ratio, width } = box;
     // Whole device pixels to an art pixel, as today's clips.
@@ -196,13 +206,20 @@ export const createGroundView = (
       renderer.setSize(wide, high, false);
       canvas.style.width = `${(wide * pixel) / ratio}px`;
       canvas.style.height = `${(high * pixel) / ratio}px`;
-      billboards.viewport.set(wide, high);
+      billboards.setViewport(wide, high);
     }
     const metresPerPixel = pixel / (scale * ratio);
     const viewHeight = high * metresPerPixel;
     const distance =
       viewHeight / 2 / Math.tan(((fieldOfView / 2) * Math.PI) / 180);
     const angle = (tilt * Math.PI) / 180;
+    // A metre of height rises a metre up the screen at any tilt, as the
+    // sprites draw it: what the tilt leaves out is made up by leaning the
+    // heights up the pitch.
+    const shear = oblique ? (1 - Math.sin(angle)) / Math.cos(angle) : 0;
+    solid.matrix.set(1, 0, 0, 0, 0, 1, 0, 0, 0, -shear, 1, 0, 0, 0, 0, 1);
+    solid.matrixWorldNeedsUpdate = true;
+    billboards.setShear(shear);
     const target = new Vector3(frame.camera.x, 0, frame.camera.y);
     camera.aspect = wide / high;
     camera.near = Math.max(1, distance - 150);
@@ -218,7 +235,6 @@ export const createGroundView = (
     camera.updateProjectionMatrix();
 
     const sprites: Billboard[] = [
-      ...goals,
       ...boards,
       ...crowdFor(sides, frame.cheer ?? false)
     ];
@@ -331,5 +347,5 @@ export const createGroundView = (
     }
   };
 
-  return { info: () => renderer.info.render, paint };
+  return { info: () => renderer.info.render, paint, scene };
 };

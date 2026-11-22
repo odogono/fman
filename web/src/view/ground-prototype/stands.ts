@@ -93,7 +93,7 @@ const shade = (geometry: BufferGeometry, colour: string) => {
 };
 
 /** A box between two corners, in world metres. */
-const block = (a: Vector3, b: Vector3, colour: string) => {
+export const block = (a: Vector3, b: Vector3, colour: string) => {
   const geometry = new BoxGeometry(
     Math.abs(b.x - a.x),
     Math.abs(b.y - a.y),

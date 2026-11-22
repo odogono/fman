@@ -97,11 +97,14 @@ const vertexShader = /* glsl */ `
   attribute float lift;
   attribute float isFlat;
   uniform vec2 viewport;
+  uniform float shear;
   varying vec2 vUv;
   void main() {
+    // Heights drawn up the screen as well, as the sprites draw them.
+    vec3 base = vec3(foot.x, foot.y, foot.z - shear * foot.y);
     vUv = rect.xy + vec2(corner.x + 0.5, 1.0 - corner.y) * rect.zw;
     if (isFlat > 0.5) {
-      vec3 world = foot + vec3(
+      vec3 world = base + vec3(
         corner.x * size.x * ${artPixelMetres},
         0.04,
         -(corner.y * size.y + lift) * ${artPixelMetres}
@@ -109,7 +112,7 @@ const vertexShader = /* glsl */ `
       gl_Position = projectionMatrix * viewMatrix * vec4(world, 1.0);
       return;
     }
-    vec4 mv = viewMatrix * vec4(foot, 1.0);
+    vec4 mv = viewMatrix * vec4(base, 1.0);
     vec4 at = projectionMatrix * mv;
     vec2 px = (at.xy / at.w * 0.5 + 0.5) * viewport;
     // Whole render pixels to each art pixel near the camera's distance, as
@@ -176,6 +179,7 @@ export const createBillboards = (atlas: Atlas, capacity = 4096) => {
     transparent: true,
     uniforms: {
       atlas: { value: atlas.texture },
+      shear: { value: 0 },
       viewport: { value: viewport }
     },
     vertexShader
@@ -205,5 +209,45 @@ export const createBillboards = (atlas: Atlas, capacity = 4096) => {
     }
     geometry.instanceCount = count;
   };
-  return { fill, mesh, viewport };
+  const setShear = (shear: number) => {
+    material.uniforms.shear!.value = shear;
+  };
+  return { fill, mesh, setShear, viewport };
+};
+
+/**
+ * Sprites drawn in layers between solid pieces of the scene, such as a
+ * goal's net and frame: a sprite whose order is at or past a layer's
+ * `from` is drawn after the piece at that order. Layer `i` draws at render
+ * order `10 + 2 * i`, so the piece at `from[i]` goes at `9 + 2 * i`.
+ */
+export const createLayers = (atlas: Atlas, from: readonly number[]) => {
+  const layers = [-Infinity, ...from].map((_, i) => {
+    const layer = createBillboards(atlas);
+    layer.mesh.renderOrder = 10 + 2 * i;
+    return layer;
+  });
+  const fill = (sprites: readonly Billboard[]) => {
+    const split = layers.map((): Billboard[] => []);
+    for (const sprite of sprites) {
+      split[from.filter(f => sprite.order >= f).length]!.push(sprite);
+    }
+    layers.forEach((layer, i) => layer.fill(split[i]!));
+  };
+  const setViewport = (width: number, height: number) => {
+    for (const layer of layers) {
+      layer.viewport.set(width, height);
+    }
+  };
+  const setShear = (shear: number) => {
+    for (const layer of layers) {
+      layer.setShear(shear);
+    }
+  };
+  return {
+    fill,
+    meshes: layers.map(layer => layer.mesh),
+    setShear,
+    setViewport
+  };
 };

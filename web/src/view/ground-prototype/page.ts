@@ -21,7 +21,9 @@ const root = document.querySelector<HTMLElement>('#ground')!;
 
 const settings = {
   compare: true,
+  /** Heights lean up the screen, as the sprites draw them. */
   kind: 'goal' as Moment['kind'],
+  oblique: true,
   seed: 1,
   tilt: 0
 };
@@ -156,6 +158,10 @@ random.addEventListener('click', () => {
   seed.value = String(settings.seed);
   rebuild();
 });
+const oblique = element('input', { checked: true, type: 'checkbox' });
+oblique.addEventListener('change', () => {
+  settings.oblique = oblique.checked;
+});
 const compare = element('input', { checked: true, type: 'checkbox' });
 compare.addEventListener('change', () => {
   settings.compare = compare.checked;
@@ -172,6 +178,7 @@ root.append(
     element('label', {}, 'Kind ', kind),
     element('label', {}, 'Seed ', seed),
     random,
+    element('label', {}, oblique, ' Heights up the screen'),
     element('label', {}, compare, " Today's clip beside")
   ),
   element('div', { className: 'transport' }, playButton, scrubber, frameLabel),
@@ -208,7 +215,8 @@ const paint = () => {
     frame,
     sides,
     { height: box.clientHeight, ratio, width: box.clientWidth },
-    settings.tilt
+    settings.tilt,
+    settings.oblique
   );
   record(paintTimes, performance.now() - started);
   if (settings.compare) {
@@ -248,6 +256,7 @@ requestAnimationFrame(tick);
 // For driving the page from the console or a preview.
 Object.assign(globalThis, {
   groundDebug: {
+    ground,
     paint: (frame: number) => {
       playing = false;
       at = frame;

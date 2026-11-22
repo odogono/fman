@@ -153,8 +153,12 @@ Modern mode's scene after the managed club wins the F.A. Cup final: the winners 
 _Avoid_: Cup winners screen, trophy animation
 
 **Ground**:
-A club's home: the pitch, goals, boards and stands where its home matches' clips are played. A clip is played at the home side's ground. It is made up for show and changes nothing in the game.
+A club's home: the pitch, goals, boards and stands where its home matches' clips are played. A clip is played at the home side's ground, except the F.A. Cup final's clips and the cup celebration, which are played at the final ground. It is made up for show and changes nothing in the game.
 _Avoid_: Stadium, venue, arena
+
+**Final ground**:
+The neutral ground, owned by no club, where the F.A. Cup final's clips and the cup celebration are played.
+_Avoid_: Wembley, cup ground
 
 **Scoreboard**:
 The strip above Modern mode's highlights: both clubs, the score and, where the highlights have minutes, the minute of the moment on show.

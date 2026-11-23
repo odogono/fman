@@ -37,8 +37,11 @@ export type ClipOverlays = Readonly<{
   Readonly<{
     /** The pitch mown in another pattern, for the debug page. */
     grass?: GrassPattern;
-    /** Another club's ground, in the home side's colours, for the debug page. */
-    ground?: Omit<ClipGround, 'seats'>;
+    /**
+     * Another club's ground, in the home side's colours, or the final
+     * ground, for the debug page.
+     */
+    ground?: Omit<ClipGround, 'seats'> | 'final';
     /** The camera at another tilt, for the debug page. */
     tilt?: number;
   }>;
@@ -171,12 +174,10 @@ export const patchFor = (across: number, width: number, height: number) => {
  */
 const groundFor = (sides: ClipSides, overlays: ClipOverlays) => {
   const home = sides.defence.home ? sides.defence : sides.attack;
-  const seats = home.ground?.seats ?? home.kit;
-  const plan = groundPlan(
-    overlays.ground
-      ? { ...overlays.ground, seats }
-      : (home.ground ?? { club: 1, division: 1, seats })
-  );
+  const own = home.ground;
+  const seats = own && own !== 'final' ? own.seats : home.kit;
+  const ground = overlays.ground ?? own ?? { club: 1, division: 1 };
+  const plan = groundPlan(ground === 'final' ? ground : { ...ground, seats });
   return overlays.grass ? { ...plan, grass: overlays.grass } : plan;
 };
 

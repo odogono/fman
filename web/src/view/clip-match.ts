@@ -9,6 +9,7 @@ import {
   hashSeed,
   kickOffFrame,
   type ClipFrame,
+  type ClipGround,
   type ClipInput,
   type ClipPlayer,
   type ClipScript,
@@ -243,6 +244,10 @@ export const goneOff = (moments: readonly Moment[], index = moments.length) =>
       )
   );
 
+/** The match is the F.A. Cup final. */
+const isFinal = (game: Game, fixture: MatchFixture) =>
+  fixture.kind === 'cup' && game.cupRound === 8;
+
 /**
  * Both sides as a moment shows them, with that moment's shooter, and
  * without the players who have gone off injured.
@@ -305,11 +310,14 @@ const sidesFor = (
       );
   const clubSide = (fixture.home ? 'home' : 'away') as 'away' | 'home';
   const homeSlot = fixture.home ? game.club : fixture.opponent;
-  const ground = {
-    club: game.clubs[homeSlot - 1]!.origin,
-    division: startingDivision(game, homeSlot),
-    seats: homeKit
-  };
+  // The F.A. Cup final is played at the final ground (#274).
+  const ground: ClipGround | 'final' = isFinal(game, fixture)
+    ? 'final'
+    : {
+        club: game.clubs[homeSlot - 1]!.origin,
+        division: startingDivision(game, homeSlot),
+        seats: homeKit
+      };
   const sides = {
     club: {
       ...(clubSide === 'home' ? { ground, home: true } : {}),
@@ -445,7 +453,7 @@ export const celebrationSidesFor = (
   const { away, home } = sidesFor(game, fixture);
   const [winners, losers] = fixture.home ? [home, away] : [away, home];
   const { ground: _ground, home: _home, ...visitors } = losers;
-  // The final's ground stays the home side's, whoever won it.
+  // The final's ground stays where it was, whoever won it.
   const { ground } = home;
   return {
     losers: visitors,

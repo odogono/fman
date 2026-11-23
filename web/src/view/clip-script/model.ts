@@ -154,8 +154,11 @@ export type ClipGround = Readonly<{
 
 /** One side in a clip: its kit, its goalkeeper's colour and its 11 or fewer. */
 export type ClipSide = Readonly<{
-  /** The home side's ground, where its clips are played. */
-  ground?: ClipGround;
+  /**
+   * The home side's ground, where its clips are played, or the final
+   * ground for the F.A. Cup final (#274).
+   */
+  ground?: ClipGround | 'final';
   /** The home side, whose fans fill most of the stands (#157). */
   home?: boolean;
   keeper: string;

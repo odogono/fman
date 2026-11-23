@@ -6,7 +6,9 @@ import { grassPatterns, type GrassPattern } from './pitch';
 // which sides have stands and which of those have roofs; its division when
 // the game began sizes the stands, tall in the First and low in the
 // Fourth, where a side may have none. Its seats are in its colours. The
-// pitch, goals and boards are the same at every ground.
+// final ground (#274), owned by no club, is designed by hand and grander
+// than any club's. The pitch, goals and boards are the same at every
+// ground.
 
 export type Side = 'bottom' | 'left' | 'right' | 'top';
 
@@ -20,6 +22,8 @@ export type Stand = Readonly<{
   rows: number;
   /** Seats on its steps, in the club's colours, rather than bare terrace. */
   seated: boolean;
+  /** Its seats' own colour, in place of the ground's. */
+  seats?: string;
   side: Side;
 }>;
 
@@ -51,8 +55,39 @@ const sizes: Readonly<Record<number, Size>> = {
 
 const across = { bottom: 'top', left: 'right', right: 'left', top: 'bottom' };
 
-/** The plan of `ground`. */
-export const groundPlan = (ground: ClipGround): GroundPlan => {
+/** One of the final ground's stands. */
+const finalStand = (side: Side, seats: string): Stand => ({
+  riser: 0.5,
+  roof: 4,
+  rowDepth: 0.9,
+  rows: 16,
+  seated: true,
+  seats,
+  side
+});
+const finalRed = '#b8202e';
+const finalBlue = '#1f3a8a';
+/**
+ * The final ground: tall seated stands on all four sides, taller than any
+ * club's, every one roofed, red along the touchlines and blue behind the
+ * goals, on a pitch mown in diamonds.
+ */
+export const finalGround: GroundPlan = {
+  grass: 'diamonds',
+  seats: finalRed,
+  stands: [
+    finalStand('left', finalRed),
+    finalStand('right', finalRed),
+    finalStand('top', finalBlue),
+    finalStand('bottom', finalBlue)
+  ]
+};
+
+/** The plan of `ground`, a club's or the final's. */
+export const groundPlan = (ground: ClipGround | 'final'): GroundPlan => {
+  if (ground === 'final') {
+    return finalGround;
+  }
   /** A roll from 0 up to 1, the same for the same club and question. */
   const roll = (question: string) =>
     hashSeed(`ground|${ground.club}|${question}`) / 2 ** 32;

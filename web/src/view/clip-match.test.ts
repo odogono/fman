@@ -462,3 +462,27 @@ test("a match is played at the home club's ground, sized by the division it bega
   });
   expect(won.losers.ground).toBeUndefined();
 });
+
+test('the F.A. Cup final, and its celebration, are played at the final ground', () => {
+  const game = {
+    ...createNewGame({
+      club: 6,
+      colour: 0,
+      level: 1,
+      manager: 'alex',
+      seed: 1
+    }),
+    cupRound: 8
+  };
+  const final = { ...at(false, 2), kind: 'cup' } as MatchFixture;
+  const { sides } = stillFrameFor(game, final, 'Kick-off');
+  expect(sides.attack.ground).toBe('final');
+  const won = celebrationSidesFor(game, final);
+  expect(won.winners.ground).toBe('final');
+  expect(won.losers.ground).toBeUndefined();
+  // A semi-final, or a league match in the final's week, is at home.
+  const semi = stillFrameFor({ ...game, cupRound: 7 }, final, 'Kick-off');
+  expect(semi.sides.attack.ground).toMatchObject({ club: 2 });
+  const league = stillFrameFor(game, at(false, 2), 'Kick-off');
+  expect(league.sides.attack.ground).toMatchObject({ club: 2 });
+});

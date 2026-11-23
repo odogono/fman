@@ -3,7 +3,7 @@ import { expect, test } from 'bun:test';
 import { pitchLength, pitchWidth, type ClipSide } from '../clips';
 import { boardSolids } from './boards';
 import { goalPieces } from './goals';
-import { groundPlan, type GroundPlan } from './grounds';
+import { finalGround, groundPlan, type GroundPlan } from './grounds';
 import { aimCamera, groundCamera, type GroundView } from './painter';
 import { fans } from './stands';
 
@@ -137,4 +137,19 @@ test('only a Fourth Division ground leaves a side bare, and never both touchline
     expect(sides.filter(s => s === 'left' || s === 'right')).toHaveLength(2);
   }
   expect(clubs.some(club => plan(club, 4).stands.length < 4)).toBe(true);
+});
+
+test("the final ground is roofed and seated all round, and taller than any club's", () => {
+  expect(groundPlan('final')).toBe(finalGround);
+  expect(finalGround.stands.map(s => s.side).toSorted()).toEqual([
+    'bottom',
+    'left',
+    'right',
+    'top'
+  ]);
+  expect(finalGround.stands.every(s => s.roof && s.seated)).toBe(true);
+  const lowest = Math.min(...finalGround.stands.map(s => s.rows * s.riser));
+  expect(lowest).toBeGreaterThan(
+    Math.max(...clubs.map(club => tallest(plan(club))))
+  );
 });

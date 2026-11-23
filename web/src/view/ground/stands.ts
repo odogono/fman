@@ -2,7 +2,7 @@ import { playerArt, type ArtGrid } from '../assets/clip-sprites';
 import { artPixelMetres, looksFor, playerPalette } from '../clip-sprites';
 import { boardMetres, hashSeed, pitchLength, pitchWidth } from '../clips';
 import type { Crowd } from '../match-ground';
-import type { Billboard } from './billboards';
+import type { Billboard } from './frame-sprites';
 import type { GroundPlan, Side, Stand } from './grounds';
 import { box, merge, type Point, type Solid } from './solid';
 

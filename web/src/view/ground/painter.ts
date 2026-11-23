@@ -12,30 +12,17 @@ import {
   type OGLRenderingContext
 } from 'ogl';
 
-import { cupArt, shadowArt } from '../assets/clip-sprites';
 import type { ClipSides } from '../clip-canvas';
-import {
-  artPixelMetres,
-  ballHeld,
-  ballLiftMetres,
-  ballSprite,
-  cupPalette,
-  iconPalette,
-  looksFor,
-  playerPalette,
-  spriteFor,
-  statusSprite,
-  type ArtPalette
-} from '../clip-sprites';
 import { pitchLength, pitchWidth, type ClipFrame } from '../clips';
 import type { MatchGround } from '../match-ground';
-import { createAtlas, createLayers, type Billboard } from './billboards';
+import { createAtlas, createLayers } from './billboards';
 import { boardCanvases, boardSolids } from './boards';
+import { createFrameSprites } from './frame-sprites';
 import { goalPieces, netCanvas } from './goals';
 import type { GroundPlan } from './grounds';
 import { markings, mowPitch, surround, type GrassPattern } from './pitch';
 import { towardsSun, type Solid } from './solid';
-import { fans, standsSolid } from './stands';
+import { standsSolid } from './stands';
 
 // The ground's painter (#263, ADR 0018): a clip's frame drawn over a 3D
 // ground with OGL. The ground, the stands, the boards and the goals are
@@ -43,9 +30,6 @@ import { fans, standsSolid } from './stands';
 // players, the ball and the fans are sprites, standing on their points. The
 // scene is rendered at one pixel to an art pixel, for the clip's canvas to
 // scale up in whole pixels, so it reads as pixel art.
-
-/** Shadows darken what they fall on, every other pixel. */
-const shadowPalette: ArtPalette = { x: '#000000a0' };
 
 /** The camera's field of view, top to bottom: narrow, so near-flat. */
 const fieldOfView = 20;
@@ -407,14 +391,12 @@ export const createGroundPainter = (canvas: HTMLCanvasElement) => {
   // The sprites, drawn in layers between the goals' nets and frames.
   const atlas = createAtlas(gl);
   const net = artTexture(gl, netCanvas(), true);
-  const goals = goalPieces().toSorted((a, b) => a.order - b.order);
-  const billboards = createLayers(
-    gl,
-    atlas,
-    goals.map(goal => goal.order)
-  );
+  const frameSprites = createFrameSprites();
+  const goals = goalPieces();
+  const billboards = createLayers(gl, atlas, frameSprites.bounds.length + 1);
   billboards.meshes[0]!.setParent(scene);
-  goals.forEach((goal, i) => {
+  frameSprites.bounds.forEach((bound, i) => {
+    const goal = goals.find(piece => piece.order === bound)!;
     const mesh =
       goal.kind === 'net'
         ? addSolid(goal.solid, net, { alphaTest: 0.5, seeThrough: true }).mesh
@@ -425,119 +407,7 @@ export const createGroundPainter = (canvas: HTMLCanvasElement) => {
 
   const camera = groundCamera(gl);
 
-  let crowd:
-    | {
-        cheering: string | undefined;
-        ground: MatchGround;
-        sprites: Billboard[];
-      }
-    | undefined;
-  /** The fans, the scorers' (`cheering`) and the neutrals on their feet. */
-  const crowdFor = (ground: MatchGround, cheering?: string) => {
-    if (crowd?.ground === ground && crowd.cheering === cheering) {
-      return crowd.sprites;
-    }
-    const sprites = fans(ground.crowd, ground.plan.stands, cheering);
-    crowd = { cheering, ground, sprites };
-    return sprites;
-  };
-
   let size = { height: 0, width: 0 };
-
-  /** The frame's sprites: the crowd, the players, the ball and the cup. */
-  const spritesOf = (
-    frame: ClipFrame,
-    sides: ClipSides,
-    ground: MatchGround
-  ) => {
-    const sprites: Billboard[] = [
-      ...crowdFor(ground, frame.cheer ? sides.attack.kit : undefined)
-    ];
-    const { ball } = frame;
-    const lift = ball.height * ballLiftMetres;
-    // A ball is held, or, in the cup celebration, put away.
-    const held = Boolean(frame.trophy) || ballHeld(frame.players, ball);
-    const attackers = sides.attack.players.length;
-    // Shadows first, lit from the top left, so everything stands on them.
-    for (const player of frame.players) {
-      sprites.push({
-        flat: true,
-        grid: shadowArt.player,
-        order: -Infinity,
-        palette: shadowPalette,
-        x: player.x + 0.3,
-        z: player.y + 0.12
-      });
-    }
-    if (!held) {
-      sprites.push({
-        flat: true,
-        grid: shadowArt.ball,
-        order: -Infinity,
-        palette: shadowPalette,
-        x: ball.x + 0.15 + lift * 0.5,
-        z: ball.y + 0.08 + lift * 0.2
-      });
-    }
-    frame.players.forEach((player, i) => {
-      const side = sides[player.side];
-      const place = i < attackers ? i : i - attackers;
-      const looks = looksFor(side.players[place]?.label ?? '', place);
-      const sprite = spriteFor(player);
-      const shirt = player.keeper ? side.keeper : side.kit;
-      sprites.push({
-        grid: sprite.grid,
-        mirrored: sprite.mirrored,
-        order: player.y,
-        palette: playerPalette(shirt, looks),
-        x: player.x,
-        z: player.y
-      });
-      if (player.status) {
-        sprites.push({
-          grid: statusSprite(player.status),
-          lift: sprite.grid.length + 1,
-          order: player.y,
-          palette: iconPalette,
-          x: player.x,
-          z: player.y
-        });
-      }
-    });
-    if (frame.trophy) {
-      // Just in front of whoever holds it, so the hands stay behind the cup.
-      sprites.push({
-        grid: cupArt,
-        lift: frame.trophy.raise / artPixelMetres,
-        order: frame.trophy.y + 0.01,
-        palette: cupPalette,
-        x: frame.trophy.x,
-        z: frame.trophy.y
-      });
-    }
-    if (!held) {
-      const grid = ballSprite(ball.x, ball.y);
-      sprites.push({
-        grid,
-        lift: lift / artPixelMetres - grid.length / 2,
-        order: ball.y,
-        palette: iconPalette,
-        x: ball.x,
-        z: ball.y
-      });
-    }
-    // Confetti over everything, two art pixels square a speck.
-    for (const speck of frame.confetti ?? []) {
-      sprites.push({
-        grid: ['cc', 'cc'],
-        order: Infinity,
-        palette: { c: speck.colour },
-        x: speck.x,
-        z: speck.y
-      });
-    }
-    return sprites;
-  };
 
   /**
    * Renders `frame` as `view` sees it into the canvas, and returns where
@@ -558,7 +428,7 @@ export const createGroundPainter = (canvas: HTMLCanvasElement) => {
     const { project, shear: lean } = aimCamera(camera, view);
     shear.value = lean;
     billboards.setShear(lean);
-    billboards.fill(spritesOf(frame, sides, view.ground));
+    billboards.fill(frameSprites.layers(frame, sides, view.ground));
     renderer.render({ camera, frustumCull: false, scene, sort: false });
     return project;
   };

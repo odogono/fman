@@ -1,6 +1,6 @@
 import { drawCard, drawLabel, overlayUnit } from './clip-card';
 import { drawGoal } from './clip-goal';
-import { artPixelSize, spriteFor, statusSprite } from './clip-sprites';
+import { artPixelSize } from './clip-sprites';
 import {
   cameraAspect,
   cameraWide,
@@ -11,6 +11,7 @@ import {
   type ClipFrame,
   type ClipSide
 } from './clips';
+import { playerRows } from './ground/frame-sprites';
 import type { GroundPainter } from './ground/painter';
 import { surround } from './ground/pitch';
 import type { MatchGround } from './match-ground';
@@ -259,12 +260,8 @@ export const paintClip = (
     return [(px * pixel) / ratio, (py * pixel) / ratio];
   };
   /** The top of a player's sprite and any icon over it, in CSS pixels. */
-  const topOf = (player: ClipFrame['players'][number]) => {
-    const rows =
-      spriteFor(player).grid.length +
-      (player.status ? statusSprite(player.status).length + 1 : 0);
-    return onScreen(player.x, player.y)[1] - (rows * pixel) / ratio;
-  };
+  const topOf = (player: ClipFrame['players'][number]) =>
+    onScreen(player.x, player.y)[1] - (playerRows(player) * pixel) / ratio;
   if (overlays.path && overlays.path.length > 1) {
     ctx.strokeStyle = 'rgba(255, 230, 0, 0.8)';
     ctx.lineWidth = 2;

@@ -3,7 +3,7 @@ import { expect, test } from 'bun:test';
 import type { MatchFixture } from '../sim/league';
 import { createNewGame } from '../sim/management';
 import { matchKits } from './clip-match';
-import { groundPlan } from './ground/grounds';
+import { finalPlan, groundPlan } from './ground/grounds';
 import {
   celebrationGroundFor,
   clubGround,
@@ -61,11 +61,12 @@ test('a cup tie before the final is played at the home club’s ground', () => {
   );
 });
 
-test("the final's crowd favours neither side, and the cup celebration is at the final's ground, its crowd favouring the winners", () => {
+test('the final is played at the final ground, its crowd favouring neither side, and the cup celebration there too, its crowd favouring the winners', () => {
   const final = fixture(false, 2, 'cup');
   const inFinal = { ...game, cupRound: 8 };
   const kits = matchKits(inFinal, final);
   const clips = matchGroundFor(inFinal, final);
+  expect(clips.plan).toBe(finalPlan);
   expect(clips.crowd).toEqual(evenly(kits.home, kits.away));
   const celebration = celebrationGroundFor(inFinal, final);
   expect(celebration.plan).toBe(clips.plan);

@@ -12,7 +12,7 @@ import {
 } from 'ogl';
 
 import { cupArt, shadowArt } from '../assets/clip-sprites';
-import { grass, markings, surround, type ClipSides } from '../clip-canvas';
+import { markings, surround, type ClipSides } from '../clip-canvas';
 import { drawCard, drawLabel, overlayUnit } from '../clip-card';
 import { drawGoal } from '../clip-goal';
 import {
@@ -33,6 +33,7 @@ import { pitchLength, pitchWidth, type ClipFrame } from '../clips';
 import { createAtlas, createLayers, type Billboard } from './billboards';
 import { boardCanvases, boardSolids } from './boards';
 import { goalPieces, netCanvas } from './goals';
+import { mowPitch, type GrassPattern } from './grass';
 import { towardsSun, type Solid } from './solid';
 import { fans, standsSolid } from './stands';
 
@@ -54,20 +55,20 @@ const shadowStrength = 0.32;
 const shadowTexels = 2048;
 const shadowReach = 95;
 
-/** Today's pitch, stripes and markings, painted once on a canvas. */
-const pitchCanvas = () => {
-  const canvas = document.createElement('canvas');
+/** The pitch, mown in `pattern` and marked as today's, on `canvas`. */
+const paintPitch = (canvas: HTMLCanvasElement, pattern: GrassPattern) => {
   canvas.width = (pitchWidth + 2 * beyond) * texelsPerMetre;
   canvas.height = (pitchLength + 2 * beyond) * texelsPerMetre;
   const ctx = canvas.getContext('2d')!;
   ctx.fillStyle = surround;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.putImageData(
+    mowPitch(pattern, texelsPerMetre),
+    beyond * texelsPerMetre,
+    beyond * texelsPerMetre
+  );
   ctx.scale(texelsPerMetre, texelsPerMetre);
   ctx.translate(beyond, beyond);
-  for (let y = 0; y < pitchLength; y += 5) {
-    ctx.fillStyle = grass[(y / 5) % 2]!;
-    ctx.fillRect(0, y, pitchWidth, Math.min(5, pitchLength - y));
-  }
   markings(ctx);
   return canvas;
 };
@@ -251,6 +252,8 @@ export const createGroundView = (
   const castsShadow = new Transform();
 
   const scene = new Transform();
+  const pitch = paintPitch(document.createElement('canvas'), 'stripes');
+  const pitchTexture = artTexture(gl, pitch);
   const ground = new Mesh(gl, {
     frustumCulled: false,
     geometry: groundGeometry(gl),
@@ -258,7 +261,7 @@ export const createGroundView = (
       cullFace: false,
       fragment: groundFragment,
       uniforms: {
-        map: { value: artTexture(gl, pitchCanvas()) },
+        map: { value: pitchTexture },
         shadowMap: { value: shadowMap.depthTexture },
         shadowStrength: { value: shadowStrength },
         sunMatrix: { value: sun.projectionViewMatrix }
@@ -501,5 +504,11 @@ export const createGroundView = (
     }
   };
 
-  return { calls: () => drawn, paint, scene };
+  /** Mows the pitch in another pattern. */
+  const setGrass = (pattern: GrassPattern) => {
+    paintPitch(pitch, pattern);
+    pitchTexture.needsUpdate = true;
+  };
+
+  return { calls: () => drawn, paint, scene, setGrass };
 };

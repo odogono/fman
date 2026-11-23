@@ -10,6 +10,7 @@ import {
   type ClipScript,
   type Line
 } from '../clips';
+import { grassPatterns, type GrassPattern } from './grass';
 import { createGroundView } from './scene';
 
 // The 3D ground prototype (#263): `web/ground.html`, served by `bun run dev`
@@ -21,8 +22,9 @@ const root = document.querySelector<HTMLElement>('#ground')!;
 
 const settings = {
   compare: true,
-  /** Heights lean up the screen, as the sprites draw them. */
+  grass: 'stripes' as GrassPattern,
   kind: 'goal' as Moment['kind'],
+  /** Heights lean up the screen, as the sprites draw them. */
   oblique: true,
   seed: 1,
   tilt: 0
@@ -162,6 +164,19 @@ const oblique = element('input', { checked: true, type: 'checkbox' });
 oblique.addEventListener('change', () => {
   settings.oblique = oblique.checked;
 });
+const grass = element(
+  'select',
+  {},
+  ...grassPatterns.map(pattern =>
+    element('option', { value: pattern }, pattern)
+  )
+);
+const setGrass = (pattern: GrassPattern) => {
+  settings.grass = pattern;
+  grass.value = pattern;
+  ground.setGrass(pattern);
+};
+grass.addEventListener('change', () => setGrass(grass.value as GrassPattern));
 const compare = element('input', { checked: true, type: 'checkbox' });
 compare.addEventListener('change', () => {
   settings.compare = compare.checked;
@@ -177,6 +192,7 @@ root.append(
     element('label', {}, 'Tilt ', tiltSlider, tiltLabel),
     element('label', {}, 'Kind ', kind),
     element('label', {}, 'Seed ', seed),
+    element('label', {}, 'Grass ', grass),
     random,
     element('label', {}, oblique, ' Heights up the screen'),
     element('label', {}, compare, " Today's clip beside")
@@ -268,6 +284,7 @@ Object.assign(globalThis, {
       setTilt(settings.tilt);
       seed.value = String(settings.seed);
       kind.value = settings.kind;
+      setGrass(settings.grass);
       rebuild();
       playing = false;
     },

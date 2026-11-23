@@ -7,7 +7,7 @@ import { boardSolids } from './boards';
 import { goalPieces } from './goals';
 import { finalPlan, groundPlan, type GroundPlan } from './grounds';
 import { aimCamera, groundCamera, type GroundView } from './painter';
-import { fans } from './stands';
+import { fans, standsSolid } from './stands';
 
 const home = '#d70000';
 const away = '#0000d7';
@@ -161,6 +161,8 @@ test('the final ground is grander than any club’s: tall, seated, roofed stands
   expect(lowest).toBeGreaterThan(grandest);
 });
 
-test('the final ground’s seats are in no kit’s colours', () => {
+test('the final ground’s seats are in no kit’s colours, and its steps are not bare concrete', () => {
   expect(inkColours).not.toContain(finalPlan.seats as never);
+  const { steps: _steps, ...bare } = finalPlan;
+  expect(standsSolid(finalPlan).colour).not.toEqual(standsSolid(bare).colour);
 });

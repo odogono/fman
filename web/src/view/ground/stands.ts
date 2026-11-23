@@ -53,7 +53,11 @@ export const standsSolid = (plan: GroundPlan): Solid => {
       // Seats on every other step, and concrete between; a terrace's
       // steps are bare, a darker band on every other one.
       const colour =
-        row % 2 ? (stand.seated ? plan.seats : concrete) : darkConcrete;
+        row % 2
+          ? stand.seated
+            ? plan.seats
+            : concrete
+          : (plan.steps ?? darkConcrete);
       blocks.push(
         box(
           place(stand.side, out, from, 0),

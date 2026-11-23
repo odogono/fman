@@ -31,6 +31,7 @@ import { pitchLength, pitchWidth, type ClipFrame } from '../clips';
 import { createAtlas, createLayers, type Billboard } from './billboards';
 import { boardCanvases, boardSolids } from './boards';
 import { goalPieces, netCanvas } from './goals';
+import type { GroundPlan } from './grounds';
 import { markings, mowPitch, surround, type GrassPattern } from './pitch';
 import { towardsSun, type Solid } from './solid';
 import { fans, standsSolid } from './stands';
@@ -212,8 +213,8 @@ const groundFragment = /* glsl */ `
 
 /** How a frame is seen: where, at what size, and from what tilt. */
 export type GroundView = Readonly<{
-  /** The pitch mown in this pattern. */
-  grass: GrassPattern;
+  /** The ground the frame is played at. */
+  ground: GroundPlan;
   /** The render's size in pixels, one to an art pixel. */
   high: number;
   /** Metres on the ground to each pixel, at the picture's centre. */
@@ -353,7 +354,7 @@ export const createGroundPainter = (canvas: HTMLCanvasElement) => {
         vertex: solidVertex
       })
     });
-    new Mesh(gl, {
+    const shadow = new Mesh(gl, {
       frustumCulled: false,
       geometry,
       program: new Program(gl, {
@@ -362,15 +363,47 @@ export const createGroundPainter = (canvas: HTMLCanvasElement) => {
         uniforms: { alphaTest, map: { value: map } },
         vertex: depthVertex
       })
-    }).setParent(castsShadow);
-    return mesh;
+    });
+    shadow.setParent(castsShadow);
+    return { mesh, shadow };
   };
 
-  addSolid(standsSolid()).setParent(scene);
+  // The stands, built for each ground in their place among the pieces.
+  const standsHolder = new Transform();
+  standsHolder.setParent(scene);
+  let stands: ReturnType<typeof addSolid> | undefined;
+  let built = '';
+  let laidOut: GroundPlan['stands'] = [];
+  const build = (plan: GroundPlan) => {
+    const key = JSON.stringify(plan);
+    if (key === built) {
+      return;
+    }
+    built = key;
+    laidOut = plan.stands;
+    if (stands) {
+      standsHolder.removeChild(stands.mesh);
+      castsShadow.removeChild(stands.shadow);
+      stands.mesh.geometry.remove();
+    }
+    stands = addSolid(standsSolid(plan));
+    stands.mesh.setParent(standsHolder);
+    if (plan.grass !== mown) {
+      mown = plan.grass;
+      paintPitch(pitch, mown);
+      pitchTexture.needsUpdate = true;
+    }
+    renderer.render({ camera: sun, scene: castsShadow, target: shadowMap });
+  };
+
   const boardArt = boardCanvases();
   const boards = boardSolids();
-  addSolid(boards.faces, artTexture(gl, boardArt.faces, true)).setParent(scene);
-  addSolid(boards.backs, artTexture(gl, boardArt.backs, true)).setParent(scene);
+  addSolid(boards.faces, artTexture(gl, boardArt.faces, true)).mesh.setParent(
+    scene
+  );
+  addSolid(boards.backs, artTexture(gl, boardArt.backs, true)).mesh.setParent(
+    scene
+  );
 
   // The sprites, drawn in layers between the goals' nets and frames.
   const atlas = createAtlas(gl);
@@ -385,21 +418,19 @@ export const createGroundPainter = (canvas: HTMLCanvasElement) => {
   goals.forEach((goal, i) => {
     const mesh =
       goal.kind === 'net'
-        ? addSolid(goal.solid, net, { alphaTest: 0.5, seeThrough: true })
-        : addSolid(goal.solid, white, { seeThrough: true });
+        ? addSolid(goal.solid, net, { alphaTest: 0.5, seeThrough: true }).mesh
+        : addSolid(goal.solid, white, { seeThrough: true }).mesh;
     mesh.setParent(scene);
     billboards.meshes[i + 1]!.setParent(scene);
   });
-
-  renderer.render({ camera: sun, scene: castsShadow, target: shadowMap });
 
   const camera = groundCamera(gl);
 
   let crowd: { key: string; sprites: Billboard[] } | undefined;
   const crowdFor = (sides: ClipSides, cheer: boolean) => {
-    const key = `${sides.attack.kit}|${sides.defence.kit}|${sides.attack.home}|${cheer}`;
+    const key = `${sides.attack.kit}|${sides.defence.kit}|${sides.attack.home}|${cheer}|${built}`;
     if (crowd?.key !== key) {
-      crowd = { key, sprites: fans(sides, cheer) };
+      crowd = { key, sprites: fans(sides, laidOut, cheer) };
     }
     return crowd.sprites;
   };
@@ -510,11 +541,7 @@ export const createGroundPainter = (canvas: HTMLCanvasElement) => {
       renderer.setSize(wide, high);
       billboards.setViewport(wide, high);
     }
-    if (view.grass !== mown) {
-      mown = view.grass;
-      paintPitch(pitch, mown);
-      pitchTexture.needsUpdate = true;
-    }
+    build(view.ground);
     const { project, shear: lean } = aimCamera(camera, view);
     shear.value = lean;
     billboards.setShear(lean);

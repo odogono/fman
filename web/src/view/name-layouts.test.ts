@@ -78,9 +78,10 @@ for (const observed of observations.seasons) {
       ...fresh(),
       cash: seasonObservations.initial.m,
       club: (observed.division - 1) * 16 + 8,
-      clubs: fresh().clubs.map(() => ({
+      clubs: fresh().clubs.map((_, i) => ({
         ink: null,
         name: 'ABCDEFGHIJ',
+        origin: i + 1,
         width: 12
       })),
       cupFinished: true,

@@ -8,11 +8,13 @@ import { array, integer, keys, record, text } from './save-checks';
 // under club squads (#113), whose 872 players outside the places are saved too.
 export const saveLimit = 200_000;
 /** The version every save is written with. */
-export const saveVersion = 14;
+export const saveVersion = 15;
 /** The first save version whose journals carry clip lengths (ADR 0013). */
 export const clipsSaveVersion = 12;
 /** The first save version whose journals can turn prompt beeps off (ADR 0015). */
 export const promptBeepsSaveVersion = 14;
+/** The first save version whose clubs keep their place in the catalogue (#273). */
+export const originSaveVersion = 15;
 /** The first save version whose games name their ruleset. */
 export const rulesetSaveVersion = 6;
 /** The first save version whose title-screen journals name their ruleset. */
@@ -95,7 +97,8 @@ export const validGame = (v: unknown): v is Game => {
       64,
       (c, i) =>
         record(c) &&
-        keys(c, [...ruleKeys('club'), 'ink', 'name', 'width']) &&
+        keys(c, [...ruleKeys('club'), 'ink', 'name', 'origin', 'width']) &&
+        integer(c.origin, 1, 64) &&
         rules.every((rule, r) => rule.club?.valid(c, i, v, on[r]!) ?? true) &&
         text(c.name, c.ink === null ? 12 : 10) &&
         (c.ink === null || integer(c.ink, 0, 7)) &&
@@ -104,6 +107,8 @@ export const validGame = (v: unknown): v is Game => {
           c.width === 10 ||
           c.width === 12)
     ) &&
+    new Set((v.clubs as readonly Record<string, unknown>[]).map(c => c.origin))
+      .size === 64 &&
     array(
       v.players,
       24,
@@ -160,10 +165,30 @@ const carries = (v: unknown, rule: RuleData) => {
 };
 
 /**
- * Reads the game from a save of the given version. Saves before version 6
- * predate rulesets, so their games play the original rules.
+ * A game saved before clubs kept their place in the catalogue: each club
+ * without one takes the place it holds now.
  */
-export const savedGame = (v: unknown, version: number): Game | undefined => {
+const withOrigins = (v: unknown) =>
+  record(v) && Array.isArray(v.clubs)
+    ? {
+        ...v,
+        clubs: v.clubs.map((c: unknown, i) =>
+          record(c) && !('origin' in c) ? { ...c, origin: i + 1 } : c
+        )
+      }
+    : v;
+
+/**
+ * Reads the game from a save of the given version. Saves before version 6
+ * predate rulesets, so their games play the original rules; saves before
+ * version 15 predate clubs' places in the catalogue, so each club takes the
+ * place it holds.
+ */
+export const savedGame = (
+  saved: unknown,
+  version: number
+): Game | undefined => {
+  const v = version < originSaveVersion ? withOrigins(saved) : saved;
   // A rule's data never appears in a save older than the rule.
   if (
     rules.some(

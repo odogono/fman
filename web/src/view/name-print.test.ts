@@ -359,6 +359,7 @@ for (const observed of reference.seasonFaults) {
       clubs: initial.clubs.map((_, i) => ({
         ink: null,
         name: decodeName(before.clubs.slice(i * 12, i * 12 + 12)),
+        origin: i + 1,
         width: 12
       })),
       cupFinished: true,

@@ -140,7 +140,7 @@ test('a new enhanced-3 game goes from the level straight to the menu', () => {
   expect(session.view.game!.clubs[63]!.name).toBe('Arsenal');
 });
 
-test('a renamed club keeps its kit and loses its paper', () => {
+test('a renamed club keeps its kit and its place in the catalogue, and loses its paper', () => {
   const game = fresh('enhanced-3');
   const fulham = game.clubs.findIndex(c => c.name === 'Fulham') + 1;
   const renamed = renameClub(game, fulham, 'Cottagers');
@@ -148,6 +148,7 @@ test('a renamed club keeps its kit and loses its paper', () => {
     ink: null,
     kit: { change: 0, home: 7 },
     name: 'Cottagers',
+    origin: game.clubs[fulham - 1]!.origin,
     width: 12
   });
 });

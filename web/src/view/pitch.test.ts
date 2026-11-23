@@ -64,8 +64,8 @@ for (const overlay of glyphs.overlays) {
         attack,
         0,
         [1, 0],
-        { ink: overlay.homeInk, name: 'LIVERPOOL' },
-        { ink: overlay.awayInk, name: 'IPSWICH' }
+        { ink: overlay.homeInk, name: 'LIVERPOOL', origin: 7 },
+        { ink: overlay.awayInk, name: 'IPSWICH', origin: 6 }
       );
       for (const [index, cell] of overlay.cells.entries()) {
         const printed =

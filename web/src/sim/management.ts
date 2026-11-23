@@ -186,6 +186,18 @@ export const createNewGame = (options: {
 };
 
 /**
+ * The division the club in `slot` played in when the game began (#273). A
+ * new game swaps the managed club into the 64th place, in the Fourth
+ * Division, and the club from there into the managed club's place.
+ */
+export const startingDivision = (game: Game, slot: number) => {
+  const { origin } = game.clubs[slot - 1]!;
+  const managed = game.clubs[game.club - 1]!.origin;
+  const start = slot === game.club ? 64 : origin === 64 ? managed : origin;
+  return Math.ceil(start / 16);
+};
+
+/**
  * What the weekly bills charge, at the club's squad, division and loan:
  * wages for every owned player, ground rent and the loan's interest.
  */

@@ -115,12 +115,13 @@ export const renameClub = (game: Game, id: number, text: string): Game => {
   }
   // A renamed club keeps its kit; its name colour is the editor's, as in the
   // original, so any paper goes.
-  const { kit, squad } = game.clubs[id - 1]!;
+  const { kit, origin, squad } = game.clubs[id - 1]!;
   const club = {
     ink,
     ...(kit ? { kit } : {}),
     ...(squad ? { squad } : {}),
     name: decodeName(bytes.slice(start)).replace(/ +$/, ''),
+    origin,
     width: ink === null ? 12 : 10
   };
   return {

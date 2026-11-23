@@ -9,8 +9,10 @@ import {
   shortestCameraAspect,
   tallestCameraAspect,
   type ClipFrame,
+  type ClipGround,
   type ClipSide
 } from './clips';
+import { groundPlan } from './ground/grounds';
 import type { GroundPainter } from './ground/painter';
 import { surround, type GrassPattern } from './ground/pitch';
 
@@ -35,6 +37,8 @@ export type ClipOverlays = Readonly<{
   Readonly<{
     /** The pitch mown in another pattern, for the debug page. */
     grass?: GrassPattern;
+    /** Another club's ground, in the home side's colours, for the debug page. */
+    ground?: Omit<ClipGround, 'seats'>;
     /** The camera at another tilt, for the debug page. */
     tilt?: number;
   }>;
@@ -160,6 +164,22 @@ export const patchFor = (across: number, width: number, height: number) => {
   return { length: wide * aspect, width: wide };
 };
 
+/**
+ * The ground a frame is played at: the home side's, or for a side that
+ * names none, as the debug page's and the recorder's, the first club's in
+ * the home side's colours.
+ */
+const groundFor = (sides: ClipSides, overlays: ClipOverlays) => {
+  const home = sides.defence.home ? sides.defence : sides.attack;
+  const seats = home.ground?.seats ?? home.kit;
+  const plan = groundPlan(
+    overlays.ground
+      ? { ...overlays.ground, seats }
+      : (home.ground ?? { club: 1, division: 1, seats })
+  );
+  return overlays.grass ? { ...plan, grass: overlays.grass } : plan;
+};
+
 /** Paints one frame into a box `width` by `height` CSS pixels. */
 export const paintClip = (
   ctx: CanvasRenderingContext2D,
@@ -226,7 +246,7 @@ export const paintClip = (
   const project =
     painter && !lost
       ? painter.paint(frame, sides, {
-          grass: overlays.grass ?? 'stripes',
+          ground: groundFor(sides, overlays),
           high: Math.ceil((height * ratio) / pixel),
           metresPerPixel: pixel / (scale * ratio),
           tilt: overlays.tilt ?? clipTilt,

@@ -13,4 +13,4 @@ Modern mode's sprite highlights are drawn by the 3D painter of ADR-0017 alone, a
 
 ## Consequences
 
-A browser without WebGL shows no clips and no cup celebration; its matches run at the reduced-motion pace, which ADR-0013 already allows. The clip debugger draws with the 3D painter, so it no longer compares two painters.
+A browser without WebGL shows no clips and no cup celebration; its matches run at the reduced-motion pace, which ADR-0013 already allows. If WebGL is lost during a match, the painter tries to get it back; failing that, the pitch stays blank while the ticker plays on, since the clips' lengths were handed to the match at kick-off. The clip debugger draws with the 3D painter, so it no longer compares two painters.

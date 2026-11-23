@@ -3,6 +3,7 @@ import { expect, test } from 'bun:test';
 import { pitchLength, pitchWidth, type ClipSide } from '../clips';
 import { boardSolids } from './boards';
 import { goalPieces } from './goals';
+import { aimCamera, groundCamera, type GroundView } from './painter';
 import { fans } from './stands';
 
 const side = (kit: string, home = false): ClipSide => ({
@@ -58,4 +59,42 @@ test('the boards ring the pitch beyond the lines', () => {
   expect(Math.max(...zs)).toBeGreaterThan(pitchLength);
   expect(Math.min(...xs)).toBeLessThan(0);
   expect(Math.max(...xs)).toBeGreaterThan(pitchWidth);
+});
+
+/** A 300 by 400 pixel picture of the centre spot, 10 cm to a pixel. */
+const view = (tilt: number, changes: Partial<GroundView> = {}): GroundView => ({
+  grass: 'stripes',
+  high: 400,
+  metresPerPixel: 0.1,
+  tilt,
+  wide: 300,
+  x: pitchWidth / 2,
+  y: pitchLength / 2,
+  ...changes
+});
+
+for (const tilt of [0, 35]) {
+  test(`at ${tilt}°, the picture's centre is the point it looks at, and a metre up rises a metre up the screen`, () => {
+    // The camera works out its matrices without drawing anything.
+    const { project } = aimCamera(groundCamera({} as never), view(tilt));
+    const [x, y] = project(pitchWidth / 2, pitchLength / 2);
+    expect(x).toBeCloseTo(150, 5);
+    expect(y).toBeCloseTo(200, 5);
+    // Further down the pitch is lower in the picture, across is across.
+    const [, below] = project(pitchWidth / 2, pitchLength / 2 + 5);
+    expect(below).toBeGreaterThan(200);
+    const [right] = project(pitchWidth / 2 + 1, pitchLength / 2);
+    expect(right - 150).toBeCloseTo(10, 0);
+    // A head 1 m above the centre spot shows 10 pixels above it.
+    const [, head] = project(pitchWidth / 2, pitchLength / 2, 1);
+    expect(200 - head).toBeCloseTo(10, 0);
+  });
+}
+
+test("a frame's projection stays as it was when the camera moves on", () => {
+  const camera = groundCamera({} as never);
+  const { project } = aimCamera(camera, view(35));
+  const before = project(10, 20);
+  aimCamera(camera, view(0, { x: 5, y: 90 }));
+  expect(project(10, 20)).toEqual(before);
 });

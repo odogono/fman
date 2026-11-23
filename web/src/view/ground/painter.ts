@@ -233,6 +233,47 @@ export type GroundProjection = (
   up?: number
 ) => readonly [number, number];
 
+/** The camera, looking down the pitch with the screen's top to the far end. */
+export const groundCamera = (gl: OGLRenderingContext) => {
+  const camera = new Camera(gl, { far: 1000, fov: fieldOfView, near: 1 });
+  camera.up.set(0, 0, -1);
+  return camera;
+};
+
+/**
+ * Points `camera` at the patch `view` shows. Returns how far heights lean
+ * up the pitch, and where the pitch's points fall in the picture, kept
+ * apart from the camera, which the next frame moves.
+ */
+export const aimCamera = (camera: Camera, view: GroundView) => {
+  const { high, wide } = view;
+  const viewHeight = high * view.metresPerPixel;
+  const distance =
+    viewHeight / 2 / Math.tan(((fieldOfView / 2) * Math.PI) / 180);
+  const angle = (view.tilt * Math.PI) / 180;
+  // A metre of height rises a metre up the screen at any tilt, as the
+  // sprites draw it: what the tilt leaves out is made up by leaning the
+  // heights up the pitch.
+  const shear = (1 - Math.sin(angle)) / Math.cos(angle);
+  const target = new Vec3(view.x, 0, view.y);
+  camera.perspective({
+    aspect: wide / high,
+    far: distance + 400,
+    near: Math.max(1, distance - 150)
+  });
+  camera.position
+    .copy(target)
+    .add(new Vec3(0, Math.cos(angle), Math.sin(angle)).scale(distance));
+  camera.lookAt(target);
+  camera.updateMatrixWorld();
+  const matrix = new Mat4().copy(camera.projectionViewMatrix);
+  const project: GroundProjection = (x, y, up = 0) => {
+    const at = new Vec3(x, up, y - shear * up).applyMatrix4(matrix);
+    return [((at.x + 1) / 2) * wide, ((1 - at.y) / 2) * high];
+  };
+  return { project, shear };
+};
+
 export type GroundPainter = ReturnType<typeof createGroundPainter>;
 
 /** A painter on `canvas`, a WebGL canvas the picture is rendered into. */
@@ -352,8 +393,7 @@ export const createGroundPainter = (canvas: HTMLCanvasElement) => {
 
   renderer.render({ camera: sun, scene: castsShadow, target: shadowMap });
 
-  const camera = new Camera(gl, { far: 1000, fov: fieldOfView, near: 1 });
-  camera.up.set(0, 0, -1);
+  const camera = groundCamera(gl);
 
   let crowd: { key: string; sprites: Billboard[] } | undefined;
   const crowdFor = (sides: ClipSides, cheer: boolean) => {
@@ -475,36 +515,12 @@ export const createGroundPainter = (canvas: HTMLCanvasElement) => {
       paintPitch(pitch, mown);
       pitchTexture.needsUpdate = true;
     }
-    const viewHeight = high * view.metresPerPixel;
-    const distance =
-      viewHeight / 2 / Math.tan(((fieldOfView / 2) * Math.PI) / 180);
-    const angle = (view.tilt * Math.PI) / 180;
-    // A metre of height rises a metre up the screen at any tilt, as the
-    // sprites draw it: what the tilt leaves out is made up by leaning the
-    // heights up the pitch.
-    shear.value = (1 - Math.sin(angle)) / Math.cos(angle);
-    billboards.setShear(shear.value);
-    const target = new Vec3(view.x, 0, view.y);
-    camera.perspective({
-      aspect: wide / high,
-      far: distance + 400,
-      near: Math.max(1, distance - 150)
-    });
-    camera.position
-      .copy(target)
-      .add(new Vec3(0, Math.cos(angle), Math.sin(angle)).scale(distance));
-    camera.lookAt(target);
-
+    const { project, shear: lean } = aimCamera(camera, view);
+    shear.value = lean;
+    billboards.setShear(lean);
     billboards.fill(spritesOf(frame, sides));
     renderer.render({ camera, frustumCull: false, scene, sort: false });
-
-    // Kept apart from the camera, which the next frame moves.
-    const matrix = new Mat4().copy(camera.projectionViewMatrix);
-    const lean = shear.value;
-    return (x, y, up = 0) => {
-      const at = new Vec3(x, up, y - lean * up).applyMatrix4(matrix);
-      return [((at.x + 1) / 2) * wide, ((1 - at.y) / 2) * high];
-    };
+    return project;
   };
 
   return { paint };

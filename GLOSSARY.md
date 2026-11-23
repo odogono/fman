@@ -160,6 +160,10 @@ _Avoid_: Stadium, venue, arena
 The neutral ground, owned by no club and grander than any club's, where the F.A. Cup final's clips and the cup celebration are played.
 _Avoid_: Wembley, cup ground
 
+**Crowd**:
+The fans in a ground's stands. Most wear the kit of the side they favour, some wear the other side's and the rest are neutral. At a club's ground the crowd favours the home side. In the F.A. Cup final's clips it favours neither side, and in the cup celebration it favours the winners. It is made up for show and changes nothing in the game.
+_Avoid_: Fans, supporters, home end
+
 **Scoreboard**:
 The strip above Modern mode's highlights: both clubs, the score and, where the highlights have minutes, the minute of the moment on show.
 _Avoid_: Header, title bar

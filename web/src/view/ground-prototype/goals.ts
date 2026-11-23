@@ -13,8 +13,13 @@ const mouth = 7.32;
 const bar = 2.44;
 /** The posts and bar, three art pixels thick, so they read at any zoom. */
 const thickness = 3 * artPixelMetres;
-/** The net falls from the bar to this height at the back. */
-const backHeight = 1.9;
+/**
+ * The net falls from the bar to this height at the back: low enough that,
+ * with heights drawn up the screen, its back stays short of the boards.
+ */
+const backHeight = 0.8;
+/** The frame's dark outline, an art pixel wide, as the sprites have. */
+const outline = artPixelMetres;
 /** Each square of the net, four art pixels across. */
 const cell = 4 * artPixelMetres;
 
@@ -74,23 +79,31 @@ export const goalPieces = (): GoalPiece[] => {
       )
     ]);
     const half = thickness / 2;
-    const white = '#f4f4f4';
-    const frame = merge([
-      box(
+    // The posts and bar, each drawn over a box one outline larger all
+    // round, so a dark edge shows around the white.
+    const bars: [Point, Point][] = [
+      [
         [left - thickness, 0, line - half],
-        [left, bar + thickness, line + half],
-        white
-      ),
-      box(
+        [left, bar + thickness, line + half]
+      ],
+      [
         [right, 0, line - half],
-        [right + thickness, bar + thickness, line + half],
-        white
-      ),
-      box(
+        [right + thickness, bar + thickness, line + half]
+      ],
+      [
         [left, bar, line - half],
-        [right, bar + thickness, line + half],
-        white
-      )
+        [right, bar + thickness, line + half]
+      ]
+    ];
+    const frame = merge([
+      ...bars.map(([a, b]) =>
+        box(
+          [a[0] - outline, Math.max(0, a[1] - outline), a[2] - outline],
+          [b[0] + outline, b[1] + outline, b[2] + outline],
+          '#141414'
+        )
+      ),
+      ...bars.map(([a, b]) => box(a, b, '#f4f4f4'))
     ]);
     return [
       { kind: 'net', order: back, solid: net },

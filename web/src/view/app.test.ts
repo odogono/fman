@@ -31,6 +31,7 @@ const tickerIn = (view: View) =>
 
 const harness = ({
   autosave,
+  clipsUnpainted = false,
   coarsePointer = false,
   downloadFails = false,
   firstVisit = false,
@@ -39,6 +40,8 @@ const harness = ({
   storageFails = false
 }: {
   autosave?: string;
+  /** The browser can't paint the clips, having no WebGL. */
+  clipsUnpainted?: boolean;
   coarsePointer?: boolean;
   downloadFails?: boolean;
   /** Nothing stored yet, as on a player's first visit. */
@@ -119,6 +122,7 @@ const harness = ({
       page.fit = fit;
     },
     chooseFile: () => page.filesChosen++,
+    clipsUnpainted,
     closeMenu: () => {
       page.menuOpen = false;
     },
@@ -1464,6 +1468,16 @@ test('under reduced motion, Modern mode shows moment highlights as a ticker, new
   run.wait(tickerPause + 10);
   expect(run.view().screen).toBe('result');
   expect(run.page.highlights).toBeUndefined();
+});
+
+test('without WebGL, Modern mode shows moment highlights as a ticker (ADR 0018)', () => {
+  const run = modernMoments({ clipsUnpainted: true });
+  expect(run.ticker().lengths).toBeUndefined();
+  run.wait(1);
+  expect(run.view().screen).toBe('highlights');
+  expect(run.page.highlights!.clip).toBeUndefined();
+  expect(run.page.clips).toEqual([]);
+  expect(run.page.highlights!.ticker!.skip).toBe(true);
 });
 
 test('Modern mode shows the original status facts, and Done returns to the menu', () => {

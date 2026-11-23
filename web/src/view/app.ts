@@ -95,6 +95,11 @@ export type Dom = {
   applyOptions: (options: Options, touch: boolean) => void;
   /** Opens the file picker; a chosen file arrives through `importSave`. */
   chooseFile: () => void;
+  /**
+   * The browser can't paint the clips, having no WebGL (ADR 0018), so the
+   * highlights show the ticker.
+   */
+  readonly clipsUnpainted: boolean;
   closeMenu: () => void;
   /** The page has a touchscreen, as on a phone or tablet. */
   readonly coarsePointer: boolean;
@@ -336,10 +341,10 @@ export const createApp = ({
   /**
    * At kick-off, before the first frame plays, Modern mode works out every
    * clip and hands the sim their lengths (ADR 0013), unless the browser
-   * asks for less motion.
+   * asks for less motion or can't paint them.
    */
   const holdClips = () => {
-    if (!modern() || dom.reducedMotion) {
+    if (!modern() || dom.reducedMotion || dom.clipsUnpainted) {
       return;
     }
     const lengths = clips.kickOff(journal.session.view);

@@ -17,6 +17,6 @@ OGL was chosen because the scene needs so little: a ground plane, a few merged m
 
 ## Consequences
 
-The ground's pieces are built as plain triangles with no library in them (`ground-prototype/solid.ts`). Only the painter touches OGL, so moving to another renderer would mean rewriting the painter alone.
+The ground's pieces are built as plain triangles with no library in them (`web/src/view/ground/solid.ts`). Only the painter touches OGL, so moving to another renderer would mean rewriting the painter alone.
 
 Heights in the 3D ground are leaned up the screen, as the sprites draw them: one metre of height rises one metre up the screen at any tilt. Without this, the goals and stands look squat beside the sprites.

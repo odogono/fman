@@ -9,7 +9,7 @@ import {
 import type { ArtGrid } from '../assets/clip-sprites';
 import { artPixelMetres, rasterise, type ArtPalette } from '../clip-sprites';
 
-// The prototype's sprites (#263): every grid and palette drawn once into one
+// The ground's sprites (#263): every grid and palette drawn once into one
 // atlas, and every sprite in a frame drawn in one call. A billboard stands
 // on its foot point and faces the screen, so it looks as today's sprites do
 // from straight above and stands up as the camera tilts. A decal lies flat
@@ -19,7 +19,10 @@ const atlasSize = 2048;
 
 type Rect = readonly [number, number, number, number];
 
-/** Each grid and palette, rasterised once into a shared texture. */
+/**
+ * Each grid and palette, rasterised once into a shared texture. When it
+ * fills, it starts over empty, and counts another generation.
+ */
 export const createAtlas = (gl: OGLRenderingContext) => {
   const canvas = document.createElement('canvas');
   canvas.width = atlasSize;
@@ -36,6 +39,7 @@ export const createAtlas = (gl: OGLRenderingContext) => {
   let x = 0;
   let y = 0;
   let shelf = 0;
+  let generation = 0;
   const rect = (grid: ArtGrid, palette: ArtPalette, mirrored: boolean) => {
     const key = `${grid.join('/')}|${Object.entries(palette).join()}|${mirrored}`;
     let found = rects.get(key);
@@ -47,7 +51,12 @@ export const createAtlas = (gl: OGLRenderingContext) => {
         shelf = 0;
       }
       if (y + height > atlasSize) {
-        throw new Error('The sprite atlas is full');
+        ctx.clearRect(0, 0, atlasSize, atlasSize);
+        rects.clear();
+        x = 0;
+        y = 0;
+        shelf = 0;
+        generation++;
       }
       ctx.putImageData(new ImageData(data, width, height), x, y);
       found = [
@@ -63,7 +72,7 @@ export const createAtlas = (gl: OGLRenderingContext) => {
     }
     return found;
   };
-  return { rect, texture };
+  return { generation: () => generation, rect, texture };
 };
 
 export type Atlas = ReturnType<typeof createAtlas>;
@@ -230,7 +239,12 @@ export const createLayers = (
     for (const sprite of sprites) {
       split[from.filter(f => sprite.order >= f).length]!.push(sprite);
     }
+    const before = atlas.generation();
     layers.forEach((layer, i) => layer.fill(split[i]!));
+    // The atlas started over part way, so the sprites before are gone.
+    if (atlas.generation() !== before) {
+      layers.forEach((layer, i) => layer.fill(split[i]!));
+    }
   };
   const setViewport = (width: number, height: number) => {
     for (const layer of layers) {

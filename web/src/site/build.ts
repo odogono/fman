@@ -68,7 +68,9 @@ export const buildSite = async ({
       entrypoints: [join(web, 'index.html')],
       minify: true,
       outdir,
-      publicPath: base
+      publicPath: base,
+      // The clips' 3D ground loads apart, when the first clip plays.
+      splitting: true
     })
   );
   for (const icon of icons) {

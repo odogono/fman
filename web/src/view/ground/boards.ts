@@ -1,6 +1,5 @@
 import { boardArt } from '../assets/clip-sprites';
 import { artPixelMetres, rasterise, type ArtPalette } from '../clip-sprites';
-import { boardBackPalette, boardPalette } from '../clip-stadium';
 import { boardMetres, pitchLength, pitchWidth } from '../clips';
 import { distance, merge, quad, type Point, type Solid } from './solid';
 import { place, type Side } from './stands';
@@ -18,6 +17,20 @@ const height = boardArt.length * artPixelMetres;
 const run = boardArt[0]!.length * artPixelMetres;
 /** How far each side's face leans back from upright, in degrees. */
 const lean: Record<Side, number> = { bottom: 20, left: 60, right: 60, top: 20 };
+
+/** The boards' panels: plain colours and shapes, like no flag or brand. */
+const boardPalette: ArtPalette = {
+  '1': '#d72828',
+  '2': '#fac81e',
+  '3': '#1e5adc',
+  '4': '#28bee6',
+  o: '#141414',
+  w: '#f4f4f4'
+};
+/** The boards' backs, greyed. */
+const boardBackPalette: ArtPalette = Object.fromEntries(
+  Object.keys(boardPalette).map(k => [k, k === 'o' ? '#141414' : '#5a5a5a'])
+);
 
 const artCanvas = (palette: ArtPalette) => {
   const { data, height: high, width } = rasterise(boardArt, palette);

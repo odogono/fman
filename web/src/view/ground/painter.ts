@@ -1,6 +1,7 @@
 import {
   Camera,
   Geometry,
+  Mat4,
   Mesh,
   Program,
   RenderTarget,
@@ -12,12 +13,9 @@ import {
 } from 'ogl';
 
 import { cupArt, shadowArt } from '../assets/clip-sprites';
-import { markings, surround, type ClipSides } from '../clip-canvas';
-import { drawCard, drawLabel, overlayUnit } from '../clip-card';
-import { drawGoal } from '../clip-goal';
+import type { ClipSides } from '../clip-canvas';
 import {
   artPixelMetres,
-  artPixelSize,
   ballHeld,
   ballLiftMetres,
   ballSprite,
@@ -26,23 +24,26 @@ import {
   looksFor,
   playerPalette,
   spriteFor,
-  statusSprite
+  statusSprite,
+  type ArtPalette
 } from '../clip-sprites';
-import { shadowPalette } from '../clip-stadium';
 import { pitchLength, pitchWidth, type ClipFrame } from '../clips';
 import { createAtlas, createLayers, type Billboard } from './billboards';
 import { boardCanvases, boardSolids } from './boards';
 import { goalPieces, netCanvas } from './goals';
-import { mowPitch, type GrassPattern } from './grass';
+import { markings, mowPitch, surround, type GrassPattern } from './pitch';
 import { towardsSun, type Solid } from './solid';
 import { fans, standsSolid } from './stands';
 
-// The prototype's painter (#263): a clip's frame drawn over a 3D ground
-// with OGL. The ground, the stands, the boards and the goals are geometry,
-// lit by a sun that casts their shadows across the pitch; the players, the
-// ball and the fans are today's sprites, standing on their points. The
-// scene is rendered at one pixel to an art pixel and scaled up in whole
-// pixels, so it reads as the same art.
+// The ground's painter (#263, ADR 0018): a clip's frame drawn over a 3D
+// ground with OGL. The ground, the stands, the boards and the goals are
+// geometry, lit by a sun that casts their shadows across the pitch; the
+// players, the ball and the fans are sprites, standing on their points. The
+// scene is rendered at one pixel to an art pixel, for the clip's canvas to
+// scale up in whole pixels, so it reads as pixel art.
+
+/** Shadows darken what they fall on, every other pixel. */
+const shadowPalette: ArtPalette = { x: '#000000a0' };
 
 /** The camera's field of view, top to bottom: narrow, so near-flat. */
 const fieldOfView = 20;
@@ -209,17 +210,74 @@ const groundFragment = /* glsl */ `
   }
 `;
 
-export type GroundView = ReturnType<typeof createGroundView>;
+/** How a frame is seen: where, at what size, and from what tilt. */
+export type GroundView = Readonly<{
+  /** The pitch mown in this pattern. */
+  grass: GrassPattern;
+  /** The render's size in pixels, one to an art pixel. */
+  high: number;
+  /** Metres on the ground to each pixel, at the picture's centre. */
+  metresPerPixel: number;
+  /** The camera's angle from straight down, in degrees, from behind the bottom goal. */
+  tilt: number;
+  wide: number;
+  /** The point on the pitch at the picture's centre, in metres. */
+  x: number;
+  y: number;
+}>;
+
+/** A point on the pitch, `up` metres above it, in the render's pixels from its top left. */
+export type GroundProjection = (
+  x: number,
+  y: number,
+  up?: number
+) => readonly [number, number];
+
+/** The camera, looking down the pitch with the screen's top to the far end. */
+export const groundCamera = (gl: OGLRenderingContext) => {
+  const camera = new Camera(gl, { far: 1000, fov: fieldOfView, near: 1 });
+  camera.up.set(0, 0, -1);
+  return camera;
+};
 
 /**
- * A 3D painter on `canvas`, with a 2D `overlay` over it for the card, the
- * label and the goal announcement. `tilt` is the camera's angle from
- * straight down, in degrees, leaning back towards the bottom of the screen.
+ * Points `camera` at the patch `view` shows. Returns how far heights lean
+ * up the pitch, and where the pitch's points fall in the picture, kept
+ * apart from the camera, which the next frame moves.
  */
-export const createGroundView = (
-  canvas: HTMLCanvasElement,
-  overlay: HTMLCanvasElement
-) => {
+export const aimCamera = (camera: Camera, view: GroundView) => {
+  const { high, wide } = view;
+  const viewHeight = high * view.metresPerPixel;
+  const distance =
+    viewHeight / 2 / Math.tan(((fieldOfView / 2) * Math.PI) / 180);
+  const angle = (view.tilt * Math.PI) / 180;
+  // A metre of height rises a metre up the screen at any tilt, as the
+  // sprites draw it: what the tilt leaves out is made up by leaning the
+  // heights up the pitch.
+  const shear = (1 - Math.sin(angle)) / Math.cos(angle);
+  const target = new Vec3(view.x, 0, view.y);
+  camera.perspective({
+    aspect: wide / high,
+    far: distance + 400,
+    near: Math.max(1, distance - 150)
+  });
+  camera.position
+    .copy(target)
+    .add(new Vec3(0, Math.cos(angle), Math.sin(angle)).scale(distance));
+  camera.lookAt(target);
+  camera.updateMatrixWorld();
+  const matrix = new Mat4().copy(camera.projectionViewMatrix);
+  const project: GroundProjection = (x, y, up = 0) => {
+    const at = new Vec3(x, up, y - shear * up).applyMatrix4(matrix);
+    return [((at.x + 1) / 2) * wide, ((1 - at.y) / 2) * high];
+  };
+  return { project, shear };
+};
+
+export type GroundPainter = ReturnType<typeof createGroundPainter>;
+
+/** A painter on `canvas`, a WebGL canvas the picture is rendered into. */
+export const createGroundPainter = (canvas: HTMLCanvasElement) => {
   const renderer = new Renderer({ antialias: false, canvas, dpr: 1 });
   const { gl } = renderer;
   const [r, g, b] = [1, 3, 5].map(
@@ -252,7 +310,8 @@ export const createGroundView = (
   const castsShadow = new Transform();
 
   const scene = new Transform();
-  const pitch = paintPitch(document.createElement('canvas'), 'stripes');
+  let mown: GrassPattern = 'stripes';
+  const pitch = paintPitch(document.createElement('canvas'), mown);
   const pitchTexture = artTexture(gl, pitch);
   const ground = new Mesh(gl, {
     frustumCulled: false,
@@ -334,8 +393,7 @@ export const createGroundView = (
 
   renderer.render({ camera: sun, scene: castsShadow, target: shadowMap });
 
-  const camera = new Camera(gl, { far: 1000, fov: fieldOfView, near: 1 });
-  camera.up.set(0, 0, -1);
+  const camera = groundCamera(gl);
 
   let crowd: { key: string; sprites: Billboard[] } | undefined;
   const crowdFor = (sides: ClipSides, cheer: boolean) => {
@@ -347,54 +405,16 @@ export const createGroundView = (
   };
 
   let size = { height: 0, width: 0 };
-  let drawn = 0;
 
-  const paint = (
-    frame: ClipFrame,
-    sides: ClipSides,
-    box: Readonly<{ height: number; ratio: number; width: number }>,
-    tilt: number,
-    oblique = true
-  ) => {
-    const { height, ratio, width } = box;
-    // Whole device pixels to an art pixel, as today's clips.
-    const scale = width / frame.camera.width;
-    const pixel = artPixelSize(scale, ratio);
-    const wide = Math.ceil((width * ratio) / pixel);
-    const high = Math.ceil((height * ratio) / pixel);
-    if (size.width !== wide || size.height !== high) {
-      size = { height: high, width: wide };
-      renderer.setSize(wide, high);
-      canvas.style.width = `${(wide * pixel) / ratio}px`;
-      canvas.style.height = `${(high * pixel) / ratio}px`;
-      billboards.setViewport(wide, high);
-    }
-    const metresPerPixel = pixel / (scale * ratio);
-    const viewHeight = high * metresPerPixel;
-    const distance =
-      viewHeight / 2 / Math.tan(((fieldOfView / 2) * Math.PI) / 180);
-    const angle = (tilt * Math.PI) / 180;
-    // A metre of height rises a metre up the screen at any tilt, as the
-    // sprites draw it: what the tilt leaves out is made up by leaning the
-    // heights up the pitch.
-    shear.value = oblique ? (1 - Math.sin(angle)) / Math.cos(angle) : 0;
-    billboards.setShear(shear.value);
-    const target = new Vec3(frame.camera.x, 0, frame.camera.y);
-    camera.perspective({
-      aspect: wide / high,
-      far: distance + 400,
-      near: Math.max(1, distance - 150)
-    });
-    camera.position
-      .copy(target)
-      .add(new Vec3(0, Math.cos(angle), Math.sin(angle)).scale(distance));
-    camera.lookAt(target);
-
+  /** The frame's sprites: the crowd, the players, the ball and the cup. */
+  const spritesOf = (frame: ClipFrame, sides: ClipSides) => {
     const sprites: Billboard[] = [...crowdFor(sides, frame.cheer ?? false)];
     const { ball } = frame;
     const lift = ball.height * ballLiftMetres;
+    // A ball is held, or, in the cup celebration, put away.
     const held = Boolean(frame.trophy) || ballHeld(frame.players, ball);
     const attackers = sides.attack.players.length;
+    // Shadows first, lit from the top left, so everything stands on them.
     for (const player of frame.players) {
       sprites.push({
         flat: true,
@@ -441,6 +461,7 @@ export const createGroundView = (
       }
     });
     if (frame.trophy) {
+      // Just in front of whoever holds it, so the hands stay behind the cup.
       sprites.push({
         grid: cupArt,
         lift: frame.trophy.raise / artPixelMetres,
@@ -461,6 +482,7 @@ export const createGroundView = (
         z: ball.y
       });
     }
+    // Confetti over everything, two art pixels square a speck.
     for (const speck of frame.confetti ?? []) {
       sprites.push({
         grid: ['cc', 'cc'],
@@ -470,45 +492,36 @@ export const createGroundView = (
         z: speck.y
       });
     }
-    billboards.fill(sprites);
-    // Every piece of the scene is a mesh, drawn in one call.
-    drawn = scene.children.filter(node => node.visible).length;
+    return sprites;
+  };
+
+  /**
+   * Renders `frame` as `view` sees it into the canvas, and returns where
+   * the pitch's points fall in the picture.
+   */
+  const paint = (
+    frame: ClipFrame,
+    sides: ClipSides,
+    view: GroundView
+  ): GroundProjection => {
+    const { high, wide } = view;
+    if (size.width !== wide || size.height !== high) {
+      size = { height: high, width: wide };
+      renderer.setSize(wide, high);
+      billboards.setViewport(wide, high);
+    }
+    if (view.grass !== mown) {
+      mown = view.grass;
+      paintPitch(pitch, mown);
+      pitchTexture.needsUpdate = true;
+    }
+    const { project, shear: lean } = aimCamera(camera, view);
+    shear.value = lean;
+    billboards.setShear(lean);
+    billboards.fill(spritesOf(frame, sides));
     renderer.render({ camera, frustumCull: false, scene, sort: false });
-
-    // The card, the label and the goal announcement, flat over the picture.
-    overlay.width = Math.round(width * ratio);
-    overlay.height = Math.round(height * ratio);
-    const ctx = overlay.getContext('2d')!;
-    ctx.imageSmoothingEnabled = false;
-    const unit = overlayUnit(overlay.width);
-    if (frame.label) {
-      const at = new Vec3(frame.label.x, 0, frame.label.y).applyMatrix4(
-        camera.projectionViewMatrix
-      );
-      const x = ((at.x + 1) / 2) * size.width * pixel;
-      const y = ((1 - at.y) / 2) * size.height * pixel - 26 * pixel;
-      drawLabel(ctx, frame.label.text, x, y, unit);
-    }
-    if (frame.card) {
-      drawCard(ctx, frame.card, sides.attack.kit, unit);
-    }
-    if (frame.goal) {
-      drawGoal(
-        ctx,
-        frame.goal,
-        sides.attack.kit,
-        unit,
-        Math.ceil(overlay.width / unit),
-        Math.ceil(overlay.height / unit)
-      );
-    }
+    return project;
   };
 
-  /** Mows the pitch in another pattern. */
-  const setGrass = (pattern: GrassPattern) => {
-    paintPitch(pitch, pattern);
-    pitchTexture.needsUpdate = true;
-  };
-
-  return { calls: () => drawn, paint, scene, setGrass };
+  return { paint };
 };

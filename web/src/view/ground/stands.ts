@@ -1,15 +1,23 @@
 import { playerArt, type ArtGrid } from '../assets/clip-sprites';
 import { artPixelMetres, looksFor, playerPalette } from '../clip-sprites';
-import { terraceFrom } from '../clip-stadium';
-import { hashSeed, pitchLength, pitchWidth, type ClipSide } from '../clips';
+import {
+  boardMetres,
+  hashSeed,
+  pitchLength,
+  pitchWidth,
+  type ClipSide
+} from '../clips';
 import type { Billboard } from './billboards';
 import { box, merge, type Point, type Solid } from './solid';
 
-// The prototype's one ground (#263), from a fixed layout rather than a
-// club's seed: a tall covered stand along the left touchline facing a low
+// The stands (#263), from one fixed layout for every ground until each
+// club has its own (#273): a tall covered stand along the left touchline facing a low
 // open terrace along the right, with open terraces behind each goal. The
 // stands are blocks of concrete in metres; the fans stand on their steps
 // as sprites.
+
+/** Where the stands' concrete begins, beyond the boards, in metres. */
+const terraceFrom = boardMetres + 0.6;
 
 export type Side = 'bottom' | 'left' | 'right' | 'top';
 

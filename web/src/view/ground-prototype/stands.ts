@@ -18,7 +18,7 @@ type Stand = Readonly<{
   colour: string;
   /** How far each step rises above the one in front, in metres. */
   riser: number;
-  /** A roof this far above the top step, carried on posts at the front. */
+  /** A roof this far above the top step, over the back half of the rows. */
   roof?: number;
   /** How deep each step is, from front to back. */
   rowDepth: number;
@@ -93,23 +93,17 @@ export const standsSolid = (): Solid => {
       )
     );
     if (stand.roof) {
+      // A cantilevered roof over the back rows only, so the front rows'
+      // fans still show from above.
       const height = top + stand.roof;
+      const front = terraceFrom + (stand.rows * stand.rowDepth) / 2;
       blocks.push(
         box(
-          place(stand.side, terraceFrom - 0.4, from - 0.5, height),
+          place(stand.side, front, from - 0.5, height),
           place(stand.side, back + 0.4, to + 0.5, height + 0.3),
           '#6f7a86'
         )
       );
-      for (let along = from + 6; along < to; along += 18) {
-        blocks.push(
-          box(
-            place(stand.side, terraceFrom, along - 0.15, 0),
-            place(stand.side, terraceFrom + 0.3, along + 0.15, height),
-            '#d0d0d0'
-          )
-        );
-      }
     }
   }
   return merge(blocks);

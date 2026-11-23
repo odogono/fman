@@ -1,36 +1,42 @@
 import { expect, test } from 'bun:test';
 
-import { pitchLength, pitchWidth, type ClipSide } from '../clips';
+import { pitchLength, pitchWidth } from '../clips';
+import { clubGround, evenly, favouring } from '../match-ground';
 import { boardSolids } from './boards';
 import { goalPieces } from './goals';
 import { groundPlan, type GroundPlan } from './grounds';
 import { aimCamera, groundCamera, type GroundView } from './painter';
 import { fans } from './stands';
 
-const side = (kit: string, home = false): ClipSide => ({
-  ...(home ? { home: true } : {}),
-  keeper: '#ff8c1a',
-  kit,
-  players: []
-});
-const sides = { attack: side('#0000d7'), defence: side('#d70000', true) };
+const home = '#d70000';
+const away = '#0000d7';
+const homeCrowd = favouring(home, away);
 const plan = (club: number, division = 1, seats = '#d70000'): GroundPlan =>
   groundPlan({ club, division, seats });
 const { stands } = plan(1);
 const clubs = Array.from({ length: 64 }, (_, i) => i + 1);
 
-test('most of the crowd wears the home kit, whichever side attacks', () => {
-  const crowd = fans(sides, stands, false);
-  const home = crowd.filter(p => p.palette.s === '#d70000').length;
-  const away = crowd.filter(p => p.palette.s === '#0000d7').length;
-  expect(home / crowd.length).toBeGreaterThan(0.6);
-  expect(away).toBeGreaterThan(0);
-  expect(away).toBeLessThan(home);
+const wearing = (crowd: ReturnType<typeof fans>, kit: string) =>
+  crowd.filter(p => p.palette.s === kit).length;
+
+test('most of a crowd wears the kit of the side it favours', () => {
+  const crowd = fans(homeCrowd, stands);
+  expect(wearing(crowd, home) / crowd.length).toBeGreaterThan(0.6);
+  expect(wearing(crowd, away)).toBeGreaterThan(0);
+  expect(wearing(crowd, away)).toBeLessThan(wearing(crowd, home));
+});
+
+test('a crowd favouring neither side wears both kits about as much', () => {
+  const crowd = fans(evenly(home, away), stands);
+  for (const kit of [home, away]) {
+    expect(wearing(crowd, kit) / crowd.length).toBeGreaterThan(0.3);
+    expect(wearing(crowd, kit) / crowd.length).toBeLessThan(0.5);
+  }
 });
 
 test("after a goal the scorers' fans stand and cheer, and the others stay seated", () => {
-  const seated = fans(sides, stands, false);
-  const cheering = fans(sides, stands, true);
+  const seated = fans(homeCrowd, stands);
+  const cheering = fans(homeCrowd, stands, away);
   const changed = (kit: string) =>
     seated.filter(
       (p, i) =>
@@ -68,7 +74,7 @@ test('the boards ring the pitch beyond the lines', () => {
 
 /** A 300 by 400 pixel picture of the centre spot, 10 cm to a pixel. */
 const view = (tilt: number, changes: Partial<GroundView> = {}): GroundView => ({
-  ground: plan(1),
+  ground: clubGround({ club: 1, division: 1, seats: home }, homeCrowd),
   high: 400,
   metresPerPixel: 0.1,
   tilt,

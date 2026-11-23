@@ -1,5 +1,5 @@
 import { fixtureSides, type MatchFixture } from '../sim/league';
-import { startingDivision, type Game, type Player } from '../sim/management';
+import { type Game, type Player } from '../sim/management';
 import { matchInks } from '../sim/matchday';
 import type { Moment } from '../sim/moments';
 import type { Position, SquadPlayer } from '../sim/squads';
@@ -212,6 +212,15 @@ export const opponentEleven = (
     .slice(0, 11);
 };
 
+/** Both kits' colours in a match, home first. */
+export type MatchKits = Readonly<{ away: string; home: string }>;
+
+/** Both kits' colours in `fixture`, as the clips dress the sides. */
+export const matchKits = (game: Game, fixture: MatchFixture): MatchKits => {
+  const inks = matchInks(game, fixture);
+  return { away: inkColours[inks.away]!, home: inkColours[inks.home]! };
+};
+
 /** A club without a squad of its own fields 11 in a 4-4-2, unnamed. */
 const unnamedEleven: readonly Position[] = [
   'GK',
@@ -253,9 +262,7 @@ const sidesFor = (
   moment?: Moment,
   off: ReadonlySet<number> = new Set()
 ): Sides => {
-  const inks = matchInks(game, fixture);
-  const homeKit = inkColours[inks.home]!;
-  const awayKit = inkColours[inks.away]!;
+  const { away: awayKit, home: homeKit } = matchKits(game, fixture);
   const keepers = keeperColoursFor(homeKit, awayKit);
   const picked = pickedTeam(game).filter(p => !off.has(p.id));
   const clubShooter =
@@ -304,21 +311,13 @@ const sidesFor = (
         moment?.side === 'opponent' ? 10 : -1
       );
   const clubSide = (fixture.home ? 'home' : 'away') as 'away' | 'home';
-  const homeSlot = fixture.home ? game.club : fixture.opponent;
-  const ground = {
-    club: game.clubs[homeSlot - 1]!.origin,
-    division: startingDivision(game, homeSlot),
-    seats: homeKit
-  };
   const sides = {
     club: {
-      ...(clubSide === 'home' ? { ground, home: true } : {}),
       keeper: keepers[clubSide],
       kit: clubSide === 'home' ? homeKit : awayKit,
       players: club
     },
     opponent: {
-      ...(clubSide === 'home' ? {} : { ground, home: true }),
       keeper: keepers[clubSide === 'home' ? 'away' : 'home'],
       kit: clubSide === 'home' ? awayKit : homeKit,
       players: opponent
@@ -435,8 +434,7 @@ export const stillFrameFor = (
 
 /**
  * The cup celebration's sides: the managed club, who won the final, and the
- * opponent, each in the kit they wore in it, at the ground the final was
- * played at. The winners' fans fill most of the stands, as a home side's do.
+ * opponent, each in the kit they wore in it.
  */
 export const celebrationSidesFor = (
   game: Game,
@@ -444,13 +442,7 @@ export const celebrationSidesFor = (
 ): CelebrationSides => {
   const { away, home } = sidesFor(game, fixture);
   const [winners, losers] = fixture.home ? [home, away] : [away, home];
-  const { ground: _ground, home: _home, ...visitors } = losers;
-  // The final's ground stays the home side's, whoever won it.
-  const { ground } = home;
-  return {
-    losers: visitors,
-    winners: { ...winners, ...(ground ? { ground } : {}), home: true }
-  };
+  return { losers, winners };
 };
 
 /** The club names for the debug page's readout. */

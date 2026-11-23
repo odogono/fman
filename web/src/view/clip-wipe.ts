@@ -1,6 +1,6 @@
 import { paintClip, type ClipOverlays, type ClipSides } from './clip-canvas';
 import { overlayUnit } from './clip-card';
-import { colourDistance } from './clip-match';
+import { colourDistance, type MatchKits } from './clip-match';
 import {
   kickOffFrame,
   wipeFrames,
@@ -8,14 +8,25 @@ import {
   type ClipScript,
   type ClipSide
 } from './clips';
+import type { MatchGround } from './match-ground';
 
 // The wipe between the highlights' pictures: thin diagonal stripes in both
 // kits sweep across from the left, the next picture showing behind them. It
 // plays over the last 0.4 s of one picture and the first 0.4 s of the next,
 // so the clips keep their lengths and the sim its timer (ADR 0013).
 
-/** One picture of the highlights: a clip's frame, or a still, and its sides. */
-export type ClipPicture = Readonly<{ frame: ClipFrame; sides: ClipSides }>;
+/**
+ * Where a match's pictures are played: its ground, and both kits, home
+ * first, for the wipe's stripes.
+ */
+export type ClipSetting = Readonly<{ ground: MatchGround; kits: MatchKits }>;
+
+/**
+ * One picture of the highlights: a clip's frame, or a still, its sides and
+ * where it is played.
+ */
+export type ClipPicture = ClipSetting &
+  Readonly<{ frame: ClipFrame; sides: ClipSides }>;
 
 /**
  * A wipe under way: the picture going out (`from`) when the shot is the one
@@ -48,12 +59,14 @@ export type ClipStage = Readonly<{
  */
 export const clipStage = (
   script: ClipScript,
+  setting: ClipSetting,
   length = script.length
 ): ClipStage => {
   const sides = { attack: script.input.attack, defence: script.input.defence };
   return {
     length,
     picture: at => ({
+      ...setting,
       frame: script.frame(Math.min(at, script.length - 1)),
       sides
     })
@@ -67,11 +80,14 @@ export const clipStage = (
 export const stillStage = (
   home: ClipSide,
   away: ClipSide,
+  ground: MatchGround,
   caption: string,
   length: number
 ): ClipStage => {
   const picture = {
     frame: kickOffFrame(home, away, caption),
+    ground,
+    kits: { away: away.kit, home: home.kit },
     sides: { attack: home, defence: away }
   };
   return { length, picture: () => picture };
@@ -172,12 +188,12 @@ export const paintShot = (
 ) => {
   const { wipe } = shot;
   if (!wipe) {
-    paintClip(ctx, shot.frame, shot.sides, size, overlays);
+    paintClip(ctx, shot.frame, shot.sides, shot.ground, size, overlays);
     return;
   }
   const out = wipe.from ?? shot;
   const next = wipe.to ?? shot;
-  paintClip(ctx, out.frame, out.sides, size, overlays);
+  paintClip(ctx, out.frame, out.sides, out.ground, size, overlays);
   const deviceWidth = Math.round(size.width * size.ratio);
   const deviceHeight = Math.round(size.height * size.ratio);
   const unit = overlayUnit(deviceWidth);
@@ -195,18 +211,10 @@ export const paintShot = (
     }
   });
   ctx.clip();
-  paintClip(ctx, next.frame, next.sides, size, overlays);
+  paintClip(ctx, next.frame, next.sides, next.ground, size, overlays);
   ctx.restore();
-  const { attack, defence } = next.sides;
-  const home = defence.home ? defence : attack;
-  const away = home === attack ? defence : attack;
-  const colours = [
-    ink,
-    home.kit,
-    middleStripe(home.kit, away.kit),
-    away.kit,
-    ink
-  ];
+  const { away, home } = next.kits;
+  const colours = [ink, home, middleStripe(home, away), away, ink];
   ctx.save();
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   lines.forEach(({ stripes }, row) => {

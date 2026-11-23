@@ -9,8 +9,9 @@ import {
   type ClipStage
 } from './clip-wipe';
 import { kickOffFrame, wipeFrames, type ClipSide } from './clips';
+import { clubGround, favouring } from './match-ground';
 
-const home: ClipSide = { home: true, keeper: '#000', kit: '#c00', players: [] };
+const home: ClipSide = { keeper: '#000', kit: '#c00', players: [] };
 const away: ClipSide = { keeper: '#000', kit: '#00c', players: [] };
 
 /** A stage whose pictures are captioned with the stage and the frame. */
@@ -18,6 +19,11 @@ const stage = (length: number, tag: number): ClipStage => ({
   length,
   picture: at => ({
     frame: kickOffFrame(home, away, `${tag}:${at}`),
+    ground: clubGround(
+      { club: 1, division: 1, seats: home.kit },
+      favouring(home.kit, away.kit)
+    ),
+    kits: { away: away.kit, home: home.kit },
     sides: { attack: home, defence: away }
   })
 });

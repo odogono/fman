@@ -28,6 +28,7 @@ import {
   type ArtPalette
 } from '../clip-sprites';
 import { pitchLength, pitchWidth, type ClipFrame } from '../clips';
+import type { MatchGround } from '../match-ground';
 import { createAtlas, createLayers, type Billboard } from './billboards';
 import { boardCanvases, boardSolids } from './boards';
 import { goalPieces, netCanvas } from './goals';
@@ -213,8 +214,8 @@ const groundFragment = /* glsl */ `
 
 /** How a frame is seen: where, at what size, and from what tilt. */
 export type GroundView = Readonly<{
-  /** The ground the frame is played at. */
-  ground: GroundPlan;
+  /** The ground the frame is played at, and its crowd. */
+  ground: MatchGround;
   /** The render's size in pixels, one to an art pixel. */
   high: number;
   /** Metres on the ground to each pixel, at the picture's centre. */
@@ -372,15 +373,13 @@ export const createGroundPainter = (canvas: HTMLCanvasElement) => {
   const standsHolder = new Transform();
   standsHolder.setParent(scene);
   let stands: ReturnType<typeof addSolid> | undefined;
-  let built = '';
-  let laidOut: GroundPlan['stands'] = [];
+  // A ground's plan is made once, so another plan is another ground.
+  let built: GroundPlan | undefined;
   const build = (plan: GroundPlan) => {
-    const key = JSON.stringify(plan);
-    if (key === built) {
+    if (plan === built) {
       return;
     }
-    built = key;
-    laidOut = plan.stands;
+    built = plan;
     if (stands) {
       standsHolder.removeChild(stands.mesh);
       castsShadow.removeChild(stands.shadow);
@@ -426,20 +425,34 @@ export const createGroundPainter = (canvas: HTMLCanvasElement) => {
 
   const camera = groundCamera(gl);
 
-  let crowd: { key: string; sprites: Billboard[] } | undefined;
-  const crowdFor = (sides: ClipSides, cheer: boolean) => {
-    const key = `${sides.attack.kit}|${sides.defence.kit}|${sides.attack.home}|${cheer}|${built}`;
-    if (crowd?.key !== key) {
-      crowd = { key, sprites: fans(sides, laidOut, cheer) };
+  let crowd:
+    | {
+        cheering: string | undefined;
+        ground: MatchGround;
+        sprites: Billboard[];
+      }
+    | undefined;
+  /** The fans, the scorers' (`cheering`) and the neutrals on their feet. */
+  const crowdFor = (ground: MatchGround, cheering?: string) => {
+    if (crowd?.ground === ground && crowd.cheering === cheering) {
+      return crowd.sprites;
     }
-    return crowd.sprites;
+    const sprites = fans(ground.crowd, ground.plan.stands, cheering);
+    crowd = { cheering, ground, sprites };
+    return sprites;
   };
 
   let size = { height: 0, width: 0 };
 
   /** The frame's sprites: the crowd, the players, the ball and the cup. */
-  const spritesOf = (frame: ClipFrame, sides: ClipSides) => {
-    const sprites: Billboard[] = [...crowdFor(sides, frame.cheer ?? false)];
+  const spritesOf = (
+    frame: ClipFrame,
+    sides: ClipSides,
+    ground: MatchGround
+  ) => {
+    const sprites: Billboard[] = [
+      ...crowdFor(ground, frame.cheer ? sides.attack.kit : undefined)
+    ];
     const { ball } = frame;
     const lift = ball.height * ballLiftMetres;
     // A ball is held, or, in the cup celebration, put away.
@@ -541,11 +554,11 @@ export const createGroundPainter = (canvas: HTMLCanvasElement) => {
       renderer.setSize(wide, high);
       billboards.setViewport(wide, high);
     }
-    build(view.ground);
+    build(view.ground.plan);
     const { project, shear: lean } = aimCamera(camera, view);
     shear.value = lean;
     billboards.setShear(lean);
-    billboards.fill(spritesOf(frame, sides));
+    billboards.fill(spritesOf(frame, sides, view.ground));
     renderer.render({ camera, frustumCull: false, scene, sort: false });
     return project;
   };

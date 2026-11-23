@@ -1,11 +1,10 @@
 import { expect, test } from 'bun:test';
 
 import type { MatchFixture } from '../sim/league';
-import { createNewGame, type Game, type Player } from '../sim/management';
+import { type Game, type Player } from '../sim/management';
 import type { Moment } from '../sim/moments';
 import type { Position, SquadPlayer } from '../sim/squads';
 import {
-  celebrationSidesFor,
   clipInputFor,
   clipScriptsFor,
   colourDistance,
@@ -14,8 +13,7 @@ import {
   keeperColours,
   keeperColoursFor,
   matchLineUps,
-  opponentEleven,
-  stillFrameFor
+  opponentEleven
 } from './clip-match';
 import { createClipScript } from './clips';
 
@@ -421,44 +419,4 @@ test('the line-ups field the picked team and the opponent’s eleven, with anyon
   ).away.players;
   expect(shape.map(p => p.position).join('')).toBe('GKDFDFDFDFMFMFMFMFFWFW');
   expect(shape.every(p => p.name === '')).toBe(true);
-});
-
-const at = (home: boolean, opponent: number) =>
-  ({
-    home,
-    opponent,
-    opponentStrength: [7, 10, 10, 10, 10]
-  }) as unknown as MatchFixture;
-
-test("a match is played at the home club's ground, sized by the division it began in, its seats in the home kit", () => {
-  // Club 6 began in the First Division, so is managed from the Fourth; the
-  // club from the 64th place took its place.
-  const game = createNewGame({
-    club: 6,
-    colour: 0,
-    level: 1,
-    manager: 'alex',
-    seed: 1
-  });
-  const { sides } = stillFrameFor(game, at(true, 1), 'Kick-off');
-  expect(sides.attack.ground).toEqual({
-    club: 6,
-    division: 4,
-    seats: sides.attack.kit
-  });
-  expect(sides.defence.ground).toBeUndefined();
-  const away = stillFrameFor(game, at(false, 6), 'Kick-off').sides;
-  expect(away.attack.ground).toEqual({
-    club: 64,
-    division: 1,
-    seats: away.attack.kit
-  });
-  // Winning the final away, the club celebrates at the home side's ground.
-  const won = celebrationSidesFor(game, at(false, 2));
-  expect(won.winners.ground).toEqual({
-    club: 2,
-    division: 1,
-    seats: inkColours[7]!
-  });
-  expect(won.losers.ground).toBeUndefined();
 });

@@ -240,13 +240,11 @@ const tick = (now: number) => {
   scrubber.value = String(Math.floor(at));
   const frame = paint();
   frameLabel.textContent = `${Math.floor(at)} / ${script.length - 1} · ${frame.phase}`;
-  const info = ground.info();
   const fps = 1000 / average(frameTimes);
   stats.textContent = [
     `fps          ${fps.toFixed(1)}`,
     `3D paint     ${average(paintTimes).toFixed(2)} ms (CPU, incl. GL submit)`,
-    `draw calls   ${info.calls}`,
-    `triangles    ${info.triangles}`,
+    `draw calls   ${ground.calls()}`,
     `render size  ${view3d.width} × ${view3d.height}`
   ].join('\n');
   requestAnimationFrame(tick);

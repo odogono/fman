@@ -1,18 +1,9 @@
-import {
-  BoxGeometry,
-  Float32BufferAttribute,
-  Mesh,
-  MeshBasicMaterial,
-  Vector3,
-  type BufferGeometry
-} from 'three';
-import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-
 import { playerArt, type ArtGrid } from '../assets/clip-sprites';
 import { artPixelMetres, looksFor, playerPalette } from '../clip-sprites';
 import { terraceFrom } from '../clip-stadium';
 import { hashSeed, pitchLength, pitchWidth, type ClipSide } from '../clips';
 import type { Billboard } from './billboards';
+import { box, merge, type Point, type Solid } from './solid';
 
 // The prototype's one ground (#263), from a fixed layout rather than a
 // club's seed: a tall covered stand along the left touchline facing a low
@@ -60,52 +51,23 @@ const span = (side: Side) =>
  * from the ground. The world's x runs across the pitch as the screen's
  * does, y up into the air, and z down the screen.
  */
-export const place = (side: Side, out: number, along: number, up: number) =>
+export const place = (
+  side: Side,
+  out: number,
+  along: number,
+  up: number
+): Point =>
   side === 'left'
-    ? new Vector3(-out, up, along)
+    ? [-out, up, along]
     : side === 'right'
-      ? new Vector3(pitchWidth + out, up, along)
+      ? [pitchWidth + out, up, along]
       : side === 'top'
-        ? new Vector3(along, up, -out)
-        : new Vector3(along, up, pitchLength + out);
+        ? [along, up, -out]
+        : [along, up, pitchLength + out];
 
-/** The sun: up, and to the top left of the screen. */
-export const towardsSun = new Vector3(-1.1, 1, -0.45).normalize();
-
-/** A box's faces shaded flat by how they face the sun, in bands. */
-export const shade = (geometry: BufferGeometry, colour: string) => {
-  const rgb = [1, 3, 5].map(
-    i => Number.parseInt(colour.slice(i, i + 2), 16) / 255
-  );
-  const normals = geometry.getAttribute('normal');
-  const colours: number[] = [];
-  const top = towardsSun.y;
-  for (let i = 0; i < normals.count; i++) {
-    const facing =
-      normals.getX(i) * towardsSun.x +
-      normals.getY(i) * towardsSun.y +
-      normals.getZ(i) * towardsSun.z;
-    const light = facing >= top - 0.01 ? 1 : facing > 0 ? 0.85 : 0.68;
-    colours.push(...rgb.map(c => c * light));
-  }
-  geometry.setAttribute('color', new Float32BufferAttribute(colours, 3));
-  return geometry;
-};
-
-/** A box between two corners, in world metres. */
-export const block = (a: Vector3, b: Vector3, colour: string) => {
-  const geometry = new BoxGeometry(
-    Math.abs(b.x - a.x),
-    Math.abs(b.y - a.y),
-    Math.abs(b.z - a.z)
-  );
-  geometry.translate((a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2);
-  return shade(geometry, colour);
-};
-
-/** The stands, as one mesh. */
-export const standsMesh = () => {
-  const blocks: BufferGeometry[] = [];
+/** The stands, as one solid. */
+export const standsSolid = (): Solid => {
+  const blocks: Solid[] = [];
   for (const stand of layout) {
     const [from, to] = span(stand.side);
     const back = terraceFrom + stand.rows * stand.rowDepth;
@@ -115,7 +77,7 @@ export const standsMesh = () => {
       // Seats or concrete on the tread, a darker band on every other step.
       const colour = row % 2 ? stand.colour : '#7a7a7a';
       blocks.push(
-        block(
+        box(
           place(stand.side, out, from, 0),
           place(stand.side, out + stand.rowDepth, to, (row + 1) * stand.riser),
           stand.roof ? colour : row % 2 ? '#8c8c8c' : '#7a7a7a'
@@ -124,7 +86,7 @@ export const standsMesh = () => {
     }
     const wall = stand.roof ? top + stand.roof + 0.3 : top + 1;
     blocks.push(
-      block(
+      box(
         place(stand.side, back, from, 0),
         place(stand.side, back + 0.4, to, wall),
         '#5e5e5e'
@@ -133,7 +95,7 @@ export const standsMesh = () => {
     if (stand.roof) {
       const height = top + stand.roof;
       blocks.push(
-        block(
+        box(
           place(stand.side, terraceFrom - 0.4, from - 0.5, height),
           place(stand.side, back + 0.4, to + 0.5, height + 0.3),
           '#6f7a86'
@@ -141,7 +103,7 @@ export const standsMesh = () => {
       );
       for (let along = from + 6; along < to; along += 18) {
         blocks.push(
-          block(
+          box(
             place(stand.side, terraceFrom, along - 0.15, 0),
             place(stand.side, terraceFrom + 0.3, along + 0.15, height),
             '#d0d0d0'
@@ -150,12 +112,7 @@ export const standsMesh = () => {
       }
     }
   }
-  const mesh = new Mesh(
-    mergeGeometries(blocks),
-    new MeshBasicMaterial({ vertexColors: true })
-  );
-  mesh.castShadow = true;
-  return mesh;
+  return merge(blocks);
 };
 
 const neutralShirts = ['#f4f4f4', '#3c3c3c', '#d7d7d7', '#2a4a8a'] as const;
@@ -203,17 +160,22 @@ export const fans = (
               ? away.kit
               : neutralShirts[(hash >>> 8) % neutralShirts.length]!;
         const cheering = cheer && (shirt === sides.attack.kit || roll >= 0.85);
-        const at = place(stand.side, out, along, (row + 1) * stand.riser);
+        const [x, y, z] = place(
+          stand.side,
+          out,
+          along,
+          (row + 1) * stand.riser
+        );
         made.push({
           grid: upperBody(
             cheering ? playerArt.celebrate[drawn] : playerArt.stand[drawn]
           ),
           mirrored: facing === 'right',
-          order: at.z,
+          order: z,
           palette: playerPalette(shirt, looksFor('', hash >>> 4)),
-          x: at.x,
-          y: at.y,
-          z: at.z
+          x,
+          y,
+          z
         });
       }
     }

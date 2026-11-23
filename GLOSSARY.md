@@ -316,11 +316,15 @@ The ruleset that holds rules parity, starting from the original clubs and player
 _Avoid_: Classic, which names a presentation mode
 
 **Enhanced rules**:
-The ruleset players get by default: the original rules plus every accepted rule change, and the present-day clubs and players since its third version. It is released in versions, and a game keeps the version it started with.
+The ruleset players get by default: the original rules plus every accepted rule change, and the present-day clubs and players since its third version. It is released in versions, each the one before plus one or more rule changes, and a game keeps the version it started with.
 _Avoid_: Modern, which names a presentation mode
 
+**Rule change**:
+A single named change to the original rules, such as the grace period or club form, that a ruleset either makes or doesn't; the difficulty curve is the one rule change made by choosing a curve. A rule change can need others, as penalties need moment highlights.
+_Avoid_: Rule or feature when referring to a rule change
+
 **Experimental ruleset**:
-A ruleset that carries a single rule change, measured against the original rules before the change joins the Enhanced rules. Players never choose one.
+A ruleset that carries a single rule change on top of a named base ruleset, measured against that base before the change joins the Enhanced rules. Players never choose one.
 
 **Run**:
 One automated game played from a new game until dismissal or a fixed number of seasons, under one ruleset, difficulty level and strategy.

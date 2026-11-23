@@ -139,8 +139,23 @@ export type ClipPlayer = Readonly<{
    */
   skill?: number;
 }>;
+/**
+ * The ground a match is played at (#273): the home club's, picked by the
+ * club's place in the catalogue, its stands as big as the club's division
+ * when the game began, and its seats in the club's colours.
+ */
+export type ClipGround = Readonly<{
+  /** The club's place in the catalogue, 1 to 64. */
+  club: number;
+  /** The club's division when the game began, 1 to 4. */
+  division: number;
+  seats: string;
+}>;
+
 /** One side in a clip: its kit, its goalkeeper's colour and its 11 or fewer. */
 export type ClipSide = Readonly<{
+  /** The home side's ground, where its clips are played. */
+  ground?: ClipGround;
   /** The home side, whose fans fill most of the stands (#157). */
   home?: boolean;
   keeper: string;

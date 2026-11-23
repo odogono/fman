@@ -82,6 +82,10 @@ division club's last three league results under [club form](club-form.md).
 Version 14 adds a `prompt-beeps` input to journals: whether prompts beep,
 which Modern mode turns off ([ADR 0015](adr/0015-modern-mode-drops-the-prompt-beep.md)).
 A journal that turns them off starts again with that input after each menu checkpoint.
+Version 15 adds each club's `origin`, its place in the catalogue it was
+drawn from, which it keeps as it moves between divisions and picks its
+ground in Modern mode's highlights. A game stored
+earlier gives each club the place it holds when loaded.
 Fractional browser phase is not stored; restoring starts a fresh phase and
 does not simulate time spent with the page closed.
 

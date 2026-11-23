@@ -1,5 +1,5 @@
 import { fixtureSides, type MatchFixture } from '../sim/league';
-import type { Game, Player } from '../sim/management';
+import { startingDivision, type Game, type Player } from '../sim/management';
 import { matchInks } from '../sim/matchday';
 import type { Moment } from '../sim/moments';
 import type { Position, SquadPlayer } from '../sim/squads';
@@ -304,15 +304,21 @@ const sidesFor = (
         moment?.side === 'opponent' ? 10 : -1
       );
   const clubSide = (fixture.home ? 'home' : 'away') as 'away' | 'home';
+  const homeSlot = fixture.home ? game.club : fixture.opponent;
+  const ground = {
+    club: game.clubs[homeSlot - 1]!.origin,
+    division: startingDivision(game, homeSlot),
+    seats: homeKit
+  };
   const sides = {
     club: {
-      ...(clubSide === 'home' ? { home: true } : {}),
+      ...(clubSide === 'home' ? { ground, home: true } : {}),
       keeper: keepers[clubSide],
       kit: clubSide === 'home' ? homeKit : awayKit,
       players: club
     },
     opponent: {
-      ...(clubSide === 'home' ? {} : { home: true }),
+      ...(clubSide === 'home' ? {} : { ground, home: true }),
       keeper: keepers[clubSide === 'home' ? 'away' : 'home'],
       kit: clubSide === 'home' ? awayKit : homeKit,
       players: opponent
@@ -429,8 +435,8 @@ export const stillFrameFor = (
 
 /**
  * The cup celebration's sides: the managed club, who won the final, and the
- * opponent, each in the kit they wore in it. The winners' fans fill most of
- * the stands, as a home side's do.
+ * opponent, each in the kit they wore in it, at the ground the final was
+ * played at. The winners' fans fill most of the stands, as a home side's do.
  */
 export const celebrationSidesFor = (
   game: Game,
@@ -438,8 +444,13 @@ export const celebrationSidesFor = (
 ): CelebrationSides => {
   const { away, home } = sidesFor(game, fixture);
   const [winners, losers] = fixture.home ? [home, away] : [away, home];
-  const { home: _, ...visitors } = losers;
-  return { losers: visitors, winners: { ...winners, home: true } };
+  const { ground: _ground, home: _home, ...visitors } = losers;
+  // The final's ground stays the home side's, whoever won it.
+  const { ground } = home;
+  return {
+    losers: visitors,
+    winners: { ...winners, ...(ground ? { ground } : {}), home: true }
+  };
 };
 
 /** The club names for the debug page's readout. */

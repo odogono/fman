@@ -6,7 +6,7 @@ import { simulateHighlights } from './highlights';
 import { createJournal, openSave } from './journal';
 import { createPauseKeyboard } from './pause-keyboard';
 import { createPlayback } from './playback';
-import { saveVersion } from './save';
+import { promptBeepsSaveVersion, saveVersion } from './save';
 import { createSession } from './session';
 import { cupPlayback } from './timed-screens';
 import { createTimeline } from './timeline';
@@ -337,6 +337,6 @@ test('a journal saves whether prompts beep, across menu checkpoints', () => {
   expect(restored.session.view).toEqual(journal.session.view);
   expect(restored.session.view.paused).toBe(false);
   expect(() =>
-    openSave(JSON.stringify({ ...saved, version: saveVersion - 1 }))
+    openSave(JSON.stringify({ ...saved, version: promptBeepsSaveVersion - 1 }))
   ).toThrow(RangeError);
 });

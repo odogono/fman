@@ -8,45 +8,15 @@ import {
   type ClipSide
 } from '../clips';
 import type { Billboard } from './billboards';
+import type { GroundPlan, Side, Stand } from './grounds';
 import { box, merge, type Point, type Solid } from './solid';
 
-// The stands (#263), from one fixed layout for every ground until each
-// club has its own (#273): a tall covered stand along the left touchline facing a low
-// open terrace along the right, with open terraces behind each goal. The
-// stands are blocks of concrete in metres; the fans stand on their steps
-// as sprites.
+// The stands (#263), as a ground's plan lays them out (#273). The stands
+// are blocks of concrete in metres; the fans stand on their steps as
+// sprites.
 
 /** Where the stands' concrete begins, beyond the boards, in metres. */
 const terraceFrom = boardMetres + 0.6;
-
-export type Side = 'bottom' | 'left' | 'right' | 'top';
-
-type Stand = Readonly<{
-  /** Each step's colour: seats, or bare concrete. */
-  colour: string;
-  /** How far each step rises above the one in front, in metres. */
-  riser: number;
-  /** A roof this far above the top step, over the back half of the rows. */
-  roof?: number;
-  /** How deep each step is, from front to back. */
-  rowDepth: number;
-  rows: number;
-  side: Side;
-}>;
-
-export const layout: readonly Stand[] = [
-  {
-    colour: '#a83232',
-    riser: 0.5,
-    roof: 3,
-    rowDepth: 0.9,
-    rows: 10,
-    side: 'left'
-  },
-  { colour: '#8c8c8c', riser: 0.3, rowDepth: 1.4, rows: 5, side: 'right' },
-  { colour: '#8c8c8c', riser: 0.35, rowDepth: 1.2, rows: 6, side: 'top' },
-  { colour: '#8c8c8c', riser: 0.35, rowDepth: 1.2, rows: 6, side: 'bottom' }
-];
 
 /** Where the stands run along their side, clear of the corners. */
 const span = (side: Side) =>
@@ -73,22 +43,27 @@ export const place = (
         ? [along, up, -out]
         : [along, up, pitchLength + out];
 
-/** The stands, as one solid. */
-export const standsSolid = (): Solid => {
+const concrete = '#8c8c8c';
+const darkConcrete = '#7a7a7a';
+
+/** The stands of `plan`, as one solid. */
+export const standsSolid = (plan: GroundPlan): Solid => {
   const blocks: Solid[] = [];
-  for (const stand of layout) {
+  for (const stand of plan.stands) {
     const [from, to] = span(stand.side);
     const back = terraceFrom + stand.rows * stand.rowDepth;
     const top = stand.rows * stand.riser;
     for (let row = 0; row < stand.rows; row++) {
       const out = terraceFrom + row * stand.rowDepth;
-      // Seats or concrete on the tread, a darker band on every other step.
-      const colour = row % 2 ? stand.colour : '#7a7a7a';
+      // Seats on every other step, and concrete between; a terrace's
+      // steps are bare, a darker band on every other one.
+      const colour =
+        row % 2 ? (stand.seated ? plan.seats : concrete) : darkConcrete;
       blocks.push(
         box(
           place(stand.side, out, from, 0),
           place(stand.side, out + stand.rowDepth, to, (row + 1) * stand.riser),
-          stand.roof ? colour : row % 2 ? '#8c8c8c' : '#7a7a7a'
+          colour
         )
       );
     }
@@ -134,19 +109,20 @@ const facingFor: Record<Side, Facing> = {
 };
 
 /**
- * The fans on the stands' steps, as today's crowd: seven in ten in the home
+ * The fans on `stands`' steps, as today's crowd: seven in ten in the home
  * kit, some in the away kit and the rest neutral; after a goal the scorers'
  * fans and the neutrals stand and cheer.
  */
 export const fans = (
   sides: Readonly<{ attack: ClipSide; defence: ClipSide }>,
+  stands: readonly Stand[],
   cheer: boolean
 ): Billboard[] => {
   const home = sides.defence.home ? sides.defence : sides.attack;
   const away = home === sides.attack ? sides.defence : sides.attack;
   const seat = 16 * artPixelMetres;
   const made: Billboard[] = [];
-  for (const stand of layout) {
+  for (const stand of stands) {
     const [from, to] = span(stand.side);
     const facing = facingFor[stand.side];
     const drawn = facing === 'right' ? 'left' : facing;

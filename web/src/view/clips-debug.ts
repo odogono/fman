@@ -1,3 +1,4 @@
+import { clubs } from '../sim/catalogue';
 import { openSave } from '../sim/journal';
 import type { MatchFixture } from '../sim/league';
 import type { Game } from '../sim/management';
@@ -71,8 +72,14 @@ const settings = {
   foul: 'no' as 'no' | 'yes',
   homeEnergy: 20,
   homeKit: 2,
-  /** The pitch's mowing (#273). */
-  grass: 'stripes' as GrassPattern,
+  /** The pitch's mowing (#273), or the ground's own. */
+  grass: 'ground' as GrassPattern | 'ground',
+  /**
+   * Another club's ground, by its place in the catalogue (#273), or 0 for
+   * the match's own, and the division it began in.
+   */
+  groundClub: 0,
+  groundDivision: 1,
   ids: false,
   keeper: true,
   kind: 'goal' as Moment['kind'],
@@ -98,7 +105,15 @@ const settings = {
 };
 
 /** What the ground looks like in the settings. */
-const groundView = () => ({ grass: settings.grass, tilt: settings.tilt });
+const groundView = () => ({
+  ...(settings.grass === 'ground' ? {} : { grass: settings.grass }),
+  ...(settings.groundClub
+    ? {
+        ground: { club: settings.groundClub, division: settings.groundDivision }
+      }
+    : {}),
+  tilt: settings.tilt
+});
 
 /**
  * The cup celebration on the debug page: its three parts in turn, as the
@@ -611,11 +626,35 @@ const renderControls = () => {
       number(settings.tilt, 0, 60, value => (settings.tilt = value))
     ),
     labelled(
+      'Club',
+      select(
+        [
+          ['0', "The match's"],
+          ...clubs.map(
+            (club, i) => [String(i + 1), `${i + 1}. ${club.name}`] as const
+          )
+        ],
+        String(settings.groundClub),
+        value => (settings.groundClub = Number(value))
+      )
+    ),
+    labelled(
+      'Division',
+      select(
+        [1, 2, 3, 4].map(d => [String(d), String(d)] as const),
+        String(settings.groundDivision),
+        value => (settings.groundDivision = Number(value))
+      )
+    ),
+    labelled(
       'Grass',
       select(
-        grassPatterns.map(pattern => [pattern, pattern] as const),
+        [
+          ['ground', "The ground's"],
+          ...grassPatterns.map(pattern => [pattern, pattern] as const)
+        ],
         settings.grass,
-        value => (settings.grass = value as GrassPattern)
+        value => (settings.grass = value as GrassPattern | 'ground')
       )
     )
   );

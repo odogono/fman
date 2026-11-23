@@ -3,6 +3,7 @@ import { expect, test } from 'bun:test';
 import { pitchLength, pitchWidth, type ClipSide } from '../clips';
 import { boardSolids } from './boards';
 import { goalPieces } from './goals';
+import { groundPlan, type GroundPlan } from './grounds';
 import { aimCamera, groundCamera, type GroundView } from './painter';
 import { fans } from './stands';
 
@@ -13,9 +14,13 @@ const side = (kit: string, home = false): ClipSide => ({
   players: []
 });
 const sides = { attack: side('#0000d7'), defence: side('#d70000', true) };
+const plan = (club: number, division = 1, seats = '#d70000'): GroundPlan =>
+  groundPlan({ club, division, seats });
+const { stands } = plan(1);
+const clubs = Array.from({ length: 64 }, (_, i) => i + 1);
 
 test('most of the crowd wears the home kit, whichever side attacks', () => {
-  const crowd = fans(sides, false);
+  const crowd = fans(sides, stands, false);
   const home = crowd.filter(p => p.palette.s === '#d70000').length;
   const away = crowd.filter(p => p.palette.s === '#0000d7').length;
   expect(home / crowd.length).toBeGreaterThan(0.6);
@@ -24,8 +29,8 @@ test('most of the crowd wears the home kit, whichever side attacks', () => {
 });
 
 test("after a goal the scorers' fans stand and cheer, and the others stay seated", () => {
-  const seated = fans(sides, false);
-  const cheering = fans(sides, true);
+  const seated = fans(sides, stands, false);
+  const cheering = fans(sides, stands, true);
   const changed = (kit: string) =>
     seated.filter(
       (p, i) =>
@@ -63,7 +68,7 @@ test('the boards ring the pitch beyond the lines', () => {
 
 /** A 300 by 400 pixel picture of the centre spot, 10 cm to a pixel. */
 const view = (tilt: number, changes: Partial<GroundView> = {}): GroundView => ({
-  grass: 'stripes',
+  ground: plan(1),
   high: 400,
   metresPerPixel: 0.1,
   tilt,
@@ -97,4 +102,39 @@ test("a frame's projection stays as it was when the camera moves on", () => {
   const before = project(10, 20);
   aimCamera(camera, view(0, { x: 5, y: 90 }));
   expect(project(10, 20)).toEqual(before);
+});
+
+test('a club gets the same ground every time, and clubs’ grounds differ', () => {
+  expect(plan(12)).toEqual(plan(12));
+  const grounds = clubs.map(club => plan(club));
+  expect(new Set(grounds.map(g => g.grass)).size).toBeGreaterThan(3);
+  expect(new Set(grounds.map(g => JSON.stringify(g))).size).toBeGreaterThan(60);
+});
+
+test("a ground's seats are in its club's colours", () => {
+  expect(plan(5, 2, '#00d700').seats).toBe('#00d700');
+});
+
+const tallest = (g: GroundPlan) =>
+  Math.max(...g.stands.map(s => s.rows * s.riser));
+
+test('the higher the division a club began in, the taller its stands', () => {
+  for (const club of clubs) {
+    const heights = [1, 2, 3, 4].map(d => tallest(plan(club, d)));
+    expect(heights).toEqual(heights.toSorted((a, b) => b - a));
+    expect(heights[0]).toBeGreaterThan(heights[3]!);
+    // The club picks the same sides and pattern in any division.
+    expect(plan(club, 4).grass).toBe(plan(club, 1).grass);
+  }
+});
+
+test('only a Fourth Division ground leaves a side bare, and never both touchlines', () => {
+  for (const club of clubs) {
+    for (const division of [1, 2, 3]) {
+      expect(plan(club, division).stands).toHaveLength(4);
+    }
+    const sides = plan(club, 4).stands.map(s => s.side);
+    expect(sides.filter(s => s === 'left' || s === 'right')).toHaveLength(2);
+  }
+  expect(clubs.some(club => plan(club, 4).stands.length < 4)).toBe(true);
 });

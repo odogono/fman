@@ -45,6 +45,11 @@ export type Club = Readonly<{
   /** Kits for the present-day clubs; the original clubs have none. */
   kit?: Kit;
   name: string;
+  /**
+   * The club's place in its catalogue, 1 to 64, which it keeps all game as
+   * it moves between divisions (#273). Its ground is picked by it.
+   */
+  origin: number;
   /** A name colour's paper, when it is not the screen's white. */
   paper?: number;
   /**
@@ -131,6 +136,7 @@ const inks = [
 export const clubs: readonly Club[] = names.map((name, index) => ({
   ink: inks[index]!,
   name,
+  origin: index + 1,
   width: index === 22 ? 8 : 10
 }));
 
@@ -252,10 +258,11 @@ const presentDay: readonly PresentDayClub[] = [
 ];
 
 export const presentDayClubs: readonly Club[] = presentDay.map(
-  ([name, ink, paper, home, change]) => ({
+  ([name, ink, paper, home, change], index) => ({
     ink,
     kit: { change, home },
     name,
+    origin: index + 1,
     ...(paper === w ? {} : { paper }),
     width: 10
   })

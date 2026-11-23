@@ -1,8 +1,9 @@
 import { boardArt } from '../assets/clip-sprites';
 import { artPixelMetres, rasterise, type ArtPalette } from '../clip-sprites';
 import { boardMetres, pitchLength, pitchWidth } from '../clips';
+import type { Side } from './grounds';
 import { distance, merge, quad, type Point, type Solid } from './solid';
-import { place, type Side } from './stands';
+import { place } from './stands';
 
 // The advertising boards as models (#263): a wedge along each side of the
 // pitch, its face leaning back from the pitch and painted with today's

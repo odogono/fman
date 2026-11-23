@@ -1,4 +1,4 @@
-import { hashSeed, type ClipGround } from '../clips';
+import { hashSeed } from '../clips';
 import { grassPatterns, type GrassPattern } from './pitch';
 
 // Each club's ground (#273): its own, and the same all game and in every
@@ -7,6 +7,18 @@ import { grassPatterns, type GrassPattern } from './pitch';
 // the game began sizes the stands, tall in the First and low in the
 // Fourth, where a side may have none. Its seats are in its colours. The
 // pitch, goals and boards are the same at every ground.
+
+/**
+ * A club's ground (#273), as its recipe: the club's place in the
+ * catalogue, the division it began the game in and its seats' colour.
+ */
+export type ClubGround = Readonly<{
+  /** The club's place in the catalogue, 1 to 64. */
+  club: number;
+  /** The club's division when the game began, 1 to 4. */
+  division: number;
+  seats: string;
+}>;
 
 export type Side = 'bottom' | 'left' | 'right' | 'top';
 
@@ -52,7 +64,7 @@ const sizes: Readonly<Record<number, Size>> = {
 const across = { bottom: 'top', left: 'right', right: 'left', top: 'bottom' };
 
 /** The plan of `ground`. */
-export const groundPlan = (ground: ClipGround): GroundPlan => {
+export const groundPlan = (ground: ClubGround): GroundPlan => {
   /** A roll from 0 up to 1, the same for the same club and question. */
   const roll = (question: string) =>
     hashSeed(`ground|${ground.club}|${question}`) / 2 ** 32;

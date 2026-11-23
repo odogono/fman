@@ -1,12 +1,7 @@
 import { playerArt, type ArtGrid } from '../assets/clip-sprites';
 import { artPixelMetres, looksFor, playerPalette } from '../clip-sprites';
-import {
-  boardMetres,
-  hashSeed,
-  pitchLength,
-  pitchWidth,
-  type ClipSide
-} from '../clips';
+import { boardMetres, hashSeed, pitchLength, pitchWidth } from '../clips';
+import type { Crowd } from '../match-ground';
 import type { Billboard } from './billboards';
 import type { GroundPlan, Side, Stand } from './grounds';
 import { box, merge, type Point, type Solid } from './solid';
@@ -94,6 +89,23 @@ export const standsSolid = (plan: GroundPlan): Solid => {
 
 const neutralShirts = ['#f4f4f4', '#3c3c3c', '#d7d7d7', '#2a4a8a'] as const;
 
+/**
+ * The kit a fan wears, from their `roll`, 0 up to 1, as `crowd` shares the
+ * kits out in turn; none for a neutral.
+ */
+const kitAt = (crowd: Crowd, roll: number) => {
+  // In whole hundredths, so the shares add up exactly.
+  const at = Math.round(roll * 100);
+  let upTo = 0;
+  for (const { kit, share } of crowd.kits) {
+    upTo += Math.round(share * 100);
+    if (at < upTo) {
+      return kit;
+    }
+  }
+  return undefined;
+};
+
 /** The top of a pose, a fan's head and shirt over the seat in front. */
 const upperBody = (grid: ArtGrid) => {
   const shirt = grid.findIndex(row => row.includes('s'));
@@ -109,17 +121,15 @@ const facingFor: Record<Side, Facing> = {
 };
 
 /**
- * The fans on `stands`' steps, as today's crowd: seven in ten in the home
- * kit, some in the away kit and the rest neutral; after a goal the scorers'
- * fans and the neutrals stand and cheer.
+ * `crowd`'s fans on `stands`' steps, each in a kit as the crowd shares them
+ * out or neutral; after a goal the fans in the scorers' kit (`cheering`)
+ * and the neutrals stand and cheer.
  */
 export const fans = (
-  sides: Readonly<{ attack: ClipSide; defence: ClipSide }>,
+  crowd: Crowd,
   stands: readonly Stand[],
-  cheer: boolean
+  cheering?: string
 ): Billboard[] => {
-  const home = sides.defence.home ? sides.defence : sides.attack;
-  const away = home === sides.attack ? sides.defence : sides.attack;
   const seat = 16 * artPixelMetres;
   const made: Billboard[] = [];
   for (const stand of stands) {
@@ -131,13 +141,11 @@ export const fans = (
       for (let along = from + seat / 2, k = 0; along < to; along += seat, k++) {
         const hash = hashSeed(`${stand.side}|${row}|${k}`);
         const roll = (hash % 100) / 100;
+        const kit = kitAt(crowd, roll);
         const shirt =
-          roll < 0.7
-            ? home.kit
-            : roll < 0.85
-              ? away.kit
-              : neutralShirts[(hash >>> 8) % neutralShirts.length]!;
-        const cheering = cheer && (shirt === sides.attack.kit || roll >= 0.85);
+          kit ?? neutralShirts[(hash >>> 8) % neutralShirts.length]!;
+        const cheers =
+          cheering !== undefined && (kit === undefined || kit === cheering);
         const [x, y, z] = place(
           stand.side,
           out,
@@ -146,7 +154,7 @@ export const fans = (
         );
         made.push({
           grid: upperBody(
-            cheering ? playerArt.celebrate[drawn] : playerArt.stand[drawn]
+            cheers ? playerArt.celebrate[drawn] : playerArt.stand[drawn]
           ),
           mirrored: facing === 'right',
           order: z,

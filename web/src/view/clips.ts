@@ -62,7 +62,6 @@ export type {
   ClipCard,
   ClipFrame,
   ClipGoal,
-  ClipGround,
   ClipInput,
   ClipOutcome,
   ClipPass,

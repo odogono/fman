@@ -18,7 +18,6 @@ const eleven = (name: string): ClipPlayer[] =>
     ] as Line[]
   ).map((line, i) => ({ label: `${name} ${i}`, line }));
 const winners: ClipSide = {
-  home: true,
   keeper: '#7cd616',
   kit: '#d70000',
   players: eleven('Win')

@@ -6,7 +6,12 @@ import type { Moment } from '../sim/moments';
 import { tickerPause } from '../sim/ticker';
 import { clipTilt, fitClipCanvas, loadGround, paintClip } from './clip-canvas';
 import { checkClip, clipIssueKinds, type ClipIssue } from './clip-checks';
-import { clipInputFor, inkColours, keeperColoursFor } from './clip-match';
+import {
+  clipInputFor,
+  inkColours,
+  keeperColoursFor,
+  matchKits
+} from './clip-match';
 import {
   clipStage,
   paintShot,
@@ -35,6 +40,13 @@ import {
 } from './clips';
 import { celebrationFrame, type CelebrationProgress } from './cup-celebration';
 import { grassPatterns, type GrassPattern } from './ground/pitch';
+import {
+  celebrationGroundFor,
+  clubGround,
+  favouring,
+  matchGroundFor,
+  type MatchGround
+} from './match-ground';
 import { named } from './ticker-layout';
 
 // The clip debugger (#144): `web/clips.html`, served by `bun run dev` and
@@ -104,16 +116,45 @@ const settings = {
   tilt: clipTilt
 };
 
-/** What the ground looks like in the settings. */
-const groundView = () => ({
-  ...(settings.grass === 'ground' ? {} : { grass: settings.grass }),
-  ...(settings.groundClub
-    ? {
-        ground: { club: settings.groundClub, division: settings.groundDivision }
-      }
-    : {}),
-  tilt: settings.tilt
-});
+/** The camera as the settings tilt it. */
+const groundView = () => ({ tilt: settings.tilt });
+
+/** Both kits, home first: the loaded match's, or the settings'. */
+const debugKits = () =>
+  loaded
+    ? matchKits(loaded.game, loaded.fixture)
+    : {
+        away: inkColours[settings.awayKit]!,
+        home: inkColours[settings.homeKit]!
+      };
+
+/**
+ * The ground the page plays at: the loaded match's, or the club's the
+ * settings pick, the first club's for a clip of their own, in the home
+ * kit. Its crowd favours the home side, or in the cup celebration the
+ * winners.
+ */
+const debugGround = (): MatchGround => {
+  const grass = settings.grass === 'ground' ? undefined : settings.grass;
+  if (loaded && !settings.groundClub) {
+    return celebrating()
+      ? celebrationGroundFor(loaded.game, loaded.fixture)
+      : matchGroundFor(loaded.game, loaded.fixture, grass);
+  }
+  const kits = debugKits();
+  const crowd = celebrating()
+    ? favouring(script.input.attack.kit, script.input.defence.kit)
+    : favouring(kits.home, kits.away);
+  return clubGround(
+    {
+      club: settings.groundClub || 1,
+      division: settings.groundClub ? settings.groundDivision : 1,
+      seats: kits.home
+    },
+    crowd,
+    grass
+  );
+};
 
 /**
  * The cup celebration on the debug page: its three parts in turn, as the
@@ -224,7 +265,6 @@ const settingsInput = (seedBase = settings.seedBase): ClipInput => {
   const awayKit = inkColours[settings.awayKit]!;
   const keepers = keeperColoursFor(homeKit, awayKit);
   const home = {
-    home: true,
     keeper: keepers.home,
     kit: homeKit,
     players: side(settings, settings.keeper, 'Home', settings.homeEnergy)
@@ -902,21 +942,26 @@ Object.assign(globalThis, {
     sequence: (list: readonly Partial<typeof settings>[]) => {
       // Each goal carries the score so far, home first.
       const score = [0, 0];
-      const scripts = list.map(changes => {
+      let homeAttacks = true;
+      const scripts = list.map((changes, i) => {
         setSettings(changes);
+        if (i === 0) {
+          homeAttacks = settings.side === 'home';
+        }
         if (script.outcome !== 'goal') {
           return script;
         }
-        score[script.input.attack.home ? 0 : 1]! += 1;
+        score[settings.side === 'home' ? 0 : 1]! += 1;
         return createClipScript({ ...script.input, score: [...score] });
       });
       const { attack, defence } = scripts[0]!.input;
-      const home = attack.home ? attack : defence;
-      const away = home === attack ? defence : attack;
+      const [home, away] = homeAttacks ? [attack, defence] : [defence, attack];
+      const ground = debugGround();
+      const setting = { ground, kits: { away: away.kit, home: home.kit } };
       sequence = [
-        stillStage(home, away, 'Kick-off', tickerPause),
-        ...scripts.map(script => clipStage(script)),
-        stillStage(home, away, 'Full time', tickerPause)
+        stillStage(home, away, ground, 'Kick-off', tickerPause),
+        ...scripts.map(script => clipStage(script, setting)),
+        stillStage(home, away, ground, 'Full time', tickerPause)
       ];
       return sequence.map(stage => stage.length);
     },
@@ -926,6 +971,7 @@ Object.assign(globalThis, {
         context,
         script.frame(frame),
         { attack: script.input.attack, defence: script.input.defence },
+        debugGround(),
         fitClipCanvas(canvas),
         groundView()
       ),
@@ -962,6 +1008,7 @@ const tick = (now: number) => {
     context,
     frame,
     { attack: script.input.attack, defence: script.input.defence },
+    debugGround(),
     fitClipCanvas(canvas),
     {
       ...groundView(),

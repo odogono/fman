@@ -1219,6 +1219,7 @@ const paintCupResult = (pane: HTMLElement, result: CupResult) => {
         still
       ),
       { attack: celebration.sides.winners, defence: celebration.sides.losers },
+      celebration.ground,
       fitClipCanvas(canvas)
     );
   }

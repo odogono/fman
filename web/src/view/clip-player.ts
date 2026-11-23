@@ -4,7 +4,12 @@ import type { Game } from '../sim/management';
 import type { Moment } from '../sim/moments';
 import type { View } from '../sim/session';
 import { tickerPause, type Ticker } from '../sim/ticker';
-import { clipScriptsFor, goneOff, stillFrameFor } from './clip-match';
+import {
+  clipScriptsFor,
+  goneOff,
+  matchKits,
+  stillFrameFor
+} from './clip-match';
 import {
   clipStage,
   shotAt,
@@ -13,6 +18,7 @@ import {
   type ClipStage
 } from './clip-wipe';
 import { wipeFrames } from './clips';
+import { matchGroundFor } from './match-ground';
 import type { ClipProgress, HighlightsTab } from './modern-highlights';
 
 export type { ClipShot } from './clip-wipe';
@@ -76,6 +82,10 @@ const tickerView = (view: View): TickerView | undefined =>
 /** A place in a match's stages: kick-off, each clip, then full time. */
 type Place = Readonly<{ at: number; index: number }>;
 
+/** A shot's picture, without its wipe. */
+const pictureOf = ({ wipe: _wipe, ...picture }: ClipShot): ClipPicture =>
+  picture;
+
 /** Whether `a` comes at or after `b`. */
 const reached = (a: Place, b: Place) =>
   a.index > b.index || (a.index === b.index && a.at >= b.at);
@@ -132,8 +142,16 @@ export const createClipPlayer = () => {
       const scripts =
         (same && plan?.scripts) ||
         clipScriptsFor(game, fixture, ticker.moments);
+      // Every picture of the match is played at its ground, decided once.
+      const setting = {
+        ground: matchGroundFor(game, fixture),
+        kits: matchKits(game, fixture)
+      };
       const still = (caption: string, off?: ReadonlySet<number>): ClipStage => {
-        const picture = stillFrameFor(game, fixture, caption, off);
+        const picture = {
+          ...stillFrameFor(game, fixture, caption, off),
+          ...setting
+        };
         return { length: tickerPause, picture: () => picture };
       };
       plan = {
@@ -142,7 +160,9 @@ export const createClipPlayer = () => {
         scripts,
         stages: [
           still('Kick-off'),
-          ...scripts.map((script, i) => clipStage(script, ticker.lengths?.[i])),
+          ...scripts.map((script, i) =>
+            clipStage(script, setting, ticker.lengths?.[i])
+          ),
           // Full time, without anyone who went off injured.
           still('Full time', goneOff(ticker.moments))
         ]
@@ -172,9 +192,7 @@ export const createClipPlayer = () => {
     entry = {
       index,
       ticker,
-      ...(!last || last.shot.wipe
-        ? {}
-        : { from: { frame: last.shot.frame, sides: last.shot.sides } })
+      ...(!last || last.shot.wipe ? {} : { from: pictureOf(last.shot) })
     };
   };
   /** The shot at frame `at` of stage `index`, wiping in if it was jumped to. */

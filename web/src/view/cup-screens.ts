@@ -5,6 +5,7 @@ import { answersFor } from './answers';
 import { celebrationSidesFor } from './clip-match';
 import type { CelebrationProgress, CelebrationSides } from './cup-celebration';
 import { clubName, fixtureTitle, type ClubName } from './home';
+import { celebrationGroundFor, type MatchGround } from './match-ground';
 
 type Done = Readonly<{ enabled: boolean; id: string }>;
 
@@ -19,10 +20,12 @@ export type CupReplay = Readonly<{
 /**
  * The cup celebration as it stands: how far the original's timed
  * celebration has got, the frames since it began, which keep the scene
- * moving once it holds, and both sides in the final's kits.
+ * moving once it holds, both sides in the final's kits, and the ground the
+ * final was played at.
  */
 export type CupCelebration = Readonly<{
   clock: number;
+  ground: MatchGround;
   progress: CelebrationProgress;
   sides: CelebrationSides;
 }>;
@@ -89,6 +92,7 @@ export const cupResultFor = (view: View): CupResult | undefined => {
       ? {
           celebration: {
             clock: view.ulaFrames ?? view.frames,
+            ground: celebrationGroundFor(game, fixture),
             progress: progress
               ? {
                   stars: progress.stars / starCells,

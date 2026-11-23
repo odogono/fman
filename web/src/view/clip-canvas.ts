@@ -9,12 +9,11 @@ import {
   shortestCameraAspect,
   tallestCameraAspect,
   type ClipFrame,
-  type ClipGround,
   type ClipSide
 } from './clips';
-import { groundPlan } from './ground/grounds';
 import type { GroundPainter } from './ground/painter';
-import { surround, type GrassPattern } from './ground/pitch';
+import { surround } from './ground/pitch';
+import type { MatchGround } from './match-ground';
 
 // Paints a clip's frame (#144): the ground in 3D (ADR 0018), with each
 // player and the ball as sprites (#146) on it, then the label, the card,
@@ -33,15 +32,9 @@ export type ClipOverlays = Readonly<{
    * players (indexes into the frame's players) and is listed in a corner.
    */
   problems?: readonly Readonly<{ players: readonly number[]; text: string }>[];
-}> &
-  Readonly<{
-    /** The pitch mown in another pattern, for the debug page. */
-    grass?: GrassPattern;
-    /** Another club's ground, in the home side's colours, for the debug page. */
-    ground?: Omit<ClipGround, 'seats'>;
-    /** The camera at another tilt, for the debug page. */
-    tilt?: number;
-  }>;
+  /** The camera at another tilt, for the debug page. */
+  tilt?: number;
+}>;
 
 /** The camera's angle from straight down, in degrees, behind the bottom goal. */
 export const clipTilt = 35;
@@ -165,26 +158,14 @@ export const patchFor = (across: number, width: number, height: number) => {
 };
 
 /**
- * The ground a frame is played at: the home side's, or for a side that
- * names none, as the debug page's and the recorder's, the first club's in
- * the home side's colours.
+ * Paints one frame, played at `playedAt`, into a box `width` by `height`
+ * CSS pixels.
  */
-const groundFor = (sides: ClipSides, overlays: ClipOverlays) => {
-  const home = sides.defence.home ? sides.defence : sides.attack;
-  const seats = home.ground?.seats ?? home.kit;
-  const plan = groundPlan(
-    overlays.ground
-      ? { ...overlays.ground, seats }
-      : (home.ground ?? { club: 1, division: 1, seats })
-  );
-  return overlays.grass ? { ...plan, grass: overlays.grass } : plan;
-};
-
-/** Paints one frame into a box `width` by `height` CSS pixels. */
 export const paintClip = (
   ctx: CanvasRenderingContext2D,
   frame: ClipFrame,
   sides: ClipSides,
+  playedAt: MatchGround,
   size: Readonly<{ height: number; ratio: number; width: number }>,
   overlays: ClipOverlays = {}
 ) => {
@@ -246,7 +227,7 @@ export const paintClip = (
   const project =
     painter && !lost
       ? painter.paint(frame, sides, {
-          ground: groundFor(sides, overlays),
+          ground: playedAt,
           high: Math.ceil((height * ratio) / pixel),
           metresPerPixel: pixel / (scale * ratio),
           tilt: overlays.tilt ?? clipTilt,

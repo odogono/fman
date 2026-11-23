@@ -50,7 +50,7 @@ const netPalette: ArtPalette = {
 };
 /** Shadows darken what they fall on, every other pixel. */
 export const shadowPalette: ArtPalette = { x: '#000000a0' };
-const boardPalette: ArtPalette = {
+export const boardPalette: ArtPalette = {
   '1': '#d72828',
   '2': '#fac81e',
   '3': '#1e5adc',
@@ -59,7 +59,7 @@ const boardPalette: ArtPalette = {
   w: '#f4f4f4'
 };
 /** The backs of the boards, seen from behind the bottom goal. */
-const boardBackPalette: ArtPalette = Object.fromEntries(
+export const boardBackPalette: ArtPalette = Object.fromEntries(
   Object.keys(boardPalette).map(k => [k, k === 'o' ? '#141414' : '#5a5a5a'])
 );
 

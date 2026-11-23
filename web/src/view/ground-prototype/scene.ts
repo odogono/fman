@@ -34,16 +34,18 @@ import {
   spriteFor,
   statusSprite
 } from '../clip-sprites';
-import { boardPieces, shadowPalette, type GroundPiece } from '../clip-stadium';
-import { boardMetres, pitchLength, pitchWidth, type ClipFrame } from '../clips';
+import { shadowPalette } from '../clip-stadium';
+import { pitchLength, pitchWidth, type ClipFrame } from '../clips';
 import { createAtlas, createLayers, type Billboard } from './billboards';
+import { boardsMesh } from './boards';
 import { goalModels } from './goals';
 import { fans, standsMesh, towardsSun } from './stands';
 
 // The prototype's painter (#263): a clip's frame drawn over a 3D ground
-// with three.js. The ground, the stands and the goals are geometry, lit by
-// a sun that casts their shadows across the pitch; the players, the ball,
-// the boards and the fans are today's sprites, standing on their points. The scene is rendered at one pixel to an art pixel and scaled up
+// with three.js. The ground, the stands, the boards and the goals are
+// geometry, lit by a sun that casts their shadows across the pitch; the
+// players, the ball and the fans are today's sprites, standing on their
+// points. The scene is rendered at one pixel to an art pixel and scaled up
 // in whole pixels, so it reads as the same art.
 
 /** The camera's field of view, top to bottom: narrow, so near-flat. */
@@ -85,29 +87,6 @@ const groundPlane = () => {
   return geometry;
 };
 
-/** A ground piece as a sprite: a shadow lies flat, the rest stand up. */
-const fromPiece = (piece: GroundPiece): Billboard => ({
-  ...(piece.depth === -Infinity ? { flat: true } : {}),
-  grid: piece.grid,
-  mirrored: piece.mirrored,
-  order: piece.depth,
-  palette: piece.palette,
-  x: piece.at.x,
-  z: piece.at.y
-});
-
-/**
- * The boards along the touchlines lie flat beside the pitch: drawn turned
- * to face up the screen, they would stand as posts once the camera tilts.
- */
-const boards = boardPieces().map(piece => {
-  const along =
-    piece.at.x === -boardMetres || piece.at.x === pitchWidth + boardMetres;
-  return along
-    ? { ...fromPiece(piece), flat: true, order: -Infinity }
-    : fromPiece(piece);
-});
-
 export type GroundView = ReturnType<typeof createGroundView>;
 
 /**
@@ -141,7 +120,7 @@ export const createGroundView = (
   // screen as the sprites' do (`oblique`).
   const solid = new Group();
   solid.matrixAutoUpdate = false;
-  solid.add(standsMesh());
+  solid.add(standsMesh(), ...boardsMesh());
   scene.add(solid);
 
   const sun = new DirectionalLight(0xff_ff_ff, 1);
@@ -234,10 +213,7 @@ export const createGroundView = (
     camera.lookAt(target);
     camera.updateProjectionMatrix();
 
-    const sprites: Billboard[] = [
-      ...boards,
-      ...crowdFor(sides, frame.cheer ?? false)
-    ];
+    const sprites: Billboard[] = [...crowdFor(sides, frame.cheer ?? false)];
     const { ball } = frame;
     const lift = ball.height * ballLiftMetres;
     const held = Boolean(frame.trophy) || ballHeld(frame.players, ball);

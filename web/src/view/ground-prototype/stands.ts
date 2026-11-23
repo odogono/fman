@@ -20,7 +20,7 @@ import type { Billboard } from './billboards';
 // stands are blocks of concrete in metres; the fans stand on their steps
 // as sprites.
 
-type Side = 'bottom' | 'left' | 'right' | 'top';
+export type Side = 'bottom' | 'left' | 'right' | 'top';
 
 type Stand = Readonly<{
   /** Each step's colour: seats, or bare concrete. */
@@ -60,7 +60,7 @@ const span = (side: Side) =>
  * from the ground. The world's x runs across the pitch as the screen's
  * does, y up into the air, and z down the screen.
  */
-const place = (side: Side, out: number, along: number, up: number) =>
+export const place = (side: Side, out: number, along: number, up: number) =>
   side === 'left'
     ? new Vector3(-out, up, along)
     : side === 'right'
@@ -73,7 +73,7 @@ const place = (side: Side, out: number, along: number, up: number) =>
 export const towardsSun = new Vector3(-1.1, 1, -0.45).normalize();
 
 /** A box's faces shaded flat by how they face the sun, in bands. */
-const shade = (geometry: BufferGeometry, colour: string) => {
+export const shade = (geometry: BufferGeometry, colour: string) => {
   const rgb = [1, 3, 5].map(
     i => Number.parseInt(colour.slice(i, i + 2), 16) / 255
   );

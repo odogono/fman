@@ -44,6 +44,7 @@ import {
   celebrationGroundFor,
   clubGround,
   favouring,
+  finalGround,
   matchGroundFor,
   type MatchGround
 } from './match-ground';
@@ -87,10 +88,11 @@ const settings = {
   /** The pitch's mowing (#273), or the ground's own. */
   grass: 'ground' as GrassPattern | 'ground',
   /**
-   * Another club's ground, by its place in the catalogue (#273), or 0 for
-   * the match's own, and the division it began in.
+   * Another club's ground, by its place in the catalogue (#273), the final
+   * ground (#274), or 0 for the match's own, and the division a club's
+   * began in.
    */
-  groundClub: 0,
+  groundClub: 0 as number | 'final',
   groundDivision: 1,
   ids: false,
   keeper: true,
@@ -129,10 +131,10 @@ const debugKits = () =>
       };
 
 /**
- * The ground the page plays at: the loaded match's, or the club's the
- * settings pick, the first club's for a clip of their own, in the home
- * kit. Its crowd favours the home side, or in the cup celebration the
- * winners.
+ * The ground the page plays at: the loaded match's, or the final ground or
+ * the club's the settings pick, the first club's for a clip of their own,
+ * in the home kit. Its crowd favours the home side, or in the cup
+ * celebration the winners.
  */
 const debugGround = (): MatchGround => {
   const grass = settings.grass === 'ground' ? undefined : settings.grass;
@@ -145,6 +147,9 @@ const debugGround = (): MatchGround => {
   const crowd = celebrating()
     ? favouring(script.input.attack.kit, script.input.defence.kit)
     : favouring(kits.home, kits.away);
+  if (settings.groundClub === 'final') {
+    return finalGround(crowd, grass);
+  }
   return clubGround(
     {
       club: settings.groundClub || 1,
@@ -670,12 +675,14 @@ const renderControls = () => {
       select(
         [
           ['0', "The match's"],
+          ['final', 'The final ground'],
           ...clubs.map(
             (club, i) => [String(i + 1), `${i + 1}. ${club.name}`] as const
           )
         ],
         String(settings.groundClub),
-        value => (settings.groundClub = Number(value))
+        value =>
+          (settings.groundClub = value === 'final' ? value : Number(value))
       )
     ),
     labelled(

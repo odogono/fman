@@ -1,7 +1,12 @@
 import type { MatchFixture } from '../sim/league';
 import { startingDivision, type Game } from '../sim/management';
 import { matchKits } from './clip-match';
-import { groundPlan, type ClubGround, type GroundPlan } from './ground/grounds';
+import {
+  finalPlan,
+  groundPlan,
+  type ClubGround,
+  type GroundPlan
+} from './ground/grounds';
 import type { GrassPattern } from './ground/pitch';
 
 // The ground a match's clips are played at (#279), decided once, where the
@@ -42,18 +47,20 @@ const plans = new Map<string, GroundPlan>();
 const grounds = new Map<string, MatchGround>();
 
 /**
- * A club's ground, with `crowd` in its stands and, for the clip debugger,
- * its grass mown in another pattern.
+ * The ground whose plan `make` makes, named `name`, with `crowd` and, for
+ * the clip debugger, its grass mown in another pattern: the same objects
+ * each time.
  */
-export const clubGround = (
-  club: ClubGround,
+const groundOf = (
+  name: string,
+  make: () => GroundPlan,
   crowd: Crowd,
   grass?: GrassPattern
 ): MatchGround => {
-  const planKey = [club.club, club.division, club.seats, grass ?? ''].join('|');
+  const planKey = `${name}|${grass ?? ''}`;
   let plan = plans.get(planKey);
   if (!plan) {
-    const made = groundPlan(club);
+    const made = make();
     plan = grass ? { ...made, grass } : made;
     plans.set(planKey, plan);
   }
@@ -69,20 +76,32 @@ export const clubGround = (
   return ground;
 };
 
+/**
+ * A club's ground, with `crowd` in its stands and, for the clip debugger,
+ * its grass mown in another pattern.
+ */
+export const clubGround = (
+  club: ClubGround,
+  crowd: Crowd,
+  grass?: GrassPattern
+): MatchGround =>
+  groundOf(
+    `club|${club.club}|${club.division}|${club.seats}`,
+    () => groundPlan(club),
+    crowd,
+    grass
+  );
+
+/**
+ * The final ground (#274), owned by no club, with `crowd` in its stands
+ * and, for the clip debugger, its grass mown in another pattern.
+ */
+export const finalGround = (crowd: Crowd, grass?: GrassPattern): MatchGround =>
+  groundOf('final', () => finalPlan, crowd, grass);
+
 /** Whether `fixture` is the F.A. Cup final. */
 const isFinal = (game: Game, fixture: MatchFixture) =>
   fixture.kind === 'cup' && game.cupRound === 8;
-
-/**
- * The ground the final is played at, with `crowd` in its stands. Until the
- * final ground is designed (#274), it is the home side's.
- */
-const finalGround = (
-  game: Game,
-  fixture: MatchFixture,
-  crowd: Crowd,
-  grass?: GrassPattern
-) => homeGround(game, fixture, crowd, grass);
 
 /** The home side's ground, its seats in the home kit, with `crowd`. */
 const homeGround = (
@@ -116,7 +135,7 @@ export const matchGroundFor = (
 ): MatchGround => {
   const { away, home } = matchKits(game, fixture);
   return isFinal(game, fixture)
-    ? finalGround(game, fixture, evenly(home, away), grass)
+    ? finalGround(evenly(home, away), grass)
     : homeGround(game, fixture, favouring(home, away), grass);
 };
 
@@ -130,5 +149,5 @@ export const celebrationGroundFor = (
 ): MatchGround => {
   const { away, home } = matchKits(game, fixture);
   const [winners, losers] = fixture.home ? [home, away] : [away, home];
-  return finalGround(game, fixture, favouring(winners, losers));
+  return finalGround(favouring(winners, losers));
 };

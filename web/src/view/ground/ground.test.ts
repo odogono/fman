@@ -1,12 +1,13 @@
 import { expect, test } from 'bun:test';
 
+import { inkColours } from '../clip-match';
 import { pitchLength, pitchWidth } from '../clips';
 import { clubGround, evenly, favouring } from '../match-ground';
 import { boardSolids } from './boards';
 import { goalPieces } from './goals';
-import { groundPlan, type GroundPlan } from './grounds';
+import { finalPlan, groundPlan, type GroundPlan } from './grounds';
 import { aimCamera, groundCamera, type GroundView } from './painter';
-import { fans } from './stands';
+import { fans, standsSolid } from './stands';
 
 const home = '#d70000';
 const away = '#0000d7';
@@ -143,4 +144,25 @@ test('only a Fourth Division ground leaves a side bare, and never both touchline
     expect(sides.filter(s => s === 'left' || s === 'right')).toHaveLength(2);
   }
   expect(clubs.some(club => plan(club, 4).stands.length < 4)).toBe(true);
+});
+
+test('the final ground is grander than any club’s: tall, seated, roofed stands all round', () => {
+  expect(finalPlan.stands.map(s => s.side).toSorted()).toEqual([
+    'bottom',
+    'left',
+    'right',
+    'top'
+  ]);
+  expect(finalPlan.stands.every(s => s.seated && s.roof)).toBe(true);
+  const grandest = Math.max(
+    ...clubs.flatMap(club => [1, 2, 3, 4].map(d => tallest(plan(club, d))))
+  );
+  const lowest = Math.min(...finalPlan.stands.map(s => s.rows * s.riser));
+  expect(lowest).toBeGreaterThan(grandest);
+});
+
+test('the final ground’s seats are in no kit’s colours, and its steps are not bare concrete', () => {
+  expect(inkColours).not.toContain(finalPlan.seats as never);
+  const { steps: _steps, ...bare } = finalPlan;
+  expect(standsSolid(finalPlan).colour).not.toEqual(standsSolid(bare).colour);
 });

@@ -40,6 +40,11 @@ export type GroundPlan = Readonly<{
   /** The seats' colour. */
   seats: string;
   stands: readonly Stand[];
+  /**
+   * The colour of the steps between the seats, where the fans don't hide
+   * them, in place of bare concrete.
+   */
+  steps?: string;
 }>;
 
 type Size = Readonly<{
@@ -102,4 +107,26 @@ export const groundPlan = (ground: ClubGround): GroundPlan => {
     seats: ground.seats,
     stands
   };
+};
+
+/**
+ * The final ground (#274): designed once, grander than any club's. Taller,
+ * seated stands on all four sides, every one roofed, a pitch mown in
+ * checks, and claret seats in no club's colours. The fans hide the seats,
+ * so the steps between them are claret too, where they show.
+ */
+export const finalPlan: GroundPlan = {
+  grass: 'checks',
+  seats: '#8c1c3c',
+  stands: (['left', 'right', 'top', 'bottom'] as const).map(side => ({
+    riser: 0.5,
+    roof: 3,
+    rowDepth: 0.9,
+    // The touchlines' stands tower over the ends'; even the ends' outdo
+    // a First Division club's main stand.
+    rows: side === 'left' || side === 'right' ? 18 : 15,
+    seated: true,
+    side
+  })),
+  steps: '#6a1430'
 };

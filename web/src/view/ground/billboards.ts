@@ -8,6 +8,8 @@ import {
 
 import type { ArtGrid } from '../assets/clip-sprites';
 import { artPixelMetres, rasterise, type ArtPalette } from '../clip-sprites';
+import type { Billboard } from './frame-sprites';
+import { createShelves } from './shelves';
 
 // The ground's sprites (#263): every grid and palette drawn once into one
 // atlas, and every sprite in a frame drawn in one call. A billboard stands
@@ -36,27 +38,16 @@ export const createAtlas = (gl: OGLRenderingContext) => {
     minFilter: gl.NEAREST
   });
   const rects = new Map<string, Rect>();
-  let x = 0;
-  let y = 0;
-  let shelf = 0;
-  let generation = 0;
+  const shelves = createShelves(atlasSize);
   const rect = (grid: ArtGrid, palette: ArtPalette, mirrored: boolean) => {
     const key = `${grid.join('/')}|${Object.entries(palette).join()}|${mirrored}`;
     let found = rects.get(key);
     if (!found) {
       const { data, height, width } = rasterise(grid, palette, mirrored);
-      if (x + width + 1 > atlasSize) {
-        x = 0;
-        y += shelf + 1;
-        shelf = 0;
-      }
-      if (y + height > atlasSize) {
+      const { restarted, x, y } = shelves.place(width, height);
+      if (restarted) {
         ctx.clearRect(0, 0, atlasSize, atlasSize);
         rects.clear();
-        x = 0;
-        y = 0;
-        shelf = 0;
-        generation++;
       }
       ctx.putImageData(new ImageData(data, width, height), x, y);
       found = [
@@ -66,33 +57,14 @@ export const createAtlas = (gl: OGLRenderingContext) => {
         height / atlasSize
       ];
       rects.set(key, found);
-      x += width + 1;
-      shelf = Math.max(shelf, height);
       texture.needsUpdate = true;
     }
     return found;
   };
-  return { generation: () => generation, rect, texture };
+  return { generation: shelves.generation, rect, texture };
 };
 
 export type Atlas = ReturnType<typeof createAtlas>;
-
-/** One sprite in a frame. */
-export type Billboard = Readonly<{
-  /** Lies flat on the ground, rather than standing facing the screen. */
-  flat?: boolean;
-  grid: ArtGrid;
-  /** Raised this many art pixels up the screen above its foot. */
-  lift?: number;
-  mirrored?: boolean;
-  /** Sorts it: larger is drawn later, over what is behind. */
-  order: number;
-  palette: ArtPalette;
-  /** Its foot, in metres: across, up from the ground, and down the pitch. */
-  x: number;
-  y?: number;
-  z: number;
-}>;
 
 const vertexShader = /* glsl */ `
   attribute vec2 corner;
@@ -191,11 +163,11 @@ export const createBillboards = (
   });
   const mesh = new Mesh(gl, { frustumCulled: false, geometry, program });
 
+  /** Fills it with `sprites`, drawn in the order given. */
   const fill = (sprites: readonly Billboard[]) => {
-    const sorted = sprites.toSorted((a, b) => a.order - b.order);
-    const count = Math.min(capacity, sorted.length);
+    const count = Math.min(capacity, sprites.length);
     for (let i = 0; i < count; i++) {
-      const sprite = sorted[i]!;
+      const sprite = sprites[i]!;
       const [u, v, w, h] = atlas.rect(
         sprite.grid,
         sprite.palette,
@@ -223,27 +195,23 @@ export const createBillboards = (
 };
 
 /**
- * Sprites drawn in layers between solid pieces of the scene, such as a
- * goal's net and frame: a sprite whose order is at or past a layer's
- * `from` is drawn after the piece at that order. The scene draws layer `i`
- * after the piece at `from[i - 1]` and before the piece at `from[i]`.
+ * Sprites drawn in `count` layers between solid pieces of the scene, such
+ * as a goal's net and frame, each layer its own mesh (`layerBounds`).
  */
 export const createLayers = (
   gl: OGLRenderingContext,
   atlas: Atlas,
-  from: readonly number[]
+  count: number
 ) => {
-  const layers = [-Infinity, ...from].map(() => createBillboards(gl, atlas));
-  const fill = (sprites: readonly Billboard[]) => {
-    const split = layers.map((): Billboard[] => []);
-    for (const sprite of sprites) {
-      split[from.filter(f => sprite.order >= f).length]!.push(sprite);
-    }
+  const layers = Array.from({ length: count }, () =>
+    createBillboards(gl, atlas)
+  );
+  const fill = (split: readonly (readonly Billboard[])[]) => {
     const before = atlas.generation();
-    layers.forEach((layer, i) => layer.fill(split[i]!));
+    layers.forEach((layer, i) => layer.fill(split[i] ?? []));
     // The atlas started over part way, so the sprites before are gone.
     if (atlas.generation() !== before) {
-      layers.forEach((layer, i) => layer.fill(split[i]!));
+      layers.forEach((layer, i) => layer.fill(split[i] ?? []));
     }
   };
   const setViewport = (width: number, height: number) => {

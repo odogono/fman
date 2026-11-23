@@ -10,7 +10,7 @@ import {
   type AmountEntry
 } from './amount-entry';
 import type { App, Dom, MenuControl } from './app';
-import { fitClipCanvas, paintClip } from './clip-canvas';
+import { canPaintClips, fitClipCanvas, paintClip } from './clip-canvas';
 import { paintShot } from './clip-wipe';
 import type { BarButton } from './context-bar';
 import { celebrationFrame } from './cup-celebration';
@@ -1168,10 +1168,10 @@ const paintCupReplay = (pane: HTMLElement, replay: CupReplay) => {
  * Modern mode's cup result: through, out, or the cup won. Winning plays
  * the cup celebration on the pitch, paced by the original's timed
  * celebration, before Continue; under reduced motion it shows the lift
- * from the start.
+ * from the start, and without WebGL (ADR 0018) the cup won's banner.
  */
 const paintCupResult = (pane: HTMLElement, result: CupResult) => {
-  const { celebration } = result;
+  const celebration = canPaintClips() ? result.celebration : undefined;
   const playing = Boolean(celebration) && !result.done.enabled;
   pane.classList.toggle('celebrating', playing);
   // The scene's canvas stays put while it plays, so painting each frame
@@ -2184,6 +2184,9 @@ export const createBrowserDom = (app: HTMLElement) => {
       }
     },
     chooseFile: () => loadInput.click(),
+    get clipsUnpainted() {
+      return !canPaintClips();
+    },
     closeMenu: () => menu.close(),
     get coarsePointer() {
       // Any touchscreen, not only a main touch pointer: some phones and

@@ -1,28 +1,6 @@
-import { cupArt, shadowArt, type ArtGrid } from './assets/clip-sprites';
 import { drawCard, drawLabel, overlayUnit } from './clip-card';
 import { drawGoal } from './clip-goal';
-import {
-  artPixelSize,
-  ballHeld,
-  ballLiftMetres,
-  ballSprite,
-  cupPalette,
-  iconPalette,
-  looksFor,
-  playerPalette,
-  rasterise,
-  spriteFor,
-  statusSprite,
-  type ArtPalette
-} from './clip-sprites';
-import {
-  boardPieces,
-  crowdPieces,
-  goalPieces,
-  shadowPalette,
-  terraceFrom,
-  terraceRow
-} from './clip-stadium';
+import { artPixelSize, spriteFor, statusSprite } from './clip-sprites';
 import {
   cameraAspect,
   cameraWide,
@@ -33,10 +11,13 @@ import {
   type ClipFrame,
   type ClipSide
 } from './clips';
+import type { GroundPainter } from './ground/painter';
+import { surround, type GrassPattern } from './ground/pitch';
 
-// Paints a clip's frame (#144): the pitch and its markings, then each
-// player and the ball as sprites (#146) on whole device pixels. The camera
-// shows a patch of the pitch; a mini-map shows it all.
+// Paints a clip's frame (#144): the ground in 3D (ADR 0018), with each
+// player and the ball as sprites (#146) on it, then the label, the card,
+// the goal announcement and a mini-map over it, on whole device pixels.
+// The camera shows a patch of the pitch; the mini-map shows it all.
 
 export type ClipSides = Readonly<{ attack: ClipSide; defence: ClipSide }>;
 
@@ -50,11 +31,16 @@ export type ClipOverlays = Readonly<{
    * players (indexes into the frame's players) and is listed in a corner.
    */
   problems?: readonly Readonly<{ players: readonly number[]; text: string }>[];
-}>;
+}> &
+  Readonly<{
+    /** The pitch mown in another pattern, for the debug page. */
+    grass?: GrassPattern;
+    /** The camera at another tilt, for the debug page. */
+    tilt?: number;
+  }>;
 
-export const grass = ['#2f7d32', '#2a7230'] as const;
-export const surround = '#245f28';
-const line = 'rgba(255, 255, 255, 0.85)';
+/** The camera's angle from straight down, in degrees, behind the bottom goal. */
+export const clipTilt = 35;
 
 /**
  * A box wider than square, as on a wide window (#255), is filled down to
@@ -92,125 +78,69 @@ export const fitClipCanvas = (canvas: HTMLCanvasElement) => {
   return { height, ratio, width };
 };
 
-export const markings = (ctx: CanvasRenderingContext2D) => {
-  ctx.strokeStyle = line;
-  ctx.lineWidth = 0.15;
-  ctx.strokeRect(0, 0, pitchWidth, pitchLength);
-  ctx.beginPath();
-  ctx.moveTo(0, pitchLength / 2);
-  ctx.lineTo(pitchWidth, pitchLength / 2);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.arc(pitchWidth / 2, pitchLength / 2, 9.15, 0, Math.PI * 2);
-  ctx.stroke();
-  for (const top of [true, false]) {
-    const edge = top ? 0 : pitchLength;
-    const into = top ? 1 : -1;
-    for (const [width, depth] of [
-      [40.32, 16.5],
-      [18.32, 5.5]
-    ] as const) {
-      const x = (pitchWidth - width) / 2;
-      ctx.strokeRect(x, Math.min(edge, edge + into * depth), width, depth);
-    }
-    ctx.fillStyle = line;
-    for (const [x, y, r] of [
-      [pitchWidth / 2, pitchLength / 2, 0.3],
-      [pitchWidth / 2, edge + into * 11, 0.25]
-    ] as const) {
-      ctx.beginPath();
-      ctx.arc(x, y, r, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.beginPath();
-    ctx.arc(
-      pitchWidth / 2,
-      edge + into * 11,
-      9.15,
-      top ? 0.2 * Math.PI : 1.2 * Math.PI,
-      top ? 0.8 * Math.PI : 1.8 * Math.PI
-    );
-    ctx.stroke();
-  }
-};
-
-/** The stands' concrete, a step for each row of the crowd. */
-const terraces = (ctx: CanvasRenderingContext2D) => {
-  const far = 40;
-  const regions = [
-    [-far, -far, pitchWidth + 2 * far, far - terraceFrom],
-    [-far, pitchLength + terraceFrom, pitchWidth + 2 * far, far],
-    [-far, -terraceFrom, far - terraceFrom, pitchLength + 2 * terraceFrom],
-    [pitchWidth + terraceFrom, -terraceFrom, far, pitchLength + 2 * terraceFrom]
-  ] as const;
-  ctx.fillStyle = '#8c8c8c';
-  for (const [x, y, w, h] of regions) {
-    ctx.fillRect(x, y, w, h);
-  }
-  ctx.fillStyle = '#7a7a7a';
-  for (let out = terraceFrom; out < far; out += terraceRow) {
-    ctx.fillRect(-far, -out - 0.25, pitchWidth + 2 * far, 0.25);
-    ctx.fillRect(-far, pitchLength + out, pitchWidth + 2 * far, 0.25);
-    ctx.fillRect(
-      -out - 0.25,
-      -terraceFrom,
-      0.25,
-      pitchLength + 2 * terraceFrom
-    );
-    ctx.fillRect(
-      pitchWidth + out,
-      -terraceFrom,
-      0.25,
-      pitchLength + 2 * terraceFrom
-    );
-  }
-};
-
 const colourOf = (sides: ClipSides, player: ClipFrame['players'][number]) => {
   const side = sides[player.side];
   return player.keeper ? side.keeper : side.kit;
 };
 
-/** Each grid and palette drawn once, at one device pixel per art pixel. */
-const spriteCache = new Map<string, HTMLCanvasElement>();
-const spriteImage = (
-  ctx: CanvasRenderingContext2D,
-  grid: ArtGrid,
-  palette: ArtPalette,
-  mirrored: boolean
-) => {
-  const key = `${grid.join('/')}|${Object.values(palette).join()}|${mirrored}`;
-  let image = spriteCache.get(key);
-  if (!image) {
-    const { data, height, width } = rasterise(grid, palette, mirrored);
-    image = ctx.canvas.ownerDocument.createElement('canvas');
-    image.width = width;
-    image.height = height;
-    image
-      .getContext('2d')!
-      .putImageData(new ImageData(data, width, height), 0, 0);
-    spriteCache.set(key, image);
+/**
+ * The ground is rendered into one WebGL canvas, shared by every clip's
+ * canvas, which copies its picture. OGL loads only when the first clip
+ * paints.
+ */
+const ground: {
+  canvas?: HTMLCanvasElement;
+  create?: (canvas: HTMLCanvasElement) => GroundPainter;
+  loading?: Promise<void>;
+  /** WebGL was lost, until the browser gives it back. */
+  lost: boolean;
+  painter?: GroundPainter | undefined;
+  usable?: boolean;
+} = { lost: false };
+
+const groundCanvas = () => {
+  if (!ground.canvas) {
+    const canvas = document.createElement('canvas');
+    const options: WebGLContextAttributes = { alpha: false, antialias: false };
+    const gl =
+      canvas.getContext('webgl2', options) ??
+      canvas.getContext('webgl', options);
+    ground.canvas = canvas;
+    ground.usable = typeof gl?.drawingBufferWidth === 'number';
+    // Phones drop WebGL now and then, as an app goes into the background;
+    // asking keeps the chance of getting it back.
+    canvas.addEventListener('webglcontextlost', event => {
+      event.preventDefault();
+      ground.lost = true;
+    });
+    canvas.addEventListener('webglcontextrestored', () => {
+      ground.lost = false;
+      ground.painter = ground.create?.(canvas);
+    });
   }
-  return image;
+  return ground.canvas;
 };
 
 /**
- * Draws `grid` with its bottom centre at device pixel (x, y), `size` device
- * pixels to each art pixel, and returns the device row of its top.
+ * Whether this browser can paint the clips: without WebGL, the highlights
+ * show the ticker without clips (ADR 0018).
  */
-const drawSprite = (
-  ctx: CanvasRenderingContext2D,
-  grid: ArtGrid,
-  palette: ArtPalette,
-  at: Readonly<{ mirrored?: boolean; size: number; x: number; y: number }>
-) => {
-  const image = spriteImage(ctx, grid, palette, at.mirrored ?? false);
-  const width = image.width * at.size;
-  const height = image.height * at.size;
-  const left = Math.round(at.x - width / 2);
-  const top = Math.round(at.y - height);
-  ctx.drawImage(image, left, top, width, height);
-  return top;
+export const canPaintClips = () => {
+  groundCanvas();
+  return ground.usable ?? false;
+};
+
+/** Loads the ground's painter, once; clips paint only the surround until it has. */
+export const loadGround = () => {
+  ground.loading ??= import('./ground/painter').then(
+    ({ createGroundPainter }) => {
+      ground.create = createGroundPainter;
+      if (canPaintClips()) {
+        ground.painter = createGroundPainter(groundCanvas());
+      }
+    }
+  );
+  return ground.loading;
 };
 
 /**
@@ -285,169 +215,69 @@ export const paintClip = (
   ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
   ctx.fillStyle = surround;
   ctx.fillRect(0, 0, width, height);
-  ctx.save();
-  ctx.translate(width / 2, height / 2);
-  ctx.scale(scale, scale);
-  ctx.translate(-camera.x, -camera.y);
-  for (let y = 0; y < pitchLength; y += 5) {
-    ctx.fillStyle = grass[(y / 5) % 2]!;
-    ctx.fillRect(0, y, pitchWidth, Math.min(5, pitchLength - y));
+
+  // The ground and the sprites, rendered at one pixel to an art pixel and
+  // scaled up in whole device pixels.
+  const pixel = artPixelSize(scale, ratio);
+  const { lost, painter } = ground;
+  if (!painter && canPaintClips()) {
+    void loadGround();
   }
-  terraces(ctx);
-  markings(ctx);
+  const project =
+    painter && !lost
+      ? painter.paint(frame, sides, {
+          grass: overlays.grass ?? 'stripes',
+          high: Math.ceil((height * ratio) / pixel),
+          metresPerPixel: pixel / (scale * ratio),
+          tilt: overlays.tilt ?? clipTilt,
+          wide: Math.ceil((width * ratio) / pixel),
+          x: camera.x,
+          y: camera.y
+        })
+      : undefined;
+  if (project) {
+    const picture = groundCanvas();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(picture, 0, 0, picture.width * pixel, picture.height * pixel);
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+  }
+  /** A point on the pitch, `up` metres above it, in CSS pixels on the box. */
+  const onScreen = (
+    x: number,
+    y: number,
+    up = 0
+  ): readonly [number, number] => {
+    if (!project) {
+      return [
+        width / 2 + (x - camera.x) * scale,
+        height / 2 + (y - up - camera.y) * scale
+      ];
+    }
+    const [px, py] = project(x, y, up);
+    return [(px * pixel) / ratio, (py * pixel) / ratio];
+  };
+  /** The top of a player's sprite and any icon over it, in CSS pixels. */
+  const topOf = (player: ClipFrame['players'][number]) => {
+    const rows =
+      spriteFor(player).grid.length +
+      (player.status ? statusSprite(player.status).length + 1 : 0);
+    return onScreen(player.x, player.y)[1] - (rows * pixel) / ratio;
+  };
   if (overlays.path && overlays.path.length > 1) {
     ctx.strokeStyle = 'rgba(255, 230, 0, 0.8)';
-    ctx.lineWidth = 0.2;
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    overlays.path.forEach((p, i) =>
-      i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)
-    );
+    overlays.path.forEach((p, i) => {
+      const [x, y] = onScreen(p.x, p.y);
+      if (i) {
+        ctx.lineTo(x, y);
+      } else {
+        ctx.moveTo(x, y);
+      }
+    });
     ctx.stroke();
   }
-  const { ball } = frame;
-  const lift = ball.height * ballLiftMetres;
-  // A ball is held, or, in the cup celebration, put away.
-  const held = Boolean(frame.trophy) || ballHeld(frame.players, ball);
-  ctx.restore();
-
-  // The sprites, in device pixels, from the far side of the ground to the
-  // near: the stands, boards and goals with the players and the ball, so
-  // the nearer stands in front.
-  const onScreen = (x: number, y: number) => [
-    width / 2 + (x - camera.x) * scale,
-    height / 2 + (y - camera.y) * scale
-  ];
-  const pixel = artPixelSize(scale, ratio);
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.imageSmoothingEnabled = false;
-  const attackers = sides.attack.players.length;
-  /** The top of each player's sprite and icon, in CSS pixels. */
-  const tops = new Map<ClipFrame['players'][number], number>();
-  const draws: { depth: number; draw: () => void }[] = [];
-  const reach = camera.width;
-  for (const piece of [
-    ...goalPieces(),
-    ...boardPieces(),
-    ...crowdPieces(sides, frame.cheer ?? false)
-  ]) {
-    if (
-      Math.abs(piece.at.x - camera.x) > reach ||
-      Math.abs(piece.at.y - camera.y) > reach * aspect
-    ) {
-      continue;
-    }
-    draws.push({
-      depth: piece.depth,
-      draw: () => {
-        const [x, y] = onScreen(piece.at.x, piece.at.y);
-        drawSprite(ctx, piece.grid, piece.palette, {
-          mirrored: piece.mirrored,
-          size: pixel,
-          x: x! * ratio,
-          y: y! * ratio
-        });
-      }
-    });
-  }
-  // Shadows first, lit from the top left like the goals', so everything
-  // stands on them.
-  const shadow = (grid: ArtGrid, x: number, y: number) =>
-    draws.push({
-      depth: -Infinity,
-      draw: () => {
-        const [sx, sy] = onScreen(x, y);
-        drawSprite(ctx, grid, shadowPalette, {
-          size: pixel,
-          x: sx! * ratio,
-          y: sy! * ratio
-        });
-      }
-    });
-  for (const player of frame.players) {
-    shadow(shadowArt.player, player.x + 0.3, player.y + 0.12);
-  }
-  if (!held) {
-    shadow(
-      shadowArt.ball,
-      ball.x + 0.15 + lift * 0.5,
-      ball.y + 0.08 + lift * 0.2
-    );
-  }
-  frame.players.forEach((player, i) => {
-    draws.push({
-      depth: player.y,
-      draw: () => {
-        const side = sides[player.side];
-        const place = i < attackers ? i : i - attackers;
-        const looks = looksFor(side.players[place]?.label ?? '', place);
-        const [x, y] = onScreen(player.x, player.y);
-        const sprite = spriteFor(player);
-        let top = drawSprite(
-          ctx,
-          sprite.grid,
-          playerPalette(colourOf(sides, player), looks),
-          {
-            mirrored: sprite.mirrored,
-            size: pixel,
-            x: x! * ratio,
-            y: y! * ratio
-          }
-        );
-        if (player.status) {
-          top = drawSprite(ctx, statusSprite(player.status), iconPalette, {
-            size: pixel,
-            x: x! * ratio,
-            y: top - pixel
-          });
-        }
-        tops.set(player, top / ratio);
-      }
-    });
-  });
-  const { trophy } = frame;
-  if (trophy) {
-    // Just in front of whoever holds it, so the hands stay behind the cup.
-    draws.push({
-      depth: trophy.y + 0.01,
-      draw: () => {
-        const [x, y] = onScreen(trophy.x, trophy.y - trophy.raise);
-        drawSprite(ctx, cupArt, cupPalette, {
-          size: pixel,
-          x: x! * ratio,
-          y: y! * ratio
-        });
-      }
-    });
-  }
-  if (!held) {
-    draws.push({
-      depth: ball.y,
-      draw: () => {
-        const [x, y] = onScreen(ball.x, ball.y - lift);
-        const grid = ballSprite(ball.x, ball.y);
-        drawSprite(ctx, grid, iconPalette, {
-          size: pixel,
-          x: x! * ratio,
-          y: y! * ratio + (grid.length * pixel) / 2
-        });
-      }
-    });
-  }
-  for (const { draw } of draws.toSorted((a, b) => a.depth - b.depth)) {
-    draw();
-  }
-  // Confetti over everything, two art pixels square a speck.
-  for (const speck of frame.confetti ?? []) {
-    const [x, y] = onScreen(speck.x, speck.y);
-    ctx.fillStyle = speck.colour;
-    ctx.fillRect(
-      Math.round(x! * ratio),
-      Math.round(y! * ratio),
-      Math.ceil(pixel * 2),
-      Math.ceil(pixel * 2)
-    );
-  }
-  ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
 
   ctx.textBaseline = 'middle';
   ctx.textAlign = 'center';
@@ -458,7 +288,7 @@ export const paintClip = (
       const [x, y] = onScreen(player.x, player.y);
       const id = counts[player.side]++;
       ctx.fillStyle = player.side === 'attack' ? '#fff' : '#ffe14d';
-      ctx.fillText(String(id), x! + scale * 1.4, y! - scale * 1.2);
+      ctx.fillText(String(id), x + scale * 1.4, y - scale * 1.2);
     }
   }
   if (overlays.problems?.length) {
@@ -470,7 +300,7 @@ export const paintClip = (
       if (player) {
         const [x, y] = onScreen(player.x, player.y);
         ctx.beginPath();
-        ctx.arc(x!, y! - scale * 0.6, scale * 1.2, 0, Math.PI * 2);
+        ctx.arc(x, y - scale * 0.6, scale * 1.2, 0, Math.PI * 2);
         ctx.stroke();
       }
     }
@@ -486,8 +316,8 @@ export const paintClip = (
     const [x, y] = onScreen(label.x, label.y);
     // Over the named player's head, and any status icon.
     const named = frame.players.find(p => p.x === label.x && p.y === label.y);
-    const above = (named && tops.get(named)) ?? y! - scale * 2;
-    drawLabel(ctx, label.text, x! * ratio, (above - 4) * ratio, unit);
+    const above = named ? topOf(named) : y - scale * 2;
+    drawLabel(ctx, label.text, x * ratio, (above - 4) * ratio, unit);
   }
   if (frame.card) {
     drawCard(ctx, frame.card, sides.attack.kit, unit);
@@ -504,6 +334,7 @@ export const paintClip = (
   }
   ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
   if (frame.minimap) {
+    const { ball } = frame;
     const mapWidth = Math.round(playersWidth * 0.2);
     const mapHeight = (mapWidth * pitchLength) / pitchWidth;
     const left = width - mapWidth - 8;

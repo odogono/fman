@@ -1,9 +1,14 @@
-import { grass } from '../clip-canvas';
 import { pitchLength, pitchWidth } from '../clips';
 
-// The grass's mowing patterns (#263): each says which of today's two greens
-// a point of the pitch is mown in. Patterns are measured from the centre
-// spot, so each is the same at both ends.
+// The pitch (#263): its grass, mown in one of several patterns, and its
+// markings. Each pattern says which of two greens a point of the pitch is
+// mown in, measured from the centre spot, so each is the same at both ends.
+
+/** The grass's two greens, light and dark. */
+const grass = ['#2f7d32', '#2a7230'] as const;
+/** The ground around the pitch. */
+export const surround = '#245f28';
+const line = 'rgba(255, 255, 255, 0.85)';
 
 export const grassPatterns = [
   'stripes',
@@ -65,4 +70,47 @@ export const mowPitch = (pattern: GrassPattern, perMetre: number) => {
     }
   }
   return image;
+};
+
+/** The pitch's markings, drawn in metres on `ctx`. */
+export const markings = (ctx: CanvasRenderingContext2D) => {
+  ctx.strokeStyle = line;
+  ctx.lineWidth = 0.15;
+  ctx.strokeRect(0, 0, pitchWidth, pitchLength);
+  ctx.beginPath();
+  ctx.moveTo(0, pitchLength / 2);
+  ctx.lineTo(pitchWidth, pitchLength / 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(pitchWidth / 2, pitchLength / 2, 9.15, 0, Math.PI * 2);
+  ctx.stroke();
+  for (const top of [true, false]) {
+    const edge = top ? 0 : pitchLength;
+    const into = top ? 1 : -1;
+    for (const [width, depth] of [
+      [40.32, 16.5],
+      [18.32, 5.5]
+    ] as const) {
+      const x = (pitchWidth - width) / 2;
+      ctx.strokeRect(x, Math.min(edge, edge + into * depth), width, depth);
+    }
+    ctx.fillStyle = line;
+    for (const [x, y, r] of [
+      [pitchWidth / 2, pitchLength / 2, 0.3],
+      [pitchWidth / 2, edge + into * 11, 0.25]
+    ] as const) {
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.beginPath();
+    ctx.arc(
+      pitchWidth / 2,
+      edge + into * 11,
+      9.15,
+      top ? 0.2 * Math.PI : 1.2 * Math.PI,
+      top ? 0.8 * Math.PI : 1.8 * Math.PI
+    );
+    ctx.stroke();
+  }
 };

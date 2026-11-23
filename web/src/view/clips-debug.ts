@@ -3,7 +3,7 @@ import type { MatchFixture } from '../sim/league';
 import type { Game } from '../sim/management';
 import type { Moment } from '../sim/moments';
 import { tickerPause } from '../sim/ticker';
-import { fitClipCanvas, paintClip } from './clip-canvas';
+import { clipTilt, fitClipCanvas, loadGround, paintClip } from './clip-canvas';
 import { checkClip, clipIssueKinds, type ClipIssue } from './clip-checks';
 import { clipInputFor, inkColours, keeperColoursFor } from './clip-match';
 import {
@@ -33,6 +33,7 @@ import {
   type Restart
 } from './clips';
 import { celebrationFrame, type CelebrationProgress } from './cup-celebration';
+import { grassPatterns, type GrassPattern } from './ground/pitch';
 import { named } from './ticker-layout';
 
 // The clip debugger (#144): `web/clips.html`, served by `bun run dev` and
@@ -70,6 +71,8 @@ const settings = {
   foul: 'no' as 'no' | 'yes',
   homeEnergy: 20,
   homeKit: 2,
+  /** The pitch's mowing (#273). */
+  grass: 'stripes' as GrassPattern,
   ids: false,
   keeper: true,
   kind: 'goal' as Moment['kind'],
@@ -89,8 +92,13 @@ const settings = {
   side: 'home' as 'away' | 'home',
   speed: 1,
   /** For an injury (#110): tackled, or pulling up. */
-  tackled: 'yes' as 'no' | 'yes'
+  tackled: 'yes' as 'no' | 'yes',
+  /** The camera's angle from straight down, in degrees (ADR 0018). */
+  tilt: clipTilt
 };
+
+/** What the ground looks like in the settings. */
+const groundView = () => ({ grass: settings.grass, tilt: settings.tilt });
 
 /**
  * The cup celebration on the debug page: its three parts in turn, as the
@@ -594,6 +602,23 @@ const renderControls = () => {
       checkbox(settings.problems, value => (settings.problems = value))
     )
   );
+  const groundControls = element(
+    'fieldset',
+    {},
+    element('legend', {}, 'Ground'),
+    labelled(
+      'Tilt',
+      number(settings.tilt, 0, 60, value => (settings.tilt = value))
+    ),
+    labelled(
+      'Grass',
+      select(
+        grassPatterns.map(pattern => [pattern, pattern] as const),
+        settings.grass,
+        value => (settings.grass = value as GrassPattern)
+      )
+    )
+  );
   const surveyButton = element(
     'button',
     { type: 'button' },
@@ -672,6 +697,7 @@ const renderControls = () => {
     shape,
     seed,
     overlays,
+    groundControls,
     checks,
     saved
   );
@@ -821,6 +847,9 @@ const setSettings = (changes: Partial<typeof settings>) => {
   rebuild();
   playing = false;
 };
+// The ground loads before `clipDebug` appears, so the recorder's first
+// frames show it.
+await loadGround();
 Object.assign(globalThis, {
   clipDebug: {
     get at() {
@@ -858,10 +887,16 @@ Object.assign(globalThis, {
         context,
         script.frame(frame),
         { attack: script.input.attack, defence: script.input.defence },
-        fitClipCanvas(canvas)
+        fitClipCanvas(canvas),
+        groundView()
       ),
     paintSequence: (index: number, frame: number) =>
-      paintShot(context, shotAt(sequence, index, frame), fitClipCanvas(canvas)),
+      paintShot(
+        context,
+        shotAt(sequence, index, frame),
+        fitClipCanvas(canvas),
+        groundView()
+      ),
     get script() {
       return script;
     },
@@ -890,6 +925,7 @@ const tick = (now: number) => {
     { attack: script.input.attack, defence: script.input.defence },
     fitClipCanvas(canvas),
     {
+      ...groundView(),
       ids: settings.ids,
       ...(settings.path ? { path } : {}),
       ...(settings.problems

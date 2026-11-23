@@ -1,21 +1,15 @@
 import {
-  BasicShadowMap,
-  CanvasTexture,
-  ColorManagement,
-  DirectionalLight,
-  Group,
-  LinearSRGBColorSpace,
+  Camera,
+  Geometry,
   Mesh,
-  MeshBasicMaterial,
-  NearestFilter,
-  NoColorSpace,
-  PerspectiveCamera,
-  PlaneGeometry,
-  Scene,
-  ShadowMaterial,
-  Vector3,
-  WebGLRenderer
-} from 'three';
+  Program,
+  RenderTarget,
+  Renderer,
+  Texture,
+  Transform,
+  Vec3,
+  type OGLRenderingContext
+} from 'ogl';
 
 import { cupArt, shadowArt } from '../assets/clip-sprites';
 import { grass, markings, surround, type ClipSides } from '../clip-canvas';
@@ -37,25 +31,31 @@ import {
 import { shadowPalette } from '../clip-stadium';
 import { pitchLength, pitchWidth, type ClipFrame } from '../clips';
 import { createAtlas, createLayers, type Billboard } from './billboards';
-import { boardsMesh } from './boards';
-import { goalModels } from './goals';
-import { fans, standsMesh, towardsSun } from './stands';
+import { boardCanvases, boardSolids } from './boards';
+import { goalPieces, netCanvas } from './goals';
+import { towardsSun, type Solid } from './solid';
+import { fans, standsSolid } from './stands';
 
 // The prototype's painter (#263): a clip's frame drawn over a 3D ground
-// with three.js. The ground, the stands, the boards and the goals are
-// geometry, lit by a sun that casts their shadows across the pitch; the
-// players, the ball and the fans are today's sprites, standing on their
-// points. The scene is rendered at one pixel to an art pixel and scaled up
-// in whole pixels, so it reads as the same art.
+// with OGL. The ground, the stands, the boards and the goals are geometry,
+// lit by a sun that casts their shadows across the pitch; the players, the
+// ball and the fans are today's sprites, standing on their points. The
+// scene is rendered at one pixel to an art pixel and scaled up in whole
+// pixels, so it reads as the same art.
 
 /** The camera's field of view, top to bottom: narrow, so near-flat. */
 const fieldOfView = 20;
 /** The ground beyond the lines that the pitch texture covers, in metres. */
 const beyond = 40;
 const texelsPerMetre = 10;
+/** How much of the light a shadow takes from the ground. */
+const shadowStrength = 0.32;
+/** The shadow map's size, in texels, and the ground it covers, in metres. */
+const shadowTexels = 2048;
+const shadowReach = 95;
 
-/** Today's pitch, stripes and markings, painted once as a texture. */
-const pitchTexture = () => {
+/** Today's pitch, stripes and markings, painted once on a canvas. */
+const pitchCanvas = () => {
   const canvas = document.createElement('canvas');
   canvas.width = (pitchWidth + 2 * beyond) * texelsPerMetre;
   canvas.height = (pitchLength + 2 * beyond) * texelsPerMetre;
@@ -69,23 +69,144 @@ const pitchTexture = () => {
     ctx.fillRect(0, y, pitchWidth, Math.min(5, pitchLength - y));
   }
   markings(ctx);
-  const texture = new CanvasTexture(canvas);
-  texture.magFilter = NearestFilter;
-  texture.minFilter = NearestFilter;
-  texture.generateMipmaps = false;
-  texture.colorSpace = NoColorSpace;
-  return texture;
+  return canvas;
 };
 
-const groundPlane = () => {
-  const geometry = new PlaneGeometry(
-    pitchWidth + 2 * beyond,
-    pitchLength + 2 * beyond
-  );
-  geometry.rotateX(-Math.PI / 2);
-  geometry.translate(pitchWidth / 2, 0, pitchLength / 2);
-  return geometry;
+const whiteCanvas = () => {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1;
+  canvas.height = 1;
+  const ctx = canvas.getContext('2d')!;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, 1, 1);
+  return canvas;
 };
+
+/** Pixel art: never smoothed, never shrunk into mipmaps. */
+const artTexture = (
+  gl: OGLRenderingContext,
+  image: HTMLCanvasElement,
+  repeat = false
+) =>
+  new Texture(gl, {
+    flipY: true,
+    generateMipmaps: false,
+    image,
+    magFilter: gl.NEAREST,
+    minFilter: gl.NEAREST,
+    wrapS: repeat ? gl.REPEAT : gl.CLAMP_TO_EDGE,
+    wrapT: repeat ? gl.REPEAT : gl.CLAMP_TO_EDGE
+  });
+
+/** The ground, flat at the foot of everything, with the pitch on it. */
+const groundGeometry = (gl: OGLRenderingContext) => {
+  const [x0, x1] = [-beyond, pitchWidth + beyond];
+  const [z0, z1] = [-beyond, pitchLength + beyond];
+  return new Geometry(gl, {
+    index: { data: new Uint16Array([0, 1, 2, 0, 2, 3]) },
+    position: {
+      data: new Float32Array([x0, 0, z0, x1, 0, z0, x1, 0, z1, x0, 0, z1]),
+      size: 3
+    },
+    // The canvas's top row is the far end of the ground.
+    uv: { data: new Float32Array([0, 1, 1, 1, 1, 0, 0, 0]), size: 2 }
+  });
+};
+
+const solidGeometry = (gl: OGLRenderingContext, solid: Solid) =>
+  new Geometry(gl, {
+    colour: { data: new Float32Array(solid.colour), size: 3 },
+    position: { data: new Float32Array(solid.position), size: 3 },
+    uv: { data: new Float32Array(solid.uv), size: 2 }
+  });
+
+const solidVertex = /* glsl */ `
+  attribute vec3 position;
+  attribute vec3 colour;
+  attribute vec2 uv;
+  uniform mat4 viewMatrix;
+  uniform mat4 projectionMatrix;
+  uniform float shear;
+  varying vec3 vColour;
+  varying vec2 vUv;
+  void main() {
+    vColour = colour;
+    vUv = uv;
+    // Heights drawn up the screen as well, as the sprites draw them.
+    vec3 at = vec3(position.xy, position.z - shear * position.y);
+    gl_Position = projectionMatrix * viewMatrix * vec4(at, 1.0);
+  }
+`;
+
+const solidFragment = /* glsl */ `
+  precision highp float;
+  uniform sampler2D map;
+  uniform float alphaTest;
+  varying vec3 vColour;
+  varying vec2 vUv;
+  void main() {
+    vec4 colour = texture2D(map, vUv) * vec4(vColour, 1.0);
+    if (colour.a < alphaTest) discard;
+    gl_FragColor = colour;
+  }
+`;
+
+/** The sun's view: how far each texel's nearest solid is from it. */
+const depthVertex = /* glsl */ `
+  attribute vec3 position;
+  attribute vec2 uv;
+  uniform mat4 viewMatrix;
+  uniform mat4 projectionMatrix;
+  varying vec2 vUv;
+  void main() {
+    vUv = uv;
+    gl_Position = projectionMatrix * viewMatrix * vec4(position, 1.0);
+  }
+`;
+
+const depthFragment = /* glsl */ `
+  precision highp float;
+  uniform sampler2D map;
+  uniform float alphaTest;
+  varying vec2 vUv;
+  void main() {
+    if (texture2D(map, vUv).a < alphaTest) discard;
+    gl_FragColor = vec4(1.0);
+  }
+`;
+
+const groundVertex = /* glsl */ `
+  attribute vec3 position;
+  attribute vec2 uv;
+  uniform mat4 viewMatrix;
+  uniform mat4 projectionMatrix;
+  uniform mat4 sunMatrix;
+  varying vec2 vUv;
+  varying vec4 vSun;
+  void main() {
+    vUv = uv;
+    vSun = sunMatrix * vec4(position, 1.0);
+    gl_Position = projectionMatrix * viewMatrix * vec4(position, 1.0);
+  }
+`;
+
+const groundFragment = /* glsl */ `
+  precision highp float;
+  uniform sampler2D map;
+  uniform sampler2D shadowMap;
+  uniform float shadowStrength;
+  varying vec2 vUv;
+  varying vec4 vSun;
+  void main() {
+    vec3 colour = texture2D(map, vUv).rgb;
+    vec3 sun = vSun.xyz / vSun.w * 0.5 + 0.5;
+    bool inside = all(greaterThan(sun, vec3(0.0))) && all(lessThan(sun, vec3(1.0)));
+    if (inside && sun.z - 0.001 > texture2D(shadowMap, sun.xy).r) {
+      colour *= 1.0 - shadowStrength;
+    }
+    gl_FragColor = vec4(colour, 1.0);
+  }
+`;
 
 export type GroundView = ReturnType<typeof createGroundView>;
 
@@ -98,62 +219,119 @@ export const createGroundView = (
   canvas: HTMLCanvasElement,
   overlay: HTMLCanvasElement
 ) => {
-  ColorManagement.enabled = false;
-  const renderer = new WebGLRenderer({ antialias: false, canvas });
-  renderer.outputColorSpace = LinearSRGBColorSpace;
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = BasicShadowMap;
-  renderer.setPixelRatio(1);
-
-  const scene = new Scene();
-  scene.add(
-    new Mesh(groundPlane(), new MeshBasicMaterial({ map: pitchTexture() }))
+  const renderer = new Renderer({ antialias: false, canvas, dpr: 1 });
+  const { gl } = renderer;
+  const [r, g, b] = [1, 3, 5].map(
+    i => Number.parseInt(surround.slice(i, i + 2), 16) / 255
   );
-  const shade = new Mesh(
-    groundPlane().translate(0, 0.02, 0),
-    new ShadowMaterial({ opacity: 0.32 })
-  );
-  shade.receiveShadow = true;
-  shade.renderOrder = 1;
-  scene.add(shade);
-  // The stands and the goals, sheared so their heights also lean up the
-  // screen as the sprites' do (`oblique`).
-  const solid = new Group();
-  solid.matrixAutoUpdate = false;
-  solid.add(standsMesh(), ...boardsMesh());
-  scene.add(solid);
+  gl.clearColor(r!, g!, b!, 1);
 
-  const sun = new DirectionalLight(0xff_ff_ff, 1);
-  const centre = new Vector3(pitchWidth / 2, 0, pitchLength / 2);
-  sun.position.copy(centre).addScaledVector(towardsSun, 150);
-  sun.target.position.copy(centre);
-  sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048);
-  Object.assign(sun.shadow.camera, {
-    bottom: -95,
+  const shear = { value: 0 };
+  const white = artTexture(gl, whiteCanvas());
+
+  // The sun, looking down at the middle of the pitch from far off, and
+  // what it sees of the solids, to tell the ground where it is shaded.
+  const sun = new Camera(gl, {
+    bottom: -shadowReach,
     far: 320,
-    left: -95,
+    left: -shadowReach,
     near: 1,
-    right: 95,
-    top: 95
+    right: shadowReach,
+    top: shadowReach
   });
-  sun.shadow.camera.updateProjectionMatrix();
-  scene.add(sun, sun.target);
+  const centre = new Vec3(pitchWidth / 2, 0, pitchLength / 2);
+  sun.position.copy(centre).add(new Vec3(...towardsSun).scale(150));
+  sun.lookAt(centre);
+  sun.updateMatrixWorld();
+  const shadowMap = new RenderTarget(gl, {
+    depthTexture: true,
+    height: shadowTexels,
+    width: shadowTexels
+  });
+  const castsShadow = new Transform();
 
-  const atlas = createAtlas();
+  const scene = new Transform();
+  const ground = new Mesh(gl, {
+    frustumCulled: false,
+    geometry: groundGeometry(gl),
+    program: new Program(gl, {
+      cullFace: false,
+      fragment: groundFragment,
+      uniforms: {
+        map: { value: artTexture(gl, pitchCanvas()) },
+        shadowMap: { value: shadowMap.depthTexture },
+        shadowStrength: { value: shadowStrength },
+        sunMatrix: { value: sun.projectionViewMatrix }
+      },
+      vertex: groundVertex
+    })
+  });
+  ground.setParent(scene);
+
+  /**
+   * A solid piece in the scene and in the sun's view. A see-through one
+   * is drawn among the sprites, after what is behind it.
+   */
+  const addSolid = (
+    solid: Solid,
+    map = white,
+    options: Readonly<{ alphaTest?: number; seeThrough?: boolean }> = {}
+  ) => {
+    const geometry = solidGeometry(gl, solid);
+    const alphaTest = { value: options.alphaTest ?? 0 };
+    const mesh = new Mesh(gl, {
+      frustumCulled: false,
+      geometry,
+      program: new Program(gl, {
+        cullFace: false,
+        depthWrite: !options.seeThrough,
+        fragment: solidFragment,
+        transparent: options.seeThrough ?? false,
+        uniforms: { alphaTest, map: { value: map }, shear },
+        vertex: solidVertex
+      })
+    });
+    new Mesh(gl, {
+      frustumCulled: false,
+      geometry,
+      program: new Program(gl, {
+        cullFace: false,
+        fragment: depthFragment,
+        uniforms: { alphaTest, map: { value: map } },
+        vertex: depthVertex
+      })
+    }).setParent(castsShadow);
+    return mesh;
+  };
+
+  addSolid(standsSolid()).setParent(scene);
+  const boardArt = boardCanvases();
+  const boards = boardSolids();
+  addSolid(boards.faces, artTexture(gl, boardArt.faces, true)).setParent(scene);
+  addSolid(boards.backs, artTexture(gl, boardArt.backs, true)).setParent(scene);
+
   // The sprites, drawn in layers between the goals' nets and frames.
-  const goals = goalModels().toSorted((a, b) => a.order - b.order);
+  const atlas = createAtlas(gl);
+  const net = artTexture(gl, netCanvas(), true);
+  const goals = goalPieces().toSorted((a, b) => a.order - b.order);
   const billboards = createLayers(
+    gl,
     atlas,
     goals.map(goal => goal.order)
   );
+  billboards.meshes[0]!.setParent(scene);
   goals.forEach((goal, i) => {
-    goal.mesh.renderOrder = 9 + 2 * (i + 1);
-    solid.add(goal.mesh);
+    const mesh =
+      goal.kind === 'net'
+        ? addSolid(goal.solid, net, { alphaTest: 0.5, seeThrough: true })
+        : addSolid(goal.solid, white, { seeThrough: true });
+    mesh.setParent(scene);
+    billboards.meshes[i + 1]!.setParent(scene);
   });
-  scene.add(...billboards.meshes);
 
-  const camera = new PerspectiveCamera(fieldOfView, 1, 1, 1000);
+  renderer.render({ camera: sun, scene: castsShadow, target: shadowMap });
+
+  const camera = new Camera(gl, { far: 1000, fov: fieldOfView, near: 1 });
   camera.up.set(0, 0, -1);
 
   let crowd: { key: string; sprites: Billboard[] } | undefined;
@@ -166,6 +344,7 @@ export const createGroundView = (
   };
 
   let size = { height: 0, width: 0 };
+  let drawn = 0;
 
   const paint = (
     frame: ClipFrame,
@@ -182,7 +361,7 @@ export const createGroundView = (
     const high = Math.ceil((height * ratio) / pixel);
     if (size.width !== wide || size.height !== high) {
       size = { height: high, width: wide };
-      renderer.setSize(wide, high, false);
+      renderer.setSize(wide, high);
       canvas.style.width = `${(wide * pixel) / ratio}px`;
       canvas.style.height = `${(high * pixel) / ratio}px`;
       billboards.setViewport(wide, high);
@@ -195,23 +374,18 @@ export const createGroundView = (
     // A metre of height rises a metre up the screen at any tilt, as the
     // sprites draw it: what the tilt leaves out is made up by leaning the
     // heights up the pitch.
-    const shear = oblique ? (1 - Math.sin(angle)) / Math.cos(angle) : 0;
-    solid.matrix.set(1, 0, 0, 0, 0, 1, 0, 0, 0, -shear, 1, 0, 0, 0, 0, 1);
-    solid.matrixWorldNeedsUpdate = true;
-    billboards.setShear(shear);
-    const target = new Vector3(frame.camera.x, 0, frame.camera.y);
-    camera.aspect = wide / high;
-    camera.near = Math.max(1, distance - 150);
-    camera.far = distance + 400;
+    shear.value = oblique ? (1 - Math.sin(angle)) / Math.cos(angle) : 0;
+    billboards.setShear(shear.value);
+    const target = new Vec3(frame.camera.x, 0, frame.camera.y);
+    camera.perspective({
+      aspect: wide / high,
+      far: distance + 400,
+      near: Math.max(1, distance - 150)
+    });
     camera.position
       .copy(target)
-      .add(
-        new Vector3(0, Math.cos(angle), Math.sin(angle)).multiplyScalar(
-          distance
-        )
-      );
+      .add(new Vec3(0, Math.cos(angle), Math.sin(angle)).scale(distance));
     camera.lookAt(target);
-    camera.updateProjectionMatrix();
 
     const sprites: Billboard[] = [...crowdFor(sides, frame.cheer ?? false)];
     const { ball } = frame;
@@ -294,7 +468,9 @@ export const createGroundView = (
       });
     }
     billboards.fill(sprites);
-    renderer.render(scene, camera);
+    // Every piece of the scene is a mesh, drawn in one call.
+    drawn = scene.children.filter(node => node.visible).length;
+    renderer.render({ camera, frustumCull: false, scene, sort: false });
 
     // The card, the label and the goal announcement, flat over the picture.
     overlay.width = Math.round(width * ratio);
@@ -303,7 +479,9 @@ export const createGroundView = (
     ctx.imageSmoothingEnabled = false;
     const unit = overlayUnit(overlay.width);
     if (frame.label) {
-      const at = new Vector3(frame.label.x, 0, frame.label.y).project(camera);
+      const at = new Vec3(frame.label.x, 0, frame.label.y).applyMatrix4(
+        camera.projectionViewMatrix
+      );
       const x = ((at.x + 1) / 2) * size.width * pixel;
       const y = ((1 - at.y) / 2) * size.height * pixel - 26 * pixel;
       drawLabel(ctx, frame.label.text, x, y, unit);
@@ -323,5 +501,5 @@ export const createGroundView = (
     }
   };
 
-  return { info: () => renderer.info.render, paint, scene };
+  return { calls: () => drawn, paint, scene };
 };

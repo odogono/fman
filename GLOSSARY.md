@@ -234,7 +234,7 @@ The text submitted to a prompt. An answer the original rejects with one of its o
 _Avoid_: Command, action
 
 **Offered answer**:
-An answer a presentation mode puts within reach of a tap: the choices the original screen invites, free number entry where it asks for an amount, or free text entry where it asks for a name. Every offered answer is one the original accepts.
+An answer a prompt offers: the choices the original screen invites, free number entry where it asks for an amount, or free text entry where it asks for a name. Every offered answer is one the original accepts. Presentation modes put only offered answers within reach of a tap, and strategies give only offered answers.
 
 **Keypress**:
 A key held down while the original waits or runs a timed pause, which can cut a pause short. It is not an answer. Only one key is down at a time; a new keypress replaces the last.

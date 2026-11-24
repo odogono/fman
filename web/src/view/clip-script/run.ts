@@ -222,22 +222,21 @@ export const planRun = (
       unreachable: true
     };
   }
-  // Each frame's step along the run, and what that leaves to spare.
+  // Where the run has got to by each frame, and what each frame's step
+  // leaves to spare.
+  const points = Array.from({ length: frames + 1 }, (_, k) =>
+    path.at(k / frames)
+  );
   const spare = [0];
   for (let k = 1; k <= frames; k++) {
-    spare.push(
-      Math.max(
-        0,
-        top - distance(path.at((k - 1) / frames), path.at(k / frames))
-      )
-    );
+    spare.push(Math.max(0, top - distance(points[k - 1]!, points[k]!)));
   }
   const backBy = new Array<number>(frames + 1).fill(0);
   for (let k = frames - 1; k >= 0; k--) {
     backBy[k] = backBy[k + 1]! + spare[k + 1]!;
   }
   return {
-    at: path.at,
+    at: (u: number) => points[Math.round(clamp(u, 0, 1) * frames)]!,
     backBy,
     done: 0,
     frames,
@@ -359,7 +358,11 @@ export const moveRuns = (clip: Clip, runs: readonly (Run | undefined)[]) => {
       (a.stretch === b.stretch && a.i > b.i)
     );
   };
-  const ahead: Ahead = { givesWay, whereWill };
+  const ahead: Ahead = {
+    givesWay,
+    running: j => running.has(j),
+    whereWill
+  };
   const moves = live.map(run =>
     run.kind === 'arrive'
       ? arriveStep(clip, run, ahead)
@@ -375,6 +378,8 @@ export const moveRuns = (clip: Clip, runs: readonly (Run | undefined)[]) => {
 type Ahead = Readonly<{
   /** Whether a runner goes round player `j`, who may be on a run too. */
   givesWay: (run: Run, j: number) => boolean;
+  /** Whether player `j` is on a run, and so moving. */
+  running: (j: number) => boolean;
   /** Where player `j` will be `ahead` frames on, as far as anyone can tell. */
   whereWill: (j: number, ahead: number) => Point;
 }>;
@@ -397,9 +402,8 @@ const inTheWay = (clip: Clip, run: Run, end: Point) => {
 const arriveStep = (
   clip: Clip,
   run: Run & { kind: 'arrive' },
-  { givesWay, whereWill }: Ahead
+  { givesWay, running, whereWill }: Ahead
 ): Point => {
-  const mover = clip.movers[run.i]!;
   const done = Math.min(run.done + 1, run.frames);
   const left = run.frames - done;
   const aim = run.at(done / run.frames);
@@ -410,9 +414,35 @@ const arriveStep = (
   // How far off their way they want to stand, looking ahead along it.
   let wanted: Point = { d: 0, x: 0 };
   if (left > 0 && spare > 0) {
-    const others = inTheWay(clip, run, run.to).filter(j => givesWay(run, j));
+    // Only those near the way ahead can be in it.
+    const last = Math.min(lookAhead, left);
+    const box = {
+      high: { d: -Infinity, x: -Infinity },
+      low: { d: Infinity, x: Infinity }
+    };
+    for (let k = 0; k <= last + 1; k++) {
+      const p = run.at(Math.min(1, (done + k) / run.frames));
+      box.low = { d: Math.min(box.low.d, p.d), x: Math.min(box.low.x, p.x) };
+      box.high = { d: Math.max(box.high.d, p.d), x: Math.max(box.high.x, p.x) };
+    }
+    const margin = personalSpace + length(run.offset);
+    const others = inTheWay(clip, run, run.to).filter(j => {
+      if (!givesWay(run, j)) {
+        return false;
+      }
+      if (running(j)) {
+        return true;
+      }
+      const at = clip.movers[j]!;
+      return (
+        at.d > box.low.d - margin &&
+        at.d < box.high.d + margin &&
+        at.x > box.low.x - margin &&
+        at.x < box.high.x + margin
+      );
+    });
     let most = 0;
-    for (let k = 0; k <= Math.min(lookAhead, left); k++) {
+    for (let k = 0; others.length && k <= last; k++) {
       const p = run.at((done + k) / run.frames);
       const next = run.at(Math.min(1, (done + k + 1) / run.frames));
       const way = unit({ d: next.d - p.d, x: next.x - p.x });

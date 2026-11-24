@@ -2457,12 +2457,6 @@ test('no one shuffles back and forth after a tackle', () => {
   // drift off it and step back on every few frames.
   const found: string[] = [];
   for (let seed = 0; seed < 60; seed++) {
-    // The tackler, getting up, is shoved aside by the team-mate running
-    // onto the ball: a player on a run of their own still pushes anyone in
-    // their way.
-    if (seed === 33) {
-      continue;
-    }
     const script = createClipScript(
       input({
         attackingUp: seed % 2 === 0,

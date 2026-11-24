@@ -10,11 +10,10 @@ import {
 import { headHeight, pitchLength } from './model';
 import { type CrossIn } from './moment-cross';
 import { aimAt, finishFrame, kick, steer, type Clip } from './pitch';
+import { chase, moveRuns, paceOf, place, planRun, type Run } from './run';
 import { curl } from './setup';
 import {
   afterArrival,
-  fastestRun,
-  followPace,
   goalHalf,
   kickFrames,
   landingFrames,
@@ -107,19 +106,33 @@ export const playShot = (
       const setOff = headed ? 2 * landingFrames : kickFrames;
       const followFrames =
         setOff +
-        Math.ceil(distance(striker, strikeSpot) / perFrame(followPace));
+        Math.ceil(
+          distance(striker, strikeSpot) / paceOf(clip, clip.shooter, 'run')
+        );
       reboundFrames =
         Math.max(firstFlight + spillFrames, followFrames) + reboundSettle;
       const keeperFrom = { d: clip.keeper.d, x: clip.keeper.x };
       // Needing more than a run to get to the first effort, the keeper
       // dives from the start (#226).
-      const flyingFirst =
-        (1.5 * distance(keeperFrom, firstAim)) / Math.max(1, firstFlight - 2) >
-        perFrame(fastestRun);
+      const firstPlan = planRun(clip, clip.keeperSlot, {
+        by: firstFlight - 2,
+        shape: 'eased',
+        to: firstAim
+      });
+      const flyingFirst = firstPlan.unreachable;
+      const firstRun = firstPlan.unreachable ? undefined : firstPlan;
+      const following = chase(clip, clip.shooter, {
+        pace: 'run',
+        target: strikeSpot
+      });
       const recover = {
         d: pitchLength - 0.8,
         x: lerp(firstAim.x, 34, 0.6)
       };
+      const recovering = chase(clip, clip.keeperSlot, {
+        pace: 'run',
+        target: recover
+      });
       let chaser = -1;
       let nearest = Infinity;
       clip.defenders.forEach((p, j) => {
@@ -147,9 +160,15 @@ export const playShot = (
           clip.ball.height = wasHeaded
             ? headHeight * (1 - u) + Math.sin(Math.PI * u) * 0.12
             : Math.sin(Math.PI * u) * 0.35;
-          const k = ease(Math.min(1, f / Math.max(1, firstFlight - 2)));
-          clip.keeper.d = lerp(keeperFrom.d, firstAim.d, k);
-          clip.keeper.x = lerp(keeperFrom.x, firstAim.x, k);
+          if (firstRun) {
+            moveRuns(clip, [firstRun]);
+          } else {
+            const k = ease(Math.min(1, f / Math.max(1, firstFlight - 2)));
+            place(clip, clip.keeperSlot, {
+              d: lerp(keeperFrom.d, firstAim.d, k),
+              x: lerp(keeperFrom.x, firstAim.x, k)
+            });
+          }
           clip.keeper.pose =
             flyingFirst || f > firstFlight * 0.4 ? 'dive' : 'run';
         } else {
@@ -161,12 +180,7 @@ export const playShot = (
           clip.ball.height = Math.sin(Math.PI * u) * 0.5;
           if (f - firstFlight > scrambleFrames) {
             clip.keeper.pose = 'run';
-            const gap = distance(clip.keeper, recover);
-            const step = perFrame(5);
-            if (gap > step) {
-              clip.keeper.d += ((recover.d - clip.keeper.d) / gap) * step;
-              clip.keeper.x += ((recover.x - clip.keeper.x) / gap) * step;
-            }
+            moveRuns(clip, [recovering]);
           }
         }
         if (f > setOff) {
@@ -175,14 +189,7 @@ export const playShot = (
           }
           // Eyes on goal, they come back for it rather than turn about.
           aimAt(clip, clip.shooter, firstAim, true);
-          const gap = distance(striker, strikeSpot);
-          const step = perFrame(followPace);
-          if (gap > step) {
-            striker.d += ((strikeSpot.d - striker.d) / gap) * step;
-            striker.x += ((strikeSpot.x - striker.x) / gap) * step;
-          } else {
-            Object.assign(striker, strikeSpot);
-          }
+          moveRuns(clip, [following]);
         }
         // The defender chases, but is too late.
         const overrides = new Map<number, Point>();
@@ -311,11 +318,18 @@ export const playShot = (
     // Needing more than a run to get across, the keeper dives from the
     // start, and a catch is made diving (#226). Easing in and out, they go
     // half as fast again as on average at their quickest.
-    const flying =
-      keeperFrom !== undefined &&
-      keeperTo !== undefined &&
-      (1.5 * distance(keeperFrom, keeperTo)) / Math.max(1, flight - 2) >
-        perFrame(fastestRun);
+    const keeperPlan = keeperTo
+      ? planRun(clip, clip.keeperSlot, {
+          by: flight - 2,
+          meets: outFor ? [clip.shooter] : [],
+          shape: 'eased',
+          to: keeperTo
+        })
+      : undefined;
+    const flying = keeperPlan?.unreachable === true;
+    const keeperRun: Run | undefined = keeperPlan?.unreachable
+      ? undefined
+      : keeperPlan;
     if (flying && clip.outcome === 'hold' && clip.input.outcome === undefined) {
       clip.outcome = 'dive';
     }
@@ -367,9 +381,15 @@ export const playShot = (
               : 0;
       }
       if (clip.keeper && keeperFrom && keeperTo) {
-        const u = Math.min(1, f / Math.max(1, flight - 2));
-        clip.keeper.d = lerp(keeperFrom.d, keeperTo.d, ease(u));
-        clip.keeper.x = lerp(keeperFrom.x, keeperTo.x, ease(u));
+        if (keeperRun) {
+          moveRuns(clip, [keeperRun]);
+        } else {
+          const u = Math.min(1, f / Math.max(1, flight - 2));
+          place(clip, clip.keeperSlot, {
+            d: lerp(keeperFrom.d, keeperTo.d, ease(u)),
+            x: lerp(keeperFrom.x, keeperTo.x, ease(u))
+          });
+        }
         clip.keeper.pose =
           dives && (flying || f > flight * 0.4) ? 'dive' : 'run';
         if (stopsAtKeeper && f > flight && clip.outcome !== 'parry') {

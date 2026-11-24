@@ -70,8 +70,6 @@ export const claimShare = 0.35;
 export const reboundShare = 0.2;
 /** A parry runs out into the box at this pace, in metres a second. */
 export const spillPace = 9;
-/** A shooter follows in for the rebound at this pace, in metres a second. */
-export const followPace = 7;
 /** A rebound needs the first effort from within this far of goal, in metres. */
 export const reboundRange = 20;
 /** Frames the ball sits loose before the rebound is struck. */

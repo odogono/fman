@@ -1,21 +1,46 @@
 import {
-  continueId,
-  drawerIds,
-  highlightsTabs,
-  playheadIds,
-  tabId,
-  type ClipProgress,
-  type HighlightsTab,
-  type ModernHighlights,
-  type ModernLineUp,
-  type ModernTickerLine
+  controlIds,
+  effectOf,
+  type HighlightsAction,
+  type HighlightsControl
+} from './highlights-controls';
+import type {
+  ModernHighlights,
+  ModernLineUp,
+  ModernTickerLine
 } from './modern-highlights';
-import {
-  actionButton,
-  appendScoreboard,
-  cell,
-  strengthsTable
-} from './paint-parts';
+import { appendScoreboard, cell, strengthsTable } from './paint-parts';
+
+/**
+ * A control's button. A control that does nothing to the match is a view
+ * control: Enter or Space on it presses no key, and focus stays on it
+ * across rebuilds.
+ */
+const controlButton = (control: HighlightsControl, className?: string) => {
+  const button = document.createElement('button');
+  button.type = 'button';
+  if (className) {
+    button.className = className;
+  }
+  button.disabled = !control.enabled;
+  button.dataset.id = control.id;
+  if (effectOf(control.action) === 'none') {
+    button.dataset.viewControl = control.id;
+  }
+  if (control.state?.expanded !== undefined) {
+    button.setAttribute('aria-expanded', String(control.state.expanded));
+  }
+  if (control.state?.selected !== undefined) {
+    button.setAttribute('aria-selected', String(control.state.selected));
+  }
+  return button;
+};
+
+/** The control that does `kind`, if the highlights have one. */
+const controlFor = (
+  controls: readonly HighlightsControl[],
+  kind: HighlightsAction['kind']
+) => controls.find(control => control.action.kind === kind);
 
 /**
  * Modern mode's highlights scoreboard: one strip with the game menu, both
@@ -70,34 +95,32 @@ const tickerList = (ticker: NonNullable<ModernHighlights['ticker']>) => {
  */
 const latestMoment = (
   lines: readonly ModernTickerLine[],
-  open: boolean,
-  shown: boolean
+  control: HighlightsControl | undefined,
+  full: boolean
 ) => {
   const latest = lines[0];
-  if (!latest || !shown) {
+  if (!latest || !control) {
     const empty = document.createElement('div');
     empty.className = 'latest-moment';
-    empty.textContent = shown ? 'Kick-off' : 'Full time';
+    empty.textContent = full ? 'Full time' : 'Kick-off';
     return empty;
   }
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.className = `latest-moment ${latest.kind}`;
   // A second tap closes the drawer it opened.
-  button.dataset.id = open ? drawerIds.close : drawerIds.open;
-  button.dataset.viewControl = 'latest';
-  button.setAttribute('aria-expanded', String(open));
+  const button = controlButton(control, `latest-moment ${latest.kind}`);
   button.setAttribute('aria-controls', 'moments-drawer');
   button.append(
     ...tickerCells(latest),
     cell('latest-all', `☰ ${lines.length}`)
   );
-  button.setAttribute('aria-label', `All moments (${lines.length})`);
+  button.setAttribute('aria-label', control.label);
   return button;
 };
 
 /** The phone's moments drawer (#145): every line so far, over the pitch. */
-const momentsDrawer = (ticker: NonNullable<ModernHighlights['ticker']>) => {
+const momentsDrawer = (
+  ticker: NonNullable<ModernHighlights['ticker']>,
+  closeControl: HighlightsControl
+) => {
   const drawer = document.createElement('section');
   drawer.className = 'moments-drawer';
   drawer.id = 'moments-drawer';
@@ -106,11 +129,8 @@ const momentsDrawer = (ticker: NonNullable<ModernHighlights['ticker']>) => {
   header.className = 'moments-header';
   const title = document.createElement('h3');
   title.textContent = 'All moments';
-  const close = document.createElement('button');
-  close.type = 'button';
-  close.textContent = 'Close';
-  close.dataset.id = drawerIds.close;
-  close.dataset.viewControl = 'close';
+  const close = controlButton(closeControl);
+  close.textContent = closeControl.label;
   header.append(title, close);
   drawer.append(header, tickerList(ticker));
   return drawer;
@@ -182,7 +202,8 @@ const lineUpPanel = (lineUp: ModernLineUp) => {
 const tabbedPanel = (
   ticker: NonNullable<ModernHighlights['ticker']>,
   lineUps: NonNullable<ModernHighlights['lineUps']>,
-  clip: NonNullable<ModernHighlights['clip']>
+  clip: NonNullable<ModernHighlights['clip']>,
+  controls: readonly HighlightsControl[]
 ) => {
   const panel = document.createElement('section');
   panel.className = 'moments-panel tabbed';
@@ -190,17 +211,14 @@ const tabbedPanel = (
   const tabs = document.createElement('div');
   tabs.className = 'panel-tabs';
   tabs.setAttribute('role', 'tablist');
-  const label = (tab: HighlightsTab) =>
-    tab === 'moments' ? 'Moments' : lineUps[tab].club.name;
-  for (const tab of highlightsTabs) {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'panel-tab';
+  for (const control of controls) {
+    if (control.action.kind !== 'tab') {
+      continue;
+    }
+    const { tab } = control.action;
+    const button = controlButton(control, 'panel-tab');
     button.id = `panel-tab-${tab}`;
-    button.dataset.id = tabId(tab);
-    button.dataset.viewControl = tabId(tab);
     button.setAttribute('role', 'tab');
-    button.setAttribute('aria-selected', String(tab === clip.tab));
     button.setAttribute('aria-controls', 'panel-tab-body');
     button.tabIndex = tab === clip.tab ? 0 : -1;
     if (tab !== 'moments') {
@@ -210,7 +228,7 @@ const tabbedPanel = (
       swatch.setAttribute('aria-hidden', 'true');
       button.append(swatch);
     }
-    button.append(cell('panel-tab-name', label(tab)));
+    button.append(cell('panel-tab-name', control.label));
     if (tab === 'moments' && clip.unseen) {
       const dot = cell('unseen-dot', '');
       dot.setAttribute('aria-label', 'New moments');
@@ -238,21 +256,19 @@ const icons = {
 };
 
 /** One of the playhead's buttons, drawn as its icon and named for readers. */
-const playheadButton = (
-  label: string,
-  icon: keyof typeof icons,
-  id: string,
-  enabled: boolean
-) => {
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.className = 'playhead-button';
-  button.disabled = !enabled;
-  button.dataset.id = id;
-  button.dataset.viewControl = id;
-  button.setAttribute('aria-label', label);
-  button.title = label;
-  button.innerHTML = `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">${icons[icon]}</svg>`;
+const playheadButton = (control: HighlightsControl) => {
+  const button = controlButton(control, 'playhead-button');
+  const icon =
+    control.action.kind === 'play'
+      ? control.label === 'Play'
+        ? icons.play
+        : icons.pause
+      : control.action.kind === 'next'
+        ? icons.next
+        : icons.rewind;
+  button.setAttribute('aria-label', control.label);
+  button.title = control.label;
+  button.innerHTML = `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">${icon}</svg>`;
   return button;
 };
 
@@ -260,18 +276,19 @@ const playheadButton = (
  * The playhead's controls (ADR 0016): rewind, play or pause, and next.
  * At full time only rewind is left, to watch the last clip again.
  */
-const transport = (clip: ClipProgress, fullTime: boolean) => {
+const transport = (controls: readonly HighlightsControl[]) => {
+  const buttons = (['rewind', 'play', 'next'] as const).flatMap(kind => {
+    const control = controlFor(controls, kind);
+    return control ? [playheadButton(control)] : [];
+  });
+  if (buttons.length === 0) {
+    return undefined;
+  }
   const group = document.createElement('div');
   group.className = 'transport';
   group.setAttribute('role', 'group');
   group.setAttribute('aria-label', 'Playback');
-  group.append(
-    playheadButton('Rewind', 'rewind', playheadIds.rewind, true),
-    clip.paused
-      ? playheadButton('Play', 'play', playheadIds.play, !fullTime)
-      : playheadButton('Pause', 'pause', playheadIds.play, !fullTime),
-    playheadButton('Next', 'next', playheadIds.next, !fullTime)
-  );
+  group.append(...buttons);
   return group;
 };
 
@@ -280,28 +297,26 @@ const transport = (clip: ClipProgress, fullTime: boolean) => {
  * final hold, after the latest moment's line where one is given, and under
  * clips the playhead's controls before it.
  */
-const highlightsControls = (
-  ticker: NonNullable<ModernHighlights['ticker']>,
-  latest?: HTMLElement,
-  clip?: ClipProgress
+const controlsRow = (
+  controls: readonly HighlightsControl[],
+  latest?: HTMLElement
 ) => {
-  const controls = document.createElement('div');
-  controls.className = 'highlights-controls';
+  const row = document.createElement('div');
+  row.className = 'highlights-controls';
   if (latest) {
-    controls.append(latest);
+    row.append(latest);
   }
-  if (clip && !clip.full) {
-    // At full time, or watching the last clip again on the way back to it.
-    controls.append(
-      transport(clip, clip.playing === undefined && ticker.fullTime)
-    );
+  const playback = transport(controls);
+  if (playback) {
+    row.append(playback);
   }
-  controls.append(
-    ticker.fullTime
-      ? actionButton('Continue', continueId, 'continue', true)
-      : actionButton('Skip all', 'ticker.skip', 'skip', ticker.skip)
-  );
-  return controls;
+  const end = controlFor(controls, 'continue') ?? controlFor(controls, 'skip');
+  if (end) {
+    const button = controlButton(end, 'primary');
+    button.textContent = end.label;
+    row.append(button);
+  }
+  return row;
 };
 
 /**
@@ -330,8 +345,11 @@ export const paintHighlights = (
     if (!clip.full) {
       frame.append(clipBar);
     }
-    if (clip.drawer && !clip.full) {
-      frame.append(momentsDrawer(ticker));
+    const close = highlights.controls.find(
+      control => control.id === controlIds.close
+    );
+    if (close) {
+      frame.append(momentsDrawer(ticker, close));
     }
     stage.append(frame);
     if (clip.full) {
@@ -341,13 +359,16 @@ export const paintHighlights = (
     }
     // Under the pitch: the latest moment, then the playhead's controls and
     // Skip all, which becomes Continue once the last clip has played.
-    const controls = highlightsControls(
-      ticker,
-      latestMoment(ticker.lines, clip.drawer, !clip.full),
-      clip
+    const controls = controlsRow(
+      highlights.controls,
+      latestMoment(
+        ticker.lines,
+        highlights.controls.find(control => control.id === controlIds.latest),
+        clip.full
+      )
     );
     const panel = highlights.lineUps
-      ? tabbedPanel(ticker, highlights.lineUps, clip)
+      ? tabbedPanel(ticker, highlights.lineUps, clip, highlights.controls)
       : momentsPanel(ticker);
     pane.replaceChildren(panel, ...parts, stage, controls);
     return;
@@ -365,10 +386,7 @@ export const paintHighlights = (
     parts.push(pitch, strengths);
   }
   if (highlights.ticker) {
-    parts.push(
-      tickerList(highlights.ticker),
-      highlightsControls(highlights.ticker)
-    );
+    parts.push(tickerList(highlights.ticker), controlsRow(highlights.controls));
   }
   pane.replaceChildren(...parts);
 };

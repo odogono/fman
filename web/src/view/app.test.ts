@@ -1747,7 +1747,7 @@ const toFirstMoment = () => {
 test('the moments drawer opens and closes without ending the clip', () => {
   const run = toFirstMoment();
   expect(run.page.highlights!.clip!.drawer).toBe(false);
-  run.app.tap('moments.open');
+  run.app.tap('moments.latest');
   run.app.pointerUp();
   expect(run.page.highlights!.clip!.drawer).toBe(true);
   // Opening it pressed no key: the first clip is still on show.
@@ -1759,7 +1759,7 @@ test('the moments drawer opens and closes without ending the clip', () => {
 
 test('Next ends the clip and leaves the drawer open', () => {
   const run = toFirstMoment();
-  run.app.tap('moments.open');
+  run.app.tap('moments.latest');
   run.app.pointerUp();
   playhead(run, 'next');
   run.wait(2);
@@ -1779,7 +1779,7 @@ test('Enter on the drawer button opens it without ending the clip', () => {
   };
   // The browser's own click on the button follows the key.
   expect(run.app.keyDown(enter)).toBe(false);
-  run.app.tap('moments.open', false);
+  run.app.tap('moments.latest', false);
   expect(run.app.journal.session.timingState.keyboard.key).not.toBe('Enter');
   run.wait(2);
   run.app.keyUp();
@@ -1789,7 +1789,7 @@ test('Enter on the drawer button opens it without ending the clip', () => {
 
 test('Skip closes the drawer for the full list', () => {
   const run = toFirstMoment();
-  run.app.tap('moments.open');
+  run.app.tap('moments.latest');
   run.app.pointerUp();
   run.app.tap('ticker.skip');
   expect(run.page.highlights!.clip).toMatchObject({

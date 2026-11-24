@@ -9,10 +9,9 @@ import type { View } from '../sim/session';
 import { submitInput } from '../test/input';
 import { playTo } from '../test/play';
 import type { paintClip } from './clip-canvas';
-import { tickerBar } from './context-bar';
 import { celebrationFrame } from './cup-celebration';
+import { controlIds, effectOf } from './highlights-controls';
 import { homeFor } from './home';
-import { continueId } from './modern-highlights';
 import {
   modernScreenFor,
   type ModernScreen,
@@ -135,8 +134,8 @@ test.each(kinds)(
     // during the highlights.
     const ids = new Set([
       ...offered.map(answer => answer.id),
-      tickerBar[0]!.answer.id,
-      continueId
+      controlIds.skip,
+      controlIds.continue
     ]);
     const buttons = shown().flatMap(pane => [
       ...pane.querySelectorAll<HTMLButtonElement>('button:not([disabled])')
@@ -303,6 +302,53 @@ test('a rebuilt pane keeps focus on the view control that had it', () => {
   expect(play).not.toBe(pause);
   expect(play?.getAttribute('aria-label')).toBe('Play');
   expect(document.activeElement).toBe(play);
+});
+
+test('every highlights control that does nothing to the match is a view control, and no other', () => {
+  const modern = mount(false);
+  const view = playTo('highlights');
+  // A clip on show past its moment, with the drawer open: every control.
+  const screen = modernScreenFor(view, {
+    clips: {
+      progress: {
+        drawer: true,
+        full: false,
+        heard: 1,
+        paused: false,
+        playing: 0,
+        shown: 1,
+        tab: 'moments',
+        unseen: false
+      },
+      score: [0, 0]
+    }
+  });
+  if (screen?.kind !== 'highlights') {
+    throw new Error('Expected the highlights');
+  }
+  modern.show(screen, undefined);
+  const { controls } = screen.highlights;
+  expect(controls.map(control => control.action.kind).sort()).toEqual([
+    'drawer',
+    'drawer',
+    'next',
+    'play',
+    'rewind',
+    'skip',
+    'tab',
+    'tab',
+    'tab'
+  ]);
+  for (const control of controls) {
+    const button = document.querySelector<HTMLButtonElement>(
+      `button[data-id="${control.id}"]`
+    );
+    expect(button).not.toBeNull();
+    expect([control.id, button!.dataset.viewControl !== undefined]).toEqual([
+      control.id,
+      effectOf(control.action) === 'none'
+    ]);
+  }
 });
 
 test('the clip canvas is the same node across rebuilds', () => {

@@ -29,14 +29,12 @@ import {
 } from './clip-player';
 import { barFor, tickerBar, type BarButton } from './context-bar';
 import { createFrameSampler } from './frame-sampler';
-import { homeFor, type Home } from './home';
 import {
-  continueId,
-  drawerIds,
-  highlightsTabs,
-  playheadIds,
-  tabId
-} from './modern-highlights';
+  controlForKey,
+  takesKeys,
+  type HighlightsControl
+} from './highlights-controls';
+import { homeFor, type Home } from './home';
 import { modernScreenFor, type ModernScreen } from './modern-screen';
 import {
   isRules,
@@ -810,30 +808,53 @@ export const createApp = ({
     }
     render(false);
   };
+  /** The controls of the Modern highlights on show; none elsewhere. */
+  const highlightsControls = (): readonly HighlightsControl[] => {
+    const screen = modernScreen();
+    return screen?.kind === 'highlights' ? screen.highlights.controls : [];
+  };
+  /** Presses one of the highlights' controls. */
+  const act = (control: HighlightsControl) => {
+    const { action } = control;
+    switch (action.kind) {
+      case 'continue':
+        endHold();
+        return;
+      case 'drawer':
+        showDrawer(action.open);
+        return;
+      case 'next':
+      case 'play':
+      case 'rewind':
+        playhead(action.kind);
+        return;
+      case 'skip':
+        skip();
+        return;
+      case 'tab':
+        // A tab beside the pitch (#256) presses no key.
+        if (!menuOpen) {
+          clips.showTab(journal.session.view, action.tab);
+          render(false);
+        }
+        return;
+    }
+  };
   /** Under clips, until Skip all, the playhead takes the keys. */
   const playheadKey = (event: KeyDown) => {
-    const state = clipState();
-    if (!state || state.progress.full || event.modified) {
+    const controls = highlightsControls();
+    if (!takesKeys(controls) || event.modified) {
       return undefined;
     }
     if (event.repeat) {
       return true;
     }
-    const fullTime = state.phase === 'full-time';
-    if (event.key === 'ArrowLeft') {
-      playhead('rewind');
-    } else if (event.key === ' ' && !fullTime) {
-      playhead('play');
-    } else if (event.key === 'ArrowRight' || event.key === 'Enter') {
-      if (fullTime) {
-        endHold();
-      } else {
-        playhead('next');
-      }
-    } else {
+    const control = controlForKey(controls, event.key);
+    if (!control) {
       // Every other key does nothing during clips.
       return false;
     }
+    act(control);
     return true;
   };
   /** Continue after the last clip: a brief keypress ends the final hold. */
@@ -1041,37 +1062,16 @@ export const createApp = ({
      * keypad first.
      */
     tap: (id: string, enter: Hold | false = 'held') => {
-      if (id === drawerIds.open || id === drawerIds.close) {
-        showDrawer(id === drawerIds.open);
-        return;
-      }
-      const tab = highlightsTabs.find(t => tabId(t) === id);
-      if (tab) {
-        // A tab beside the pitch (#256) presses no key.
-        if (!menuOpen) {
-          clips.showTab(journal.session.view, tab);
-          render(false);
+      const control = highlightsControls().find(c => c.id === id);
+      if (control) {
+        if (control.enabled) {
+          act(control);
         }
         return;
       }
-      if (id === playheadIds.play) {
-        playhead('play');
-        return;
-      }
-      if (id === playheadIds.rewind) {
-        playhead('rewind');
-        return;
-      }
-      if (id === playheadIds.next) {
-        playhead('next');
-        return;
-      }
       if (id === tickerBar[0]!.answer.id) {
+        // Classic mode's Skip, in the context bar.
         skip();
-        return;
-      }
-      if (id === continueId) {
-        endHold();
         return;
       }
       answer(() => {

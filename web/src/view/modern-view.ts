@@ -124,7 +124,9 @@ const section = (
  * The view control focused after a rebuild, given the one focused before:
  * the same one, or the latest line once the moments drawer has closed.
  */
-const focusFallback: Readonly<Record<string, string>> = { close: 'latest' };
+const focusFallback: Readonly<Record<string, string>> = {
+  'moments.close': 'moments.latest'
+};
 
 /**
  * Modern mode's screens: a pane for each, built here and placed on the page

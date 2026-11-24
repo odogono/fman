@@ -50,6 +50,9 @@ test('every owned player is a row to tap and sell, with Done to go back', () => 
   expect(rows.every(row => row.answer === `squad.player.${row.number}`)).toBe(
     true
   );
+  expect(rows[0]!.label).toBe(
+    `Sell ${rows[0]!.name}, number ${rows[0]!.number}`
+  );
   expect(screen.actions).toEqual([
     { enabled: true, id: 'squad.back', label: 'Done', tone: 'primary' }
   ]);

@@ -1,4 +1,9 @@
-import { fixtureSides, teamStrength, type MatchFixture } from '../sim/league';
+import {
+  fixtureSides,
+  removesOnly,
+  teamStrength,
+  type MatchFixture
+} from '../sim/league';
 import type { Game, Player } from '../sim/management';
 import { offeredAnswers } from '../sim/offers';
 import { longestInjury, tiringInjuries } from '../sim/ruleset';
@@ -14,6 +19,8 @@ export type PickTeamRow = Readonly<{
    */
   answer?: string;
   energy: number;
+  /** What a tap on the row does, read aloud, alongside its answer. */
+  label?: string;
   /** The status marker: `p`, `i` or, under tiring injuries, the weeks out. */
   marker: string;
   name: string;
@@ -75,7 +82,8 @@ const rowFor = (
   player: Player,
   weeksOut: boolean,
   offered: ReadonlySet<string>,
-  prompt: 'selection' | 'squad' = 'selection'
+  prompt: 'selection' | 'squad',
+  verb: 'Add' | 'Drop' | 'Sell'
 ): PickTeamRow => {
   const answer = `${prompt}.player.${player.id}`;
   const status =
@@ -85,7 +93,12 @@ const rowFor = (
         ? 'injured'
         : 'reserve';
   return {
-    ...(offered.has(answer) ? { answer } : {}),
+    ...(offered.has(answer)
+      ? {
+          answer,
+          label: `${verb} ${player.name.trim()}, number ${player.id}`
+        }
+      : {}),
     energy: player.energy,
     marker:
       status === 'picked'
@@ -127,6 +140,9 @@ export const pickTeamFor = (view: View): PickTeam | undefined => {
   }
   const { game, pickedCount: picked } = view;
   const prompt = view.screen === 'squad' ? 'squad' : 'selection';
+  // Over eleven picked the original only drops, and 99 isn't taken.
+  const dropping = removesOnly(game);
+  const verb = prompt === 'squad' ? 'Sell' : dropping ? 'Drop' : 'Add';
   const weeksOut = tiringInjuries(game.ruleset);
   const longest = weeksOut ? { weeksOut: longestInjury(game.ruleset) } : {};
   const offered = new Set(offeredAnswers(view).map(answer => answer.id));
@@ -140,7 +156,7 @@ export const pickTeamFor = (view: View): PickTeam | undefined => {
     category,
     players: squad
       .filter(player => playerCategory(player) === category)
-      .map(player => rowFor(player, weeksOut, offered, prompt)),
+      .map(player => rowFor(player, weeksOut, offered, prompt, verb)),
     title
   }));
   if (view.screen === 'team') {
@@ -168,8 +184,6 @@ export const pickTeamFor = (view: View): PickTeam | undefined => {
       ...longest
     };
   }
-  // Over eleven picked the original only drops, and 99 isn't taken.
-  const dropping = picked > 11;
   return {
     actions: dropping
       ? []

@@ -5,7 +5,7 @@ import { latestEnhanced } from '../sim/ruleset';
 import type { View } from '../sim/session';
 import { submitInput } from '../test/input';
 import { modernScreenFor } from './modern-screen';
-import { namesFor } from './name-screens';
+import { namesFor, renameAnswer } from './name-screens';
 
 /** A new Enhanced game at the menu, then `inputs` into the name editor. */
 const names = (...inputs: string[]): View => {
@@ -81,7 +81,13 @@ test("renaming a club offers its colours, starting on the club's own", () => {
   expect(screen.target).toBe('club');
   expect(screen.current.name).toBe(club.name.trim());
   expect(screen.colour).toBe(club.ink ?? 'plain');
-  expect(screen.colours).toEqual([0, 1, 2, 3, 4]);
+  expect(screen.colours).toEqual([
+    { ink: 0, name: 'Black' },
+    { ink: 1, name: 'Blue' },
+    { ink: 2, name: 'Red' },
+    { ink: 3, name: 'Magenta' },
+    { ink: 4, name: 'Green' }
+  ]);
   expect(screen.maxLength).toEqual({ coloured: 10, plain: 12 });
   expect(screen.loses).toBe(club.paper !== undefined);
 });
@@ -102,9 +108,19 @@ test("an invalid name keeps the screen, with the original's message", () => {
 });
 
 test('a colour prefix and the name make the original answer', () => {
-  const view = names('y', '3', `${String.fromCharCode(16, 2)}Reds`);
+  expect(renameAnswer('Reds', 2)).toBe(`${String.fromCharCode(16, 2)}Reds`);
+  const view = names('y', '3', renameAnswer('Reds', 2));
   if (view.screen !== 'names') {
     throw new Error('Not names');
   }
   expect(view.game.clubs[2]).toMatchObject({ ink: 2, name: 'Reds' });
+});
+
+test('a plain name is the answer by itself, leaving no ink', () => {
+  expect(renameAnswer('Reds', 'plain')).toBe('Reds');
+  const view = names('y', '3', renameAnswer('Reds', 'plain'));
+  if (view.screen !== 'names') {
+    throw new Error('Not names');
+  }
+  expect(view.game.clubs[2]).toMatchObject({ ink: null, name: 'Reds' });
 });

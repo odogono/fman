@@ -4,6 +4,17 @@ import { clubName, type ClubName } from './home';
 
 type Choice = Readonly<{ id: string; label: string }>;
 
+/** An ink a club's name may take, and what the swatch calls it. */
+export type NameInk = Readonly<{ ink: number; name: string }>;
+
+const clubInks: readonly NameInk[] = [
+  'Black',
+  'Blue',
+  'Red',
+  'Magenta',
+  'Green'
+].map((name, ink) => ({ ink, name }));
+
 /**
  * Modern mode's name editing, in place of the original's: its questions,
  * the club and player lists a page at a time, and renaming one, a club's
@@ -25,7 +36,7 @@ export type ModernNames =
       /** The club's ink on the screen now, or `plain` for none of its own. */
       colour: number | 'plain';
       /** The inks a club's name may take, 0 to 4; none for a player. */
-      colours: readonly number[];
+      colours: readonly NameInk[];
       current: ClubName;
       /** The original's message for the last name it refused. */
       error?: string;
@@ -99,7 +110,7 @@ export const namesFor = (view: View): ModernNames | undefined => {
         const named = editor.game.clubs[id - 1]!;
         return {
           colour: named.ink ?? 'plain',
-          colours: [0, 1, 2, 3, 4],
+          colours: clubInks,
           current: clubName(named),
           ...(editor.error ? { error: editor.error } : {}),
           kind: 'rename',
@@ -127,3 +138,10 @@ export const namesFor = (view: View): ModernNames | undefined => {
       return undefined;
   }
 };
+
+/**
+ * The answer the original's rename prompt takes: the new name, after the
+ * INK control code for its colour unless it is plain.
+ */
+export const renameAnswer = (name: string, colour: number | 'plain') =>
+  colour === 'plain' ? name : String.fromCharCode(16, colour) + name;

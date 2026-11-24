@@ -1,5 +1,5 @@
 import type { Club } from '../sim/catalogue';
-import { fixtureSides, teamStrength } from '../sim/league';
+import { fixtureSides, removesOnly, teamStrength } from '../sim/league';
 import { flashPhase, type View } from '../sim/session';
 import { paintCupVictory } from './cup-victory';
 import type { Paint } from './grid';
@@ -214,10 +214,9 @@ export const matchLayouts: Layouts<MatchScreen> = {
       write(19, 0, view.error, { ink: 2, inverse: true });
     }
     return {
-      label:
-        view.pickedCount > 11
-          ? 'Player number to remove'
-          : 'Player number to add, or 99 to continue',
+      label: removesOnly(view.game)
+        ? 'Player number to remove'
+        : 'Player number to add, or 99 to continue',
       numeric: true
     };
   }),

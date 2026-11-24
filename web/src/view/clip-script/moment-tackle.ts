@@ -1,6 +1,7 @@
 import { clamp, distance, lerp, perFrame, type Point } from './geometry';
 import { clipFps, pitchLength, pitchWidth } from './model';
 import { aimAt, finishFrame, steer, type Clip } from './pitch';
+import { arrived, chase, moveRuns, place, type Run } from './run';
 import { byQuality } from './setup';
 import {
   afterArrival,
@@ -15,8 +16,7 @@ import {
   slidePace,
   slideReach,
   stumbleFrames,
-  stumblePace,
-  tacklePace
+  stumblePace
 } from './tuning';
 
 /**
@@ -77,6 +77,14 @@ export const playTackle = (clip: Clip) => {
   /** The defender who runs onto the loose ball, if one is near. */
   let sweeper = -1;
   const held = new Set([clip.shooter, tackler]);
+  /** Where the tackler runs to, beside the shooter, until they slide. */
+  let lead: Point = { d: defender.d, x: defender.x };
+  const closing = chase(clip, tackler, {
+    meets: [clip.shooter],
+    pace: 'sprint',
+    target: () => lead
+  });
+  let sweeping: Run | undefined;
   clip.cameraFocus = () => ({ d: clip.ball.d + 4, x: clip.ball.x });
   for (let f = 1; !contact || f <= contact + afterArrival; f++) {
     if (!contact) {
@@ -94,8 +102,10 @@ export const playTackle = (clip: Clip) => {
         (inBox ? runPace : perFrame(intoRangePace)) *
           Math.max(0, 1 - sliding / 6)
       );
-      runner.d += heading.d * pace;
-      runner.x += heading.x * pace;
+      place(clip, clip.shooter, {
+        d: runner.d + heading.d * pace,
+        x: runner.x + heading.x * pace
+      });
       clip.ball.d = runner.d + heading.d * 0.7;
       clip.ball.x = runner.x + heading.x * 0.7;
       clip.ball.height = 0;
@@ -109,7 +119,7 @@ export const playTackle = (clip: Clip) => {
             (defender.d - runner.d) * across.d +
               (defender.x - runner.x) * across.x
           ) || 1;
-        const lead = inBox
+        lead = inBox
           ? {
               d: clip.ball.d + heading.d * 1.5,
               x: clip.ball.x + heading.x * 1.5
@@ -118,10 +128,7 @@ export const playTackle = (clip: Clip) => {
               d: runner.d + heading.d * 2.2 + across.d * fromSide * 1.6,
               x: runner.x + heading.x * 2.2 + across.x * fromSide * 1.6
             };
-        const gap = distance(defender, lead) || 1;
-        const step = Math.min(gap, perFrame(tacklePace));
-        defender.d += ((lead.d - defender.d) / gap) * step;
-        defender.x += ((lead.x - defender.x) / gap) * step;
+        moveRuns(clip, [closing]);
         defender.pose = 'run';
         if (
           !clip.pulledUp &&
@@ -169,8 +176,10 @@ export const playTackle = (clip: Clip) => {
           perFrame(Math.max(2, slidePace * (1 - sliding / slideFrames))),
           Math.max(0, feet - 0.8)
         );
-        defender.d += slide.d * step;
-        defender.x += slide.x * step;
+        place(clip, tackler, {
+          d: defender.d + slide.d * step,
+          x: defender.x + slide.x * step
+        });
         defender.pose = 'tackle';
         defender.poseFrame = 0;
         aimAt(clip, tackler, {
@@ -221,8 +230,10 @@ export const playTackle = (clip: Clip) => {
         const on =
           perFrame(clip.pulledUp ? stumblePace / 3 : stumblePace) *
           (1 - after / stumbleFrames);
-        runner.d += heading.d * on;
-        runner.x += heading.x * on;
+        place(clip, clip.shooter, {
+          d: runner.d + heading.d * on,
+          x: runner.x + heading.x * on
+        });
         aimAt(clip, clip.shooter, {
           d: runner.d + heading.d * 5,
           x: runner.x + heading.x * 5
@@ -233,8 +244,10 @@ export const playTackle = (clip: Clip) => {
       // The slide runs out, and the tackler sits up.
       if (after < runOut && slide) {
         const step = perFrame(slidePace) * runOutShare * (1 - after / runOut);
-        defender.d += slide.d * step;
-        defender.x += slide.x * step;
+        place(clip, tackler, {
+          d: defender.d + slide.d * step,
+          x: defender.x + slide.x * step
+        });
       }
       // Pulling up, nobody slid in, and the nearest defender takes it.
       const sitting = !clip.pulledUp && after < runOut + sitFrames;
@@ -245,24 +258,22 @@ export const playTackle = (clip: Clip) => {
       if (!sitting && sweeper >= 0) {
         held.delete(tackler);
       }
-      const sweeping =
-        sitting && sweeper < 0 ? undefined : clip.movers[clip.clearer];
-      if (sweeping) {
-        // A team-mate gets to the loose ball, facing upfield. Once there
-        // they stay on it, held, rather than be steered off it to close it
-        // down and step back onto it every few frames.
-        const to = { d: clip.ball.d + 0.6, x: clip.ball.x };
-        const gap = distance(sweeping, to);
-        const step = perFrame(7) * clip.runPaces[clip.clearer]!;
-        if (gap > step) {
-          sweeping.d += ((to.d - sweeping.d) / gap) * step;
-          sweeping.x += ((to.x - sweeping.x) / gap) * step;
+      if (!(sitting && sweeper < 0)) {
+        // A team-mate gets to the loose ball, facing upfield, going round
+        // the tackler getting up. Once there they stay on it, held, rather
+        // than be steered off it to close it down and step back onto it
+        // every few frames.
+        const onBall = () => ({ d: clip.ball.d + 0.6, x: clip.ball.x });
+        sweeping ??= chase(clip, clip.clearer, { pace: 'run', target: onBall });
+        if (held.has(clip.clearer) && arrived(clip, sweeping)) {
+          place(clip, clip.clearer, onBall());
         } else {
-          held.add(clip.clearer);
-          sweeping.d = to.d;
-          sweeping.x = to.x;
+          moveRuns(clip, [sweeping]);
+          if (arrived(clip, sweeping)) {
+            held.add(clip.clearer);
+          }
         }
-        sweeping.pose = 'run';
+        clip.movers[clip.clearer]!.pose = 'run';
       }
     }
     steer(clip, held);

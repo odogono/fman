@@ -10,8 +10,6 @@ export const longestGroundPass = 30;
 export const finalPassRange = 30;
 /** A pass takes at least this long, in seconds. */
 export const passMinimum = 0.6;
-/** How fast a receiver runs onto a pass, in metres a second. */
-export const receiverSpeed = 7;
 /** A defender this close to a pass's path, in metres, blocks it. */
 export const laneWidth = 2;
 /** Defenders keep at least this far from a pass along the ground. */
@@ -70,8 +68,6 @@ export const claimShare = 0.35;
 export const reboundShare = 0.2;
 /** A parry runs out into the box at this pace, in metres a second. */
 export const spillPace = 9;
-/** A shooter follows in for the rebound at this pace, in metres a second. */
-export const followPace = 7;
 /** A rebound needs the first effort from within this far of goal, in metres. */
 export const reboundRange = 20;
 /** Frames the ball sits loose before the rebound is struck. */
@@ -197,14 +193,23 @@ export const facingWindow = 10;
 export const facingSpeed = { start: 2.5, stop: 1.5 };
 /** Another defender must be this much nearer the ball to take over pressing it. */
 export const pressingGive = 1.5;
-/** A defender runs to cut out a pass or block a shot at no more than this, in metres a second. */
-export const clearerPace = 8;
 /** A keeper shuffles across their goal, keeping on the angle, at this pace, in metres a second. */
 export const keeperShuffle = 6;
 /** No one on their feet goes faster than this, in metres a second, however they are moved. */
 export const fastestRun = 8.5;
 /** Getting out of a pass's way, a player goes flat out, at this pace, in metres a second. */
 export const flatOut = 9.5;
+/**
+ * How hard a player on a run of their own goes, in metres a second, before
+ * their own pace from skill and energy: what a chase goes at, and the most
+ * a run to a place by a frame may call for. Flat out is `sprint`.
+ */
+export const effortPaces = {
+  jog: 3.5,
+  run: 7,
+  sprint: fastestRun,
+  walk: 2.5
+} as const;
 /**
  * A defender goal side of the ball and within this many metres of it
  * jockeys, going no more than this much faster than the ball, in metres a
@@ -256,8 +261,7 @@ export const tackleShare = 0.5;
  * skill, weak, average and strong (#238).
  */
 export const slidingBlockShare = [0.75, 0.5, 0.25] as const;
-/** A tackler sprints in at this pace, in metres a second, and slides in from this near. */
-export const tacklePace = 8;
+/** A tackler slides in from this near, in metres. */
 export const slideReach = 3;
 /**
  * Past the ball, a tackler's slide runs out over this many frames, from

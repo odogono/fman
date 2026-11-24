@@ -16,6 +16,7 @@ import {
   pitchWidth
 } from './model';
 import { aimAt, finishFrame, kick, steer, target, type Clip } from './pitch';
+import { arrived, chase, moveRuns, paceOf, place } from './run';
 import {
   celebrateFor,
   celebrationPace,
@@ -139,9 +140,10 @@ export const playReaction = (clip: Clip) => {
   // them down and pile in.
   const awayFrom = scorer.x < 34 ? -1 : 1;
   const wheelsTo = clip.rng.pick(['corner', 'fans', 'mates'] as const);
+  const wheelPace = paceOf(clip, clip.shooter, celebrationPace);
   const wheelRange = Math.min(
     longestWheel,
-    perFrame(celebrationPace) * (reactionFrames - leapFrames - celebrateFor)
+    wheelPace * (reactionFrames - leapFrames - celebrateFor)
   );
   const wheelTowards: Point =
     wheelsTo === 'corner'
@@ -217,6 +219,10 @@ export const playReaction = (clip: Clip) => {
   let mateSpot: Point | undefined;
   let keeperSpot: Point | undefined;
   let outFrames = 0;
+  const wheeling = chase(clip, clip.shooter, {
+    pace: celebrationPace,
+    target: celebrateAt
+  });
   for (let f = 0; f < reactionFrames; f++) {
     clip.cameraWidth =
       f < 50
@@ -227,17 +233,23 @@ export const playReaction = (clip: Clip) => {
     if (clip.outcome === 'goal') {
       // Arms up where they scored, then away, then arms up again there.
       const gap = distance(scorer, celebrateAt);
-      const step = perFrame(celebrationPace);
-      const off = f >= leapFrames && gap > step;
+      const off = f >= leapFrames && gap > 0;
       // A knee slide carries them the last few metres, slowing.
       const sliding =
         arrivesWith === 'slide' && f >= leapFrames && gap < slideMetres;
-      if (off) {
-        const pace = sliding ? step * Math.max(0.2, gap / slideMetres) : step;
-        scorer.d += ((celebrateAt.d - scorer.d) / gap) * pace;
-        scorer.x += ((celebrateAt.x - scorer.x) / gap) * pace;
-      } else if (f >= leapFrames) {
-        Object.assign(scorer, celebrateAt);
+      if (off && sliding) {
+        const pace = Math.min(
+          gap,
+          wheelPace * Math.max(0.2, gap / slideMetres)
+        );
+        place(clip, clip.shooter, {
+          d: scorer.d + ((celebrateAt.d - scorer.d) / gap) * pace,
+          x: scorer.x + ((celebrateAt.x - scorer.x) / gap) * pace
+        });
+      } else if (off) {
+        moveRuns(clip, [wheeling]);
+      }
+      if (f >= leapFrames && arrived(clip, wheeling)) {
         if (arrivesWith !== 'slide') {
           aimAt(clip, clip.shooter, salute, true);
         }
@@ -354,7 +366,10 @@ export const playReaction = (clip: Clip) => {
               ? 'kick'
               : 'hold';
           if (!down) {
-            keeper.d -= perFrame(keeperStride);
+            place(clip, clip.keeperSlot, {
+              d: keeper.d - perFrame(keeperStride),
+              x: keeper.x
+            });
           }
           clip.ball.d = keeper.d;
           clip.ball.x = keeper.x;
@@ -438,11 +453,12 @@ export const playReaction = (clip: Clip) => {
           : { d: clip.ball.d, x: clip.ball.x };
         const gap = distance(keeper, to);
         // Off their line, as after a one-on-one, they jog back for it.
-        const step = perFrame(!fetched && gap > 3 ? jogPace : walkPace + 1);
-        if (gap > step) {
-          keeper.d += ((to.d - keeper.d) / gap) * step;
-          keeper.x += ((to.x - keeper.x) / gap) * step;
-        }
+        moveRuns(clip, [
+          chase(clip, clip.keeperSlot, {
+            pace: !fetched && gap > 3 ? 'jog' : 'walk',
+            target: to
+          })
+        ]);
         fetched ||= distance(keeper, clip.ball) < 0.6;
         keeper.pose = fetched ? 'hold' : 'run';
         if (fetched) {

@@ -1011,39 +1011,6 @@ test('defenders get out of a pass along the ground at running pace', () => {
   expect(fast).toEqual([]);
 });
 
-test('a defender cutting out the final pass or blocking the shot gets there at running pace', () => {
-  const fast: string[] = [];
-  for (const outcome of ['interception', 'block'] as const) {
-    for (let seed = 0; seed < 40; seed++) {
-      const script = createClipScript(
-        input({ cross: null, kind: 'clearance', outcome, seed })
-      );
-      // Whoever meets the ball, over the second before.
-      const met = script.frame(script.momentFrame);
-      const clearer = met.players.findIndex(
-        p =>
-          p.side === 'defence' &&
-          Math.hypot(p.x - met.ball.x, p.y - met.ball.y) < 1.5
-      );
-      expect(clearer).toBeGreaterThanOrEqual(0);
-      for (let at = script.momentFrame - 45; at <= script.momentFrame; at++) {
-        const [was, now] = [
-          script.frame(at - 5).players[clearer]!,
-          script.frame(at).players[clearer]!
-        ];
-        const pace = (Math.hypot(now.x - was.x, now.y - was.y) * clipFps) / 5;
-        if (now.pose === 'run' && pace > 9) {
-          fast.push(
-            `${outcome}, seed ${seed}, frame ${at}: ${pace.toFixed(1)} m/s`
-          );
-          break;
-        }
-      }
-    }
-  }
-  expect(fast).toEqual([]);
-});
-
 test('a carrier running into a defender never shoves them along faster than a run (#226)', () => {
   // The ball goes wide for a cross, and the carrier runs into the defender
   // closing them down.
@@ -1070,8 +1037,10 @@ test('no one on their feet moves faster than anyone runs', () => {
       }
     }
   };
+  // Runs keep to their own pace (clip-run.test.ts); this checks them end
+  // to end, with everyone else.
   for (const shooter of [9, 6, 2]) {
-    for (let seed = 0; seed < 40; seed++) {
+    for (let seed = 0; seed < 20; seed++) {
       for (const kind of [
         'goal',
         'save',
@@ -1090,7 +1059,7 @@ test('no one on their feet moves faster than anyone runs', () => {
   }
   for (const cross of crosses) {
     const kind = cross === 'headed-clear' ? 'clearance' : 'save';
-    for (let seed = 0; seed < 20; seed++) {
+    for (let seed = 0; seed < 10; seed++) {
       check(
         createClipScript(input({ cross, kind, seed })),
         `${cross}, seed ${seed}`
@@ -2457,12 +2426,6 @@ test('no one shuffles back and forth after a tackle', () => {
   // drift off it and step back on every few frames.
   const found: string[] = [];
   for (let seed = 0; seed < 60; seed++) {
-    // The tackler, getting up, is shoved aside by the team-mate running
-    // onto the ball: a player on a run of their own still pushes anyone in
-    // their way.
-    if (seed === 33) {
-      continue;
-    }
     const script = createClipScript(
       input({
         attackingUp: seed % 2 === 0,

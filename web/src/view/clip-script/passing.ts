@@ -13,15 +13,21 @@ import {
 import { clipFps, pitchLength, pitchWidth, type ClipPass } from './model';
 import {
   aimAt,
-  bentRun,
   finishFrame,
   kick,
   label,
   offsideLine,
-  reach,
   steer,
   type Clip
 } from './pitch';
+import {
+  moveRuns,
+  paceOf,
+  place,
+  planRunToward,
+  reachableToward,
+  stretchTo
+} from './run';
 import { byQuality, curl } from './setup';
 import {
   ballSpinUp,
@@ -122,8 +128,10 @@ export const dribble = (
         ? heading
         : rotated(clip.carrying, clip.ballSpin);
     const moved = clip.carryPace;
-    mover.d += clip.carrying.d * moved;
-    mover.x += clip.carrying.x * moved;
+    place(clip, clip.holder, {
+      d: mover.d + clip.carrying.d * moved,
+      x: mover.x + clip.carrying.x * moved
+    });
     // A defender in front slides in on the ball, while the carrier is on
     // the move and carries on long enough for the defender to be up
     // again before the zoom.
@@ -205,8 +213,10 @@ export const dribble = (
           d: -clip.carrying.x * clip.challenge.side * hop,
           x: clip.carrying.d * clip.challenge.side * hop
         };
-        mover.d += aside.d;
-        mover.x += aside.x;
+        place(clip, clip.holder, {
+          d: mover.d + aside.d,
+          x: mover.x + aside.x
+        });
       }
     }
     // Off the first touch the ball runs on ahead, slowing, and the
@@ -340,6 +350,8 @@ export const pass = (
   into?: Point
 ) => {
   const runner = clip.movers[receiver]!;
+  /** How far the receiver can run in `frames` to meet a pass. */
+  const reach = (frames: number) => paceOf(clip, receiver, 'run') * frames;
   const lead =
     kind === 'throw-in' ? clip.rng.between(0.5, 2) : clip.rng.between(2, 6);
   const end = into
@@ -376,24 +388,41 @@ export const pass = (
   // Played into space the receiver can't reach in time, the ball goes
   // shorter, towards them. They meet it a stride short of where it goes,
   // which may be a stride further to run (#226).
-  for (let k = 0; k < 4; k++) {
+  const from = { d: clip.ball.d, x: clip.ball.x };
+  // The receiver meets the ball a stride behind it, the way it came.
+  const runTo = (to: Point) => {
+    const came = distance(from, to);
+    const way = came
+      ? { d: (to.d - from.d) / came, x: (to.x - from.x) / came }
+      : { d: 1, x: 0 };
+    return {
+      by: flightTo(clip, to, kind).frames,
+      shape: 'bent',
+      to: { d: to.d - way.d * stride, x: to.x - way.x * stride },
+      way
+    } as const;
+  };
+  for (let k = 0; k < 6; k++) {
     const gap = distance(runner, end);
     const most = Math.max(0, reach(flightTo(clip, end, kind).frames) - stride);
-    if (gap <= most) {
+    if (gap > most) {
+      end.d = runner.d + ((end.d - runner.d) / gap) * most;
+      end.x = runner.x + ((end.x - runner.x) / gap) * most;
+      continue;
+    }
+    // Still turning out of a stride the other way, they may not get there
+    // even so: it goes as much shorter as they fall short.
+    const plan = runTo(end);
+    if (stretchTo(clip, receiver, plan) <= 1) {
       break;
     }
-    end.d = runner.d + ((end.d - runner.d) / gap) * most;
-    end.x = runner.x + ((end.x - runner.x) / gap) * most;
+    const near = reachableToward(clip, receiver, plan);
+    end.d -= plan.to.d - near.d;
+    end.x -= plan.to.x - near.x;
   }
-  const from = { d: clip.ball.d, x: clip.ball.x };
   const { frames, lofted } = flightTo(clip, end, kind);
-  // The receiver meets the ball a stride behind it, the way it came.
-  const came = distance(from, end);
-  const way = came
-    ? { d: (end.d - from.d) / came, x: (end.x - from.x) / came }
-    : { d: 1, x: 0 };
-  const runTo = { d: end.d - way.d * stride, x: end.x - way.x * stride };
-  const runAt = bentRun(clip, receiver, runTo, frames);
+  const { way, ...runPlan } = runTo(end);
+  const run = planRunToward(clip, receiver, runPlan);
   clip.passes.push({
     end: clip.frame + frames,
     from: label(clip, clip.holder),
@@ -433,7 +462,7 @@ export const pass = (
     // A throw is let go with the ball still held over the head.
     clip.movers[thrower]!.pose =
       kind === 'throw-in' && f <= kickFrames ? 'hold' : 'run';
-    Object.assign(runner, runAt(u));
+    moveRuns(clip, [run.unreachable ? undefined : run]);
     const overrides = new Map<number, Point>();
     if (receiver !== clip.shooter && passesLeft(clip) <= 2) {
       overrides.set(clip.shooter, waitingSpot(clip));

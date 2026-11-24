@@ -22,11 +22,11 @@ import {
   aimAt,
   crossFlight,
   finishFrame,
-  reach,
   standBack,
   steer,
   type Clip
 } from './pitch';
+import { moveRuns, paceOf, planRun, type Run } from './run';
 import { fromWide } from './setup';
 import {
   backLineAhead,
@@ -411,7 +411,8 @@ export const playBuildUp = (clip: Clip) => {
       clip,
       () =>
         distance(clip.movers[clip.shooter]!, clip.shootingSpot) >
-        reach(crossFlight(clip.ball, clip.shootingSpot) + clipFps / 2),
+        paceOf(clip, clip.shooter, 'run') *
+          (crossFlight(clip.ball, clip.shootingSpot) + clipFps / 2),
       new Map([[clip.shooter, waitingSpot(clip)]])
     );
   }
@@ -471,6 +472,8 @@ export const playZoom = (clip: Clip) => {
   if (fromWide(clip)) {
     zoomChase.set(clip.shooter, waitingSpot(clip));
   }
+  /** The penalty taker's run-up, once they step up. */
+  let runUp: Run | undefined;
   for (let f = 0; f < zoomFrames; f++) {
     clip.cameraWidth = lerp(cameraWide, cameraZoomed, ease(f / zoomFrames));
     if (through && clip.keeperSlot >= 0) {
@@ -484,14 +487,19 @@ export const playZoom = (clip: Clip) => {
       // everyone else still until it is struck.
       const taker = clip.movers[clip.shooter]!;
       const to = { d: clip.ball.d - 0.7, x: clip.ball.x - 0.3 };
-      const gap = distance(taker, to);
       const left = zoomFrames - f;
-      const runUp = Math.ceil(gap / perFrame(penaltyRunUp));
-      if (left <= runUp && gap > 0) {
-        const step = Math.min(gap, perFrame(penaltyRunUp));
-        taker.d += ((to.d - taker.d) / gap) * step;
-        taker.x += ((to.x - taker.x) / gap) * step;
+      const frames = Math.ceil(
+        distance(taker, to) / paceOf(clip, clip.shooter, penaltyRunUp)
+      );
+      if (!runUp && frames > 0 && left <= frames) {
+        const plan = planRun(clip, clip.shooter, {
+          by: left,
+          effort: penaltyRunUp,
+          to
+        });
+        runUp = plan.unreachable ? undefined : plan;
       }
+      moveRuns(clip, [runUp]);
       aimAt(clip, clip.shooter, clip.ball, true);
       steer(clip, new Set(clip.movers.keys()));
       finishFrame(clip);

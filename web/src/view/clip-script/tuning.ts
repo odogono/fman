@@ -10,8 +10,6 @@ export const longestGroundPass = 30;
 export const finalPassRange = 30;
 /** A pass takes at least this long, in seconds. */
 export const passMinimum = 0.6;
-/** How fast a receiver runs onto a pass, in metres a second. */
-export const receiverSpeed = 7;
 /** A defender this close to a pass's path, in metres, blocks it. */
 export const laneWidth = 2;
 /** Defenders keep at least this far from a pass along the ground. */
@@ -195,8 +193,6 @@ export const facingWindow = 10;
 export const facingSpeed = { start: 2.5, stop: 1.5 };
 /** Another defender must be this much nearer the ball to take over pressing it. */
 export const pressingGive = 1.5;
-/** A defender runs to cut out a pass or block a shot at no more than this, in metres a second. */
-export const clearerPace = 8;
 /** A keeper shuffles across their goal, keeping on the angle, at this pace, in metres a second. */
 export const keeperShuffle = 6;
 /** No one on their feet goes faster than this, in metres a second, however they are moved. */
@@ -265,8 +261,7 @@ export const tackleShare = 0.5;
  * skill, weak, average and strong (#238).
  */
 export const slidingBlockShare = [0.75, 0.5, 0.25] as const;
-/** A tackler sprints in at this pace, in metres a second, and slides in from this near. */
-export const tacklePace = 8;
+/** A tackler slides in from this near, in metres. */
 export const slideReach = 3;
 /**
  * Past the ball, a tackler's slide runs out over this many frames, from

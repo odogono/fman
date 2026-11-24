@@ -49,9 +49,7 @@ import {
   personalSpace,
   playerStops,
   pressingGive,
-  receiverSpeed,
   recoveryGap,
-  runRamp,
   sitFrames,
   standingSpeed,
   turnFrames
@@ -825,47 +823,6 @@ export const steer = (
 
 export const label = (clip: Clip, i: number) => clip.attackers[i]!.label;
 
-/** How far a receiver can run in `frames` to meet a pass. */
-export const reach = (frames: number) => frames * perFrame(receiverSpeed);
 /** The frames a cross takes, from `from` to the header at `to`. */
 export const crossFlight = (from: Point, to: Point) =>
   Math.ceil(Math.max(distance(from, to) / perFrame(18), clipFps * 0.8));
-
-/**
- * A run onto a ball, from where player `i` stands to `to` over `frames`:
- * out of the stride they are in, so they don't turn sharply as the ball is
- * played. It gives their place `u` of the way along.
- *
- * They get from the pace they are going at to a steady pace over the first
- * part of the run and hold it, rather than speeding up all the way and
- * meeting the ball at a sprint no one could run. Any part of their stride
- * not towards the ball carries them on at first, then fades.
- */
-export const bentRun = (clip: Clip, i: number, to: Point, frames: number) => {
-  const from = { d: clip.movers[i]!.d, x: clip.movers[i]!.x };
-  const step = clip.steps[i] ?? { d: 0, x: 0 };
-  const metres = distance(from, to);
-  if (!metres) {
-    return (): Point => ({ ...to });
-  }
-  const way = { d: (to.d - from.d) / metres, x: (to.x - from.x) / metres };
-  const needed = metres / frames;
-  /** Their pace towards the ball, as a share of the pace the run needs. */
-  const starting = clamp((step.d * way.d + step.x * way.x) / needed, 0, 2);
-  const steady = (1 - (runRamp * starting) / 2) / (1 - runRamp / 2);
-  const aside = {
-    d: step.d - starting * needed * way.d,
-    x: step.x - starting * needed * way.x
-  };
-  return (u: number): Point => {
-    const along =
-      u < runRamp
-        ? starting * u + ((steady - starting) * u * u) / (2 * runRamp)
-        : (runRamp * (starting + steady)) / 2 + steady * (u - runRamp);
-    const drift = frames * u * (1 - u) ** 2;
-    return {
-      d: lerp(from.d, to.d, along) + aside.d * drift,
-      x: lerp(from.x, to.x, along) + aside.x * drift
-    };
-  };
-};

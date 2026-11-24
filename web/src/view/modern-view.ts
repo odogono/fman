@@ -1,4 +1,5 @@
 import type { AmountAction } from './amount-entry';
+import type { paintClip } from './clip-canvas';
 import {
   paintCupReplay,
   paintCupResult,
@@ -27,6 +28,8 @@ export type ModernViewDeps = Readonly<{
   clipsUnpainted: () => boolean;
   /** The element whose classes the page's layout keys on. */
   layoutRoot: HTMLElement;
+  /** Draws a clip's frame, as the cup celebration's. */
+  paintClip: typeof paintClip;
   /** The browser asks for less motion. */
   reducedMotion: () => boolean;
 }>;
@@ -244,7 +247,13 @@ export const createModernView = (deps: ModernViewDeps) => {
       paint: (pane, screen) => paintCupResult(pane, screen.cupResult, scene()),
       pane: cupResult,
       update: (pane, screen) =>
-        paintCupScene(pane, screen.cupResult, scene(), deps.reducedMotion())
+        paintCupScene(
+          pane,
+          screen.cupResult,
+          scene(),
+          deps.reducedMotion(),
+          deps.paintClip
+        )
     },
     'end-of-season': {
       classes: ['has-amount'],
@@ -364,11 +373,17 @@ export const createModernView = (deps: ModernViewDeps) => {
     });
   };
 
-  /** Hides `pane`; it is built afresh when it shows again. */
-  const hide = (pane: HTMLElement) => {
+  /**
+   * Hides `pane`. Once another Modern screen has shown, it is built afresh
+   * when it shows again, so a new game's name starts empty; with no Modern
+   * screen, as in Classic mode, it keeps what was typed into it.
+   */
+  const hide = (pane: HTMLElement, forget: boolean) => {
     pane.hidden = true;
     shownOn.delete(pane);
-    builtOn.delete(pane);
+    if (forget) {
+      builtOn.delete(pane);
+    }
   };
 
   const showScreen = <K extends ModernScreenKind>(
@@ -416,12 +431,12 @@ export const createModernView = (deps: ModernViewDeps) => {
           paintHome(home, homeScreen)
         );
       } else {
-        hide(home);
+        hide(home, true);
       }
       const active = screen && panes[screen.kind].pane;
       for (const pane of modernPanes) {
         if (pane !== active) {
-          hide(pane);
+          hide(pane, screen !== undefined);
         }
       }
       if (screen) {

@@ -3,7 +3,7 @@ import { fixtureSides } from '../sim/league';
 import { flashPhase, type View } from '../sim/session';
 import type { AmountEntry } from './amount-entry';
 import type { App, Dom, MenuControl } from './app';
-import { canPaintClips, fitClipCanvas } from './clip-canvas';
+import { canPaintClips, fitClipCanvas, paintClip } from './clip-canvas';
 import { paintShot } from './clip-wipe';
 import type { BarButton } from './context-bar';
 import { rasterText, rasterizeCells } from './glyphs';
@@ -164,6 +164,7 @@ export const createBrowserDom = (app: HTMLElement) => {
   const modernView = createModernView({
     clipsUnpainted: () => dom.clipsUnpainted,
     layoutRoot: document.documentElement,
+    paintClip,
     reducedMotion: () => dom.reducedMotion
   });
   machine.before(modernView.home);

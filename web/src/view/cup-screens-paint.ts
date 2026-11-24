@@ -1,4 +1,4 @@
-import { fitClipCanvas, paintClip } from './clip-canvas';
+import { fitClipCanvas, type paintClip } from './clip-canvas';
 import { celebrationFrame } from './cup-celebration';
 import type { CupReplay, CupResult } from './cup-screens';
 import { cell, clubLabel, continueRow } from './paint-parts';
@@ -52,13 +52,14 @@ export const paintCupResult = (
 /**
  * The cup celebration's frame on the scene `paintCupResult` built, and
  * whether it is still playing. `still`: under reduced motion it shows the
- * lift from the start.
+ * lift from the start. `paint` draws the frame.
  */
 export const paintCupScene = (
   pane: HTMLElement,
   result: CupResult,
   scene: boolean,
-  still: boolean
+  still: boolean,
+  paint: typeof paintClip
 ) => {
   const celebration = scene ? result.celebration : undefined;
   pane.classList.toggle(
@@ -67,7 +68,7 @@ export const paintCupScene = (
   );
   const canvas = pane.querySelector<HTMLCanvasElement>('canvas.cup-scene');
   if (celebration && canvas) {
-    paintClip(
+    paint(
       canvas.getContext('2d')!,
       celebrationFrame(
         celebration.sides,

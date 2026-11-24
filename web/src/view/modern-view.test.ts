@@ -8,7 +8,9 @@ import { latestEnhanced } from '../sim/ruleset';
 import type { View } from '../sim/session';
 import { submitInput } from '../test/input';
 import { playTo } from '../test/play';
+import type { paintClip } from './clip-canvas';
 import { tickerBar } from './context-bar';
+import { celebrationFrame } from './cup-celebration';
 import { homeFor } from './home';
 import { continueId } from './modern-highlights';
 import {
@@ -23,8 +25,14 @@ import type { ModernView } from './modern-view';
 
 const nothing = () => {};
 
-/** A canvas context that draws nothing. */
-const noContext = () => new Proxy({}, { get: () => nothing });
+const contexts = new WeakMap<HTMLCanvasElement, object>();
+
+/** A canvas's context, one per canvas as in a browser, that draws nothing. */
+const noContext = function (this: HTMLCanvasElement) {
+  const context = contexts.get(this) ?? new Proxy({}, { get: () => nothing });
+  contexts.set(this, context);
+  return context;
+};
 
 let createModernView: typeof import('./modern-view').createModernView;
 let answerOf: typeof import('./modern-view').answerOf;
@@ -43,12 +51,22 @@ beforeEach(() => {
   document.documentElement.className = '';
 });
 
+/** The clip frames the module asked to be drawn. */
+let painted: Parameters<typeof paintClip>[] = [];
+
+beforeEach(() => {
+  painted = [];
+});
+
 /** The module's panes, placed in the body. */
-const mount = (clipsUnpainted = true): ModernView => {
+const mount = (clipsUnpainted = true, reducedMotion = false): ModernView => {
   const view = createModernView({
     clipsUnpainted: () => clipsUnpainted,
     layoutRoot: document.documentElement,
-    reducedMotion: () => false
+    paintClip: (...args) => {
+      painted.push(args);
+    },
+    reducedMotion: () => reducedMotion
   });
   document.body.append(view.home, ...view.panes);
   return view;
@@ -202,6 +220,18 @@ test("a new game's manager name starts empty, not with the last one typed", () =
   ).toBe('');
 });
 
+test('a name typed before switching to Classic mode and back is kept', () => {
+  const modern = mount();
+  modern.show(setup(), undefined);
+  typeName('Alex');
+  // Classic mode shows no Modern screen.
+  modern.show(undefined, undefined);
+  modern.show(setup(), undefined);
+  expect(
+    document.querySelector<HTMLInputElement>('#setup input[name=name]')!.value
+  ).toBe('Alex');
+});
+
 const rename = (error?: string): ModernScreen => ({
   kind: 'names',
   names: {
@@ -285,9 +315,10 @@ test('the clip canvas is the same node across rebuilds', () => {
   expect(document.querySelector('canvas.clip-pitch')).toBe(modern.clipPitch);
 });
 
-test('without WebGL the cup won shows its banner, and the celebration presses the screen while it plays', () => {
+/** The cup won, its celebration under way. */
+const cupWon = () => {
   const decided = playTo('cup-result');
-  const won = modernScreenFor({
+  return modernScreenFor({
     ...decided,
     celebration: 1,
     celebrationProgress: { stars: 0, text: 0, trophy: 40 },
@@ -295,10 +326,15 @@ test('without WebGL the cup won shows its banner, and the celebration presses th
     score: decided.fixture.home ? [1, 0] : [0, 1],
     screen: 'cup-celebration'
   } as View);
+};
+
+test('without WebGL the cup won shows its banner, and the celebration presses the screen while it plays', () => {
+  const won = cupWon();
   expect(won?.kind).toBe('cup-result');
   const banner = mount(true);
   banner.show(won, undefined);
   expect(document.querySelector('canvas.cup-scene')).toBeNull();
+  expect(painted).toEqual([]);
   document.body.replaceChildren();
   const scene = mount(false);
   scene.show(won, undefined);
@@ -308,3 +344,37 @@ test('without WebGL the cup won shows its banner, and the celebration presses th
   expect(scene.pressesScreen(scene.pitch)).toBe(true);
   expect(scene.pressesScreen(scene.home)).toBe(false);
 });
+
+test.each([false, true])(
+  "the cup celebration's frame is drawn on its own canvas, at the ground it was won, still under reduced motion: %p",
+  reducedMotion => {
+    const won = cupWon();
+    if (won?.kind !== 'cup-result' || !won.cupResult.celebration) {
+      throw new Error('no celebration');
+    }
+    const { celebration } = won.cupResult;
+    const scene = mount(false, reducedMotion);
+    scene.show(won, undefined);
+    const canvas =
+      document.querySelector<HTMLCanvasElement>('canvas.cup-scene')!;
+    expect(painted).toHaveLength(1);
+    const [context, frame, sides, ground] = painted[0]!;
+    expect(context).toBe(canvas.getContext('2d')!);
+    expect(frame).toEqual(
+      celebrationFrame(
+        celebration.sides,
+        celebration.progress,
+        celebration.clock,
+        reducedMotion
+      )
+    );
+    expect(sides).toEqual({
+      attack: celebration.sides.winners,
+      defence: celebration.sides.losers
+    });
+    expect(ground).toBe(celebration.ground);
+    // Each frame repaints the scene; the canvas stays.
+    scene.show(won, undefined);
+    expect(document.querySelector('canvas.cup-scene')).toBe(canvas);
+  }
+);

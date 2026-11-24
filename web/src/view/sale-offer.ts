@@ -1,5 +1,5 @@
+import { offeredAnswers } from '../sim/offers';
 import type { View } from '../sim/session';
-import { answersFor } from './answers';
 import { clubName, type ClubName } from './home';
 import { bidPlayerOf, type BidPlayer } from './modern-amount';
 
@@ -29,7 +29,7 @@ export const saleOfferFor = (view: View): SaleOffer | undefined => {
   }
   const { game, offer } = view;
   const player = game.players[offer.playerId - 1]!;
-  const offered = new Set(answersFor(view).map(answer => answer.id));
+  const offered = new Set(offeredAnswers(view).map(answer => answer.id));
   const action = (id: string): Action => ({ enabled: offered.has(id), id });
   const gap = offer.amount - player.value;
   return {

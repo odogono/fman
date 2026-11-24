@@ -1,5 +1,6 @@
 import { pickedCount } from '../../web/src/sim/league';
 import type { Game } from '../../web/src/sim/management';
+import { offeredAnswerFor } from '../../web/src/sim/offers';
 import type { Ruleset } from '../../web/src/sim/ruleset';
 import { createSession, type View } from '../../web/src/sim/session';
 import { createHarnessRng, mixSeed, type HarnessRng } from './random';
@@ -134,37 +135,12 @@ const continueAnswer = (view: View, config: RunConfig) => {
   }
 };
 
-/** True when `after` shows that the game turned the answer down. */
-const rejected = (before: View, after: View) => {
-  if (after.screen === 'selection' && after.error) {
-    return after.error;
-  }
-  if (
-    after.screen === 'message' &&
-    after.message.kind === 'text' &&
-    ['borrow', 'repay', 'squad', 'manager', 'colours', 'level'].includes(
-      before.screen
-    )
-  ) {
-    return after.message.text;
-  }
-  if (
-    after.screen === 'message' &&
-    after.message.kind === 'text' &&
-    after.message.text === "You haven't enough money!"
-  ) {
-    return after.message.text;
-  }
-  if (
-    before.screen === after.screen &&
-    before.game === after.game &&
-    (before.screen !== 'clubs' ||
-      (after.screen === 'clubs' && before.page === after.page))
-  ) {
-    return 'nothing changed';
-  }
-  return undefined;
-};
+/** True when an accepted answer left the prompt exactly where it was. */
+const stuck = (before: View, after: View) =>
+  before.screen === after.screen &&
+  before.game === after.game &&
+  (before.screen !== 'clubs' ||
+    (after.screen === 'clubs' && before.page === after.page));
 
 /**
  * Plays one run through the headless session, from the title screen to
@@ -351,16 +327,20 @@ export const playRun = (config: RunConfig): RunRecord => {
     const answer = decisionScreens.has(view.screen)
       ? decide(view as DecisionView)
       : continueAnswer(view, config);
+    if (!offeredAnswerFor(view, answer)) {
+      throw new BotError(
+        `${config.strategy.name} answered ${JSON.stringify(answer)} on ${view.screen}, which doesn't offer it`
+      );
+    }
     session.advance(between(timingRng, timing.thinkFrames));
     session.setKey('Enter');
     session.submit(answer);
     session.advance(between(timingRng, timing.enterHoldFrames));
     session.setKey('');
     const after = session.view;
-    const reason = rejected(view, after);
-    if (reason) {
+    if (stuck(view, after)) {
       throw new BotError(
-        `${config.strategy.name} answered ${JSON.stringify(answer)} on ${view.screen}: ${reason}`
+        `${config.strategy.name} answered ${JSON.stringify(answer)} on ${view.screen}: nothing changed`
       );
     }
     current = after;

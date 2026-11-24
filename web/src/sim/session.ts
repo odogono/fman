@@ -4,6 +4,7 @@ import { cupRoundName } from './cup';
 import { createFrameClock, framePeriod, spectrumFrameT } from './frame-clock';
 import {
   pickedCount,
+  removesOnly,
   seasonOver,
   type MatchCompletion,
   type MatchFixture
@@ -13,6 +14,8 @@ import {
   createNewGame,
   creditLimit,
   isDismissed,
+  levels,
+  longestManagerName,
   makeSaleOffer,
   repay,
   respondToSale,
@@ -27,6 +30,13 @@ import {
 import type { Moment } from './moments';
 import { createNameEditor, type NameEditor } from './name-editor';
 import { screenPrintFault } from './name-print-fault';
+import {
+  clubsOnPage,
+  isCommand,
+  isPrintKey,
+  numericInput,
+  takesPrint
+} from './offers';
 import { createPauseKeyboard, type PauseKeyboardState } from './pause-keyboard';
 import type { Playback } from './playback';
 import { createRng } from './rng';
@@ -176,13 +186,6 @@ export type Effect =
   | { data: string; type: 'save' }
   | { feature: string; type: 'unavailable' };
 
-const isCommand = (text: string, command: string) =>
-  text === command || text === command.toUpperCase();
-const numericInput = (text: string) =>
-  /^\d*$/.test(text) && Number.isSafeInteger(Number(`0${text}`))
-    ? Number(`0${text}`)
-    : undefined;
-
 /** Everything a fresh program holds; NEW replaces it wholesale. */
 const freshProgram = (frames = 0, seed = 0) => ({
   changingLevel: false,
@@ -261,7 +264,7 @@ export const createSession = (
       !promptScreens.has(program.screen) ||
       screenPrintFault(screenView()) ||
       running() ||
-      (program.screen === 'selection' && pickedCount(program.game!) > 11)
+      (program.screen === 'selection' && removesOnly(program.game!))
     ) {
       return;
     }
@@ -457,18 +460,13 @@ export const createSession = (
     ) {
       return;
     }
-    if (
-      program.screen !== 'manager' &&
-      program.screen !== 'names' &&
-      program.screen !== 'save-question' &&
-      (text === 'h' || text === 'H')
-    ) {
+    if (takesPrint(program.screen) && isPrintKey(text)) {
       return { type: 'copy' };
     }
     const number = numericInput(text);
     switch (program.screen) {
       case 'manager':
-        if (text.length > 20) {
+        if (text.length > longestManagerName) {
           showMessage('Name is too long (max 20 chars.)', 'manager', 200);
         } else {
           program.manager = text;
@@ -480,8 +478,8 @@ export const createSession = (
           program.page = (program.page % 4) + 1;
         } else if (
           number !== undefined &&
-          number >= (program.page - 1) * 16 + 1 &&
-          number <= program.page * 16
+          number >= clubsOnPage(program.page).first &&
+          number <= clubsOnPage(program.page).last
         ) {
           program.club = number;
           program.changingLevel = false;
@@ -489,7 +487,11 @@ export const createSession = (
         }
         break;
       case 'level':
-        if (number !== undefined && number >= 1 && number <= 7) {
+        if (
+          number !== undefined &&
+          number >= levels.lowest &&
+          number <= levels.highest
+        ) {
           program.level = number;
           if (program.changingLevel) {
             program.game = { ...program.game!, level: program.level };
@@ -596,7 +598,7 @@ export const createSession = (
         if (number === undefined) {
           break;
         }
-        if (number === 99 && pickedCount(program.game!) <= 11) {
+        if (number === 99 && !removesOnly(program.game!)) {
           program.screen = 'team';
           break;
         }

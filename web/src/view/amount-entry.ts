@@ -1,4 +1,4 @@
-import type { AmountAnswer } from './answers';
+import type { AmountAnswer } from '../sim/offers';
 
 /**
  * Touch entry of an amount: a stepper with chips, or a keypad for an exact

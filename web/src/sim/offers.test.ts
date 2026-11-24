@@ -1,17 +1,21 @@
 import { expect, test } from 'bun:test';
 
-import { createJournal, openSave, type Journal } from '../sim/journal';
+import { finishPrompt, submitInput } from '../test/input';
+import { createJournal, openSave, type Journal } from './journal';
+import {
+  offeredAnswerFor,
+  offeredAnswers,
+  printAccepted,
+  type OfferedAnswer
+} from './offers';
 import {
   createSession,
   type Effect,
   type Screen,
   type Session,
   type View
-} from '../sim/session';
-import { viewOn } from '../sim/view-on';
-import { finishPrompt, submitInput } from '../test/input';
-import { answersFor, printAccepted, type OfferedAnswer } from './answers';
-import { barFor } from './context-bar';
+} from './session';
+import { viewOn } from './view-on';
 
 /** A short description of where an answer led, to compare with the table. */
 const outcome = (view: View, effect: Effect | undefined) => {
@@ -140,14 +144,39 @@ const shown = (view: View) => {
   return JSON.stringify(rest);
 };
 
+/** The text an answer is tapped as; an amount at its largest, or at `amount`. */
+const textOf = (answer: OfferedAnswer, amount?: number) =>
+  answer.kind === 'choice'
+    ? answer.text
+    : answer.kind === 'amount'
+      ? String(amount ?? answer.max)
+      : sampleText[answer.id]!;
+
+/** What an offered answer's text reads as: a choice with that text wins. */
+const readsAs = (answers: readonly OfferedAnswer[], answer: OfferedAnswer) =>
+  (answer.kind === 'amount' &&
+    answers.find(a => a.kind === 'choice' && a.text === textOf(answer))?.id) ||
+  answer.id;
+
+/** Typed answers each prompt is checked against, beyond its offered ones. */
+const typed = [
+  'zz',
+  '',
+  '0',
+  '99',
+  '100',
+  '007',
+  'Y',
+  'yes',
+  'NO',
+  'c',
+  'S',
+  'h'
+];
+
 /** Taps an answer; an amount goes in at its largest, or at `amount`. */
 const tap = (journal: Journal, answer: OfferedAnswer, amount?: number) => {
-  const text =
-    answer.kind === 'choice'
-      ? answer.text
-      : answer.kind === 'amount'
-        ? String(amount ?? answer.max)
-        : sampleText[answer.id]!;
+  const text = textOf(answer, amount);
   const effect = journal.submit(text, 'held');
   journal.release();
   finishPrompt(journal);
@@ -164,16 +193,17 @@ const probe = (journal: Journal) => {
   finishPrompt(journal);
   const view = journal.session.view;
   visited.add(view.screen);
-  const answers = answersFor(view);
-  // Classic mode's bar has a label for every offered answer.
-  expect(barFor(answers)).toHaveLength(answers.length);
+  const answers = offeredAnswers(view);
   if (view.paused) {
     expect(answers).toEqual([]);
     expect(printAccepted(view)).toBe(false);
+    expect(offeredAnswerFor(view, '')).toBeUndefined();
     return;
   }
-  // The game menu's Print is there only where the original copies the screen.
+  // The game menu's Print is there only where the original copies the screen,
+  // and there the print key is no offered answer.
   if (printAccepted(view)) {
+    expect(offeredAnswerFor(view, 'h')).toBeUndefined();
     const copy = openSave(journal.snapshot());
     expect(
       `${view.screen}: h → ${tap(copy, { id: 'print', kind: 'choice', text: 'h' })}`
@@ -181,6 +211,10 @@ const probe = (journal: Journal) => {
   }
   expect(new Set(answers.map(a => a.id)).size).toBe(answers.length);
   const outcomes = answers.map(answer => {
+    const read = offeredAnswerFor(view, textOf(answer))?.id;
+    expect(`${answer.id} reads as ${read}`).toBe(
+      `${answer.id} reads as ${readsAs(answers, answer)}`
+    );
     const got = tap(openSave(journal.snapshot()), answer);
     const wants = [expected(answer, view)].flat();
     expect(`${answer.id} → ${wants.includes(got) ? 'as listed' : got}`).toBe(
@@ -197,14 +231,33 @@ const probe = (journal: Journal) => {
     }
     return got;
   });
-  const copy = openSave(journal.snapshot());
-  const got = tap(copy, { id: 'unlisted', kind: 'choice', text: 'zz' });
-  const ignored = shown(copy.session.view) === shown(view);
-  expect(
-    ignored || outcomes.includes(got)
-      ? 'ignored or listed'
-      : `${view.screen}: zz → ${got}`
-  ).toBe('ignored or listed');
+  // A typed answer reads as the offered answer that does the same; one that
+  // reads as none is ignored or ends where no offered answer leads.
+  for (const text of typed) {
+    const copy = openSave(journal.snapshot());
+    const got = tap(copy, { id: 'typed', kind: 'choice', text });
+    const read = offeredAnswerFor(view, text);
+    if (read) {
+      const same = openSave(journal.snapshot());
+      // A name is typed as is; an amount at the number the text reads as.
+      if (read.kind === 'text') {
+        tap(same, { id: read.id, kind: 'choice', text });
+      } else {
+        tap(same, read, Number(`0${text}`));
+      }
+      const alike = shown(copy.session.view) === shown(same.session.view);
+      expect(`${view.screen}: ${text} → ${alike ? read.id : got}`).toBe(
+        `${view.screen}: ${text} → ${read.id}`
+      );
+    } else {
+      const ignored = shown(copy.session.view) === shown(view);
+      expect(
+        ignored || !outcomes.includes(got)
+          ? 'ignored or refused'
+          : `${view.screen}: ${text} → ${got}`
+      ).toBe('ignored or refused');
+    }
+  }
 };
 
 const play = (journal: Journal, inputs: readonly string[]) => {
@@ -435,7 +488,7 @@ const tapAt = (
   text?: string,
   hold = holdFrames
 ) => {
-  const offered = answersFor(journal.session.view).find(a => a.id === id);
+  const offered = offeredAnswers(journal.session.view).find(a => a.id === id);
   if (!offered) {
     throw new Error(`${id} is not offered on ${journal.session.view.screen}`);
   }

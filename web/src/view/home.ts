@@ -4,8 +4,8 @@ import { previewFixture, type MatchFixture } from '../sim/league';
 import type { Game } from '../sim/management';
 import { clubInk } from '../sim/names';
 import { nextBills, type NextBills } from '../sim/next-bills';
+import { offeredAnswers } from '../sim/offers';
 import type { View } from '../sim/session';
-import { answersFor } from './answers';
 
 /** A club's name in its name colour: Spectrum ink and paper numbers. */
 export type ClubName = Readonly<{ ink: number; name: string; paper: number }>;
@@ -162,7 +162,7 @@ export const nextBillsWarning = (
 
 export const homeFor = (view: View & { game: Game }): Home => {
   const { game } = view;
-  const offered = new Set(answersFor(view).map(answer => answer.id));
+  const offered = new Set(offeredAnswers(view).map(answer => answer.id));
   const fixture = fixtureFor(
     game,
     'fixture' in view ? view.fixture : undefined

@@ -91,6 +91,12 @@ export type Game = Readonly<{
 const isIntegerIn = (value: number, min: number, max: number) =>
   Number.isSafeInteger(value) && value >= min && value <= max;
 
+/** The difficulty levels a manager can choose, easiest first. */
+export const levels = { highest: 7, lowest: 1 } as const;
+
+/** The longest manager's name the original takes. */
+export const longestManagerName = 20;
+
 export const createNewGame = (options: {
   club: number;
   /** Required unless the ruleset's clubs wear their own kits. */
@@ -103,9 +109,9 @@ export const createNewGame = (options: {
   const ruleset = options.ruleset ?? 'original';
   if (
     !isRuleset(ruleset) ||
-    options.manager.length > 20 ||
+    options.manager.length > longestManagerName ||
     !isIntegerIn(options.club, 1, 64) ||
-    !isIntegerIn(options.level, 1, 7) ||
+    !isIntegerIn(options.level, levels.lowest, levels.highest) ||
     (presentDay(ruleset)
       ? options.colour !== undefined
       : options.colour === undefined || ![0, 7].includes(options.colour))
@@ -236,6 +242,12 @@ export const payWeeklyBills = (game: Game) => {
 /** The most a club may owe: the loan limit, and the debt beyond which the manager is dismissed. */
 export const creditLimit = (game: Game) => 250_000 * (5 - game.division);
 
+/** The most the club can borrow now; below zero once the debt is over the limit. */
+export const loanRoom = (game: Game) => creditLimit(game) - game.debt;
+
+/** The most the club can repay now: no more than it owes or holds. */
+export const largestRepayment = (game: Game) => Math.min(game.debt, game.cash);
+
 /**
  * After the bills, under a ruleset with a grace period: going over the credit
  * limit starts one, each further week over counts it down, and getting back
@@ -272,7 +284,7 @@ const validateAmount = (amount: number) => {
 
 export const borrow = (game: Game, amount: number): Game => {
   validateAmount(amount);
-  if (game.debt + amount > creditLimit(game)) {
+  if (amount > loanRoom(game)) {
     throw new RangeError(`Sorry, your credit limit is £ ${creditLimit(game)}`);
   }
   return { ...game, cash: game.cash + amount, debt: game.debt + amount };

@@ -6,12 +6,13 @@ import {
   type Player
 } from '../../web/src/sim/management';
 import { createHarnessRng } from './random';
-import { playRun, type RunRecord } from './run';
+import { BotError, playRun, type RunRecord } from './run';
 import {
   strategies,
   strategyNamed,
   strongestTeam,
-  topEleven
+  topEleven,
+  type Strategy
 } from './strategies';
 import { compare, significant, summarise } from './summary';
 
@@ -36,6 +37,31 @@ for (const strategy of strategies) {
     }
   });
 }
+
+/** An answer no decision screen offers. */
+const answerX = () => 'x';
+/** A strategy that answers x everywhere. */
+const stray: Strategy = {
+  create: () => answerX,
+  description: 'Answers x everywhere.',
+  name: 'stray'
+};
+const strayRun = () =>
+  playRun({
+    level: 4,
+    ruleset: 'original',
+    seasonLimit: 1,
+    seed: 7,
+    strategy: stray
+  });
+
+test('a strategy answer the prompt does not offer fails the run', () => {
+  // The original would ignore it; the bots stop at it.
+  expect(strayRun).toThrow(BotError);
+  expect(strayRun).toThrow(
+    'stray answered "x" on menu, which doesn\'t offer it'
+  );
+});
 
 test('a run counts its matches, injuries and short-handed matches', () => {
   const run = short('passive');

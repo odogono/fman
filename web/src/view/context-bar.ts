@@ -1,4 +1,4 @@
-import type { OfferedAnswer } from './answers';
+import type { OfferedAnswer } from '../sim/offers';
 
 /**
  * The ticker's Skip (#108). It answers no prompt: it ends the ticker's

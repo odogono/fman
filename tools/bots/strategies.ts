@@ -1,5 +1,8 @@
+import { removesOnly } from '../../web/src/sim/league';
 import {
-  creditLimit,
+  largestRepayment,
+  loanRoom,
+  weeklyCharges,
   type Game,
   type Player
 } from '../../web/src/sim/management';
@@ -53,9 +56,8 @@ const clamp = (value: number) => Math.max(1, Math.min(20, value));
 
 /** One week's wages, rent and interest at the current squad and debt. */
 export const weeklyBills = (game: Game) => {
-  const factor = 5 - game.division;
-  const wages = owned(game).reduce((sum, p) => sum + p.skill * 100 * factor, 0);
-  return wages + 500 * factor + Math.floor(game.debt / 100);
+  const { interest, rent, wages } = weeklyCharges(game);
+  return wages + rent + interest;
 };
 
 const sameIds = (a: readonly Player[], b: ReadonlySet<number>) =>
@@ -135,7 +137,7 @@ const pickToward = (
   if (view.screen === 'team') {
     return sameIds(team, wanted) ? '99' : 'c';
   }
-  if (team.length > 11) {
+  if (removesOnly(view.game)) {
     return String((team.find(p => !wanted.has(p.id)) ?? team[0]!).id);
   }
   const add = view.game.players.find(p => p.status === 1 && wanted.has(p.id));
@@ -151,14 +153,14 @@ const random: Strategy = {
         // After a relegation the debt can exceed the new, lower limit until
         // the next bills dismiss the manager; no loan is then accepted.
         return rng.pick(
-          game.debt > creditLimit(game)
+          loanRoom(game) < 0
             ? ['s', 'a', 'p', '99']
             : ['s', 'a', 'l', 'p', '99']
         );
       case 'borrow':
-        return String(rng.int(0, creditLimit(game) - game.debt));
+        return String(rng.int(0, loanRoom(game)));
       case 'repay':
-        return String(rng.int(0, Math.min(game.debt, game.cash)));
+        return String(rng.int(0, largestRepayment(game)));
       case 'squad':
         return rng.pick(['99', ...available(game).map(p => String(p.id))]);
       case 'sale':
@@ -166,11 +168,12 @@ const random: Strategy = {
       case 'team':
         return rng.pick(['99', 'c']);
       case 'selection': {
-        const team = picked(game);
-        const toggles =
-          team.length > 11 ? team : game.players.filter(p => p.status === 1);
+        const removing = removesOnly(game);
+        const toggles = removing
+          ? picked(game)
+          : game.players.filter(p => p.status === 1);
         return rng.pick([
-          ...(team.length <= 11 ? ['99'] : []),
+          ...(removing ? [] : ['99']),
           ...toggles.map(p => String(p.id))
         ]);
       }
@@ -325,9 +328,9 @@ const aggressive: Strategy = {
       switch (view.screen) {
         case 'menu':
           bidFor = undefined;
-          return creditLimit(game) - game.debt >= 1000 ? 'l' : '99';
+          return loanRoom(game) >= 1000 ? 'l' : '99';
         case 'borrow':
-          return String(creditLimit(game) - game.debt);
+          return String(loanRoom(game));
         case 'team':
         case 'selection':
           return pickToward(view, strongestFor(game));
@@ -363,7 +366,7 @@ const recovering: Strategy = {
     const play = aggressive.create(rng);
     return view => {
       const { game } = view;
-      if (game.debt <= creditLimit(game)) {
+      if (loanRoom(game) >= 0) {
         return play(view);
       }
       const weakestReserve = [...game.players]
@@ -377,7 +380,7 @@ const recovering: Strategy = {
           }
           return canSell ? 'a' : '99';
         case 'repay':
-          return String(Math.min(game.debt, game.cash));
+          return String(largestRepayment(game));
         case 'squad':
           return canSell ? String(weakestReserve.id) : '99';
         case 'sale':

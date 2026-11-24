@@ -1,7 +1,7 @@
 import { cupRoundName } from '../sim/cup';
 import { fixtureSides } from '../sim/league';
+import { offeredAnswers } from '../sim/offers';
 import type { View } from '../sim/session';
-import { answersFor } from './answers';
 import { celebrationSidesFor } from './clip-match';
 import type { CelebrationProgress, CelebrationSides } from './cup-celebration';
 import { clubName, fixtureTitle, type ClubName } from './home';
@@ -51,7 +51,7 @@ const titleLength = 64;
 const starCells = 9 * 32;
 
 const doneFor = (view: View, id: string): Done => ({
-  enabled: answersFor(view).some(answer => answer.id === id),
+  enabled: offeredAnswers(view).some(answer => answer.id === id),
   id
 });
 

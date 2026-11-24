@@ -6,6 +6,11 @@ import {
   type Journal
 } from '../sim/journal';
 import type { Game } from '../sim/management';
+import {
+  offeredAnswers,
+  printAccepted,
+  type OfferedAnswer
+} from '../sim/offers';
 import { clubSquads, squadStrength } from '../sim/ruleset';
 import type { Effect, View } from '../sim/session';
 import { categorySums } from '../sim/squad-strength';
@@ -16,7 +21,6 @@ import {
   type AmountAction,
   type AmountEntry
 } from './amount-entry';
-import { answersFor, printAccepted, type OfferedAnswer } from './answers';
 import {
   createClipPlayer,
   screenKey,
@@ -329,13 +333,14 @@ export const createApp = ({
     }
     const view = journal.session.view;
     return modernScreenFor(view, {
-      amount: amountFor(answersFor(view)),
+      amount: amountFor(offeredAnswers(view)),
       clips: clipState()
     });
   };
   /** Modern mode takes typing only where a name is asked for. */
   const typingTaken = () =>
-    !modern() || answersFor(journal.session.view).some(a => a.kind === 'text');
+    !modern() ||
+    offeredAnswers(journal.session.view).some(a => a.kind === 'text');
   /** Modern mode's sprite highlights (#144), and their moments drawer (#145). */
   const clips = createClipPlayer();
   /**
@@ -422,7 +427,7 @@ export const createApp = ({
     ) {
       dom.notice('Printing stopped. Open the menu to start a new game.');
     }
-    const answers = answersFor(view);
+    const answers = offeredAnswers(view);
     const highlights = screen?.kind === 'highlights';
     const bar = barShown() && !screen;
     const ticking = tickerRunning() && !highlights;
@@ -1070,7 +1075,7 @@ export const createApp = ({
         return;
       }
       answer(() => {
-        const answers = answersFor(journal.session.view);
+        const answers = offeredAnswers(journal.session.view);
         const offered = answers.find(a => a.id === id);
         const entry = amountFor(answers);
         let text: string;

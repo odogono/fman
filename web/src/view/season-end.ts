@@ -1,6 +1,6 @@
 import { cupRoundName } from '../sim/cup';
+import { offeredAnswers } from '../sim/offers';
 import type { View } from '../sim/session';
-import { answersFor } from './answers';
 import { ordinal } from './modern-fixture';
 
 type Done = Readonly<{ enabled: boolean; id: string; label: string }>;
@@ -32,7 +32,7 @@ export type SeasonSummary = Readonly<{
 }>;
 
 const doneFor = (view: View, id: string, label: string): Done => ({
-  enabled: answersFor(view).some(answer => answer.id === id),
+  enabled: offeredAnswers(view).some(answer => answer.id === id),
   id,
   label
 });

@@ -13,6 +13,7 @@ import {
   paceOf,
   place,
   planRun,
+  planRunToward,
   reachableToward,
   stretchTo,
   type Run
@@ -193,10 +194,7 @@ export const playCrossIn = (clip: Clip) => {
       shape: 'bent',
       to: runTo
     } as const;
-    const headerRun = planRun(clip, clip.shooter, {
-      ...headerPlan,
-      to: reachableToward(clip, clip.shooter, headerPlan)
-    });
+    const headerRun = planRunToward(clip, clip.shooter, headerPlan);
     const claimPlan =
       claim && claimFrame
         ? planRun(clip, clip.keeperSlot, {

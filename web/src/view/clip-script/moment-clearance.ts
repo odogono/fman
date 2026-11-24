@@ -13,7 +13,7 @@ import {
   moveRuns,
   place,
   planRun,
-  reachableToward,
+  planRunToward,
   stretchTo,
   type Run
 } from './run';
@@ -111,10 +111,7 @@ export const playHeadedClear = (clip: Clip) => {
     shape: 'bent',
     to: runTo
   } as const;
-  const shooterRun = planRun(clip, clip.shooter, {
-    ...shooterPlan,
-    to: reachableToward(clip, clip.shooter, shooterPlan)
-  });
+  const shooterRun = planRunToward(clip, clip.shooter, shooterPlan);
   const held = new Set([clip.clearer, clip.shooter]);
   /** The shooter has checked their stride, off their run, and where. */
   let checked = false;

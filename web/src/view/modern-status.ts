@@ -1,7 +1,7 @@
 import { colourNames, levels } from '../sim/catalogue';
 import type { Game } from '../sim/management';
+import { offeredAnswers } from '../sim/offers';
 import type { View } from '../sim/session';
-import { answersFor } from './answers';
 import { clubName, type ClubName } from './home';
 
 /**
@@ -61,6 +61,6 @@ export const statusFor = (view: View): ModernStatus | undefined => {
   const id = 'status.continue';
   return {
     ...statusOf(view.game),
-    done: { enabled: answersFor(view).some(answer => answer.id === id), id }
+    done: { enabled: offeredAnswers(view).some(answer => answer.id === id), id }
   };
 };

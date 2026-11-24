@@ -1,7 +1,7 @@
 import { fixtureSides, type MatchFixture } from '../sim/league';
 import type { Game } from '../sim/management';
+import { offeredAnswers } from '../sim/offers';
 import type { View } from '../sim/session';
-import { answersFor } from './answers';
 import { clubName, fixtureTitle, type ClubName } from './home';
 
 /** One side of the next fixture, and where it stands. */
@@ -67,7 +67,7 @@ export const modernFixtureFor = (view: View): ModernFixture | undefined => {
       standing: standing(game, fixture, awayId)
     },
     done: {
-      enabled: answersFor(view).some(answer => answer.id === id),
+      enabled: offeredAnswers(view).some(answer => answer.id === id),
       id,
       label: 'Pick team'
     },

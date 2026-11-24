@@ -1,6 +1,8 @@
 import { expect, test } from 'bun:test';
 
-import type { OfferedAnswer } from './answers';
+import { createJournal } from '../sim/journal';
+import { promptAnswers, type OfferedAnswer } from '../sim/offers';
+import { submitInput } from '../test/input';
 import { barFor } from './context-bar';
 
 const choice = (id: string, text: string): OfferedAnswer => ({
@@ -65,5 +67,34 @@ test('an amount submits beside its way out; a name opens the keyboard', () => {
 test('an answer without a label is a mistake, not a blank button', () => {
   expect(() => barFor([choice('menu.unknown', 'x')])).toThrow(
     'No label for menu.unknown'
+  );
+});
+
+test('every prompt on the way through a game has a label for each answer', () => {
+  const journal = createJournal();
+  journal.advance(400);
+  const labelled = new Set<string>();
+  const check = () => {
+    const answers = promptAnswers(journal.session.view);
+    expect(barFor(answers)).toHaveLength(answers.length);
+    labelled.add(journal.session.view.screen);
+  };
+  const play = (inputs: readonly string[]) => {
+    for (const input of inputs) {
+      check();
+      submitInput(journal, input);
+    }
+    check();
+  };
+  play(['alex', '99', '17', '1', '0', 's', '', 'a']);
+  const seller = journal.session.view.game!.players.find(p => p.status === 1)!;
+  play([String(seller.id), 'n', 'l', '1000', '', 'p', '0', '', 'level', '1']);
+  play(['', 'change', 'y', '99', '17', 'Ace', 'n', 'y', '1', 'Bob', 'n']);
+  play(['99', '', 'c', '99', '99']);
+  journal.advance(1_000_000);
+  play(['', '', '', '']);
+  expect(journal.session.view.screen).toBe('transfer');
+  expect([...labelled]).toEqual(
+    expect.arrayContaining(['menu', 'names', 'selection', 'transfer'])
   );
 });

@@ -6,10 +6,10 @@ import {
   type Player
 } from '../sim/management';
 import { nextBills } from '../sim/next-bills';
+import { offeredAnswers } from '../sim/offers';
 import type { View } from '../sim/session';
 import { playerCategory } from '../sim/squads';
 import { changeAmount, type AmountEntry } from './amount-entry';
-import { answersFor } from './answers';
 import { nextBillsWarning, type NextBillsWarning } from './home';
 
 type Action = Readonly<{ enabled: boolean; id: string }>;
@@ -117,7 +117,7 @@ export const amountPromptFor = (
   ) {
     return undefined;
   }
-  const offered = new Set(answersFor(view).map(answer => answer.id));
+  const offered = new Set(offeredAnswers(view).map(answer => answer.id));
   const action = (id: string) => ({ enabled: offered.has(id), id });
   const kind = view.screen;
   const submit = action(entry.id);

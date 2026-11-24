@@ -1,9 +1,9 @@
 import { fixtureSides, teamStrength, type MatchFixture } from '../sim/league';
 import type { Game, Player } from '../sim/management';
+import { offeredAnswers } from '../sim/offers';
 import { longestInjury, tiringInjuries } from '../sim/ruleset';
 import type { View } from '../sim/session';
 import { inSquadOrder, playerCategory } from '../sim/squads';
-import { answersFor } from './answers';
 import { clubName, type ClubName } from './home';
 
 /** One squad player as a pick team row. */
@@ -129,7 +129,7 @@ export const pickTeamFor = (view: View): PickTeam | undefined => {
   const prompt = view.screen === 'squad' ? 'squad' : 'selection';
   const weeksOut = tiringInjuries(game.ruleset);
   const longest = weeksOut ? { weeksOut: longestInjury(game.ruleset) } : {};
-  const offered = new Set(answersFor(view).map(answer => answer.id));
+  const offered = new Set(offeredAnswers(view).map(answer => answer.id));
   const squad = inSquadOrder(game.players.filter(p => p.status > 0));
   const action = (
     id: string,

@@ -3,13 +3,13 @@ import { expect, test } from 'bun:test';
 import { spectrumClockHz, spectrumFrameT } from '../sim/frame-clock';
 import { createJournal } from '../sim/journal';
 import { creditLimit } from '../sim/management';
+import { offeredAnswers } from '../sim/offers';
 import { latestEnhanced, type Ruleset } from '../sim/ruleset';
 import type { View } from '../sim/session';
 import { categorySums } from '../sim/squad-strength';
 import { tickerLeadIn, tickerPause, type Ticker } from '../sim/ticker';
 import { submitInput } from '../test/input';
 import type { AmountEntry } from './amount-entry';
-import { answersFor } from './answers';
 import { createApp, type Dom, type Menu, type MenuControl } from './app';
 import { clipScriptsFor } from './clip-match';
 import { createClipPlayer } from './clip-player';
@@ -1087,7 +1087,7 @@ const playOn = (run: ReturnType<typeof harness>) => {
     return;
   }
   // Modern mode's own screens and its bar submit the same offered answers.
-  const offered = answersFor(run.view()).map(answer => answer.id);
+  const offered = offeredAnswers(run.view()).map(answer => answer.id);
   const next =
     offered.find(id => id.endsWith('.continue')) ??
     offered.find(id => id === 'transfer.decline') ??
@@ -1230,7 +1230,9 @@ test('every live pick team row and action is an offered answer', () => {
   pick(run, 'team.change');
   for (const step of [0, 1]) {
     const shown = run.page.pickTeam!;
-    const offered = new Set(answersFor(run.view()).map(answer => answer.id));
+    const offered = new Set(
+      offeredAnswers(run.view()).map(answer => answer.id)
+    );
     for (const id of [
       ...liveRows(shown).map(row => row.answer!),
       ...shown.actions.map(action => action.id)
@@ -1434,7 +1436,7 @@ const modernMoments = (
     run.app.pointerUp();
     while (run.view().screen === 'fixture') {
       run.settle();
-      run.app.tap(answersFor(run.view())[0]!.id);
+      run.app.tap(offeredAnswers(run.view())[0]!.id);
       run.app.pointerUp();
     }
   }

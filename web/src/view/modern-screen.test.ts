@@ -1,9 +1,9 @@
 import { expect, test } from 'bun:test';
 
+import { offeredAnswers } from '../sim/offers';
 import { createSession, type View } from '../sim/session';
 import { submitInput } from '../test/input';
 import { changeAmount, startAmount } from './amount-entry';
-import { answersFor } from './answers';
 import { modernScreenFor } from './modern-screen';
 
 /**
@@ -82,7 +82,7 @@ test('the Home screen carries the status without its Done button', () => {
 
 test('an amount prompt starts its entry afresh unless one is given', () => {
   const borrow = firstMatchViews().find(view => view.screen === 'borrow')!;
-  const offered = answersFor(borrow).find(a => a.kind === 'amount');
+  const offered = offeredAnswers(borrow).find(a => a.kind === 'amount');
   if (offered?.kind !== 'amount') {
     throw new Error('No loan offered');
   }

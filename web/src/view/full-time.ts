@@ -1,8 +1,8 @@
 import { fixtureSides, type MatchFixture } from '../sim/league';
 import type { Game } from '../sim/management';
 import type { Moment } from '../sim/moments';
+import { offeredAnswers } from '../sim/offers';
 import type { View } from '../sim/session';
-import { answersFor } from './answers';
 import { clubName, fixtureTitle, type ClubName } from './home';
 import { shortNames } from './modern-highlights';
 
@@ -83,7 +83,7 @@ export const fullTimeFor = (view: View): FullTime | undefined => {
   const id = 'result.continue';
   const base = {
     away,
-    done: { enabled: answersFor(view).some(a => a.id === id), id },
+    done: { enabled: offeredAnswers(view).some(a => a.id === id), id },
     gate: fixture.gate,
     home,
     replay: fixture.kind === 'cup' && score[0] === score[1],

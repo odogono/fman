@@ -3,11 +3,11 @@ import { expect, test } from 'bun:test';
 import { createJournal, type Journal } from '../sim/journal';
 import { creditLimit, weeklyCharges } from '../sim/management';
 import { nextBills } from '../sim/next-bills';
+import { offeredAnswers } from '../sim/offers';
 import { latestEnhanced } from '../sim/ruleset';
 import type { View } from '../sim/session';
 import { submitInput } from '../test/input';
 import { startAmount, type AmountEntry } from './amount-entry';
-import { answersFor } from './answers';
 import { amountPromptFor } from './modern-amount';
 
 /** A new Enhanced game at the menu, then `inputs` from there. */
@@ -23,7 +23,7 @@ const from = (...inputs: string[]): Journal => {
 
 /** The view's amount entry, at `value`. */
 const entryAt = (view: View, value: number): AmountEntry => {
-  const offered = answersFor(view).find(a => a.kind === 'amount');
+  const offered = offeredAnswers(view).find(a => a.kind === 'amount');
   if (offered?.kind !== 'amount') {
     throw new Error(`No amount on ${view.screen}`);
   }

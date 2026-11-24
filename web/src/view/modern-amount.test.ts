@@ -1,10 +1,10 @@
 import { expect, test } from 'bun:test';
 
+import { offeredAnswers } from '../sim/offers';
 import { createSession } from '../sim/session';
 import { viewOn } from '../sim/view-on';
 import { submitInput } from '../test/input';
 import { startAmount } from './amount-entry';
-import { answersFor } from './answers';
 import { amountPromptFor } from './modern-amount';
 import { messageFor } from './modern-message';
 import { modernScreenFor } from './modern-screen';
@@ -32,7 +32,7 @@ const atMarket = (beepDone = true) => {
 
 /** The bid as Modern mode shows it, with the amount entry freshly started. */
 const bidFor = (session: ReturnType<typeof createSession>) => {
-  const offered = answersFor(session.view).find(a => a.kind === 'amount');
+  const offered = offeredAnswers(session.view).find(a => a.kind === 'amount');
   if (offered?.kind !== 'amount') {
     throw new Error('No bid offered');
   }

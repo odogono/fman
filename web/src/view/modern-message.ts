@@ -1,5 +1,5 @@
+import { offeredAnswers } from '../sim/offers';
 import type { View } from '../sim/session';
-import { answersFor } from './answers';
 
 type Done = Readonly<{ enabled: boolean; id: string }>;
 
@@ -13,7 +13,7 @@ export type ModernMessage =
   | Readonly<{ done: Done; kind: 'text'; text: string }>;
 
 const doneFor = (view: View, id: string): Done => ({
-  enabled: answersFor(view).some(answer => answer.id === id),
+  enabled: offeredAnswers(view).some(answer => answer.id === id),
   id
 });
 

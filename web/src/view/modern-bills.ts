@@ -1,6 +1,6 @@
 import { creditLimit } from '../sim/management';
+import { offeredAnswers } from '../sim/offers';
 import type { View } from '../sim/session';
-import { answersFor } from './answers';
 
 /**
  * Modern mode's weekly bills: each charge and their total, the weekly
@@ -39,7 +39,7 @@ export const billsFor = (view: View): ModernBills | undefined => {
     debt: game.debt,
     ...(dismissed ? { dismissal: { limit: view.creditLimit } } : {}),
     done: {
-      enabled: answersFor(view).some(answer => answer.id === id),
+      enabled: offeredAnswers(view).some(answer => answer.id === id),
       id,
       label: dismissed ? 'Leave the club' : 'Continue'
     },

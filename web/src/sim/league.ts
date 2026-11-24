@@ -38,12 +38,15 @@ export const fixtureSides = (game: Game, fixture: MatchFixture) => {
 export const pickedCount = (game: Game) =>
   game.players.filter(player => player.status === 2).length;
 
+/** Over eleven picked, a pick only drops a player; otherwise it only adds one. */
+export const removesOnly = (game: Game) => pickedCount(game) > 11;
+
 export const togglePickedPlayer = (game: Game, id: number): Game => {
   const player = game.players[id - 1];
   if (!player) {
     throw new RangeError('PLAYER NO. OUT OF RANGE');
   }
-  const removing = pickedCount(game) > 11;
+  const removing = removesOnly(game);
   if (removing && player.status !== 2) {
     throw new RangeError('PLAYER NOT IN TEAM');
   }

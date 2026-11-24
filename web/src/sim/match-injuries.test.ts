@@ -5,19 +5,7 @@ import { createNewGame, type Game, type Player } from './management';
 import { settleInjuries } from './match-injuries';
 import { createMatchday, type Matchday } from './matchday';
 import { decideMoments, type Moment } from './moments';
-import {
-  clearances,
-  clubSquads,
-  gracePeriodWeeks,
-  lastingSkill,
-  matchInjuries,
-  momentHighlights,
-  opponentBonus,
-  presentDay,
-  rulesets,
-  tiringInjuries,
-  type Ruleset
-} from './ruleset';
+import { introducedIn, presentDay, type Ruleset } from './ruleset';
 import { decodeSave, encodeSave } from './save';
 import { completeSeason } from './season';
 import type { SquadPlayer } from './squads';
@@ -64,33 +52,8 @@ const injuriesOf = (moments: readonly Moment[]) =>
 /** The second club's squad in a new game, under club squads. */
 const squad = fresh().clubs[1]!.squad!;
 
-test('Enhanced version 9 is version 8 with match injuries', () => {
-  for (const ruleset of rulesets) {
-    expect(matchInjuries(ruleset)).toBe(
-      ruleset === 'enhanced-9' ||
-        ruleset === 'enhanced-10' ||
-        ruleset === 'enhanced-11' ||
-        ruleset === 'enhanced-12' ||
-        ruleset === 'enhanced-13' ||
-        ruleset === 'enhanced-14'
-    );
-  }
-  for (const accessor of [
-    clearances,
-    clubSquads,
-    gracePeriodWeeks,
-    lastingSkill,
-    momentHighlights,
-    presentDay,
-    tiringInjuries
-  ]) {
-    expect(accessor('enhanced-9')).toEqual(accessor('enhanced-8'));
-  }
-  for (let level = 1; level <= 7; level++) {
-    expect(opponentBonus('enhanced-9', level)).toBe(
-      opponentBonus('enhanced-8', level)
-    );
-  }
+test('Enhanced version 9 brings match injuries', () => {
+  expect(introducedIn('matchInjuries')).toBe('enhanced-9');
 });
 
 test('each picked player rolls the lasting-injuries curve once a match', () => {

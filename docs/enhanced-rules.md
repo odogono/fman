@@ -31,6 +31,6 @@ Enhanced rules are released in versions, stored as `enhanced-1`, `enhanced-2` an
 
 Starting clubs and players are part of a ruleset too ([ADR 0011](adr/0011-rulesets-carry-starting-clubs-and-players.md)). A change that leaves every rule alone, as `enhanced-3`'s, needs no experimental ruleset: its baseline must match the previous version's.
 
-A rule change is built as an experimental ruleset holding that change alone and measured against `original` with the [gameplay baseline](gameplay-baseline.md). Once accepted, it joins Enhanced as a new version, with its own committed baseline (`docs/baseline/enhanced-<n>.*`) compared against the previous version's, and the experimental ruleset is retired. The New game description of Enhanced names what the latest version changes.
+A rule change is built as an experimental ruleset holding that change alone on top of a base, usually the latest Enhanced version, and measured against that base with the [gameplay baseline](gameplay-baseline.md). Once accepted, it joins Enhanced as a new version, with its own committed baseline (`docs/baseline/enhanced-<n>.*`) compared against the previous version's, and the experimental ruleset is retired. The New game description of Enhanced names what the latest version changes.
 
 `enhanced-1` is the `even-difficulty` rule under a new name: its [baseline](baseline/enhanced-1.md) is identical cell for cell to [the one measured for #73](baseline/even-difficulty.md).

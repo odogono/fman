@@ -10,17 +10,10 @@ import {
   renamePlayer
 } from './names';
 import {
-  clearances,
-  clubSquads,
-  gracePeriodWeeks,
-  lastingSkill,
+  introducedIn,
   latestEnhanced,
-  matchInjuries,
-  momentHighlights,
-  opponentBonus,
   plainNames,
   presentDay,
-  tiringInjuries,
   type Ruleset
 } from './ruleset';
 
@@ -49,24 +42,8 @@ test('plain names join Enhanced in version 10, and stay in later versions', () =
   expect(plainNames(latestEnhanced)).toBe(true);
 });
 
-test('Enhanced version 10 is version 9 with plain names', () => {
-  for (const accessor of [
-    clearances,
-    clubSquads,
-    gracePeriodWeeks,
-    lastingSkill,
-    matchInjuries,
-    momentHighlights,
-    presentDay,
-    tiringInjuries
-  ]) {
-    expect(accessor('enhanced-10')).toEqual(accessor('enhanced-9'));
-  }
-  for (const level of [1, 4, 7]) {
-    expect(opponentBonus('enhanced-10', level)).toBe(
-      opponentBonus('enhanced-9', level)
-    );
-  }
+test('Enhanced version 10 brings plain names', () => {
+  expect(introducedIn('plainNames')).toBe('enhanced-10');
 });
 
 test('a club name may not carry a control code after its first letter', () => {

@@ -206,6 +206,17 @@ export const fastestRun = 8.5;
 /** Getting out of a pass's way, a player goes flat out, at this pace, in metres a second. */
 export const flatOut = 9.5;
 /**
+ * How hard a player on a run of their own goes, in metres a second, before
+ * their own pace from skill and energy: what a chase goes at, and the most
+ * a run to a place by a frame may call for. Flat out is `sprint`.
+ */
+export const effortPaces = {
+  jog: 3.5,
+  run: 7,
+  sprint: fastestRun,
+  walk: 2.5
+} as const;
+/**
  * A defender goal side of the ball and within this many metres of it
  * jockeys, going no more than this much faster than the ball, in metres a
  * second.

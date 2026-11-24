@@ -3,23 +3,7 @@ import { expect, test } from 'bun:test';
 import { prepareCupMatch } from './cup';
 import { completeLeagueMatch, prepareLeagueMatch } from './league';
 import { createNewGame, type Game } from './management';
-import {
-  clearances,
-  clubForm,
-  clubSquads,
-  gracePeriodWeeks,
-  lastingSkill,
-  matchInjuries,
-  momentHighlights,
-  opponentBonus,
-  penalties,
-  plainNames,
-  presentDay,
-  rulesets,
-  squadStrength,
-  tiringInjuries,
-  type Ruleset
-} from './ruleset';
+import { introducedIn, type Ruleset } from './ruleset';
 import {
   categorySums,
   goalGap,
@@ -68,31 +52,8 @@ const allSquads = (game: Game, squad: SquadPlayer[]): Game => ({
   )
 });
 
-test('Enhanced version 13 is version 12 with squad strength, which later versions keep', () => {
-  expect(rulesets.filter(squadStrength)).toEqual([
-    'enhanced-13',
-    'enhanced-14'
-  ]);
-  for (const accessor of [
-    clearances,
-    clubForm,
-    clubSquads,
-    gracePeriodWeeks,
-    lastingSkill,
-    matchInjuries,
-    momentHighlights,
-    penalties,
-    plainNames,
-    presentDay,
-    tiringInjuries
-  ]) {
-    expect(accessor('enhanced-13')).toEqual(accessor('enhanced-12'));
-  }
-  for (let level = 1; level <= 7; level++) {
-    expect(opponentBonus('enhanced-13', level)).toBe(
-      opponentBonus('enhanced-12', level)
-    );
-  }
+test('Enhanced version 13 brings squad strength', () => {
+  expect(introducedIn('squadStrength')).toBe('enhanced-13');
 });
 
 test('a squad sums its skill by category, a goalkeeper in defence', () => {

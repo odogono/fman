@@ -6,10 +6,16 @@ import { createJournal, openSave } from './journal';
 import { prepareLeagueMatch } from './league';
 import { createNewGame } from './management';
 import {
-  clearances,
+  enhancedVersions,
+  experiments,
+  introducedIn,
   lastingSkill,
-  matchInjuries,
+  latestEnhanced,
   opponentBonus,
+  ruleChangeNeeds,
+  ruleChanges,
+  rulesets,
+  type RuleChange,
   type Ruleset
 } from './ruleset';
 import { decodeSave, encodeSave, saveVersion } from './save';
@@ -193,10 +199,67 @@ test('saves keep the ruleset, and saves from before rulesets play the original',
   expect(() => openSave(JSON.stringify(older))).toThrow(RangeError);
 });
 
+const made = (ruleset: Ruleset) =>
+  Object.entries(ruleChanges(ruleset))
+    .filter(([change, value]) => value !== false && value !== 'original')
+    .map(([change]) => change as RuleChange);
+
+test('the Original rules make no rule change', () => {
+  expect(made('original')).toEqual([]);
+});
+
+test('each Enhanced version is the one before plus the rule changes it declares', () => {
+  expect(enhancedVersions.map(version => version.name as string)).toEqual(
+    enhancedVersions.map((_, i) => `enhanced-${i + 1}`)
+  );
+  expect(latestEnhanced).toBe(enhancedVersions.at(-1)!.name);
+  let previous: Ruleset = 'original';
+  for (const { adds, name } of enhancedVersions) {
+    const declared = Object.keys(adds) as RuleChange[];
+    expect(declared.length).toBeGreaterThan(0);
+    for (const change of Object.keys(ruleChanges(name)) as RuleChange[]) {
+      const before = ruleChanges(previous)[change];
+      const after = ruleChanges(name)[change];
+      if (declared.includes(change)) {
+        expect(after).not.toBe(before);
+        expect(before === true).toBe(false);
+      } else {
+        expect(after).toBe(before);
+      }
+    }
+    previous = name;
+  }
+});
+
+test('each experimental ruleset is the original or an Enhanced version plus one rule change', () => {
+  const enhanced: readonly Ruleset[] = enhancedVersions.map(v => v.name);
+  for (const { adds, base, name } of experiments as readonly {
+    adds: object;
+    base: Ruleset;
+    name: Ruleset;
+  }[]) {
+    expect(base === 'original' || enhanced.includes(base)).toBe(true);
+    const [change, ...others] = Object.keys(adds) as RuleChange[];
+    expect(others).toEqual([]);
+    expect(ruleChanges(name)[change!]).not.toBe(ruleChanges(base)[change!]);
+  }
+});
+
+test('every ruleset makes the rule changes its rule changes need', () => {
+  for (const ruleset of rulesets) {
+    for (const change of made(ruleset)) {
+      for (const need of ruleChangeNeeds[change] ?? []) {
+        expect([ruleset, change, made(ruleset).includes(need)]).toEqual([
+          ruleset,
+          change,
+          true
+        ]);
+      }
+    }
+  }
+});
+
 test('clearances join Enhanced in version 8, and match injuries in version 9', () => {
-  expect(clearances('enhanced-7')).toBe(false);
-  expect(clearances('original')).toBe(false);
-  expect(clearances('enhanced-8')).toBe(true);
-  expect(matchInjuries('enhanced-8')).toBe(false);
-  expect(matchInjuries('enhanced-9')).toBe(true);
+  expect(introducedIn('clearances')).toBe('enhanced-8');
+  expect(introducedIn('matchInjuries')).toBe('enhanced-9');
 });

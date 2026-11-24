@@ -3,25 +3,7 @@ import { expect, test } from 'bun:test';
 import { freshResults } from './club-form';
 import { completeLeagueMatch, prepareLeagueMatch } from './league';
 import { createNewGame, type Game } from './management';
-import {
-  clearances,
-  clubForm,
-  clubSquads,
-  evenTable,
-  gracePeriodWeeks,
-  lastingSkill,
-  latestEnhanced,
-  matchInjuries,
-  momentHighlights,
-  opponentBonus,
-  penalties,
-  plainNames,
-  presentDay,
-  rulesets,
-  squadStrength,
-  tiringInjuries,
-  type Ruleset
-} from './ruleset';
+import { introducedIn, opponentBonus, type Ruleset } from './ruleset';
 import { goalGap, squadGoals } from './squad-strength';
 import type { SquadPlayer } from './squads';
 
@@ -42,25 +24,8 @@ const otherGoals = (game: Game) => {
   );
 };
 
-test('Enhanced version 14 is version 13 with an even table, and new Enhanced games start with it', () => {
-  expect(rulesets.filter(evenTable)).toEqual(['enhanced-14']);
-  expect(latestEnhanced).toBe('enhanced-14');
-  for (const accessor of [
-    clearances,
-    clubForm,
-    clubSquads,
-    gracePeriodWeeks,
-    lastingSkill,
-    matchInjuries,
-    momentHighlights,
-    penalties,
-    plainNames,
-    presentDay,
-    squadStrength,
-    tiringInjuries
-  ]) {
-    expect(accessor('enhanced-14')).toEqual(accessor('enhanced-13'));
-  }
+test('Enhanced version 14 brings an even table', () => {
+  expect(introducedIn('evenTable')).toBe('enhanced-14');
 });
 
 test('Genius takes a bonus of 5.25, and every other level as before (#218)', () => {

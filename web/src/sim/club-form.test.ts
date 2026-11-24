@@ -4,22 +4,7 @@ import { addResults, formOf, freshResults } from './club-form';
 import { prepareCupMatch } from './cup';
 import { completeLeagueMatch, prepareLeagueMatch } from './league';
 import { createNewGame, type Game } from './management';
-import {
-  clearances,
-  clubForm,
-  clubSquads,
-  gracePeriodWeeks,
-  lastingSkill,
-  latestEnhanced,
-  matchInjuries,
-  momentHighlights,
-  opponentBonus,
-  penalties,
-  plainNames,
-  presentDay,
-  rulesets,
-  tiringInjuries
-} from './ruleset';
+import { introducedIn } from './ruleset';
 import { completeSeason } from './season';
 
 const newGame = (seed = 1) =>
@@ -37,35 +22,11 @@ const allWith = (game: Game, results: readonly number[]): Game => ({
   recentResults: freshResults().map(() => results)
 });
 
-test('Enhanced version 12 is version 11 with club form, which later versions keep', () => {
-  expect(clubForm(latestEnhanced)).toBe(true);
-  for (const accessor of [
-    clearances,
-    clubSquads,
-    gracePeriodWeeks,
-    lastingSkill,
-    matchInjuries,
-    momentHighlights,
-    penalties,
-    plainNames,
-    presentDay,
-    tiringInjuries
-  ]) {
-    expect(accessor('enhanced-12')).toEqual(accessor('enhanced-11'));
-  }
-  for (let level = 1; level <= 7; level++) {
-    expect(opponentBonus('enhanced-12', level)).toBe(
-      opponentBonus('enhanced-11', level)
-    );
-  }
+test('Enhanced version 12 brings club form', () => {
+  expect(introducedIn('clubForm')).toBe('enhanced-12');
 });
 
-test('Enhanced version 12 and later give clubs form', () => {
-  expect(rulesets.filter(clubForm)).toEqual([
-    'enhanced-12',
-    'enhanced-13',
-    'enhanced-14'
-  ]);
+test('club form gives clubs form from a new game, and the original none', () => {
   expect(newGame().recentResults).toEqual(freshResults());
   expect(
     createNewGame({

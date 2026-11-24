@@ -3,21 +3,7 @@ import { expect, test } from 'bun:test';
 import { createNewGame, type Player } from './management';
 import { decideMoments, type Moment } from './moments';
 import { penaltyOdds } from './penalties';
-import {
-  clearances,
-  clubSquads,
-  gracePeriodWeeks,
-  lastingSkill,
-  latestEnhanced,
-  matchInjuries,
-  momentHighlights,
-  opponentBonus,
-  penalties,
-  plainNames,
-  presentDay,
-  rulesets,
-  tiringInjuries
-} from './ruleset';
+import { introducedIn } from './ruleset';
 
 const players: Player[] = createNewGame({
   club: 1,
@@ -48,32 +34,8 @@ const decide = (seed: number, withPenalties = true) =>
 
 const seeds = Array.from({ length: 4000 }, (_, i) => (i * 7919 + 1) % 65_536);
 
-test('Enhanced version 11 is version 10 with penalties, which later versions keep', () => {
-  expect(rulesets.filter(r => penalties(r))).toEqual([
-    'enhanced-11',
-    'enhanced-12',
-    'enhanced-13',
-    'enhanced-14'
-  ]);
-  expect(penalties(latestEnhanced)).toBe(true);
-  for (const accessor of [
-    clearances,
-    clubSquads,
-    gracePeriodWeeks,
-    lastingSkill,
-    matchInjuries,
-    momentHighlights,
-    plainNames,
-    presentDay,
-    tiringInjuries
-  ]) {
-    expect(accessor('enhanced-11')).toEqual(accessor('enhanced-10'));
-  }
-  for (let level = 1; level <= 7; level++) {
-    expect(opponentBonus('enhanced-11', level)).toBe(
-      opponentBonus('enhanced-10', level)
-    );
-  }
+test('Enhanced version 11 brings penalties', () => {
+  expect(introducedIn('penalties')).toBe('enhanced-11');
 });
 
 test('penalties leave every other moment, and the seed, as they were', () => {

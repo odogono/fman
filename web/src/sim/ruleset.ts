@@ -8,304 +8,160 @@ import {
 /**
  * Named sets of game rules (ADR 0007, ADR 0009), each with the clubs and
  * players a new game starts with (ADR 0011). `original` holds rules
- * parity. Enhanced rules are released in versions (`enhanced-1`, …): each
- * gathers the accepted rule changes, and a game keeps the version it started
- * with, so every released version stays playable. An experimental ruleset
- * carries one change alone while it is measured against the original, and
- * is retired once the change joins Enhanced (`even-difficulty`,
+ * parity, with every rule change off. Enhanced rules are released in
+ * versions (`enhanced-1`, …): each is the version before plus one or more
+ * rule changes, and a game keeps the version it started with, so every
+ * released version stays playable. An experimental ruleset carries one rule
+ * change on top of a base ruleset while it is measured against that base,
+ * and is retired once the change joins Enhanced (`even-difficulty`,
  * `grace-period`, `lasting-skill`, `steep-difficulty`, `tiring-injuries`,
  * `club-squads`, `moment-highlights`, `clearances`, `match-injuries`,
  * `penalties`, `club-form`, `squad-strength`, `even-table`).
  */
-export const rulesets = [
-  'original',
-  'enhanced-1',
-  'enhanced-2',
-  'enhanced-3',
-  'enhanced-4',
-  'enhanced-5',
-  'enhanced-6',
-  'enhanced-7',
-  'enhanced-8',
-  'enhanced-9',
-  'enhanced-10',
-  'enhanced-11',
-  'enhanced-12',
-  'enhanced-13',
-  'enhanced-14'
-] as const;
-export type Ruleset = (typeof rulesets)[number];
-
-/** The Enhanced version every new Enhanced game starts with. */
-export const latestEnhanced = 'enhanced-14' satisfies Ruleset;
-
-export const isRuleset = (value: unknown): value is Ruleset =>
-  rulesets.includes(value as Ruleset);
 
 /** The difficulty curves: what each level adds to an opponent's strength. */
 type Difficulty = 'original' | 'smooth' | 'steep' | 'steep-table';
 
-/** The rule changes each ruleset makes to the original. */
-const changes: Record<
-  Ruleset,
-  {
-    clearances: boolean;
-    clubForm: boolean;
-    clubSquads: boolean;
-    difficulty: Difficulty;
-    evenTable: boolean;
-    gracePeriod: boolean;
-    lastingSkill: boolean;
-    matchInjuries: boolean;
-    momentHighlights: boolean;
-    penalties: boolean;
-    plainNames: boolean;
-    presentDay: boolean;
-    squadStrength: boolean;
-    tiringInjuries: boolean;
-  }
-> = {
-  'enhanced-1': {
-    clearances: false,
-    clubForm: false,
-    clubSquads: false,
-    difficulty: 'smooth',
-    evenTable: false,
-    gracePeriod: false,
-    lastingSkill: false,
-    matchInjuries: false,
-    momentHighlights: false,
-    penalties: false,
-    plainNames: false,
-    presentDay: false,
-    squadStrength: false,
-    tiringInjuries: false
-  },
-  'enhanced-10': {
-    clearances: true,
-    clubForm: false,
-    clubSquads: true,
-    difficulty: 'steep',
-    evenTable: false,
-    gracePeriod: true,
-    lastingSkill: true,
-    matchInjuries: true,
-    momentHighlights: true,
-    penalties: false,
-    plainNames: true,
-    presentDay: true,
-    squadStrength: false,
-    tiringInjuries: true
-  },
-  'enhanced-11': {
-    clearances: true,
-    clubForm: false,
-    clubSquads: true,
-    difficulty: 'steep',
-    evenTable: false,
-    gracePeriod: true,
-    lastingSkill: true,
-    matchInjuries: true,
-    momentHighlights: true,
-    penalties: true,
-    plainNames: true,
-    presentDay: true,
-    squadStrength: false,
-    tiringInjuries: true
-  },
-  'enhanced-12': {
-    clearances: true,
-    clubForm: true,
-    clubSquads: true,
-    difficulty: 'steep',
-    evenTable: false,
-    gracePeriod: true,
-    lastingSkill: true,
-    matchInjuries: true,
-    momentHighlights: true,
-    penalties: true,
-    plainNames: true,
-    presentDay: true,
-    squadStrength: false,
-    tiringInjuries: true
-  },
-  'enhanced-13': {
-    clearances: true,
-    clubForm: true,
-    clubSquads: true,
-    difficulty: 'steep',
-    evenTable: false,
-    gracePeriod: true,
-    lastingSkill: true,
-    matchInjuries: true,
-    momentHighlights: true,
-    penalties: true,
-    plainNames: true,
-    presentDay: true,
-    squadStrength: true,
-    tiringInjuries: true
-  },
-  'enhanced-14': {
-    clearances: true,
-    clubForm: true,
-    clubSquads: true,
-    difficulty: 'steep-table',
-    evenTable: true,
-    gracePeriod: true,
-    lastingSkill: true,
-    matchInjuries: true,
-    momentHighlights: true,
-    penalties: true,
-    plainNames: true,
-    presentDay: true,
-    squadStrength: true,
-    tiringInjuries: true
-  },
-  'enhanced-2': {
-    clearances: false,
-    clubForm: false,
-    clubSquads: false,
-    difficulty: 'smooth',
-    evenTable: false,
-    gracePeriod: true,
-    lastingSkill: false,
-    matchInjuries: false,
-    momentHighlights: false,
-    penalties: false,
-    plainNames: false,
-    presentDay: false,
-    squadStrength: false,
-    tiringInjuries: false
-  },
-  'enhanced-3': {
-    clearances: false,
-    clubForm: false,
-    clubSquads: false,
-    difficulty: 'smooth',
-    evenTable: false,
-    gracePeriod: true,
-    lastingSkill: false,
-    matchInjuries: false,
-    momentHighlights: false,
-    penalties: false,
-    plainNames: false,
-    presentDay: true,
-    squadStrength: false,
-    tiringInjuries: false
-  },
-  'enhanced-4': {
-    clearances: false,
-    clubForm: false,
-    clubSquads: false,
-    difficulty: 'steep',
-    evenTable: false,
-    gracePeriod: true,
-    lastingSkill: true,
-    matchInjuries: false,
-    momentHighlights: false,
-    penalties: false,
-    plainNames: false,
-    presentDay: true,
-    squadStrength: false,
-    tiringInjuries: false
-  },
-  'enhanced-5': {
-    clearances: false,
-    clubForm: false,
-    clubSquads: false,
-    difficulty: 'steep',
-    evenTable: false,
-    gracePeriod: true,
-    lastingSkill: true,
-    matchInjuries: false,
-    momentHighlights: false,
-    penalties: false,
-    plainNames: false,
-    presentDay: true,
-    squadStrength: false,
-    tiringInjuries: true
-  },
-  'enhanced-6': {
-    clearances: false,
-    clubForm: false,
-    clubSquads: true,
-    difficulty: 'steep',
-    evenTable: false,
-    gracePeriod: true,
-    lastingSkill: true,
-    matchInjuries: false,
-    momentHighlights: false,
-    penalties: false,
-    plainNames: false,
-    presentDay: true,
-    squadStrength: false,
-    tiringInjuries: true
-  },
-  'enhanced-7': {
-    clearances: false,
-    clubForm: false,
-    clubSquads: true,
-    difficulty: 'steep',
-    evenTable: false,
-    gracePeriod: true,
-    lastingSkill: true,
-    matchInjuries: false,
-    momentHighlights: true,
-    penalties: false,
-    plainNames: false,
-    presentDay: true,
-    squadStrength: false,
-    tiringInjuries: true
-  },
-  'enhanced-8': {
-    clearances: true,
-    clubForm: false,
-    clubSquads: true,
-    difficulty: 'steep',
-    evenTable: false,
-    gracePeriod: true,
-    lastingSkill: true,
-    matchInjuries: false,
-    momentHighlights: true,
-    penalties: false,
-    plainNames: false,
-    presentDay: true,
-    squadStrength: false,
-    tiringInjuries: true
-  },
-  'enhanced-9': {
-    clearances: true,
-    clubForm: false,
-    clubSquads: true,
-    difficulty: 'steep',
-    evenTable: false,
-    gracePeriod: true,
-    lastingSkill: true,
-    matchInjuries: true,
-    momentHighlights: true,
-    penalties: false,
-    plainNames: false,
-    presentDay: true,
-    squadStrength: false,
-    tiringInjuries: true
-  },
-  original: {
-    clearances: false,
-    clubForm: false,
-    clubSquads: false,
-    difficulty: 'original',
-    evenTable: false,
-    gracePeriod: false,
-    lastingSkill: false,
-    matchInjuries: false,
-    momentHighlights: false,
-    penalties: false,
-    plainNames: false,
-    presentDay: false,
-    squadStrength: false,
-    tiringInjuries: false
-  }
+/**
+ * Every rule change a ruleset makes or doesn't. The difficulty curve is the
+ * one rule change made by choosing a curve.
+ */
+type RuleChanges = {
+  clearances: boolean;
+  clubForm: boolean;
+  clubSquads: boolean;
+  difficulty: Difficulty;
+  evenTable: boolean;
+  gracePeriod: boolean;
+  lastingSkill: boolean;
+  matchInjuries: boolean;
+  momentHighlights: boolean;
+  penalties: boolean;
+  plainNames: boolean;
+  presentDay: boolean;
+  squadStrength: boolean;
+  tiringInjuries: boolean;
 };
+
+export type RuleChange = keyof RuleChanges;
+
+/**
+ * What a ruleset adds to the one it builds on: rule changes turned on, or a
+ * new difficulty curve. Nothing is ever turned off.
+ */
+type Adds = {
+  [Change in RuleChange]?: RuleChanges[Change] extends boolean
+    ? true
+    : Exclude<Difficulty, 'original'>;
+};
+
+/** The original rules: every rule change off. */
+const originalRules: RuleChanges = {
+  clearances: false,
+  clubForm: false,
+  clubSquads: false,
+  difficulty: 'original',
+  evenTable: false,
+  gracePeriod: false,
+  lastingSkill: false,
+  matchInjuries: false,
+  momentHighlights: false,
+  penalties: false,
+  plainNames: false,
+  presentDay: false,
+  squadStrength: false,
+  tiringInjuries: false
+};
+
+/** The rule changes each rule change can't be made without. */
+export const ruleChangeNeeds: Partial<
+  Record<RuleChange, readonly RuleChange[]>
+> = {
+  clubSquads: ['presentDay'],
+  evenTable: ['clubForm', 'squadStrength'],
+  matchInjuries: ['tiringInjuries', 'momentHighlights'],
+  penalties: ['momentHighlights'],
+  squadStrength: ['clubSquads', 'clubForm']
+};
+
+/**
+ * The Enhanced versions in release order, each the version before (the
+ * original rules, for the first) plus what it adds. A promotion appends one
+ * entry; released entries never change.
+ */
+export const enhancedVersions = [
+  { adds: { difficulty: 'smooth' }, name: 'enhanced-1' },
+  { adds: { gracePeriod: true }, name: 'enhanced-2' },
+  { adds: { presentDay: true }, name: 'enhanced-3' },
+  { adds: { difficulty: 'steep', lastingSkill: true }, name: 'enhanced-4' },
+  { adds: { tiringInjuries: true }, name: 'enhanced-5' },
+  { adds: { clubSquads: true }, name: 'enhanced-6' },
+  { adds: { momentHighlights: true }, name: 'enhanced-7' },
+  { adds: { clearances: true }, name: 'enhanced-8' },
+  { adds: { matchInjuries: true }, name: 'enhanced-9' },
+  { adds: { plainNames: true }, name: 'enhanced-10' },
+  { adds: { penalties: true }, name: 'enhanced-11' },
+  { adds: { clubForm: true }, name: 'enhanced-12' },
+  { adds: { squadStrength: true }, name: 'enhanced-13' },
+  { adds: { difficulty: 'steep-table', evenTable: true }, name: 'enhanced-14' }
+] as const satisfies readonly { adds: Adds; name: `enhanced-${number}` }[];
+
+type EnhancedVersion = (typeof enhancedVersions)[number]['name'];
+
+/**
+ * The experimental rulesets being measured, each its base (the original
+ * rules or an Enhanced version) plus one rule change. An entry goes when its
+ * change is promoted into an Enhanced version.
+ */
+export const experiments = [] as const satisfies readonly {
+  adds: Adds;
+  base: 'original' | EnhancedVersion;
+  name: string;
+}[];
+
+export type Ruleset =
+  'original' | EnhancedVersion | (typeof experiments)[number]['name'];
+
+/** Each experiment with its names widened, so an empty list still reads. */
+const measured = experiments as readonly {
+  adds: Adds;
+  base: Ruleset;
+  name: Ruleset;
+}[];
+
+export const rulesets: readonly Ruleset[] = [
+  'original',
+  ...enhancedVersions.map(version => version.name),
+  ...measured.map(experiment => experiment.name)
+];
+
+/** The Enhanced version every new Enhanced game starts with. */
+export const latestEnhanced: Ruleset = enhancedVersions.at(-1)!.name;
+
+export const isRuleset = (value: unknown): value is Ruleset =>
+  rulesets.includes(value as Ruleset);
+
+/** The rule changes each ruleset makes, folded once from the ladder. */
+const changes = (() => {
+  const folded = { original: originalRules } as Record<Ruleset, RuleChanges>;
+  let previous = originalRules;
+  for (const { adds, name } of enhancedVersions) {
+    previous = { ...previous, ...adds };
+    folded[name] = previous;
+  }
+  for (const { adds, base, name } of measured) {
+    folded[name] = { ...folded[base], ...adds };
+  }
+  return folded;
+})();
+
+/** Every rule change the ruleset makes, and its difficulty curve. */
+export const ruleChanges = (ruleset: Ruleset): Readonly<RuleChanges> =>
+  changes[ruleset];
+
+/** The Enhanced version that first made the rule change. */
+export const introducedIn = (change: RuleChange) =>
+  enhancedVersions.find(version => change in version.adds)?.name;
 
 /**
  * Whether the ruleset starts with the present-day clubs and players (#91),

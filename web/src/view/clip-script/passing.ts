@@ -20,7 +20,14 @@ import {
   steer,
   type Clip
 } from './pitch';
-import { moveRuns, paceOf, place, planRun, reachableToward } from './run';
+import {
+  moveRuns,
+  paceOf,
+  place,
+  planRunToward,
+  reachableToward,
+  stretchTo
+} from './run';
 import { byQuality, curl } from './setup';
 import {
   ballSpinUp,
@@ -381,31 +388,41 @@ export const pass = (
   // Played into space the receiver can't reach in time, the ball goes
   // shorter, towards them. They meet it a stride short of where it goes,
   // which may be a stride further to run (#226).
-  for (let k = 0; k < 4; k++) {
+  const from = { d: clip.ball.d, x: clip.ball.x };
+  // The receiver meets the ball a stride behind it, the way it came.
+  const runTo = (to: Point) => {
+    const came = distance(from, to);
+    const way = came
+      ? { d: (to.d - from.d) / came, x: (to.x - from.x) / came }
+      : { d: 1, x: 0 };
+    return {
+      by: flightTo(clip, to, kind).frames,
+      shape: 'bent',
+      to: { d: to.d - way.d * stride, x: to.x - way.x * stride },
+      way
+    } as const;
+  };
+  for (let k = 0; k < 6; k++) {
     const gap = distance(runner, end);
     const most = Math.max(0, reach(flightTo(clip, end, kind).frames) - stride);
-    if (gap <= most) {
+    if (gap > most) {
+      end.d = runner.d + ((end.d - runner.d) / gap) * most;
+      end.x = runner.x + ((end.x - runner.x) / gap) * most;
+      continue;
+    }
+    // Still turning out of a stride the other way, they may not get there
+    // even so: it goes as much shorter as they fall short.
+    const plan = runTo(end);
+    if (stretchTo(clip, receiver, plan) <= 1) {
       break;
     }
-    end.d = runner.d + ((end.d - runner.d) / gap) * most;
-    end.x = runner.x + ((end.x - runner.x) / gap) * most;
+    const near = reachableToward(clip, receiver, plan);
+    end.d -= plan.to.d - near.d;
+    end.x -= plan.to.x - near.x;
   }
-  const from = { d: clip.ball.d, x: clip.ball.x };
   const { frames, lofted } = flightTo(clip, end, kind);
-  // The receiver meets the ball a stride behind it, the way it came.
-  const came = distance(from, end);
-  const way = came
-    ? { d: (end.d - from.d) / came, x: (end.x - from.x) / came }
-    : { d: 1, x: 0 };
-  const runPlan = {
-    by: frames,
-    shape: 'bent',
-    to: { d: end.d - way.d * stride, x: end.x - way.x * stride }
-  } as const;
-  const run = planRun(clip, receiver, {
-    ...runPlan,
-    to: reachableToward(clip, receiver, runPlan)
-  });
+  const { way, ...runPlan } = runTo(end);
+  const run = planRunToward(clip, receiver, runPlan);
   clip.passes.push({
     end: clip.frame + frames,
     from: label(clip, clip.holder),

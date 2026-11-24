@@ -65,22 +65,32 @@ const bentPath = (clip: Clip, i: number, to: Point, frames: number) => {
     d: step.d - starting * needed * way.d,
     x: step.x - starting * needed * way.x
   };
-  return {
-    at: (u: number): Point => {
-      const along =
-        u < runRamp
-          ? starting * u + ((steady - starting) * u * u) / (2 * runRamp)
-          : (runRamp * (starting + steady)) / 2 + steady * (u - runRamp);
-      const drift = frames * u * (1 - u) ** 2;
-      return {
-        d: lerp(from.d, to.d, along) + aside.d * drift,
-        x: lerp(from.x, to.x, along) + aside.x * drift
-      };
-    },
-    // The pace the run holds: setting off already going faster, they ease
-    // down to it, which asks nothing of them.
-    peak: steady * needed
+  const at = (u: number): Point => {
+    const along =
+      u < runRamp
+        ? starting * u + ((steady - starting) * u * u) / (2 * runRamp)
+        : (runRamp * (starting + steady)) / 2 + steady * (u - runRamp);
+    const drift = frames * u * (1 - u) ** 2;
+    return {
+      d: lerp(from.d, to.d, along) + aside.d * drift,
+      x: lerp(from.x, to.x, along) + aside.x * drift
+    };
   };
+  // The pace the run holds, or any frame faster than it, as the stride
+  // they carry turns back towards the ball. A frame no faster than they
+  // are already going asks nothing of them.
+  const carried = Math.hypot(step.d, step.x);
+  let peak = steady * needed;
+  let was = from;
+  for (let k = 1; k <= frames; k++) {
+    const next = at(k / frames);
+    const pace = distance(was, next);
+    if (pace > carried + 1e-9) {
+      peak = Math.max(peak, pace);
+    }
+    was = next;
+  }
+  return { at, peak };
 };
 
 const pathFor = (
@@ -252,6 +262,13 @@ export const planRun = (
     unreachable: false
   };
 };
+
+/**
+ * Plans player `i`'s run to `plan.to`, or if they can't get there in time,
+ * as far along the way to it as they can.
+ */
+export const planRunToward = (clip: Clip, i: number, plan: RunPlan) =>
+  planRun(clip, i, { ...plan, to: reachableToward(clip, i, plan) });
 
 /**
  * Player `i` after `target` at `pace`, stopping `within` metres of it,
@@ -535,7 +552,7 @@ const chaseStep = (
   const way = { d: (target.d - mover.d) / gap, x: (target.x - mover.x) / gap };
   // The nearest player in the way before the target, gone round on the
   // side the chaser is already on.
-  let towards = target;
+  let heading = way;
   let nearest = Infinity;
   for (const j of inTheWay(clip, run, target).filter(j => givesWay(run, j))) {
     const other = whereWill(j, 1);
@@ -551,19 +568,35 @@ const chaseStep = (
       continue;
     }
     nearest = ahead;
+    // Along the line that just grazes their space, on the side the chaser
+    // is already on; or, inside it, round its edge.
     const side = aside > 0 ? -1 : 1;
     const clear = personalSpace * 1.05;
-    towards = {
-      d: other.d - way.x * side * clear,
-      x: other.x + way.d * side * clear
-    };
+    const gapTo = length(off);
+    const sideways = { d: -way.x * side, x: way.d * side };
+    const toward = { d: off.d / gapTo, x: off.x / gapTo };
+    if (gapTo <= clear) {
+      const into = Math.max(0, along(way, toward));
+      heading =
+        unit({
+          d: way.d - toward.d * into,
+          x: way.x - toward.x * into
+        }) ?? sideways;
+    } else {
+      const turn = Math.asin(clear / gapTo);
+      const turned = (sign: number) => ({
+        d: toward.d * Math.cos(turn) - toward.x * Math.sin(turn) * sign,
+        x: toward.x * Math.cos(turn) + toward.d * Math.sin(turn) * sign
+      });
+      const left = turned(1);
+      heading =
+        along(left, sideways) >= along(turned(-1), sideways)
+          ? left
+          : turned(-1);
+    }
   }
-  const reach = distance(mover, towards);
-  const step = Math.min(go, reach);
-  return reach
-    ? {
-        d: mover.d + ((towards.d - mover.d) / reach) * step,
-        x: mover.x + ((towards.x - mover.x) / reach) * step
-      }
-    : { d: mover.d, x: mover.x };
+  return {
+    d: mover.d + heading.d * go,
+    x: mover.x + heading.x * go
+  };
 };

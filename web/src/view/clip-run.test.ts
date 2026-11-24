@@ -169,6 +169,29 @@ test('a run gets there on its frame, never faster than the player can go', () =>
   }
 });
 
+test('a bent run out of a stride away from the ball is judged by its fastest frame', () => {
+  const clip = emptyPitch();
+  at(clip, 9, { d: 40, x: 34 });
+  const top = paceOf(clip, 9, 'sprint');
+  clip.steps[9] = { d: -top, x: 0 };
+  for (const by of [60, 100, 200]) {
+    const to = reachableToward(clip, 9, {
+      by,
+      shape: 'bent',
+      to: { d: 70, x: 34 }
+    });
+    const run = planRun(clip, 9, { by, shape: 'bent', to });
+    if (run.unreachable) {
+      throw new Error('a run as far as can be reached should be made');
+    }
+    const trail: Point[] = [{ ...clip.movers[9]! }];
+    for (let k = 1; k <= by; k++) {
+      trail.push(run.kind === 'arrive' ? run.at(k / by) : trail[0]!);
+    }
+    expect(fastestStep(trail)).toBeLessThanOrEqual(top + 1e-9);
+  }
+});
+
 test('a runner steps round a player standing in their way, and still gets there', () => {
   const clip = emptyPitch();
   at(clip, 9, { d: 40, x: 34 });
@@ -254,6 +277,17 @@ test('a chase follows a moving target at its pace and stops short of it', () => 
   expect(fastestStep(trail)).toBeLessThanOrEqual(pace + 1e-9);
   expect(arrived(clip, run)).toBe(true);
   expect(distance(clip.movers[9]!, ball)).toBeCloseTo(0.6);
+});
+
+test('a chase goes round a player standing in its way', () => {
+  const clip = emptyPitch();
+  at(clip, 9, { d: 40, x: 34 });
+  at(clip, 15, { d: 42, x: 34 });
+  const run = chase(clip, 9, { pace: 'run', target: { d: 60, x: 34 } });
+  const [trail] = play(clip, [run], 200);
+  const nearest = Math.min(...trail!.map(p => distance(p, clip.movers[15]!)));
+  expect(nearest).toBeGreaterThanOrEqual(personalSpace - 1e-6);
+  expect(arrived(clip, run)).toBe(true);
 });
 
 test('no run takes a player through the boards', () => {

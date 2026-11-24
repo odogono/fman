@@ -1,22 +1,27 @@
 import { bent, clamp, distance, lerp, perFrame, type Point } from './geometry';
 import { clipFps, headHeight, pitchLength, pitchWidth } from './model';
 import {
-  bentRun,
   crossFlight,
   finishFrame,
   kick,
   label,
-  reach,
   steer,
   type Clip
 } from './pitch';
+import {
+  moveRuns,
+  paceOf,
+  place,
+  planRun,
+  reachableToward,
+  stretchTo,
+  type Run
+} from './run';
 import { curl } from './setup';
 import {
   beatenBy,
   boxDepth,
   claimGap,
-  clearerPace,
-  fastestRun,
   floatedCross,
   furthestHeader,
   halfClearPace,
@@ -25,8 +30,7 @@ import {
   lowCrossPace,
   punchFlight,
   punchFrames,
-  punchRange,
-  receiverSpeed
+  punchRange
 } from './tuning';
 
 /**
@@ -54,8 +58,8 @@ export const playCrossIn = (clip: Clip) => {
     // Still out of reach, the cross is floated, hanging longer for the
     // header to get to; and failing that, put shorter, towards them, but
     // never out of the box.
-    const runFrames = (at: Point) =>
-      Math.ceil(distance(header, at) / perFrame(receiverSpeed));
+    const runPace = paceOf(clip, clip.shooter, 'run');
+    const runFrames = (at: Point) => Math.ceil(distance(header, at) / runPace);
     const floated = (at: Point) => {
       // Driven low, it goes at its own pace, but slower, though never
       // below 12 m/s, for a shooter further off.
@@ -76,7 +80,7 @@ export const playCrossIn = (clip: Clip) => {
       return clamp(runFrames(at), flight, Math.max(flight, slowest));
     };
     const gap = distance(header, headAt);
-    const most = reach(floated(headAt));
+    const most = runPace * floated(headAt);
     if (gap > most) {
       // Back towards a header further out goes only as far as the box.
       const boxed =
@@ -91,13 +95,11 @@ export const playCrossIn = (clip: Clip) => {
     // Still beyond a sprint, it is met nearer the header, though outside
     // the box (#226).
     for (let k = 0; k < 3; k++) {
-      const run = distance(header, headAt);
-      const most = perFrame(clearerPace) * crossFrames;
-      if (run <= most) {
+      const plan = { by: crossFrames, shape: 'bent', to: headAt } as const;
+      if (stretchTo(clip, clip.shooter, plan) <= 1) {
         break;
       }
-      headAt.d = header.d + ((headAt.d - header.d) / run) * most;
-      headAt.x = header.x + ((headAt.x - header.x) / run) * most;
+      Object.assign(headAt, reachableToward(clip, clip.shooter, plan));
       crossFrames = floated(headAt);
     }
     // Coming for it, the keeper sets off as it is struck and catches it
@@ -123,8 +125,10 @@ export const playCrossIn = (clip: Clip) => {
     let claimAt = drawnClaim;
     if (claim) {
       const coming = claim;
+      const keeper = clip.keeperSlot;
       const reaches = (u: number) =>
-        distance(coming, crossAt(u)) <= perFrame(fastestRun) * u * crossFrames;
+        distance(coming, crossAt(u)) === 0 ||
+        stretchTo(clip, keeper, { by: u * crossFrames, to: crossAt(u) }) <= 1;
       while (!reaches(claimAt) && claimAt < shortOf) {
         claimAt = Math.min(shortOf, claimAt + 0.01);
       }
@@ -183,7 +187,26 @@ export const playCrossIn = (clip: Clip) => {
           };
         })()
       : headAt;
-    const runAt = bentRun(clip, clip.shooter, runTo, crossFrames);
+    const headerPlan = {
+      by: crossFrames,
+      meets: [clip.keeperSlot],
+      shape: 'bent',
+      to: runTo
+    } as const;
+    const headerRun = planRun(clip, clip.shooter, {
+      ...headerPlan,
+      to: reachableToward(clip, clip.shooter, headerPlan)
+    });
+    const claimPlan =
+      claim && claimFrame
+        ? planRun(clip, clip.keeperSlot, {
+            by: claimFrame,
+            meets: [clip.shooter],
+            to: caught
+          })
+        : undefined;
+    // Forced by the debug page, a claim out of reach is flown to.
+    const claimRun = claimPlan?.unreachable ? undefined : claimPlan;
     for (let f = 1; f <= crossFrames; f++) {
       const u = f / crossFrames;
       Object.assign(clip.ball, crossAt(u));
@@ -192,10 +215,12 @@ export const playCrossIn = (clip: Clip) => {
         : Math.sin(Math.PI * u) * 0.6 + headHeight * u;
       if (claim && claimFrom) {
         if (f <= claimFrame) {
-          Object.assign(claim, {
-            d: lerp(claimFrom.d, caught.d, f / claimFrame),
-            x: lerp(claimFrom.x, caught.x, f / claimFrame)
-          });
+          if (!claimRun) {
+            place(clip, clip.keeperSlot, {
+              d: lerp(claimFrom.d, caught.d, f / claimFrame),
+              x: lerp(claimFrom.x, caught.x, f / claimFrame)
+            });
+          }
         } else if (clip.outcome === 'punch') {
           Object.assign(clip.ball, punched(f - claimFrame));
         } else {
@@ -208,7 +233,10 @@ export const playCrossIn = (clip: Clip) => {
             ? 'hold'
             : 'run';
       }
-      Object.assign(header, runAt(u));
+      moveRuns(clip, [
+        headerRun.unreachable ? undefined : headerRun,
+        f <= claimFrame ? claimRun : undefined
+      ]);
       const left = crossFrames - f;
       header.pose = headed && left < jumpFrames ? 'header' : 'run';
       header.poseFrame = left < jumpFrames / 2 ? 1 : 0;
@@ -236,25 +264,43 @@ export const playCrossIn = (clip: Clip) => {
     });
     // Out of their reach at a sprint, it drops nearer them, in the box
     // (#226).
+    const rises = () => ({ d: into.d + 0.4, x: into.x });
     for (let k = 0; k < 3 && clearing >= 0; k++) {
-      const them = clip.movers[clearing]!;
-      const run = distance(them, { d: into.d + 0.4, x: into.x });
-      const most = perFrame(clearerPace) * crossFlight(crossFrom, into);
-      if (run <= most) {
+      const plan = { by: crossFlight(crossFrom, into), to: rises() };
+      if (stretchTo(clip, clearing, plan) <= 1) {
         break;
       }
-      const u = 1 - most / run;
-      into.d = Math.min(lerp(into.d, them.d, u), pitchLength - 3);
-      into.d = Math.max(into.d, pitchLength - boxDepth + 1);
-      into.x = lerp(into.x, them.x, u);
+      const near = reachableToward(clip, clearing, plan);
+      into.d = clamp(
+        near.d - 0.4,
+        pitchLength - boxDepth + 1,
+        Math.max(pitchLength - 3, pitchLength - boxDepth + 1)
+      );
+      into.x = near.x;
     }
     const inFrames = crossFlight(crossFrom, into);
-    const outFrames = Math.ceil(
-      Math.max(
-        distance(into, clip.shootingSpot) / perFrame(halfClearPace),
-        clipFps / 2
-      )
-    );
+    const outFramesTo = (spot: Point) =>
+      Math.ceil(
+        Math.max(distance(into, spot) / perFrame(halfClearPace), clipFps / 2)
+      );
+    // The shooter meets it where they can get to by then: out of their
+    // reach, it drops shorter, towards them.
+    let outFrames = outFramesTo(clip.shootingSpot);
+    for (let k = 0; k < 3; k++) {
+      const plan = {
+        by: inFrames + outFrames,
+        shape: 'bent',
+        to: clip.shootingSpot
+      } as const;
+      if (stretchTo(clip, clip.shooter, plan) <= 1) {
+        break;
+      }
+      Object.assign(
+        clip.shootingSpot,
+        reachableToward(clip, clip.shooter, plan)
+      );
+      outFrames = outFramesTo(clip.shootingSpot);
+    }
     crossFrames = inFrames + outFrames;
     clip.passes.push({
       cutOut: true,
@@ -273,7 +319,21 @@ export const playCrossIn = (clip: Clip) => {
     });
     const swing = curl(clip, 0.8, 2);
     const from = clearing >= 0 ? { ...clip.movers[clearing]! } : undefined;
-    const runAt = bentRun(clip, clip.shooter, clip.shootingSpot, crossFrames);
+    const clearPlan =
+      clearing >= 0
+        ? planRun(clip, clearing, { by: inFrames, to: rises() })
+        : undefined;
+    // Still out of reach on their feet, the defender throws themselves at
+    // it.
+    const clearRun: Run | undefined = clearPlan?.unreachable
+      ? undefined
+      : clearPlan;
+    const shooterPlan = planRun(clip, clip.shooter, {
+      by: crossFrames,
+      shape: 'bent',
+      to: clip.shootingSpot
+    });
+    const shooterRun = shooterPlan.unreachable ? undefined : shooterPlan;
     for (let f = 1; f <= crossFrames; f++) {
       const defender = clearing >= 0 ? clip.movers[clearing]! : undefined;
       if (f <= inFrames) {
@@ -281,11 +341,18 @@ export const playCrossIn = (clip: Clip) => {
         Object.assign(clip.ball, bent(crossFrom, into, u, swing));
         clip.ball.height = Math.sin(Math.PI * u) * 0.6 + headHeight * u;
         if (defender && from) {
-          defender.d = lerp(from.d, into.d + 0.4, u);
-          defender.x = lerp(from.x, into.x, u);
           const left = inFrames - f;
-          defender.pose = left < jumpFrames ? 'header' : 'run';
-          defender.poseFrame = left < 2 ? 2 : left < jumpFrames / 2 ? 1 : 0;
+          if (clearRun) {
+            defender.pose = left < jumpFrames ? 'header' : 'run';
+            defender.poseFrame = left < 2 ? 2 : left < jumpFrames / 2 ? 1 : 0;
+          } else {
+            place(clip, clearing, {
+              d: lerp(from.d, rises().d, u),
+              x: lerp(from.x, rises().x, u)
+            });
+            defender.pose = 'tackle';
+            defender.poseFrame = 0;
+          }
         }
       } else {
         // Looped out, it drops to about knee height for the volley.
@@ -299,7 +366,7 @@ export const playCrossIn = (clip: Clip) => {
           defender.poseFrame = 0;
         }
       }
-      Object.assign(clip.movers[clip.shooter]!, runAt(f / crossFrames));
+      moveRuns(clip, [shooterRun, f <= inFrames ? clearRun : undefined]);
       clip.movers[clip.shooter]!.pose = 'run';
       steer(
         clip,

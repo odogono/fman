@@ -810,17 +810,19 @@ export const steer = (
   // Out of a pass's way, or pushed by a player on a run of their own,
   // they go there at no more than a run, from where they were last shown,
   // whatever moved them this frame (#226); out of a pass's way, flat out.
+  // Pushed against the boards, they go along them, never through (#299).
   const most = perFrame(lane ? flatOut : fastestRun);
   clip.movers.forEach((mover, i) => {
-    const from = clip.seen[i];
-    if (held.has(i) || i === down || !from) {
+    if (held.has(i) || i === down) {
       return;
     }
-    const moved = distance(from, mover);
-    if (moved > most) {
+    const from = clip.seen[i];
+    const moved = from ? distance(from, mover) : 0;
+    if (from && moved > most) {
       mover.d = from.d + ((mover.d - from.d) / moved) * most;
       mover.x = from.x + ((mover.x - from.x) / moved) * most;
     }
+    place(clip, i, mover);
   });
 };
 

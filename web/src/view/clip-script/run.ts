@@ -125,8 +125,15 @@ export type Run = {
 } & (
   | Readonly<{
       at: (u: number) => Point;
+      /**
+       * How far off the run's way they could stand after each frame and
+       * still get back onto it by the last, at their top pace.
+       */
+      backBy: readonly number[];
       frames: number;
       kind: 'arrive';
+      /** The pace each frame leaves to spare, for standing off the way. */
+      spare: readonly number[];
       to: Point;
     }>
   | Readonly<{ kind: 'chase'; target: () => Point; within: number }>
@@ -162,6 +169,36 @@ export const stretchTo = (
   pathFor(clip, i, to, Math.max(1, by), shape).peak / paceOf(clip, i, effort);
 
 /**
+ * `plan.to`, or if player `i` can't get there in time, the furthest along
+ * the way to it they can.
+ */
+export const reachableToward = (
+  clip: Clip,
+  i: number,
+  plan: RunPlan
+): Point => {
+  if (stretchTo(clip, i, plan) <= 1) {
+    return { ...plan.to };
+  }
+  const from = clip.movers[i]!;
+  const along = (u: number): Point => ({
+    d: lerp(from.d, plan.to.d, u),
+    x: lerp(from.x, plan.to.x, u)
+  });
+  let low = 0;
+  let high = 1;
+  for (let k = 0; k < 30; k++) {
+    const u = (low + high) / 2;
+    if (stretchTo(clip, i, { ...plan, to: along(u) }) <= 1) {
+      low = u;
+    } else {
+      high = u;
+    }
+  }
+  return along(low);
+};
+
+/**
  * Plans player `i`'s run from where they stand to `to`, there `by` frames
  * from now, or says it can't be made at `effort`.
  */
@@ -181,14 +218,30 @@ export const planRun = (
       unreachable: true
     };
   }
+  // Each frame's step along the run, and what that leaves to spare.
+  const spare = [0];
+  for (let k = 1; k <= frames; k++) {
+    spare.push(
+      Math.max(
+        0,
+        top - distance(path.at((k - 1) / frames), path.at(k / frames))
+      )
+    );
+  }
+  const backBy = new Array<number>(frames + 1).fill(0);
+  for (let k = frames - 1; k >= 0; k--) {
+    backBy[k] = backBy[k + 1]! + spare[k + 1]!;
+  }
   return {
     at: path.at,
+    backBy,
     done: 0,
     frames,
     i,
     kind: 'arrive',
     meets: plan.meets ?? [],
     offset: { d: 0, x: 0 },
+    spare,
     stretch: path.peak / top,
     to: { ...plan.to },
     top,
@@ -342,11 +395,10 @@ const arriveStep = (
   const done = Math.min(run.done + 1, run.frames);
   const left = run.frames - done;
   const aim = run.at(done / run.frames);
-  // The pace they have to spare, now and on the way back to the run's way.
-  const spare = Math.max(
-    0,
-    run.top - distance(run.at((done - 1) / run.frames), aim)
-  );
+  // The pace they have to spare now, and how far off their way they could
+  // stand and still get back onto it in time.
+  const spare = run.spare[done]!;
+  const reach = run.backBy[done]!;
   // How far off their way they want to stand, looking ahead along it.
   let wanted: Point = { d: 0, x: 0 };
   if (left > 0 && spare > 0) {
@@ -385,7 +437,6 @@ const arriveStep = (
       }
     }
     // Never further off than they can come back from in time.
-    const reach = spare * left;
     if (length(wanted) > reach) {
       const size = length(wanted);
       wanted = { d: (wanted.d / size) * reach, x: (wanted.x / size) * reach };
@@ -403,6 +454,10 @@ const arriveStep = (
       d: run.offset.d + (change.d / changeSize) * by,
       x: run.offset.x + (change.x / changeSize) * by
     };
+    const size = length(offset);
+    if (size > reach) {
+      offset = { d: (offset.d / size) * reach, x: (offset.x / size) * reach };
+    }
   }
   run.offset = offset;
   return { d: aim.d + offset.d, x: aim.x + offset.x };

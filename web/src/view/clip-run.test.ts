@@ -14,6 +14,7 @@ import {
   moveRuns,
   paceOf,
   planRun,
+  reachableToward,
   type Run
 } from './clip-script/run';
 import { decideClip } from './clip-script/setup';
@@ -101,6 +102,17 @@ test('a run is made only within the pace the player has at the effort', () => {
   expect(
     planRun(clip, 9, { by: frames * 2, effort: 'jog', to: edge }).unreachable
   ).toBe(true);
+});
+
+test('out of reach, a run goes as far along the way as the player can get', () => {
+  const clip = emptyPitch();
+  at(clip, 9, { d: 50, x: 34 });
+  const top = paceOf(clip, 9, 'sprint');
+  const near = { d: 55, x: 34 };
+  expect(reachableToward(clip, 9, { by: 50, to: near })).toEqual(near);
+  const short = reachableToward(clip, 9, { by: 50, to: { d: 90, x: 34 } });
+  expect(short.d).toBeCloseTo(50 + top * 50, 3);
+  expect(planRun(clip, 9, { by: 50, to: short }).unreachable).toBe(false);
 });
 
 test('an eased run is judged by its fastest, midway, not its average', () => {

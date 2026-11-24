@@ -1,7 +1,6 @@
 import { bent, clamp, distance, lerp, perFrame, type Point } from './geometry';
 import { headHeight, pitchLength, pitchWidth } from './model';
 import {
-  bentRun,
   crossFlight,
   finishFrame,
   kick,
@@ -9,12 +8,20 @@ import {
   steer,
   type Clip
 } from './pitch';
+import {
+  chase,
+  moveRuns,
+  place,
+  planRun,
+  reachableToward,
+  stretchTo,
+  type Run
+} from './run';
 import { byQuality, curl } from './setup';
 import {
   afterArrival,
   beatenBy,
   blockSitFrames,
-  clearerPace,
   goalHalf,
   jumpFrames,
   landingFrames,
@@ -35,19 +42,24 @@ export const playHeadedClear = (clip: Clip) => {
     ),
     x: lerp(crossFrom.x, clip.shootingSpot.x, clip.crossRng.between(0.82, 0.92))
   };
-  let nearest = Infinity;
-  clip.defenders.forEach((p, j) => {
-    const i = clip.attackers.length + j;
-    const gap = distance(clip.movers[i]!, meet);
-    if (p.line !== 'keeper' && gap < nearest) {
-      nearest = gap;
-      clip.clearer = i;
-    }
-  });
-  if (clip.clearer < 0) {
-    clip.clearer = clip.keeperSlot;
-  }
   const flight = crossFlight(crossFrom, meet);
+  // The nearest defender who can get there in time heads it; with none
+  // who can, the nearest throws themselves at it.
+  const rises = { d: meet.d + 0.4, x: meet.x };
+  const byNearness = clip.defenders
+    .flatMap((p, j) => (p.line === 'keeper' ? [] : [clip.attackers.length + j]))
+    .sort(
+      (a, b) =>
+        distance(clip.movers[a]!, meet) - distance(clip.movers[b]!, meet)
+    );
+  const plans = byNearness.map(i => ({
+    i,
+    run: planRun(clip, i, { by: flight, meets: [clip.shooter], to: rises })
+  }));
+  const header = plans.find(({ run }) => !run.unreachable);
+  clip.clearer = header?.i ?? byNearness[0] ?? clip.keeperSlot;
+  const defenderRun: Run | undefined =
+    header && !header.run.unreachable ? header.run : undefined;
   clip.passes.push({
     cutOut: true,
     end: clip.frame + flight,
@@ -80,13 +92,6 @@ export const playHeadedClear = (clip: Clip) => {
     d: meet.d + ((runner.d - meet.d) / short) * stopAt,
     x: meet.x + ((runner.x - meet.x) / short) * stopAt
   };
-  // From further off, only as far as a run takes them by then (#226).
-  const runFor = distance(runner, runTo);
-  const runMost = perFrame(clearerPace) * flight;
-  if (runFor > runMost) {
-    runTo.d = runner.d + ((runTo.d - runner.d) / runFor) * runMost;
-    runTo.x = runner.x + ((runTo.x - runner.x) / runFor) * runMost;
-  }
   // Already past where it is met, or nearer it than their stride takes
   // them, they pull up, their stride carrying them on a little, rather
   // than overrun it and turn back for it.
@@ -99,7 +104,17 @@ export const playHeadedClear = (clip: Clip) => {
     runTo.d = runner.d + striding.d * carriesOn;
     runTo.x = runner.x + striding.x * carriesOn;
   }
-  const runAt = bentRun(clip, clip.shooter, runTo, flight);
+  // From further off, only as far as a run takes them by then (#226).
+  const shooterPlan = {
+    by: flight,
+    meets: [clip.clearer],
+    shape: 'bent',
+    to: runTo
+  } as const;
+  const shooterRun = planRun(clip, clip.shooter, {
+    ...shooterPlan,
+    to: reachableToward(clip, clip.shooter, shooterPlan)
+  });
   const held = new Set([clip.clearer, clip.shooter]);
   /** The shooter has checked their stride, off their run, and where. */
   let checked = false;
@@ -111,10 +126,15 @@ export const playHeadedClear = (clip: Clip) => {
   );
   for (let f = 1; f <= flight + afterArrival; f++) {
     const defender = clip.movers[clip.clearer]!;
+    const run = clip.movers[clip.shooter]!;
+    const was = { d: run.d, x: run.x };
+    if (f <= flight) {
+      moveRuns(clip, [
+        defenderRun,
+        checked || shooterRun.unreachable ? undefined : shooterRun
+      ]);
+    }
     if (f <= flight && !checked) {
-      const run = clip.movers[clip.shooter]!;
-      const was = { d: run.d, x: run.x };
-      Object.assign(run, runAt(f / flight));
       run.pose = 'run';
       // Both on runs of their own, the shooter checks their stride rather
       // than run into the defender, and once either's run brings them that
@@ -122,7 +142,7 @@ export const playHeadedClear = (clip: Clip) => {
       const near = distance(run, defender);
       if (near < personalSpace && near < lastGap) {
         if (near < distance(was, defender)) {
-          Object.assign(run, was);
+          place(clip, clip.shooter, was);
         }
         checked = true;
         checkedAt = { d: run.d, x: run.x };
@@ -136,11 +156,19 @@ export const playHeadedClear = (clip: Clip) => {
       const u = f / flight;
       Object.assign(clip.ball, bent(crossFrom, meet, u, swing));
       clip.ball.height = Math.sin(Math.PI * u) * 0.6 + headHeight * u;
-      defender.d = lerp(from.d, meet.d + 0.4, u);
-      defender.x = lerp(from.x, meet.x, u);
       const left = flight - f;
-      defender.pose = left < jumpFrames ? 'header' : 'run';
-      defender.poseFrame = left < 2 ? 2 : left < jumpFrames / 2 ? 1 : 0;
+      if (defenderRun) {
+        defender.pose = left < jumpFrames ? 'header' : 'run';
+        defender.poseFrame = left < 2 ? 2 : left < jumpFrames / 2 ? 1 : 0;
+      } else {
+        // Out of reach on their feet, they throw themselves at it.
+        place(clip, clip.clearer, {
+          d: lerp(from.d, rises.d, u),
+          x: lerp(from.x, rises.x, u)
+        });
+        defender.pose = 'tackle';
+        defender.poseFrame = 0;
+      }
     } else {
       // Off the forehead it loops away from goal and lands.
       const u = Math.min(1, (f - flight) / afterArrival);
@@ -187,10 +215,12 @@ export const playClearance = (clip: Clip) => {
   // defender can get to at a sprint by the time the ball does (#226). With
   // none who can, whoever needs the least pace, wherever that is. They
   // meet it a little goal side of where it passes.
-  const pace = (i: number, u: number) => {
+  const meetsAt = (u: number) => {
     const at = pointAt(u);
-    return distance(clip.movers[i]!, { d: at.d + 0.6, x: at.x }) / flightTo(u);
+    return { d: at.d + 0.6, x: at.x };
   };
+  const stretch = (i: number, u: number) =>
+    stretchTo(clip, i, { by: flightTo(u), to: meetsAt(u) });
   let along = drawn;
   let best = Infinity;
   let easiest = Infinity;
@@ -203,9 +233,9 @@ export const playClearance = (clip: Clip) => {
     // A block well short of goal; a pass cut out short of the shooter.
     const [low, high] = interception ? [0.3, 0.85] : [0.25, 0.75];
     for (let u = low; u <= high; u += 0.025) {
-      const needs = pace(i, u);
+      const needs = stretch(i, u);
       const off = Math.abs(u - drawn);
-      if (needs <= perFrame(clearerPace) && off < best) {
+      if (needs <= 1 && off < best) {
         best = off;
         along = u;
         clip.clearer = i;
@@ -237,6 +267,18 @@ export const playClearance = (clip: Clip) => {
   clip.momentFrame = clip.momentStart + flight - 1;
   const from =
     clip.clearer >= 0 ? { ...clip.movers[clip.clearer]! } : undefined;
+  const planned =
+    clip.clearer >= 0 && !lunge
+      ? planRun(clip, clip.clearer, {
+          by: flight,
+          meets: [clip.holder, clip.shooter],
+          to: meetsAt(along)
+        })
+      : undefined;
+  // A keeper with no defender to do it, out of reach, throws themselves at
+  // it too.
+  const clearerRun = planned?.unreachable ? undefined : planned;
+  lunge ||= clip.clearer >= 0 && !clearerRun;
   // Off a block the ball runs loose, back the way it came.
   const loose = interception
     ? meet
@@ -248,6 +290,13 @@ export const playClearance = (clip: Clip) => {
   // the shooter) stay where their own moves leave them, but step aside
   // rather than stand inside anyone.
   const held = new Set([clip.clearer]);
+  // Cutting out a pass, the receiver runs on for it until it is taken.
+  // They aren't held: the defender cuts in at their feet, and `steer` still
+  // steps them aside.
+  const receiverRun = interception
+    ? chase(clip, clip.shooter, { pace: 'run', target: towards })
+    : undefined;
+  let toBall: Run | undefined;
   const where = (i: number) => ({ d: clip.movers[i]!.d, x: clip.movers[i]!.x });
   // The final pass, or the shot, is struck.
   kick(clip, clip.holder, meet);
@@ -259,21 +308,18 @@ export const playClearance = (clip: Clip) => {
       clip.ball.d = lerp(clip.shotFrom.d, meet.d, u);
       clip.ball.x = lerp(clip.shotFrom.x, meet.x, u);
       clip.ball.height = interception ? 0 : Math.sin(Math.PI * u) * 0.25;
+      moveRuns(clip, [clearerRun, receiverRun]);
       if (defender && from) {
-        defender.d = lerp(from.d, meet.d + 0.6, u);
-        defender.x = lerp(from.x, meet.x, u);
+        if (!clearerRun) {
+          place(clip, clip.clearer, {
+            d: lerp(from.d, meet.d + 0.6, u),
+            x: lerp(from.x, meet.x, u)
+          });
+        }
         // Some blocks are made sliding in, over the last of the flight.
         if (lunge || (clip.slidingBlock && u > 0.55)) {
           defender.pose = 'tackle';
           defender.poseFrame = 0;
-        }
-      }
-      if (interception) {
-        const gap = distance(runner, towards);
-        const step = perFrame(6);
-        if (gap > step) {
-          runner.d += ((towards.d - runner.d) / gap) * step;
-          runner.x += ((towards.x - runner.x) / gap) * step;
         }
       }
     } else {
@@ -290,13 +336,11 @@ export const playClearance = (clip: Clip) => {
       } else if (defender) {
         // The defender gets to the ball, facing upfield.
         defender.pose = 'run';
-        const to = { d: clip.ball.d + 0.6, x: clip.ball.x };
-        const gap = distance(defender, to);
-        const step = perFrame(5);
-        if (gap > step) {
-          defender.d += ((to.d - defender.d) / gap) * step;
-          defender.x += ((to.x - defender.x) / gap) * step;
-        }
+        toBall ??= chase(clip, clip.clearer, {
+          pace: 'run',
+          target: () => ({ d: clip.ball.d + 0.6, x: clip.ball.x })
+        });
+        moveRuns(clip, [toBall]);
       }
     }
     steer(

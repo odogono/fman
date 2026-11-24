@@ -77,7 +77,9 @@ const bentPath = (clip: Clip, i: number, to: Point, frames: number) => {
         x: lerp(from.x, to.x, along) + aside.x * drift
       };
     },
-    peak: Math.max(starting, steady) * needed
+    // The pace the run holds: setting off already going faster, they ease
+    // down to it, which asks nothing of them.
+    peak: steady * needed
   };
 };
 
@@ -119,6 +121,8 @@ export type Run = {
    * way.
    */
   readonly stretch: number;
+  /** How fast they are moving off or back onto the run's way, a frame. */
+  sway: Point;
   /** The player's top pace on this run, in metres a frame. */
   readonly top: number;
   readonly unreachable: false;
@@ -243,6 +247,7 @@ export const planRun = (
     offset: { d: 0, x: 0 },
     spare,
     stretch: path.peak / top,
+    sway: { d: 0, x: 0 },
     to: { ...plan.to },
     top,
     unreachable: false
@@ -274,6 +279,7 @@ export const chase = (
   meets,
   offset: { d: 0, x: 0 },
   stretch: 1,
+  sway: { d: 0, x: 0 },
   target: typeof target === 'function' ? target : () => target,
   top: paceOf(clip, i, pace),
   unreachable: false,
@@ -298,6 +304,8 @@ const unit = (v: Point): Point | undefined => {
 
 /** How far ahead, in frames, a runner looks for anyone in their way. */
 const lookAhead = 75;
+/** A runner leans into stepping round someone over this many frames. */
+const swayFrames = 6;
 
 /**
  * Where across `way`, from a run's way at `p`, a runner must stand to pass
@@ -442,23 +450,42 @@ const arriveStep = (
       wanted = { d: (wanted.d / size) * reach, x: (wanted.x / size) * reach };
     }
   }
-  // Towards where they want to stand off, as fast as their spare pace lets.
+  // Towards where they want to stand off, as fast as their spare pace
+  // lets, but leaning into it over a few frames rather than stepping
+  // sideways at once.
   const change = { d: wanted.d - run.offset.d, x: wanted.x - run.offset.x };
   const changeSize = length(change);
-  let offset = run.offset;
+  const wantedSway = changeSize
+    ? {
+        d: (change.d / changeSize) * Math.min(changeSize, spare),
+        x: (change.x / changeSize) * Math.min(changeSize, spare)
+      }
+    : { d: 0, x: 0 };
+  const turn = {
+    d: wantedSway.d - run.sway.d,
+    x: wantedSway.x - run.sway.x
+  };
+  const turnSize = length(turn);
+  const lean = spare / swayFrames;
+  let sway =
+    turnSize > lean
+      ? {
+          d: run.sway.d + (turn.d / turnSize) * lean,
+          x: run.sway.x + (turn.x / turnSize) * lean
+        }
+      : wantedSway;
+  const swaySize = length(sway);
+  if (swaySize > spare) {
+    sway = { d: (sway.d / swaySize) * spare, x: (sway.x / swaySize) * spare };
+  }
+  let offset = { d: run.offset.d + sway.d, x: run.offset.x + sway.x };
+  const size = length(offset);
   if (left === 0) {
     offset = { d: 0, x: 0 };
-  } else if (changeSize) {
-    const by = Math.min(changeSize, spare);
-    offset = {
-      d: run.offset.d + (change.d / changeSize) * by,
-      x: run.offset.x + (change.x / changeSize) * by
-    };
-    const size = length(offset);
-    if (size > reach) {
-      offset = { d: (offset.d / size) * reach, x: (offset.x / size) * reach };
-    }
+  } else if (size > reach) {
+    offset = { d: (offset.d / size) * reach, x: (offset.x / size) * reach };
   }
+  run.sway = { d: offset.d - run.offset.d, x: offset.x - run.offset.x };
   run.offset = offset;
   return { d: aim.d + offset.d, x: aim.x + offset.x };
 };

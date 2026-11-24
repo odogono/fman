@@ -132,6 +132,14 @@ _Avoid_: Cursor, position
 Playing a clip whose moment has already been shown, after rewinding to it. It changes nothing in the game; the match waits until the playhead catches up.
 _Avoid_: Replay, which names a cup match; rewind, which names the control
 
+**Playhead controls**:
+Rewind, play/pause and Next, which move the playhead through the clips. Rewind and play/pause are view controls; Next can end the clip the match is waiting on, as the original's keypress ends a ticker pause.
+_Avoid_: Transport, media controls
+
+**Skip all**:
+The control that ends the highlights' clips and the ticker's pauses at once and shows the match to full time. It presses no key, but unlike a view control it ends the match's pauses early.
+_Avoid_: Skip, which in Classic mode names the context bar's button for the same thing
+
 **Build-up**:
 The part of a clip before its moment: the play from the restart, or open play, to the final ball that reaches the player the moment names. A penalty has none.
 _Avoid_: Move, attack, which names the original's sequence

@@ -3,6 +3,10 @@ import type { Game } from '../sim/management';
 import type { Moment } from '../sim/moments';
 import type { View } from '../sim/session';
 import { matchLineUps, namedKey, type LineUpPlayer } from './clip-match';
+import {
+  highlightsControls,
+  type HighlightsControl
+} from './highlights-controls';
 import { clubName, fixtureTitle, type ClubName } from './home';
 import { strengthsFor, type Strengths } from './pick-team';
 import { lineName } from './ticker-layout';
@@ -29,13 +33,6 @@ export type ClipProgress = Readonly<{
 
 /** The tabs of the column beside the clips' pitch (#256). */
 export type HighlightsTab = 'away' | 'home' | 'moments';
-export const highlightsTabs: readonly HighlightsTab[] = [
-  'moments',
-  'home',
-  'away'
-];
-/** A tab's button, which presses no key. */
-export const tabId = (tab: HighlightsTab) => `clips.tab.${tab}`;
 
 /** One player in a line-up (#256), with the moments reached so far. */
 export type LineUpRow = Readonly<{
@@ -56,22 +53,6 @@ export type ModernLineUp = Readonly<{
   kit: string;
   strengths: readonly (readonly [string, number])[];
 }>;
-
-/** The moments drawer's buttons (#145), which press no key. */
-export const drawerIds = {
-  close: 'moments.close',
-  open: 'moments.open'
-} as const;
-
-/** The playhead's controls (ADR 0016), which press no key but Next's. */
-export const playheadIds = {
-  next: 'clips.next',
-  play: 'clips.play',
-  rewind: 'clips.rewind'
-} as const;
-
-/** After the last clip, Continue ends the final hold as a keypress would. */
-export const continueId = 'ticker.continue';
 
 /** One moment as a line of Modern mode's ticker. */
 export type ModernTickerLine = Readonly<{
@@ -104,6 +85,11 @@ export type ModernHighlights = Readonly<{
    * attacks have no minutes, so its pitch has no clock.
    */
   clock?: string;
+  /**
+   * The controls under and beside the moments: none for the original's
+   * pitch, which takes keypresses (ADR 0006).
+   */
+  controls: readonly HighlightsControl[];
   home: ClubName;
   /** Under sprite highlights, both sides' line-ups (#256). */
   lineUps?: Readonly<{ away: ModernLineUp; home: ModernLineUp }>;
@@ -294,6 +280,7 @@ export const highlightsFor = (
       : ticker.shown;
     const fullTime = ticker.stage.kind === 'full-time';
     const newest = shown.at(-1);
+    const skip = !ticker.done;
     return {
       away,
       ...(clips
@@ -311,13 +298,18 @@ export const highlightsFor = (
         : fullTime
           ? 'FT'
           : `${newest?.minute ?? 0}′`,
+      controls: highlightsControls({
+        ...(clips ? { clip: clips.progress } : {}),
+        clubs: { away: away.name, home: home.name },
+        ticker: { fullTime, lines: shown.length, skip }
+      }),
       home,
       score: clips?.score ?? ticker.score,
       ...(short ? { short } : {}),
       ticker: {
         fullTime,
         lines: tickerLines(game, fixture, shown),
-        skip: !ticker.done
+        skip
       },
       title
     };
@@ -336,6 +328,7 @@ export const highlightsFor = (
         : undefined;
   return {
     away,
+    controls: [],
     home,
     pitch: {
       ...(current

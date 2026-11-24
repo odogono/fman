@@ -1,4 +1,5 @@
 import { coloursText, levels } from '../sim/catalogue';
+import { removesOnly } from '../sim/league';
 import type { Game, Player } from '../sim/management';
 import { longestInjury, tiringInjuries } from '../sim/ruleset';
 import { inSquadOrder, playerCategory } from '../sim/squads';
@@ -130,14 +131,14 @@ export const paintSquad = (
   print.newline();
   print.text(
     selection
-      ? picked > 11
+      ? removesOnly(game)
         ? 'Type player no. to remove from\nteam'
         : 'Type Player No. to add to team'
       : 'TYPE NO. OF PLAYER TO BE SOLD',
     { ink: 1, inverse: true }
   );
   print.newline();
-  if (!selection || picked <= 11) {
+  if (!selection || !removesOnly(game)) {
     print.text('OR type 99 to continue', { bright: true, paper: 6 });
   }
   print.paint(put);

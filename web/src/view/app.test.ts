@@ -1205,6 +1205,9 @@ test('Modern mode picks the team on its own screen, adding then dropping as the 
   const reserves = liveRows(adding);
   expect(reserves.length).toBeGreaterThan(0);
   expect(reserves.every(row => row.status === 'reserve')).toBe(true);
+  expect(reserves[0]!.label).toBe(
+    `Add ${reserves[0]!.name}, number ${reserves[0]!.number}`
+  );
 
   pick(run, reserves[0]!.answer!);
   const dropping = run.page.pickTeam!;
@@ -1215,6 +1218,7 @@ test('Modern mode picks the team on its own screen, adding then dropping as the 
   const picked = liveRows(dropping);
   expect(picked).toHaveLength(12);
   expect(picked.every(row => row.status === 'picked')).toBe(true);
+  expect(picked.every(row => row.label?.startsWith('Drop '))).toBe(true);
 
   pick(run, picked.at(-1)!.answer!);
   expect(run.page.pickTeam!.picked).toBe(11);

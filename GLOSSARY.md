@@ -268,6 +268,10 @@ _Avoid_: Own screen or pane
 The row of answer buttons under an original screen: under every screen in Classic mode, and in Modern mode under the screens it has no design for.
 _Avoid_: Answer bar, button bar
 
+**View control**:
+A control on a Modern screen that changes what the screen shows, such as a tab, Close, Latest or the name form's ink choice, without submitting an answer or pressing a key.
+_Avoid_: Local action, UI-only button
+
 **Home screen**:
 Modern mode's form of the original's management menu: the club summary, the next fixture and the menu's choices. On a wide window it stays beside the other screens while a game is in play, except the highlights.
 _Avoid_: Home or dashboard, since home already names the home club, gate and kit

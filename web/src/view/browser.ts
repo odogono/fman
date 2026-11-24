@@ -43,7 +43,7 @@ import {
 import type { ModernMessage } from './modern-message';
 import type { ModernScreen, ModernScreenKind } from './modern-screen';
 import type { ModernStatus } from './modern-status';
-import type { ModernNames } from './name-screens';
+import { renameAnswer, type ModernNames } from './name-screens';
 import type { PickTeam, PickTeamRow, Strengths } from './pick-team';
 import { paintAttack, paintEmptyPitch } from './pitch';
 import type { SaleOffer } from './sale-offer';
@@ -324,17 +324,14 @@ const cell = (className: string, text: string | number) => {
 };
 
 /** One pick team row: a button while the original takes its number. */
-const pickRow = (row: PickTeamRow, verb: 'Add' | 'Drop' | 'Sell') => {
+const pickRow = (row: PickTeamRow) => {
   const element = document.createElement(row.answer ? 'button' : 'div');
   element.className = `pick-row ${row.status}`;
   if (row.answer) {
     element.setAttribute('type', 'button');
     element.dataset.id = row.answer;
     element.dataset.kind = 'choice';
-    element.setAttribute(
-      'aria-label',
-      `${verb} ${row.name}, number ${row.number}`
-    );
+    element.setAttribute('aria-label', row.label ?? row.name);
   }
   element.append(
     cell('pick-tag', row.tag),
@@ -1439,9 +1436,6 @@ const paintSetup = (pane: HTMLElement, setup: ModernSetup) => {
   }
 };
 
-/** The colours a club's name may take, by ink. */
-const inkNames = ['Black', 'Blue', 'Red', 'Magenta', 'Green'];
-
 /**
  * Modern mode's name editing: its questions, a page of clubs or players
  * to choose from, and renaming one, a club's colour picked from swatches.
@@ -1511,7 +1505,11 @@ const paintNames = (pane: HTMLElement, names: ModernNames) => {
     const legend = document.createElement('legend');
     legend.textContent = 'Colour';
     swatches.append(legend);
-    for (const colour of [...names.colours.map(String), 'plain']) {
+    const choices = [
+      ...names.colours.map(({ ink, name }) => ({ colour: String(ink), name })),
+      { colour: 'plain', name: 'Plain' }
+    ];
+    for (const { colour, name } of choices) {
       const option = document.createElement('label');
       option.className = 'names-swatch';
       const radio = document.createElement('input');
@@ -1523,11 +1521,7 @@ const paintNames = (pane: HTMLElement, names: ModernNames) => {
       const chip = cell('names-chip', '');
       chip.style.background =
         colour === 'plain' ? 'transparent' : `var(--normal-${colour})`;
-      option.append(
-        radio,
-        chip,
-        colour === 'plain' ? 'Plain' : inkNames[Number(colour)]!
-      );
+      option.append(radio, chip, name);
       swatches.append(option);
     }
     parts.push(swatches);
@@ -1786,8 +1780,6 @@ const paintPickTeam = (pane: HTMLElement, pick: PickTeam) => {
     hint.textContent = pick.hint;
     parts.push(hint);
   }
-  const verb =
-    pick.prompt === 'squad' ? 'Sell' : pick.picked <= 11 ? 'Add' : 'Drop';
   for (const group of pick.groups) {
     const section = document.createElement('section');
     section.className = `pick-group category-${group.category}`;
@@ -1806,7 +1798,7 @@ const paintPickTeam = (pane: HTMLElement, pick: PickTeam) => {
       cell('pick-marker', '')
     );
     const rows = group.players.length
-      ? group.players.map(row => pickRow(row, verb))
+      ? group.players.map(pickRow)
       : [cell('pick-none', 'None')];
     section.append(title, header, ...rows);
     parts.push(section);
@@ -2505,8 +2497,7 @@ export const createBrowserDom = (app: HTMLElement) => {
         target.submit(input.value);
       }
     });
-    // A new name, typed on the rename screen, after a club's INK prefix
-    // for the colour picked: the answer the original takes.
+    // A new name, typed on the rename screen, in the colour picked.
     namesPane.addEventListener('submit', event => {
       event.preventDefault();
       const form = namesPane.querySelector('form');
@@ -2517,11 +2508,12 @@ export const createBrowserDom = (app: HTMLElement) => {
       const ink = form.querySelector<HTMLInputElement>(
         'input[name=ink]:checked'
       );
-      const prefix =
-        ink && ink.value !== 'plain'
-          ? String.fromCharCode(16, Number(ink.value))
-          : '';
-      target.submit(prefix + input.value);
+      target.submit(
+        renameAnswer(
+          input.value,
+          !ink || ink.value === 'plain' ? 'plain' : Number(ink.value)
+        )
+      );
     });
     // During the celebration, a finger shortens its pauses, as on the pitch.
     cupResultPane.addEventListener('pointerdown', () => {

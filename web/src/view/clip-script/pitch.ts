@@ -23,6 +23,7 @@ import {
   sideOn,
   type ClipPass
 } from './model';
+import { place } from './run';
 import { type Setup } from './setup';
 import {
   backLineAhead,
@@ -438,8 +439,10 @@ const record = (clip: Clip) => {
     const { slide } = clip.challenge;
     if (t < slide) {
       const step = clip.challenge.pace * (1 - t / slide);
-      slider.d += clip.challenge.way.d * step;
-      slider.x += clip.challenge.way.x * step;
+      place(clip, clip.challenge.who, {
+        d: slider.d + clip.challenge.way.d * step,
+        x: slider.x + clip.challenge.way.x * step
+      });
       slider.pose = 'tackle';
       slider.poseFrame = 0;
     } else if (t < slide + sitFrames) {

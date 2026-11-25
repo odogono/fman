@@ -12,9 +12,17 @@ import type {
 import { appendScoreboard, cell, strengthsTable } from './paint-parts';
 
 /**
- * A control's button. A control that does nothing to the match is a view
- * control: Enter or Space on it presses no key, and focus stays on it
- * across rebuilds.
+ * Whether Enter and Space on `element` click it, reaching nothing else: a
+ * view control, or any highlights control (#297).
+ */
+export const clicksOnEnter = (element: Element | null | undefined) =>
+  !!element?.closest('[data-view-control], [data-clicks-on-enter]');
+
+/**
+ * A control's button. Enter or Space on any of them clicks it, and never
+ * reaches the playhead or the match as a keypress. A control that does
+ * nothing to the match is a view control too: focus stays on it across
+ * rebuilds.
  */
 const controlButton = (control: HighlightsControl, className?: string) => {
   const button = document.createElement('button');
@@ -24,6 +32,7 @@ const controlButton = (control: HighlightsControl, className?: string) => {
   }
   button.disabled = !control.enabled;
   button.dataset.id = control.id;
+  button.dataset.clicksOnEnter = '';
   if (effectOf(control.action) === 'none') {
     button.dataset.viewControl = control.id;
   }

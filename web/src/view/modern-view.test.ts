@@ -12,6 +12,7 @@ import type { paintClip } from './clip-canvas';
 import { celebrationFrame } from './cup-celebration';
 import { controlIds, effectOf } from './highlights-controls';
 import { homeFor } from './home';
+import { clicksOnEnter } from './modern-highlights-paint';
 import {
   modernScreenFor,
   type ModernScreen,
@@ -304,7 +305,7 @@ test('a rebuilt pane keeps focus on the view control that had it', () => {
   expect(document.activeElement).toBe(play);
 });
 
-test('every highlights control that does nothing to the match is a view control, and no other', () => {
+test('every highlights control that does nothing to the match is a view control, and no other; Enter and Space click any of them (#297)', () => {
   const modern = mount(false);
   const view = playTo('highlights');
   // A clip on show past its moment, with the drawer open: every control.
@@ -348,6 +349,7 @@ test('every highlights control that does nothing to the match is a view control,
       control.id,
       effectOf(control.action) === 'none'
     ]);
+    expect([control.id, clicksOnEnter(button)]).toEqual([control.id, true]);
   }
 });
 

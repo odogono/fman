@@ -174,16 +174,17 @@ export type Adapters = {
 
 export type KeyDown = {
   code: string;
+  /**
+   * A control that takes Enter and Space itself has focus, such as the
+   * moments drawer's button or Skip all: the browser clicks it, and the key
+   * presses nothing else.
+   */
+  controlFocused?: boolean;
   /** The command line has focus. */
   inputFocused: boolean;
   key: string;
   modified: boolean;
   repeat: boolean;
-  /**
-   * A control the view handles alone has focus, such as the moments
-   * drawer's button: Enter and Space activate it and press no key.
-   */
-  viewControlFocused?: boolean;
 };
 
 const saveFileName = 'football.fman.json';
@@ -944,7 +945,7 @@ export const createApp = ({
         return false;
       }
       if (
-        event.viewControlFocused &&
+        event.controlFocused &&
         (event.key === 'Enter' || event.key === ' ')
       ) {
         return false;

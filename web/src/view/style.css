@@ -779,6 +779,78 @@ button.pick-row:focus-visible {
   outline: 3px solid var(--normal-0);
   outline-offset: 2px;
 }
+/* Natural positions (#121): a player out of position, and moving players
+   by dragging them to a line or choosing one, then a line. */
+.pick-plays {
+  margin-left: 6px;
+  padding: 0 4px;
+  background: var(--bright-2);
+  color: var(--bright-7);
+  font-family: Spectrum, monospace;
+  font-size: 13px;
+}
+.pick-group[data-line] {
+  min-height: 48px;
+}
+.pick-group[data-line] button.pick-row {
+  -webkit-touch-callout: none;
+}
+.pick-group[data-line] button.pick-row[aria-pressed='true'] {
+  background: var(--bright-5);
+  outline: 3px solid var(--normal-0);
+  outline-offset: -3px;
+}
+.pick-lifted {
+  opacity: 0.35;
+}
+.pick-ghost {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 20;
+  pointer-events: none;
+  background: var(--bright-5);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 35%);
+}
+.pick-zone {
+  outline: 2px dashed var(--normal-0);
+  outline-offset: 2px;
+}
+.pick-zone.pick-over {
+  outline: 3px solid var(--normal-0);
+  background: var(--bright-6);
+}
+.pick-counts {
+  margin-left: 8px;
+  padding: 0 6px;
+  background: var(--normal-0);
+  color: var(--bright-7);
+  font-size: 15px;
+}
+.pick-target {
+  margin: 8px 0 4px;
+  padding: 8px;
+  border: 2px dashed var(--normal-0);
+  background: var(--bright-6);
+  color: inherit;
+  font-family: Spectrum, monospace;
+  font-size: 18px;
+  line-height: 1.2;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.pick-target:focus-visible {
+  outline: 3px solid var(--normal-0);
+  outline-offset: 2px;
+}
+.pick-sheet {
+  border-top: 2px solid var(--normal-0);
+}
+.pick-actions .pick-cancel {
+  background: var(--bright-7);
+  color: var(--normal-0);
+}
 /* The pick team screen stands in for the team and selection prompts. */
 :root.modern.at-pick-team .machine,
 :root.modern.at-pick-team .context-bar {

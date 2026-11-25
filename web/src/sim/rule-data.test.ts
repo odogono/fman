@@ -2,7 +2,7 @@ import { expect, test } from 'bun:test';
 
 import { createNewGame, type Game } from './management';
 import { ruleData, type RuleData } from './rule-data';
-import { latestEnhanced, presentDay, type Ruleset } from './ruleset';
+import { presentDay, rulesets, type Ruleset } from './ruleset';
 import { saveVersion, savedGame } from './save';
 
 const newGame = (ruleset: Ruleset) =>
@@ -16,9 +16,17 @@ const newGame = (ruleset: Ruleset) =>
   });
 
 /**
- * A game under the latest Enhanced rules carrying every rule's data: club
- * squads and kits come with a new game, a grace period and weeks out come
- * during play.
+ * The first ruleset with every rule on: the latest Enhanced version, or an
+ * experiment on top of it while a rule is being measured.
+ */
+const everyRule = rulesets.find(ruleset =>
+  Object.values(ruleData).every(rule => rule.on(ruleset))
+)!;
+
+/**
+ * A game under that ruleset carrying every rule's data: club squads, kits
+ * and where the picked players play come with a new game, a grace period
+ * and weeks out come during play.
  */
 const injured = (game: Game): Game => ({
   ...game,
@@ -26,7 +34,7 @@ const injured = (game: Game): Game => ({
     i === 0 ? { ...player, status: 3, weeksOut: 2 } : player
   )
 });
-const enhanced: Game = injured({ ...newGame(latestEnhanced), graceWeeks: 2 });
+const enhanced: Game = injured({ ...newGame(everyRule), graceWeeks: 2 });
 
 /**
  * For each rule with a save version, the first game to carry its data and
@@ -36,6 +44,7 @@ const firstCarrying: Readonly<Record<string, Game>> = {
   clubForm: newGame('enhanced-12'),
   clubSquads: newGame('enhanced-6'),
   gracePeriod: { ...newGame('enhanced-2'), graceWeeks: 2 },
+  naturalPositions: newGame('natural-positions'),
   tiringInjuries: injured(newGame('enhanced-5'))
 };
 
@@ -67,7 +76,7 @@ const withRuleData = (to: Game, from: Game, rule: RuleData): Saved => {
 
 for (const [name, rule] of Object.entries(ruleData)) {
   test(`${name}: its data loads only under a ruleset with the rule`, () => {
-    expect(rule.on(latestEnhanced)).toBe(true);
+    expect(rule.on(everyRule)).toBe(true);
     expect(rule.on('original')).toBe(false);
     expect(savedGame(enhanced, saveVersion)).toEqual(enhanced);
     const original = newGame('original');

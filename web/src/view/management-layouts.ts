@@ -1,7 +1,16 @@
 import { coloursText, levels } from '../sim/catalogue';
 import { removesOnly } from '../sim/league';
 import type { Game, Player } from '../sim/management';
-import { longestInjury, tiringInjuries } from '../sim/ruleset';
+import {
+  countedSkill,
+  letterFor,
+  outOfPosition
+} from '../sim/natural-positions';
+import {
+  longestInjury,
+  naturalPositions,
+  tiringInjuries
+} from '../sim/ruleset';
 import { inSquadOrder, playerCategory } from '../sim/squads';
 import type { Paint } from './grid';
 import type { Layouts } from './layout';
@@ -77,14 +86,19 @@ export const printPlayer = (
   print.name(player.name.padEnd(8));
   print.text(` ${player.id}`);
   print.tab(15);
-  print.text(String(player.skill));
+  // Out of position (#121), the skill he counts there, then his own.
+  const out = outOfPosition(player);
+  print.text(
+    out ? `${countedSkill(player)}(${player.skill})` : String(player.skill)
+  );
   print.tab(20);
   print.text(String(player.energy));
   print.tab(24);
   print.text(`£${player.value}`);
   print.tab(31);
-  print.text(statusText(player, weeksOut), {
-    ink: player.status > 1 ? (player.status === 2 ? 3 : 4) : 6,
+  // Out of position, the letter of the line he plays in, in red.
+  print.text(out ? letterFor(player.plays!) : statusText(player, weeksOut), {
+    ink: out ? 2 : player.status > 1 ? (player.status === 2 ? 3 : 4) : 6,
     inverse: true
   });
   print.newline();
@@ -140,6 +154,11 @@ export const paintSquad = (
   print.newline();
   if (!selection || !removesOnly(game)) {
     print.text('OR type 99 to continue', { bright: true, paper: 6 });
+  }
+  // Natural positions (#121) speak on the original screen (ADR 0010).
+  if (selection && naturalPositions(game.ruleset)) {
+    print.newline();
+    print.text('OR No.+G,D,M,A to place him', { ink: 1, inverse: true });
   }
   print.paint(put);
 };

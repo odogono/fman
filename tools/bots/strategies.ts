@@ -6,6 +6,8 @@ import {
   type Game,
   type Player
 } from '../../web/src/sim/management';
+import { emptyGoalCost } from '../../web/src/sim/natural-positions';
+import { naturalPositions } from '../../web/src/sim/ruleset';
 import type { View } from '../../web/src/sim/session';
 import { playerCategory } from '../../web/src/sim/squads';
 import type { HarnessRng } from './random';
@@ -63,14 +65,42 @@ export const weeklyBills = (game: Game) => {
 const sameIds = (a: readonly Player[], b: ReadonlySet<number>) =>
   a.length === b.size && a.every(p => b.has(p.id));
 
-/** The eleven (or fewer) available players with the best scores. */
-export const topEleven = (game: Game, score: (p: Player) => number) =>
-  new Set(
-    [...available(game)]
-      .sort((a, b) => score(b) - score(a) || a.id - b.id)
+/**
+ * The eleven (or fewer) available players with the best scores. Under
+ * natural positions (#121) that is the best goalkeeper and the ten best
+ * outfielders, since a second goalkeeper counts 1 outfield and an empty
+ * goal costs defence; other goalkeepers only make up the numbers.
+ */
+export const topEleven = (game: Game, score: (p: Player) => number) => {
+  const ranked = [...available(game)].sort(
+    (a, b) => score(b) - score(a) || a.id - b.id
+  );
+  if (!naturalPositions(game.ruleset)) {
+    return new Set(ranked.slice(0, 11).map(p => p.id));
+  }
+  const [keeper, ...spare] = ranked.filter(p => p.position === 'GK');
+  const outfield = ranked.filter(p => p.position !== 'GK');
+  // Spare goalkeepers make up the eleven when outfielders run out.
+  return new Set(
+    [...(keeper ? [keeper] : []), ...outfield, ...spare]
       .slice(0, 11)
       .map(p => p.id)
   );
+};
+
+/**
+ * Under natural positions (#121), the best picked goalkeeper when he isn't
+ * the one in goal: the bots never play anyone else out of position.
+ */
+const keeperOutOfGoal = (game: Game) => {
+  if (!naturalPositions(game.ruleset)) {
+    return undefined;
+  }
+  const best = picked(game)
+    .filter(p => p.position === 'GK')
+    .sort((a, b) => b.skill - a.skill || a.id - b.id)[0];
+  return best && best.plays !== 'GK' ? best : undefined;
+};
 
 /**
  * The available team with the highest total strength, by exhaustive search.
@@ -85,9 +115,16 @@ export const topEleven = (game: Game, score: (p: Player) => number) =>
 export const strongestTeam = (game: Game) => {
   const pool = [...available(game)].sort((a, b) => a.id - b.id);
   const size = Math.min(11, pool.length);
-  const category = pool.map(playerCategory);
+  // Under natural positions (#121) goalkeepers are summed apart: the best
+  // plays in goal, any other counts 1 in defence, and none costs defence.
+  const natural = naturalPositions(game.ruleset);
+  const category = pool.map(p =>
+    natural && p.position === 'GK' ? 3 : playerCategory(p)
+  );
   const chosen: number[] = [];
-  const skill = [0, 0, 0];
+  const skill = [0, 0, 0, 0];
+  let keepers = 0;
+  let bestKeeper = 0;
   let energy = 0;
   let raw = 0;
   let best: number[] = [];
@@ -95,9 +132,23 @@ export const strongestTeam = (game: Game) => {
   let bestRaw = -1;
   const search = (from: number) => {
     if (chosen.length === size) {
+      if (natural) {
+        bestKeeper = 0;
+        for (const id of chosen) {
+          const p = game.players[id - 1]!;
+          if (p.position === 'GK') {
+            bestKeeper = Math.max(bestKeeper, p.skill);
+          }
+        }
+      }
+      const goal = !natural
+        ? 0
+        : keepers
+          ? bestKeeper + keepers - 1
+          : -emptyGoalCost;
       const score =
         clamp(Math.floor(energy / 11)) +
-        clamp(skill[0]!) +
+        clamp(skill[0]! + goal) +
         clamp(skill[1]!) +
         clamp(skill[2]!);
       if (score > bestScore || (score === bestScore && raw > bestRaw)) {
@@ -111,11 +162,13 @@ export const strongestTeam = (game: Game) => {
       const p = pool[i]!;
       chosen.push(p.id);
       energy += p.energy;
+      keepers += Number(category[i] === 3);
       skill[category[i]!]! += p.skill;
       raw += p.skill * 20 + p.energy;
       search(i + 1);
       chosen.pop();
       energy -= p.energy;
+      keepers -= Number(category[i] === 3);
       skill[category[i]!]! -= p.skill;
       raw -= p.skill * 20 + p.energy;
     }
@@ -134,14 +187,18 @@ const pickToward = (
   wanted: ReadonlySet<number>
 ) => {
   const team = picked(view.game);
+  const keeper = keeperOutOfGoal(view.game);
   if (view.screen === 'team') {
-    return sameIds(team, wanted) ? '99' : 'c';
+    return sameIds(team, wanted) && !keeper ? '99' : 'c';
   }
   if (removesOnly(view.game)) {
     return String((team.find(p => !wanted.has(p.id)) ?? team[0]!).id);
   }
   const add = view.game.players.find(p => p.status === 1 && wanted.has(p.id));
-  return add ? String(add.id) : '99';
+  if (add) {
+    return String(add.id);
+  }
+  return keeper ? `${keeper.id}G` : '99';
 };
 
 /** Uniform among the offered answers on every decision screen. */

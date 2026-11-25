@@ -8,6 +8,7 @@ import { simulateHighlights } from './highlights';
 import {
   completeLeagueMatch,
   nextFixture,
+  placePickedPlayer,
   prepareLeagueMatch,
   teamStrength,
   togglePickedPlayer,
@@ -29,6 +30,7 @@ import {
   momentHighlights,
   penalties
 } from './ruleset';
+import type { Position } from './squads';
 import { createTicker, validClipLengths, type Ticker } from './ticker';
 
 /**
@@ -229,6 +231,11 @@ export const createMatchday = (initial: Game, keyboard?: PauseKeyboard) => {
     pick: (id: number) => {
       expect('team');
       game = togglePickedPlayer(game, id);
+    },
+    /** Under natural positions (#121), picks or moves a player into a line. */
+    place: (id: number, line: Position) => {
+      expect('team');
+      game = placePickedPlayer(game, id, line);
     },
     /**
      * Recovers energy and draws injuries before team selection; under

@@ -6,6 +6,13 @@ import {
   longestManagerName,
   type Game
 } from './management';
+import {
+  letterFor,
+  lineAnswer,
+  lineLetters,
+  lineOrder
+} from './natural-positions';
+import { naturalPositions } from './ruleset';
 import type { Screen, View } from './session';
 
 /** An offered answer whose text is fixed; a continue is an empty one. */
@@ -106,6 +113,29 @@ const asNumber = (text: string) => {
 /** Reads `y` or `yes`, in either case, as yes and anything else as no. */
 const asYesNo = (text: string) => (isYes(text) ? 'y' : 'n');
 const asName = (text: string) => text;
+
+/**
+ * Under natural positions (#121), a player's number and a line letter: any
+ * picked player to a line he isn't in, and while the original adds, any
+ * reserve to any line.
+ */
+const placings = (game: Game, removing: boolean) =>
+  game.players.flatMap(player => {
+    const movable = player.status === 2 || (player.status === 1 && !removing);
+    if (!movable) {
+      return [];
+    }
+    return lineOrder
+      .filter(line => player.status !== 2 || lineLetters[line] !== player.plays)
+      .map(line =>
+        choice(`selection.place.${player.id}.${line}`, `${player.id}${line}`)
+      );
+  });
+/** Reads a number, or a number and a line letter in upper case. */
+const asPlacing = (text: string) => {
+  const placing = lineAnswer(text);
+  return placing ? `${placing.id}${letterFor(placing.line)}` : asNumber(text);
+};
 
 const none: Prompt = { answers: [], read: () => undefined };
 
@@ -220,9 +250,12 @@ const promptOn = (view: View): Prompt => {
             'selection.player',
             playerIds(view.game, status => status === (removing ? 2 : 1))
           ),
-          ...(removing ? [] : [choice('selection.done', '99')])
+          ...(removing ? [] : [choice('selection.done', '99')]),
+          ...(naturalPositions(view.game.ruleset)
+            ? placings(view.game, removing)
+            : [])
         ],
-        read: asNumber
+        read: naturalPositions(view.game.ruleset) ? asPlacing : asNumber
       };
     }
     case 'names': {

@@ -1,8 +1,9 @@
 import type { Player } from './management';
 import { drawInjuries } from './match-injuries';
+import { countedCategory, countedSkill } from './natural-positions';
 import { drawPenalties } from './penalties';
 import { createRng, type Rng } from './rng';
-import { playerCategory, positionCategory, type SquadPlayer } from './squads';
+import { positionCategory, type SquadPlayer } from './squads';
 
 /**
  * One decisive event in a match (#107): a goal, a save, a clearance (#150)
@@ -70,12 +71,15 @@ const weighted = (rng: Rng, weights: readonly number[]) => {
   return undefined;
 };
 
-/** A picked player, weighted by skill and leaning towards attackers. */
+/**
+ * A picked player, weighted by skill and leaning towards attackers; under
+ * natural positions (#121), by the skill he counts where he plays.
+ */
 export const pickShooter = (rng: Rng, players: readonly Player[]) => {
   const picked = players.filter(p => p.status === 2);
   const i = weighted(
     rng,
-    picked.map(p => p.skill * categoryWeight[playerCategory(p)]!)
+    picked.map(p => countedSkill(p) * categoryWeight[countedCategory(p)]!)
   );
   return i === undefined ? undefined : picked[i]!.id;
 };

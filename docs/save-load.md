@@ -86,6 +86,8 @@ Version 15 adds each club's `origin`, its place in the catalogue it was
 drawn from, which it keeps as it moves between divisions and picks its
 ground in Modern mode's highlights. A game stored
 earlier gives each club the place it holds when loaded.
+Version 16 adds where each picked player plays under
+[natural positions](natural-positions.md).
 Fractional browser phase is not stored; restoring starts a fresh phase and
 does not simulate time spent with the page closed.
 

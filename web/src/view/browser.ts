@@ -10,6 +10,7 @@ import { rasterText, rasterizeCells } from './glyphs';
 import { clicksOnEnter } from './modern-highlights-paint';
 import { answerOf, createModernView, tapOf } from './modern-view';
 import { amountPanel } from './paint-parts';
+import { pickAnswerEvent } from './pick-team-paint';
 import { paintAttack, paintEmptyPitch } from './pitch';
 import { tickerLines, tickerText } from './ticker-layout';
 
@@ -586,6 +587,10 @@ export const createBrowserDom = (app: HTMLElement) => {
         } else {
           clicked(button!, tap.id, tap.text, event);
         }
+      });
+      // A player dropped on a line (#121) answers as a finger's tap does.
+      pane.addEventListener(pickAnswerEvent, event => {
+        target.tap((event as CustomEvent<string>).detail, 'brief');
       });
       // A name typed on a Modern screen is the answer.
       pane.addEventListener('submit', event => {

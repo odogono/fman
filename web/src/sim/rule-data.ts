@@ -3,6 +3,7 @@ import {
   clubSquads,
   gracePeriodWeeks,
   longestInjury,
+  naturalPositions,
   presentDay,
   tiringInjuries,
   type Ruleset
@@ -85,6 +86,20 @@ export const ruleData: Readonly<Record<string, RuleData>> = {
           : player.position === undefined
     },
     since: 11
+  },
+  /**
+   * A picked player plays where the manager puts him (#121), kept on him
+   * from the time he is picked.
+   */
+  naturalPositions: {
+    on: naturalPositions,
+    player: {
+      keys: ['plays'],
+      valid: (player, on) =>
+        player.plays === undefined ||
+        (on && positions.includes(player.plays as never))
+    },
+    since: 16
   },
   /** Debts over the credit limit get weeks to clear (#74). */
   gracePeriod: {

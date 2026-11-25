@@ -1,5 +1,6 @@
 import type { Club } from '../sim/catalogue';
 import { fixtureSides, removesOnly, teamStrength } from '../sim/league';
+import { naturalPositions } from '../sim/ruleset';
 import { flashPhase, type View } from '../sim/session';
 import { paintCupVictory } from './cup-victory';
 import type { Paint } from './grid';
@@ -214,10 +215,15 @@ export const matchLayouts: Layouts<MatchScreen> = {
       write(19, 0, view.error, { ink: 2, inverse: true });
     }
     return {
-      label: removesOnly(view.game)
-        ? 'Player number to remove'
-        : 'Player number to add, or 99 to continue',
-      numeric: true
+      label: naturalPositions(view.game.ruleset)
+        ? removesOnly(view.game)
+          ? 'Player number to remove, or a number and G, D, M or A to move him'
+          : 'Player number to add, a number and G, D, M or A to place him, or 99 to continue'
+        : removesOnly(view.game)
+          ? 'Player number to remove'
+          : 'Player number to add, or 99 to continue',
+      // A line letter needs the letters keyboard.
+      numeric: !naturalPositions(view.game.ruleset)
     };
   }),
   table: printMatch(({ completion, game }, { write }) => {

@@ -30,6 +30,7 @@ import {
 import type { Moment } from './moments';
 import { createNameEditor, type NameEditor } from './name-editor';
 import { screenPrintFault } from './name-print-fault';
+import { lineAnswer } from './natural-positions';
 import {
   clubsOnPage,
   isCommand,
@@ -40,7 +41,12 @@ import {
 import { createPauseKeyboard, type PauseKeyboardState } from './pause-keyboard';
 import type { Playback } from './playback';
 import { createRng } from './rng';
-import { presentDay, startingClubs, type Ruleset } from './ruleset';
+import {
+  naturalPositions,
+  presentDay,
+  startingClubs,
+  type Ruleset
+} from './ruleset';
 import { decodeSave, encodeSave } from './save';
 import { completeSeason, type SeasonCompletion } from './season';
 import type { Ticker } from './ticker';
@@ -594,7 +600,22 @@ export const createSession = (
           program.screen = 'selection';
         }
         break;
-      case 'selection':
+      case 'selection': {
+        const placing = naturalPositions(program.game!.ruleset)
+          ? lineAnswer(text)
+          : undefined;
+        if (placing) {
+          program.selectionError = '';
+          try {
+            play(m => m.place(placing.id, placing.line));
+          } catch (error) {
+            if (!(error instanceof RangeError)) {
+              throw error;
+            }
+            program.selectionError = error.message;
+          }
+          break;
+        }
         if (number === undefined) {
           break;
         }
@@ -612,6 +633,7 @@ export const createSession = (
           program.selectionError = error.message;
         }
         break;
+      }
       case 'result': {
         play(m => m.settle());
         const settled = program.matchday!.settlement;

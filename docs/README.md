@@ -41,6 +41,7 @@ Rulesets ([ADR-0007](adr/0007-experimental-rules-as-rulesets.md), [ADR-0009](adr
 - [club-form.md](club-form.md): other clubs in the division have form from their last three league results, shown in Modern mode's table (Enhanced version 12)
 - [squad-strength.md](squad-strength.md): an opponent's defence, midfield and attack come mostly from its squad, and other clubs' results lean towards the stronger squad (Enhanced version 13)
 - [even-table.md](even-table.md): the other clubs' points spread no wider than before form and squad strength, and Genius eases a little, so promotion takes about as many points as it did (Enhanced version 14)
+- [natural-positions.md](natural-positions.md): a picked player can play out of position, in goal or another line, counting less the further from his position (experimental, measured against Enhanced version 14)
 - [sprite-highlights.md](sprite-highlights.md): Modern mode shows moments as clips on a top-down pitch with tiny sprites ([ADR-0013](adr/0013-clips-set-their-own-length.md))
 
 Gameplay baseline: [gameplay-baseline.md](gameplay-baseline.md): automated runs by strategy and difficulty level, and how to compare rulesets against [the original's baseline](baseline/original.md).

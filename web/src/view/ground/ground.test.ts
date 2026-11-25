@@ -9,7 +9,7 @@ import { goalPieces } from './goals';
 import { finalPlan, groundPlan, type GroundPlan } from './grounds';
 import { aimCamera, groundCamera, type GroundView } from './painter';
 import { shear } from './picture';
-import { fans, standsSolid } from './stands';
+import { fans, shownStands, standsSolid } from './stands';
 
 const home = '#d70000';
 const away = '#0000d7';
@@ -126,6 +126,16 @@ test("a frame's projection stays as it was when the camera moves on", () => {
   const before = project(10, 20);
   aimCamera(camera, view({ x: 5, y: 90 }));
   expect(project(10, 20)).toEqual(before);
+});
+
+test('the camera looks over the stand behind the bottom goal, and shows the rest', () => {
+  for (const ground of [plan(1), finalPlan]) {
+    const shown = shownStands(ground.stands).map(s => s.side);
+    expect(shown).not.toContain('bottom');
+    expect(shown).toHaveLength(
+      ground.stands.filter(s => s.side !== 'bottom').length
+    );
+  }
 });
 
 test('a club gets the same ground every time, and clubs’ grounds differ', () => {

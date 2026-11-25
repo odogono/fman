@@ -16,7 +16,7 @@ import {
 import type { ClipFrame, FramePlayer } from '../clips';
 import type { MatchGround } from '../match-ground';
 import { goalPieces } from './goals';
-import { fans } from './stands';
+import { fans, shownStands } from './stands';
 
 // What stands where in a clip's frame (#280): the sprites at a ground, in
 // the order they are drawn and the layers they fall in between the goals'
@@ -200,7 +200,11 @@ export const createFrameSprites = () => {
     if (crowd?.ground === ground && crowd.cheering === cheering) {
       return crowd.sprites;
     }
-    const sprites = fans(ground.crowd, ground.plan.stands, cheering);
+    const sprites = fans(
+      ground.crowd,
+      shownStands(ground.plan.stands),
+      cheering
+    );
     crowd = { cheering, ground, sprites };
     return sprites;
   };

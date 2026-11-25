@@ -30,7 +30,7 @@ import {
 } from './picture';
 import { markings, mowPitch, surround, type GrassPattern } from './pitch';
 import { towardsSun, type Solid } from './solid';
-import { standsSolid } from './stands';
+import { shownStands, standsSolid } from './stands';
 
 // The ground's painter (#263, ADR 0018): a clip's frame drawn over a 3D
 // ground with OGL. The ground, the stands, the boards and the goals are
@@ -351,7 +351,9 @@ export const createGroundPainter = (canvas: HTMLCanvasElement) => {
       castsShadow.removeChild(stands.shadow);
       stands.mesh.geometry.remove();
     }
-    stands = addSolid(standsSolid(plan));
+    stands = addSolid(
+      standsSolid({ ...plan, stands: shownStands(plan.stands) })
+    );
     stands.mesh.setParent(standsHolder);
     if (plan.grass !== mown) {
       mown = plan.grass;

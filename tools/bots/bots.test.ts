@@ -1,16 +1,18 @@
 import { expect, test } from 'bun:test';
 
-import { teamStrength } from '../../web/src/sim/league';
+import { placePickedPlayer, teamStrength } from '../../web/src/sim/league';
 import {
   borrow,
   createNewGame,
   type Game,
   type Player
 } from '../../web/src/sim/management';
+import { lineAnswer } from '../../web/src/sim/natural-positions';
 import type { Ruleset } from '../../web/src/sim/ruleset';
 import { createHarnessRng } from './random';
 import { BotError, playRun, type RunRecord } from './run';
 import {
+  bestMove,
   strategies,
   strategyNamed,
   strongestTeam,
@@ -305,4 +307,36 @@ test('under natural positions the strongest team scores as the sim does', () => 
       Math.min(keeping, Math.max(Number(keeping > 0), 11 - outfield))
     );
   }
+});
+
+test('under natural positions the bots move players while it raises strength', () => {
+  const game = createNewGame({
+    club: 1,
+    level: 1,
+    manager: 'bot',
+    ruleset: 'natural-positions',
+    seed: 3
+  });
+  // Every picked player a skill-5 midfielder: midfield is full at 20, so
+  // moving some into defence and attack adds strength.
+  let next: Game = {
+    ...game,
+    players: game.players.map(p =>
+      p.status === 2 ? { ...p, plays: 'MF', position: 'MF', skill: 5 } : p
+    )
+  };
+  const before = teamStrength(next);
+  let moves = 0;
+  for (let move = bestMove(next); move; move = bestMove(next)) {
+    const placing = lineAnswer(move)!;
+    next = placePickedPlayer(next, placing.id, placing.line);
+    moves++;
+    expect(moves).toBeLessThan(40);
+  }
+  expect(moves).toBeGreaterThan(0);
+  const after = teamStrength(next);
+  expect(after[3]).toBeLessThanOrEqual(20);
+  expect(after[2]! + after[3]! + after[4]!).toBeGreaterThan(
+    before[2]! + before[3]! + before[4]!
+  );
 });

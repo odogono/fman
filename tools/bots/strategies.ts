@@ -1,4 +1,8 @@
-import { removesOnly } from '../../web/src/sim/league';
+import {
+  placePickedPlayer,
+  removesOnly,
+  teamStrength
+} from '../../web/src/sim/league';
 import {
   largestRepayment,
   loanRoom,
@@ -6,7 +10,11 @@ import {
   type Game,
   type Player
 } from '../../web/src/sim/management';
-import { emptyGoalCost } from '../../web/src/sim/natural-positions';
+import {
+  emptyGoalCost,
+  lineLetters,
+  lineOrder
+} from '../../web/src/sim/natural-positions';
 import { naturalPositions } from '../../web/src/sim/ruleset';
 import type { View } from '../../web/src/sim/session';
 import { playerCategory } from '../../web/src/sim/squads';
@@ -90,16 +98,42 @@ export const topEleven = (game: Game, score: (p: Player) => number) => {
 
 /**
  * Under natural positions (#121), the best picked goalkeeper when he isn't
- * the one in goal: the bots never play anyone else out of position.
+ * the one in goal: all the passive bot ever moves.
  */
-const keeperOutOfGoal = (game: Game) => {
-  if (!naturalPositions(game.ruleset)) {
-    return undefined;
-  }
+const keeperMove = (game: Game) => {
   const best = picked(game)
     .filter(p => p.position === 'GK')
     .sort((a, b) => b.skill - a.skill || a.id - b.id)[0];
-  return best && best.plays !== 'GK' ? best : undefined;
+  return best && best.plays !== 'GK' ? `${best.id}G` : undefined;
+};
+
+/** Energy, defence, midfield and attack summed: what moving players can change. */
+const totalStrength = (game: Game) =>
+  teamStrength(game).reduce((sum, value, i) => sum + (i === 1 ? 0 : value), 0);
+
+/**
+ * Under natural positions (#121), the one move of a picked player that
+ * most raises the team's total strength, or none when no move does. Each
+ * move raises it, so moving stops.
+ */
+export const bestMove = (game: Game) => {
+  let best = totalStrength(game);
+  let move: string | undefined;
+  for (const player of picked(game)) {
+    for (const line of lineOrder) {
+      if (lineLetters[line] === player.plays) {
+        continue;
+      }
+      const total = totalStrength(
+        placePickedPlayer(game, player.id, lineLetters[line])
+      );
+      if (total > best) {
+        best = total;
+        move = `${player.id}${line}`;
+      }
+    }
+  }
+  return move;
 };
 
 /**
@@ -184,12 +218,18 @@ export const strongestTeam = (game: Game) => {
  */
 const pickToward = (
   view: Extract<DecisionView, { screen: 'team' | 'selection' }>,
-  wanted: ReadonlySet<number>
+  wanted: ReadonlySet<number>,
+  arranges = true
 ) => {
   const team = picked(view.game);
-  const keeper = keeperOutOfGoal(view.game);
+  // Under natural positions (#121), a move once the team is picked.
+  const move = !naturalPositions(view.game.ruleset)
+    ? undefined
+    : arranges
+      ? bestMove(view.game)
+      : keeperMove(view.game);
   if (view.screen === 'team') {
-    return sameIds(team, wanted) && !keeper ? '99' : 'c';
+    return sameIds(team, wanted) && !move ? '99' : 'c';
   }
   if (removesOnly(view.game)) {
     return String((team.find(p => !wanted.has(p.id)) ?? team[0]!).id);
@@ -198,7 +238,7 @@ const pickToward = (
   if (add) {
     return String(add.id);
   }
-  return keeper ? `${keeper.id}G` : '99';
+  return move ?? '99';
 };
 
 /** Uniform among the offered answers on every decision screen. */
@@ -255,7 +295,8 @@ const passiveAnswer = (view: DecisionView) => {
     case 'selection':
       return pickToward(
         view,
-        topEleven(view.game, p => p.energy)
+        topEleven(view.game, p => p.energy),
+        false
       );
     case 'menu':
     case 'transfer':

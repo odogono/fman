@@ -1,0 +1,270 @@
+/* PROTOTYPE (#121), throwaway: styles for prototype-positions.ts only. */
+body {
+  margin: 0;
+  background: var(--normal-7);
+}
+main {
+  padding-bottom: 96px;
+}
+.proto-layout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  align-items: flex-start;
+  justify-content: center;
+  width: 100%;
+}
+.proto-intro {
+  max-width: 34ch;
+  margin: 0 0 12px;
+  font:
+    15px/1.4 system-ui,
+    sans-serif;
+}
+.proto-state {
+  width: 240px;
+  padding: 12px;
+  border: 2px solid var(--normal-0);
+  background: var(--bright-7);
+  font:
+    14px/1.4 system-ui,
+    sans-serif;
+}
+.proto-state h3 {
+  margin: 0 0 8px;
+  font-family: Spectrum, monospace;
+  font-weight: normal;
+}
+.proto-notes {
+  margin: 8px 0;
+  padding-left: 18px;
+}
+.proto-notes .warn,
+.proto-message {
+  color: var(--normal-2);
+}
+.proto-message {
+  min-height: 1.4em;
+  margin: 8px 0;
+  font-family: Spectrum, monospace;
+}
+.proto-reset {
+  padding: 4px 8px;
+  font: inherit;
+}
+
+/* The Spectrum screen, 32 columns. */
+.proto-zx-machine {
+  padding: 16px;
+  background: var(--normal-7);
+  border: 2px solid var(--normal-0);
+  overflow-x: auto;
+  max-width: calc(100vw - 32px);
+  box-sizing: border-box;
+}
+.proto-zx {
+  width: 32ch;
+  font:
+    16px/18px Spectrum,
+    monospace;
+  white-space: pre;
+}
+.proto-zx-line {
+  min-height: 18px;
+}
+.proto-zx-input {
+  width: 20ch;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  text-transform: uppercase;
+  outline: none;
+  caret-color: var(--normal-0);
+}
+.zx-hdr {
+  background: var(--bright-6);
+}
+.zx-ink-0 {
+  color: var(--normal-0);
+}
+.zx-ink-1 {
+  color: var(--normal-1);
+}
+.zx-ink-2 {
+  color: var(--normal-2);
+}
+.zx-inv-ink-0,
+.zx-inv-0 {
+  background: var(--normal-0);
+  color: var(--normal-7);
+}
+.zx-inv-ink-1,
+.zx-inv-1 {
+  background: var(--normal-1);
+  color: var(--normal-7);
+}
+.zx-inv-ink-2,
+.zx-inv-2 {
+  background: var(--normal-2);
+  color: var(--normal-7);
+}
+.zx-inv-3 {
+  background: var(--normal-3);
+  color: var(--normal-7);
+}
+.zx-inv-4 {
+  background: var(--normal-4);
+  color: var(--normal-0);
+}
+
+/* Modern additions. */
+.pick-tag.proto-ink-1 {
+  --ink: var(--normal-1);
+}
+.pick-tag.proto-ink-2 {
+  --ink: var(--normal-2);
+}
+.pick-row:not(.pick-header) .pick-tag.proto-ink-0 {
+  background: var(--normal-0);
+}
+.pick-row:not(.pick-header) .pick-tag.proto-ink-1 {
+  background: var(--normal-1);
+}
+.pick-row:not(.pick-header) .pick-tag.proto-ink-2 {
+  background: var(--normal-2);
+}
+.proto-chip {
+  margin-left: 6px;
+  padding: 0 4px;
+  background: var(--bright-2);
+  color: var(--bright-7);
+  font-family: Spectrum, monospace;
+  font-size: 13px;
+}
+.pick-row.proto-selected,
+button.pick-row.proto-selected {
+  background: var(--bright-5);
+  outline: 3px solid var(--normal-0);
+  outline-offset: -3px;
+}
+.proto-sheet {
+  border-top: 2px solid var(--normal-0);
+}
+.proto-lines {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+.pick-actions .proto-line,
+.proto-seg {
+  min-height: 52px;
+  padding: 4px;
+  border: 2px solid var(--normal-0);
+  background: var(--bright-7);
+  color: var(--normal-0);
+  font:
+    14px/1.2 system-ui,
+    sans-serif;
+}
+.proto-line span {
+  display: grid;
+}
+.proto-line[aria-pressed='true'],
+.proto-seg[aria-pressed='true'] {
+  background: var(--normal-0);
+  color: var(--bright-7);
+}
+.proto-row-picker {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  padding: 4px 4px 8px 32px;
+  border-bottom: 1px solid var(--normal-0);
+}
+.proto-seg {
+  min-height: 36px;
+  font-family: Spectrum, monospace;
+}
+.proto-target {
+  margin: 8px 0 4px;
+  padding: 8px;
+  border: 2px dashed var(--normal-0);
+  background: var(--bright-6);
+  color: inherit;
+  font:
+    18px/1.2 Spectrum,
+    monospace;
+  text-align: left;
+  cursor: pointer;
+}
+.proto-bench {
+  opacity: 0.85;
+}
+
+/* The variant switcher: not part of any design. */
+.proto-switcher {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  z-index: 10;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #222;
+  color: #fff;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 40%);
+  transform: translateX(-50%);
+  font:
+    14px system-ui,
+    sans-serif;
+  white-space: nowrap;
+}
+.proto-switcher button {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: #444;
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+/* Variant E: drag and drop. */
+.proto-ghost {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 20;
+  pointer-events: none;
+  background: var(--bright-5) !important;
+  box-shadow: 0 6px 18px rgb(0 0 0 / 35%);
+  opacity: 0.95;
+}
+.proto-lifted {
+  opacity: 0.35;
+}
+.proto-zone {
+  outline: 2px dashed var(--normal-0);
+  outline-offset: 2px;
+}
+.proto-zone.proto-over {
+  outline: 3px solid var(--normal-0);
+  background: var(--bright-6);
+}
+.proto-counts {
+  margin-left: 8px;
+  padding: 0 6px;
+  background: var(--normal-0);
+  color: var(--bright-7);
+  font-size: 15px;
+}
+[data-line] {
+  min-height: 48px;
+}
+button[data-player] {
+  -webkit-touch-callout: none;
+}

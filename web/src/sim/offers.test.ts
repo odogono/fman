@@ -2,6 +2,7 @@ import { expect, test } from 'bun:test';
 
 import { finishPrompt, submitInput } from '../test/input';
 import { createJournal, openSave, type Journal } from './journal';
+import { createNewGame } from './management';
 import {
   offeredAnswerFor,
   offeredAnswers,
@@ -54,7 +55,9 @@ const narrow = <S extends Screen>(view: View, screen: S) => {
 /** What each offered answer does, from the answer table in #41. */
 const expected = (answer: OfferedAnswer, view: View): string | string[] => {
   const n = Number(/\d+$/.exec(answer.id)?.[0]);
-  const key = answer.id.replace(/\.\d+$/, '.#');
+  const key = answer.id
+    .replace(/^selection\.place\.\d+\.[ADGM]$/, 'selection.place')
+    .replace(/\.\d+$/, '.#');
   const names = view.screen === 'names' ? view.nameEditor : undefined;
   const table: Record<string, () => string | string[]> = {
     'bills.continue': () => ['end-season', 'transfer', 'transfer-result'],
@@ -115,6 +118,13 @@ const expected = (answer: OfferedAnswer, view: View): string | string[] => {
     'season-summary.continue': () => 'menu',
     'season-table.continue': () => 'season-summary',
     'selection.done': () => 'team',
+    // Moving a picked player keeps the count; placing a reserve adds one.
+    'selection.place': () => {
+      const { game, pickedCount } = narrow(view, 'selection');
+      const id = Number(answer.id.split('.')[2]);
+      const moving = game.players[id - 1]!.status === 2;
+      return `selection:${moving ? pickedCount : pickedCount + 1}`;
+    },
     'selection.player.#': () => {
       const count = narrow(view, 'selection').pickedCount;
       return `selection:${count > 11 ? count - 1 : count + 1}`;
@@ -171,7 +181,9 @@ const typed = [
   'NO',
   'c',
   'S',
-  'h'
+  'h',
+  '9m',
+  '1Z'
 ];
 
 /** Taps an answer; an amount goes in at its largest, or at `amount`. */
@@ -361,6 +373,41 @@ test('a league matchday offers the picks, results and transfer answers', () => {
   play(journal, [String(journal.session.view.game!.cash)]);
   probe(journal);
   expect(journal.session.view.screen).toBe('transfer-result');
+});
+
+test('natural positions offer every pick into a line, over eleven only moves', () => {
+  const menu = atMenu();
+  const { frames, game } = menu.session.view;
+  const journal = createJournal({
+    frames,
+    game: createNewGame({
+      club: game!.club,
+      level: 1,
+      manager: 'alex',
+      ruleset: 'natural-positions',
+      seed: game!.seed
+    }),
+    kind: 'menu',
+    ...menu.session.timingState
+  });
+  play(journal, ['99', '', 'c']);
+  probe(journal);
+  const answers = offeredAnswers(journal.session.view).map(a =>
+    a.kind === 'choice' ? a.text : ''
+  );
+  expect(answers).toContain(
+    `${journal.session.view.game!.players.find(p => p.status === 1)!.id}G`
+  );
+  const reserve = journal.session.view.game!.players.find(p => p.status === 1)!;
+  play(journal, [`${reserve.id}a`]);
+  probe(journal);
+  expect(narrow(journal.session.view, 'selection').pickedCount).toBe(12);
+  const { players } = journal.session.view.game!;
+  const placed = offeredAnswers(journal.session.view)
+    .filter(a => a.id.startsWith('selection.place.'))
+    .map(a => players[Number(a.id.split('.')[2]) - 1]!.status);
+  expect(placed.length).toBeGreaterThan(0);
+  expect(placed.every(status => status === 2)).toBe(true);
 });
 
 test('a drawn cup round offers its replay', () => {

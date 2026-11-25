@@ -36,6 +36,7 @@ type RuleChanges = {
   lastingSkill: boolean;
   matchInjuries: boolean;
   momentHighlights: boolean;
+  naturalPositions: boolean;
   penalties: boolean;
   plainNames: boolean;
   presentDay: boolean;
@@ -66,6 +67,7 @@ const originalRules: RuleChanges = {
   lastingSkill: false,
   matchInjuries: false,
   momentHighlights: false,
+  naturalPositions: false,
   penalties: false,
   plainNames: false,
   presentDay: false,
@@ -80,6 +82,7 @@ export const ruleChangeNeeds: Partial<
   clubSquads: ['presentDay'],
   evenTable: ['clubForm', 'squadStrength'],
   matchInjuries: ['tiringInjuries', 'momentHighlights'],
+  naturalPositions: ['clubSquads'],
   penalties: ['momentHighlights'],
   squadStrength: ['clubSquads', 'clubForm']
 };
@@ -113,7 +116,13 @@ type EnhancedVersion = (typeof enhancedVersions)[number]['name'];
  * rules or an Enhanced version) plus one rule change. An entry goes when its
  * change is promoted into an Enhanced version.
  */
-export const experiments = [] as const satisfies readonly {
+export const experiments = [
+  {
+    adds: { naturalPositions: true },
+    base: 'enhanced-14',
+    name: 'natural-positions'
+  }
+] as const satisfies readonly {
   adds: Adds;
   base: 'original' | EnhancedVersion;
   name: string;
@@ -339,3 +348,12 @@ export const squadStrength = (ruleset: Ruleset) =>
  * strength, and comes with the `steep-table` curve.
  */
 export const evenTable = (ruleset: Ruleset) => changes[ruleset].evenTable;
+
+/**
+ * Whether a picked player can play out of position, in goal or in another
+ * playing category, counting less the further it is from his position (#121,
+ * measured as `natural-positions` against `enhanced-14`). It needs club
+ * squads, whose players have positions.
+ */
+export const naturalPositions = (ruleset: Ruleset) =>
+  changes[ruleset].naturalPositions;

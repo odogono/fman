@@ -8,7 +8,7 @@ import { array, integer, keys, record, text } from './save-checks';
 // under club squads (#113), whose 872 players outside the places are saved too.
 export const saveLimit = 200_000;
 /** The version every save is written with. */
-export const saveVersion = 15;
+export const saveVersion = 16;
 /** The first save version whose journals carry clip lengths (ADR 0013). */
 export const clipsSaveVersion = 12;
 /** The first save version whose journals can turn prompt beeps off (ADR 0015). */

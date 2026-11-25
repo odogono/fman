@@ -1,6 +1,7 @@
 import type { Club } from './catalogue';
 import { freshResults } from './club-form';
 import { emptyAttackCarry, type AttackCarry } from './highlights';
+import { placeAll } from './natural-positions';
 import { add, divide, floor, fromNumber, multiply, toNumber } from './numeric';
 import { createRng } from './rng';
 import {
@@ -8,6 +9,7 @@ import {
   clubSquads,
   gracePeriodWeeks,
   isRuleset,
+  naturalPositions,
   presentDay,
   startingClubs,
   startingPlayerNames,
@@ -25,6 +27,12 @@ export type Player = Readonly<{
   energy: number;
   id: number;
   name: string;
+  /**
+   * Where a picked player plays under natural positions (#121): his
+   * position, or out of position in goal or another playing category.
+   * Set each time he is picked, and read only while he is.
+   */
+  plays?: Position;
   /** The player's position under `clubSquads` (#113); otherwise his id gives it. */
   position?: Position;
   skill: number;
@@ -178,7 +186,7 @@ export const createNewGame = (options: {
     level: options.level,
     manager: options.manager,
     morale: 10,
-    players,
+    players: naturalPositions(ruleset) ? placeAll(players) : players,
     previousNet: 0,
     rating: 0,
     ratingTotal: 0,

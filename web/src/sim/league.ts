@@ -1,11 +1,24 @@
 import { addResults, formOf, formStrength } from './club-form';
-import { payWeeklyBills, type Game } from './management';
+import { payWeeklyBills, type Game, type Player } from './management';
 import { scorePrintReport, tablePrintReport } from './name-print-fault';
+import {
+  countedCategory,
+  countedSkill,
+  emptyGoalCost,
+  goalFilled,
+  place
+} from './natural-positions';
 import { add, divide, floor, fromNumber, multiply, toNumber } from './numeric';
 import { createRng } from './rng';
-import { clubForm, evenTable, opponentBonus, squadStrength } from './ruleset';
+import {
+  clubForm,
+  evenTable,
+  naturalPositions,
+  opponentBonus,
+  squadStrength
+} from './ruleset';
 import { rolledAttribute, squadGoals, squadTerms } from './squad-strength';
-import { playerCategory } from './squads';
+import type { Position } from './squads';
 
 const clamp = (value: number) => Math.max(1, Math.min(20, value));
 export const teamStrength = (game: Game): number[] => {
@@ -15,10 +28,14 @@ export const teamStrength = (game: Game): number[] => {
       continue;
     }
     result[0] = result[0]! + player.energy;
-    const category = playerCategory(player) + 2;
-    result[category] = result[category]! + player.skill;
+    const category = countedCategory(player) + 2;
+    result[category] = result[category]! + countedSkill(player);
   }
   result[0] = Math.floor(result[0]! / 11);
+  // Under natural positions (#121) defence pays for an empty goal.
+  if (naturalPositions(game.ruleset) && !goalFilled(game.players)) {
+    result[2] = result[2]! - emptyGoalCost;
+  }
   return result.map(clamp);
 };
 
@@ -53,12 +70,43 @@ export const togglePickedPlayer = (game: Game, id: number): Game => {
   if (!removing && player.status !== 1) {
     throw new RangeError('PLAYER NOT AVAILABLE');
   }
+  const players = game.players.map((p): Player =>
+    p.id === id ? { ...p, status: removing ? 1 : 2 } : p
+  );
   return {
     ...game,
-    players: game.players.map(p =>
-      p.id === id ? { ...p, status: removing ? 1 : 2 } : p
-    )
+    players:
+      naturalPositions(game.ruleset) && !removing ? place(players, id) : players
   };
+};
+
+/**
+ * Under natural positions (#121), a number and a line letter: puts a picked
+ * player in that line, or picks a reserve there. Moving a picked player
+ * isn't an add, so it is taken even over eleven picked, when the original
+ * only drops.
+ */
+export const placePickedPlayer = (
+  game: Game,
+  id: number,
+  line: Position
+): Game => {
+  const player = game.players[id - 1];
+  if (!player) {
+    throw new RangeError('PLAYER NO. OUT OF RANGE');
+  }
+  if (player.status !== 2) {
+    if (removesOnly(game)) {
+      throw new RangeError('PLAYER NOT IN TEAM');
+    }
+    if (player.status !== 1) {
+      throw new RangeError('PLAYER NOT AVAILABLE');
+    }
+  }
+  const players = game.players.map(p =>
+    p.id === id ? { ...p, status: 2 as const } : p
+  );
+  return { ...game, players: place(players, id, line) };
 };
 
 /** The season ends once fifteen league matches are played and the cup is over. */

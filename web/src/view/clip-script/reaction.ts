@@ -224,7 +224,7 @@ export const playReaction = (clip: Clip) => {
     target: celebrateAt
   });
   for (let f = 0; f < reactionFrames; f++) {
-    clip.cameraWidth =
+    clip.focusAcross =
       f < 50
         ? cameraZoomed
         : lerp(cameraZoomed, cameraWide, ease(Math.min(1, (f - 50) / 50)));
@@ -289,8 +289,8 @@ export const playReaction = (clip: Clip) => {
           paces.set(i, jogPace);
         }
       }
-      clip.cameraFocus = () => ({ d: scorer.d, x: scorer.x });
-      clip.keepInShot = () => scorer;
+      clip.focusTarget = () => ({ d: scorer.d, x: scorer.x });
+      clip.subject = () => scorer;
     } else if (outcomeKind(clip.outcome) === 'clearance') {
       // Tackled, the shooter lies there a moment first.
       scorer.pose = clip.frame < clip.shooterUpAt ? 'fall' : 'run';
@@ -329,7 +329,7 @@ export const playReaction = (clip: Clip) => {
         });
       }
       // The camera stays with a player down injured.
-      clip.cameraFocus = clip.injured
+      clip.focusTarget = clip.injured
         ? () => ({ d: scorer.d, x: scorer.x })
         : () => ({ d: clip.ball.d, x: clip.ball.x });
     } else {
@@ -424,7 +424,7 @@ export const playReaction = (clip: Clip) => {
             f < release + 8 ? (playOut === 'throw' ? 'hold' : 'kick') : 'run';
         }
       }
-      clip.cameraFocus =
+      clip.focusTarget =
         outcomeKind(clip.outcome) === 'save'
           ? () => ({ d: (clip.ball.d + pitchLength) / 2, x: clip.ball.x })
           : () => ({ d: scorer.d + 4, x: scorer.x });

@@ -85,7 +85,7 @@ export const playTackle = (clip: Clip) => {
     target: () => lead
   });
   let sweeping: Run | undefined;
-  clip.cameraFocus = () => ({ d: clip.ball.d + 4, x: clip.ball.x });
+  clip.focusTarget = () => ({ d: clip.ball.d + 4, x: clip.ball.x });
   for (let f = 1; !contact || f <= contact + afterArrival; f++) {
     if (!contact) {
       // The shooter carries on, the ball just ahead, and plants their

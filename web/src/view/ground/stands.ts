@@ -41,6 +41,14 @@ export const place = (
 const concrete = '#8c8c8c';
 const darkConcrete = '#7a7a7a';
 
+/**
+ * The stands the camera shows: all but the one behind the bottom goal,
+ * which the camera stands behind and looks over (#285). Drawn, it would
+ * rise up the picture over the near goal.
+ */
+export const shownStands = (stands: readonly Stand[]) =>
+  stands.filter(stand => stand.side !== 'bottom');
+
 /** The stands of `plan`, as one solid. */
 export const standsSolid = (plan: GroundPlan): Solid => {
   const blocks: Solid[] = [];

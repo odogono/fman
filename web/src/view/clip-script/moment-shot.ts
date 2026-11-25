@@ -49,7 +49,7 @@ export const playShot = (
     // Caught: the clip reaches its moment in the keeper's hands, and they
     // hold it while the header lands. Punched, it flies on out of the box.
     clip.momentFrame = clip.momentStart + claimFrame - 1;
-    clip.cameraFocus = () => ({
+    clip.focusTarget = () => ({
       d: (clip.ball.d + pitchLength) / 2,
       x: clip.ball.x
     });
@@ -339,7 +339,7 @@ export const playShot = (
       clip.outcome === 'parry' ||
       (clip.outcome === 'goal' &&
         Math.abs(aim.x - (keeperFrom?.x ?? 34)) > 1.5);
-    clip.cameraFocus = () => ({
+    clip.focusTarget = () => ({
       d: (clip.ball.d + pitchLength) / 2,
       x: clip.ball.x
     });

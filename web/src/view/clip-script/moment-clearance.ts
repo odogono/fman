@@ -78,7 +78,7 @@ export const playHeadedClear = (clip: Clip) => {
   };
   const swing = curl(clip, 0.8, 2);
   kick(clip, clip.holder, meet);
-  clip.cameraFocus = () => ({
+  clip.focusTarget = () => ({
     d: (clip.ball.d + pitchLength) / 2,
     x: clip.ball.x
   });
@@ -297,7 +297,7 @@ export const playClearance = (clip: Clip) => {
   const where = (i: number) => ({ d: clip.movers[i]!.d, x: clip.movers[i]!.x });
   // The final pass, or the shot, is struck.
   kick(clip, clip.holder, meet);
-  clip.cameraFocus = () => ({ d: clip.ball.d + 4, x: clip.ball.x });
+  clip.focusTarget = () => ({ d: clip.ball.d + 4, x: clip.ball.x });
   for (let f = 1; f <= flight + afterArrival; f++) {
     const defender = clip.clearer >= 0 ? clip.movers[clip.clearer]! : undefined;
     if (f <= flight) {

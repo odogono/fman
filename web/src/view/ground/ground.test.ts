@@ -1,4 +1,5 @@
 import { expect, test } from 'bun:test';
+import { Vec3 } from 'ogl';
 
 import { inkColours } from '../clip-match';
 import { pitchLength, pitchWidth } from '../clips';
@@ -7,7 +8,8 @@ import { boardSolids } from './boards';
 import { goalPieces } from './goals';
 import { finalPlan, groundPlan, type GroundPlan } from './grounds';
 import { aimCamera, groundCamera, type GroundView } from './painter';
-import { fans, standsSolid } from './stands';
+import { shear } from './picture';
+import { fans, shownStands, standsSolid } from './stands';
 
 const home = '#d70000';
 const away = '#0000d7';
@@ -74,41 +76,66 @@ test('the boards ring the pitch beyond the lines', () => {
 });
 
 /** A 300 by 400 pixel picture of the centre spot, 10 cm to a pixel. */
-const view = (tilt: number, changes: Partial<GroundView> = {}): GroundView => ({
+const view = (changes: Partial<GroundView> = {}): GroundView => ({
   ground: clubGround({ club: 1, division: 1, seats: home }, homeCrowd),
   high: 400,
   metresPerPixel: 0.1,
-  tilt,
   wide: 300,
   x: pitchWidth / 2,
   y: pitchLength / 2,
   ...changes
 });
 
-for (const tilt of [0, 35]) {
-  test(`at ${tilt}°, the picture's centre is the point it looks at, and a metre up rises a metre up the screen`, () => {
-    // The camera works out its matrices without drawing anything.
-    const { project } = aimCamera(groundCamera({} as never), view(tilt));
-    const [x, y] = project(pitchWidth / 2, pitchLength / 2);
-    expect(x).toBeCloseTo(150, 5);
-    expect(y).toBeCloseTo(200, 5);
-    // Further down the pitch is lower in the picture, across is across.
-    const [, below] = project(pitchWidth / 2, pitchLength / 2 + 5);
-    expect(below).toBeGreaterThan(200);
-    const [right] = project(pitchWidth / 2 + 1, pitchLength / 2);
-    expect(right - 150).toBeCloseTo(10, 0);
-    // A head 1 m above the centre spot shows 10 pixels above it.
-    const [, head] = project(pitchWidth / 2, pitchLength / 2, 1);
-    expect(200 - head).toBeCloseTo(10, 0);
-  });
-}
+test("the picture's centre is the point it looks at, and a metre up rises a metre up the screen", () => {
+  // The camera works out its matrices without drawing anything.
+  const project = aimCamera(groundCamera({} as never), view());
+  const [x, y] = project(pitchWidth / 2, pitchLength / 2);
+  expect(x).toBeCloseTo(150, 5);
+  expect(y).toBeCloseTo(200, 5);
+  // Further down the pitch is lower in the picture, across is across.
+  const [, below] = project(pitchWidth / 2, pitchLength / 2 + 5);
+  expect(below).toBeGreaterThan(200);
+  const [right] = project(pitchWidth / 2 + 1, pitchLength / 2);
+  expect(right - 150).toBeCloseTo(10, 0);
+  // A head 1 m above the centre spot shows 10 pixels above it.
+  const [, head] = project(pitchWidth / 2, pitchLength / 2, 1);
+  expect(200 - head).toBeCloseTo(10, 0);
+});
+
+test("the picture's projection is where the 3D camera draws the pitch's points", () => {
+  const camera = groundCamera({} as never);
+  const project = aimCamera(camera, view({ x: 20, y: 30 }));
+  for (const [x, y, up] of [
+    [20, 30, 0],
+    [5, 10, 0],
+    [40, 50, 2],
+    [-3, 45, 1]
+  ] as const) {
+    const at = new Vec3(x, up, y - shear * up).applyMatrix4(
+      camera.projectionViewMatrix
+    );
+    const [px, py] = project(x, y, up);
+    expect(px).toBeCloseTo(((at.x + 1) / 2) * 300, 4);
+    expect(py).toBeCloseTo(((1 - at.y) / 2) * 400, 4);
+  }
+});
 
 test("a frame's projection stays as it was when the camera moves on", () => {
   const camera = groundCamera({} as never);
-  const { project } = aimCamera(camera, view(35));
+  const project = aimCamera(camera, view());
   const before = project(10, 20);
-  aimCamera(camera, view(0, { x: 5, y: 90 }));
+  aimCamera(camera, view({ x: 5, y: 90 }));
   expect(project(10, 20)).toEqual(before);
+});
+
+test('the camera looks over the stand behind the bottom goal, and shows the rest', () => {
+  for (const ground of [plan(1), finalPlan]) {
+    const shown = shownStands(ground.stands).map(s => s.side);
+    expect(shown).not.toContain('bottom');
+    expect(shown).toHaveLength(
+      ground.stands.filter(s => s.side !== 'bottom').length
+    );
+  }
 });
 
 test('a club gets the same ground every time, and clubs’ grounds differ', () => {

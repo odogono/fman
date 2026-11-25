@@ -90,10 +90,10 @@ export const writeScript = (clip: Clip): ClipScript => {
     const low = Math.floor(clamped);
     const high = Math.min(length - 1, low + 1);
     const u = clamped - low;
-    const [cx0, cy0, cw0] = clip.cameraTrack[low]!;
-    const [cx1, cy1, cw1] = clip.cameraTrack[high]!;
-    const width = lerp(cw0, cw1, u);
-    const zoomed = width < cameraWide - 0.01;
+    const [cx0, cy0, cw0] = clip.focusTrack[low]!;
+    const [cx1, cy1, cw1] = clip.focusTrack[high]!;
+    const across = lerp(cw0, cw1, u);
+    const zoomed = across < cameraWide - 0.01;
     const players = sides.map((side, i): FramePlayer => ({
       facing: facings[clip.facingLog[low]![i]!]!,
       keeper: keepers.has(i),
@@ -109,6 +109,8 @@ export const writeScript = (clip: Clip): ClipScript => {
     }));
     const [bx0, by0, bh0] = clip.balls[low]!;
     const [bx1, by1, bh1] = clip.balls[high]!;
+    const [sx0, sy0] = clip.subjectTrack[low]!;
+    const [sx1, sy1] = clip.subjectTrack[high]!;
     const named = players[clip.shooter];
     const goal = goalAt(clamped);
     return {
@@ -117,7 +119,7 @@ export const writeScript = (clip: Clip): ClipScript => {
         x: lerp(bx0, bx1, u),
         y: lerp(by0, by1, u)
       },
-      camera: { width, x: lerp(cx0, cx1, u), y: lerp(cy0, cy1, u) },
+      focus: { across, x: lerp(cx0, cx1, u), y: lerp(cy0, cy1, u) },
       ...(clip.outcome === 'goal' && low >= clip.reactionStart
         ? { cheer: true }
         : {}),
@@ -145,7 +147,8 @@ export const writeScript = (clip: Clip): ClipScript => {
         : {}),
       minimap: !zoomed,
       phase: phaseAt(low),
-      players
+      players,
+      subject: { x: lerp(sx0, sx1, u), y: lerp(sy0, sy1, u) }
     };
   };
 

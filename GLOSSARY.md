@@ -157,7 +157,7 @@ The ground a clip's picture shows. Seen from the tilt it is wider at the far end
 _Avoid_: Viewport, camera rectangle
 
 **Focus**:
-The point on the pitch a clip's camera eases towards, and how closely it looks there. It says where to look, not what is in the picture.
+Where on the pitch a clip's camera looks, and how closely, easing after the play. It says where to look, not what is in the picture.
 _Avoid_: Camera position, target
 
 **Subject**:

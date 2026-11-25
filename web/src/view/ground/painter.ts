@@ -1,7 +1,6 @@
 import {
   Camera,
   Geometry,
-  Mat4,
   Mesh,
   Program,
   RenderTarget,
@@ -20,9 +19,18 @@ import { boardCanvases, boardSolids } from './boards';
 import { createFrameSprites } from './frame-sprites';
 import { goalPieces, netCanvas } from './goals';
 import type { GroundPlan } from './grounds';
+import {
+  cameraDistance,
+  fieldOfView,
+  shear as lean,
+  projection,
+  tilt,
+  type PictureView,
+  type Projection
+} from './picture';
 import { markings, mowPitch, surround, type GrassPattern } from './pitch';
 import { towardsSun, type Solid } from './solid';
-import { standsSolid } from './stands';
+import { shownStands, standsSolid } from './stands';
 
 // The ground's painter (#263, ADR 0018): a clip's frame drawn over a 3D
 // ground with OGL. The ground, the stands, the boards and the goals are
@@ -31,8 +39,6 @@ import { standsSolid } from './stands';
 // scene is rendered at one pixel to an art pixel, for the clip's canvas to
 // scale up in whole pixels, so it reads as pixel art.
 
-/** The camera's field of view, top to bottom: narrow, so near-flat. */
-const fieldOfView = 20;
 /** The ground beyond the lines that the pitch texture covers, in metres. */
 const beyond = 40;
 const texelsPerMetre = 10;
@@ -196,28 +202,15 @@ const groundFragment = /* glsl */ `
   }
 `;
 
-/** How a frame is seen: where, at what size, and from what tilt. */
-export type GroundView = Readonly<{
-  /** The ground the frame is played at, and its crowd. */
-  ground: MatchGround;
-  /** The render's size in pixels, one to an art pixel. */
-  high: number;
-  /** Metres on the ground to each pixel, at the picture's centre. */
-  metresPerPixel: number;
-  /** The camera's angle from straight down, in degrees, from behind the bottom goal. */
-  tilt: number;
-  wide: number;
-  /** The point on the pitch at the picture's centre, in metres. */
-  x: number;
-  y: number;
-}>;
+/** How a frame is seen: at which ground, where, and at what size. */
+export type GroundView = PictureView &
+  Readonly<{
+    /** The ground the frame is played at, and its crowd. */
+    ground: MatchGround;
+  }>;
 
 /** A point on the pitch, `up` metres above it, in the render's pixels from its top left. */
-export type GroundProjection = (
-  x: number,
-  y: number,
-  up?: number
-) => readonly [number, number];
+export type GroundProjection = Projection;
 
 /** The camera, looking down the pitch with the screen's top to the far end. */
 export const groundCamera = (gl: OGLRenderingContext) => {
@@ -227,20 +220,14 @@ export const groundCamera = (gl: OGLRenderingContext) => {
 };
 
 /**
- * Points `camera` at the patch `view` shows. Returns how far heights lean
- * up the pitch, and where the pitch's points fall in the picture, kept
- * apart from the camera, which the next frame moves.
+ * Points `camera` at the patch `view` shows, from the picture's tilt.
+ * Returns where the pitch's points fall in the picture, kept apart from
+ * the camera, which the next frame moves.
  */
-export const aimCamera = (camera: Camera, view: GroundView) => {
+export const aimCamera = (camera: Camera, view: PictureView) => {
   const { high, wide } = view;
-  const viewHeight = high * view.metresPerPixel;
-  const distance =
-    viewHeight / 2 / Math.tan(((fieldOfView / 2) * Math.PI) / 180);
-  const angle = (view.tilt * Math.PI) / 180;
-  // A metre of height rises a metre up the screen at any tilt, as the
-  // sprites draw it: what the tilt leaves out is made up by leaning the
-  // heights up the pitch.
-  const shear = (1 - Math.sin(angle)) / Math.cos(angle);
+  const distance = cameraDistance(high * view.metresPerPixel);
+  const angle = (tilt * Math.PI) / 180;
   const target = new Vec3(view.x, 0, view.y);
   camera.perspective({
     aspect: wide / high,
@@ -252,12 +239,7 @@ export const aimCamera = (camera: Camera, view: GroundView) => {
     .add(new Vec3(0, Math.cos(angle), Math.sin(angle)).scale(distance));
   camera.lookAt(target);
   camera.updateMatrixWorld();
-  const matrix = new Mat4().copy(camera.projectionViewMatrix);
-  const project: GroundProjection = (x, y, up = 0) => {
-    const at = new Vec3(x, up, y - shear * up).applyMatrix4(matrix);
-    return [((at.x + 1) / 2) * wide, ((1 - at.y) / 2) * high];
-  };
-  return { project, shear };
+  return projection(view);
 };
 
 export type GroundPainter = ReturnType<typeof createGroundPainter>;
@@ -271,7 +253,7 @@ export const createGroundPainter = (canvas: HTMLCanvasElement) => {
   );
   gl.clearColor(r!, g!, b!, 1);
 
-  const shear = { value: 0 };
+  const shear = { value: lean };
   const white = artTexture(gl, whiteCanvas());
 
   // The sun, looking down at the middle of the pitch from far off, and
@@ -369,7 +351,9 @@ export const createGroundPainter = (canvas: HTMLCanvasElement) => {
       castsShadow.removeChild(stands.shadow);
       stands.mesh.geometry.remove();
     }
-    stands = addSolid(standsSolid(plan));
+    stands = addSolid(
+      standsSolid({ ...plan, stands: shownStands(plan.stands) })
+    );
     stands.mesh.setParent(standsHolder);
     if (plan.grass !== mown) {
       mown = plan.grass;
@@ -394,6 +378,7 @@ export const createGroundPainter = (canvas: HTMLCanvasElement) => {
   const frameSprites = createFrameSprites();
   const goals = goalPieces();
   const billboards = createLayers(gl, atlas, frameSprites.bounds.length + 1);
+  billboards.setShear(lean);
   billboards.meshes[0]!.setParent(scene);
   frameSprites.bounds.forEach((bound, i) => {
     const goal = goals.find(piece => piece.order === bound)!;
@@ -425,9 +410,7 @@ export const createGroundPainter = (canvas: HTMLCanvasElement) => {
       billboards.setViewport(wide, high);
     }
     build(view.ground.plan);
-    const { project, shear: lean } = aimCamera(camera, view);
-    shear.value = lean;
-    billboards.setShear(lean);
+    const project = aimCamera(camera, view);
     billboards.fill(frameSprites.layers(frame, sides, view.ground));
     renderer.render({ camera, frustumCull: false, scene, sort: false });
     return project;

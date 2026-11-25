@@ -148,6 +148,22 @@ _Avoid_: Move, attack, which names the original's sequence
 How the player a moment names meets the chance in a clip: a shot, a header, a shot from range or a one-on-one. It shapes how the chance looks, never whether it goes in.
 _Avoid_: Shot type; outcome, which is what the moment decides
 
+**Picture**:
+What a clip shows on screen, in the box it is drawn in, seen from the one fixed tilt behind the bottom goal.
+_Avoid_: Shot, which is a strike at goal; view, frame, which is one step of a clip
+
+**Patch**:
+The ground a clip's picture shows. Seen from the tilt it is wider at the far end than the near, so it is not a rectangle.
+_Avoid_: Viewport, camera rectangle
+
+**Focus**:
+The point on the pitch a clip's camera eases towards, and how closely it looks there. It says where to look, not what is in the picture.
+_Avoid_: Camera position, target
+
+**Subject**:
+What a clip's picture never loses: the ball, or after a goal the scorer.
+_Avoid_: In shot, which mixes the picture with a strike at goal
+
 **Challenge**:
 In a clip's build-up, a defender sliding in on the ball, which the player carrying it always skips past. It changes nothing about the moment.
 _Avoid_: Tackle, which wins the ball

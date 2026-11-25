@@ -384,7 +384,7 @@ test('natural positions offer every pick into a line, over eleven only moves', (
       club: game!.club,
       level: 1,
       manager: 'alex',
-      ruleset: 'natural-positions',
+      ruleset: 'enhanced-15',
       seed: game!.seed
     }),
     kind: 'menu',

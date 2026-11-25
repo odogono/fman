@@ -44,7 +44,7 @@ const firstCarrying: Readonly<Record<string, Game>> = {
   clubForm: newGame('enhanced-12'),
   clubSquads: newGame('enhanced-6'),
   gracePeriod: { ...newGame('enhanced-2'), graceWeeks: 2 },
-  naturalPositions: newGame('natural-positions'),
+  naturalPositions: newGame('enhanced-15'),
   tiringInjuries: injured(newGame('enhanced-5'))
 };
 

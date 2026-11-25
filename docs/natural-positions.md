@@ -1,6 +1,6 @@
 # Natural positions ruleset
 
-[#121](https://github.com/odogono/fman/issues/121). A picked player can play out of position, in goal or in another playing category, and counts for less the further that is from his position ([glossary](../GLOSSARY.md): **Position**, **Out of position**). Measured as the experimental ruleset `natural-positions`: `enhanced-14` plus this rule alone ([ADR 0007](adr/0007-experimental-rules-as-rulesets.md)). It needs [club squads](club-squads.md), whose players have positions.
+[#121](https://github.com/odogono/fman/issues/121). A picked player can play out of position, in goal or in another playing category, and counts for less the further that is from his position ([glossary](../GLOSSARY.md): **Position**, **Out of position**). Measured as the experimental ruleset `natural-positions`: `enhanced-14` plus this rule alone ([ADR 0007](adr/0007-experimental-rules-as-rulesets.md)), then part of [`enhanced-15`](enhanced-rules.md). It needs [club squads](club-squads.md), whose players have positions.
 
 ## The rule
 
@@ -45,3 +45,7 @@ Measured against `enhanced-14`: 200 runs per level and strategy, 10 seasons ([fu
 The target was a league win rate within about 2 points of `enhanced-14` at every level and for every strategy, as for [squad strength](squad-strength.md). It is met without changing the starting values: the largest move is rotating's 2.3 points at level 4. Moving players wins back what fielding a goalkeeper every week costs. Balanced, which used to drop its goalkeeper when he was tired, now gains about 1 point. Rotating still trails by 1–2 points and up to 0.4 promotions in 10 seasons; why isn't measured. Balanced and rotating pick up about one more injury a season, since a goalkeeper now plays most weeks whatever his energy. Of 630 metric means, 85 differ beyond sampling noise, against 167 when the bots moved nobody.
 
 A first measurement, with bots that moved only the goalkeeper, cost balanced and rotating 2–4 points: that is the cost of the rule to a manager who ignores it.
+
+## In Enhanced
+
+`enhanced-15` is `enhanced-14` plus natural positions, so its baseline matches `natural-positions`'s exactly, run for run ([full baseline](baseline/enhanced-15.md)).

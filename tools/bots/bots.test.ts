@@ -50,7 +50,7 @@ for (const strategy of strategies) {
 // Natural positions (#121) offer more answers; the bots must give only offered ones.
 for (const strategy of strategies) {
   test(`${strategy.name} plays a season under natural positions`, () => {
-    const run = short(strategy.name, 7, 'natural-positions');
+    const run = short(strategy.name, 7, 'enhanced-15');
     expect(['dismissed', 'season-limit']).toContain(run.end);
   });
 }
@@ -278,7 +278,7 @@ test('under natural positions the strongest team scores as the sim does', () => 
       club: 1,
       level: 1,
       manager: 'bot',
-      ruleset: 'natural-positions',
+      ruleset: 'enhanced-15',
       seed
     });
     const varied: Game = {
@@ -314,7 +314,7 @@ test('under natural positions the bots move players while it raises strength', (
     club: 1,
     level: 1,
     manager: 'bot',
-    ruleset: 'natural-positions',
+    ruleset: 'enhanced-15',
     seed: 3
   });
   // Every picked player a skill-5 midfielder: midfield is full at 20, so

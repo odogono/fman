@@ -48,7 +48,7 @@ const start = () =>
     club: 1,
     level: 1,
     manager: 'alex',
-    ruleset: 'natural-positions',
+    ruleset: 'enhanced-15',
     seed: 0
   });
 
@@ -76,7 +76,7 @@ test('the Classic squad screen shows the skill counted and the line, in red', ()
 
 /** A session at the selection prompt of a natural positions game. */
 const atSelection = () => {
-  const session = createSession(2 ** 24 - 5, 0, 'natural-positions');
+  const session = createSession(2 ** 24 - 5, 0, 'enhanced-15');
   session.advance(5);
   session.skipPause();
   for (const input of ['alex', '1', '1', '99', '', 'c']) {

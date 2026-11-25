@@ -1771,11 +1771,11 @@ test('Enter on the drawer button opens it without ending the clip', () => {
   const run = toFirstMoment();
   const enter = {
     code: 'Enter',
+    controlFocused: true,
     inputFocused: false,
     key: 'Enter',
     modified: false,
-    repeat: false,
-    viewControlFocused: true
+    repeat: false
   };
   // The browser's own click on the button follows the key.
   expect(run.app.keyDown(enter)).toBe(false);
@@ -1785,6 +1785,23 @@ test('Enter on the drawer button opens it without ending the clip', () => {
   run.app.keyUp();
   expect(run.ticker().shown).toHaveLength(1);
   expect(run.page.highlights!.clip).toMatchObject({ drawer: true, shown: 1 });
+});
+
+test('Enter on a focused Skip all skips all, not to the next clip (#297)', () => {
+  const run = toFirstMoment();
+  const enter = {
+    code: 'Enter',
+    controlFocused: true,
+    inputFocused: false,
+    key: 'Enter',
+    modified: false,
+    repeat: false
+  };
+  // The browser's own click on the button follows the key.
+  expect(run.app.keyDown(enter)).toBe(false);
+  run.app.tap('ticker.skip', false);
+  run.app.keyUp();
+  expect(run.page.highlights!.clip).toMatchObject({ full: true });
 });
 
 test('Skip closes the drawer for the full list', () => {

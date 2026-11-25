@@ -7,6 +7,7 @@ import { canPaintClips, fitClipCanvas, paintClip } from './clip-canvas';
 import { paintShot } from './clip-wipe';
 import type { BarButton } from './context-bar';
 import { rasterText, rasterizeCells } from './glyphs';
+import { clicksOnEnter } from './modern-highlights-paint';
 import { answerOf, createModernView, tapOf } from './modern-view';
 import { amountPanel } from './paint-parts';
 import { paintAttack, paintEmptyPitch } from './pitch';
@@ -514,13 +515,11 @@ export const createBrowserDom = (app: HTMLElement) => {
       if (
         target.keyDown({
           code: event.code,
+          controlFocused: clicksOnEnter(document.activeElement),
           inputFocused: document.activeElement === input,
           key: event.key,
           modified: event.metaKey || event.ctrlKey || event.altKey,
-          repeat: event.repeat,
-          viewControlFocused: !!document.activeElement?.closest(
-            '[data-view-control]'
-          )
+          repeat: event.repeat
         })
       ) {
         event.preventDefault();

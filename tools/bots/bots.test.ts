@@ -1,10 +1,13 @@
 import { expect, test } from 'bun:test';
 
+import { teamStrength } from '../../web/src/sim/league';
 import {
   borrow,
   createNewGame,
+  type Game,
   type Player
 } from '../../web/src/sim/management';
+import type { Ruleset } from '../../web/src/sim/ruleset';
 import { createHarnessRng } from './random';
 import { BotError, playRun, type RunRecord } from './run';
 import {
@@ -16,10 +19,14 @@ import {
 } from './strategies';
 import { compare, significant, summarise } from './summary';
 
-const short = (strategy: string, seed = 7): RunRecord =>
+const short = (
+  strategy: string,
+  seed = 7,
+  ruleset: Ruleset = 'original'
+): RunRecord =>
   playRun({
     level: 4,
-    ruleset: 'original',
+    ruleset,
     seasonLimit: 1,
     seed,
     strategy: strategyNamed(strategy)
@@ -35,6 +42,14 @@ for (const strategy of strategies) {
       const season = run.seasons[0]!;
       expect(season.won + season.drawn + season.lost).toBe(15);
     }
+  });
+}
+
+// Natural positions (#121) offer more answers; the bots must give only offered ones.
+for (const strategy of strategies) {
+  test(`${strategy.name} plays a season under natural positions`, () => {
+    const run = short(strategy.name, 7, 'natural-positions');
+    expect(['dismissed', 'season-limit']).toContain(run.end);
   });
 }
 
@@ -212,5 +227,78 @@ test('random asks for a loan only when one can be accepted', () => {
     expect(answer({ frames: 0, game, paused: false, screen: 'menu' })).not.toBe(
       'l'
     );
+  }
+});
+
+/** The sim's total strength of `team`, with its best goalkeeper in goal. */
+const naturalStrength = (game: Game, team: ReadonlySet<number>) => {
+  const keeper = game.players
+    .filter(p => team.has(p.id) && p.position === 'GK')
+    .sort((a, b) => b.skill - a.skill || a.id - b.id)[0];
+  const players = game.players.map((p): Player => {
+    const { plays: _, ...rest } = p;
+    return team.has(p.id)
+      ? {
+          ...rest,
+          plays: p === keeper ? 'GK' : p.position === 'GK' ? 'DF' : p.position!,
+          status: 2
+        }
+      : { ...rest, status: p.status === 2 ? 1 : p.status };
+  });
+  const [energy, , ...rest] = teamStrength({ ...game, players });
+  return energy! + rest.reduce((a, v) => a + v, 0);
+};
+
+/** The best score of any `size` ids from `pool`, by plain search. */
+const bestOf = (
+  pool: readonly number[],
+  size: number,
+  score: (team: ReadonlySet<number>) => number
+) => {
+  let best = -1;
+  const visit = (from: number, chosen: number[]) => {
+    if (chosen.length === size) {
+      best = Math.max(best, score(new Set(chosen)));
+      return;
+    }
+    for (let i = from; i <= pool.length - (size - chosen.length); i++) {
+      visit(i + 1, [...chosen, pool[i]!]);
+    }
+  };
+  visit(0, []);
+  return best;
+};
+
+test('under natural positions the strongest team scores as the sim does', () => {
+  const rng = createHarnessRng(9);
+  for (let seed = 0; seed < 8; seed++) {
+    const game = createNewGame({
+      club: 1,
+      level: 1,
+      manager: 'bot',
+      ruleset: 'natural-positions',
+      seed
+    });
+    const varied: Game = {
+      ...game,
+      players: game.players.map(p => ({
+        ...p,
+        energy: rng.int(1, 20),
+        skill: rng.int(1, 5),
+        status: p.status === 0 ? p.status : rng.pick([1, 1, 2, 3] as const)
+      }))
+    };
+    const pool = varied.players.filter(p => p.status === 1 || p.status === 2);
+    expect(naturalStrength(varied, strongestTeam(varied))).toBe(
+      bestOf(
+        pool.map(p => p.id),
+        Math.min(11, pool.length),
+        naturalStrength.bind(undefined, varied)
+      )
+    );
+    const keepers = [...topEleven(varied, p => p.skill)].filter(
+      id => varied.players[id - 1]!.position === 'GK'
+    );
+    expect(keepers).toHaveLength(pool.some(p => p.position === 'GK') ? 1 : 0);
   }
 });

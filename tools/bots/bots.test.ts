@@ -299,6 +299,10 @@ test('under natural positions the strongest team scores as the sim does', () => 
     const keepers = [...topEleven(varied, p => p.skill)].filter(
       id => varied.players[id - 1]!.position === 'GK'
     );
-    expect(keepers).toHaveLength(pool.some(p => p.position === 'GK') ? 1 : 0);
+    const outfield = pool.filter(p => p.position !== 'GK').length;
+    const keeping = pool.length - outfield;
+    expect(keepers).toHaveLength(
+      Math.min(keeping, Math.max(Number(keeping > 0), 11 - outfield))
+    );
   }
 });

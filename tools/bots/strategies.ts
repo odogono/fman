@@ -69,7 +69,7 @@ const sameIds = (a: readonly Player[], b: ReadonlySet<number>) =>
  * The eleven (or fewer) available players with the best scores. Under
  * natural positions (#121) that is the best goalkeeper and the ten best
  * outfielders, since a second goalkeeper counts 1 outfield and an empty
- * goal costs defence.
+ * goal costs defence; other goalkeepers only make up the numbers.
  */
 export const topEleven = (game: Game, score: (p: Player) => number) => {
   const ranked = [...available(game)].sort(
@@ -78,10 +78,13 @@ export const topEleven = (game: Game, score: (p: Player) => number) => {
   if (!naturalPositions(game.ruleset)) {
     return new Set(ranked.slice(0, 11).map(p => p.id));
   }
-  const keeper = ranked.find(p => p.position === 'GK');
+  const [keeper, ...spare] = ranked.filter(p => p.position === 'GK');
   const outfield = ranked.filter(p => p.position !== 'GK');
+  // Spare goalkeepers make up the eleven when outfielders run out.
   return new Set(
-    [...(keeper ? [keeper] : []), ...outfield].slice(0, 11).map(p => p.id)
+    [...(keeper ? [keeper] : []), ...outfield, ...spare]
+      .slice(0, 11)
+      .map(p => p.id)
   );
 };
 

@@ -13,7 +13,7 @@ import {
   skillAt
 } from './natural-positions';
 import { createRng } from './rng';
-import { experiments, naturalPositions, ruleChangeNeeds } from './ruleset';
+import { introducedIn, naturalPositions, ruleChangeNeeds } from './ruleset';
 import { createSession } from './session';
 import type { Position } from './squads';
 import { viewOn } from './view-on';
@@ -54,20 +54,17 @@ const game = (players = squad()): Game => ({
     club: 1,
     level: 1,
     manager: 'alex',
-    ruleset: 'natural-positions',
+    ruleset: 'enhanced-15',
     seed: 1
   }),
   morale: 10,
   players
 });
 
-test('natural positions are measured on Enhanced version 14 and need squads', () => {
-  expect(experiments.find(e => e.name === 'natural-positions')?.base).toBe(
-    'enhanced-14'
-  );
+test('Enhanced version 15 brings natural positions, which need squads', () => {
+  expect(introducedIn('naturalPositions')).toBe('enhanced-15');
   expect(ruleChangeNeeds.naturalPositions).toEqual(['clubSquads']);
   expect(naturalPositions('enhanced-14')).toBe(false);
-  expect(naturalPositions('natural-positions')).toBe(true);
 });
 
 test('out of position a player counts one less for each line away, never below 0', () => {
@@ -101,7 +98,7 @@ test('a new game puts every picked player in his position, one goalkeeper in goa
     club: 1,
     level: 1,
     manager: 'alex',
-    ruleset: 'natural-positions',
+    ruleset: 'enhanced-15',
     seed: 1
   });
   const picked = started.players.filter(p => p.status === 2);
@@ -198,7 +195,7 @@ test('a line answer is a number and a letter, in either case', () => {
 });
 
 test('the selection prompt takes a line answer only under natural positions', () => {
-  for (const ruleset of ['natural-positions', 'enhanced-14'] as const) {
+  for (const ruleset of ['enhanced-15', 'enhanced-14'] as const) {
     const session = createSession(2 ** 24 - 5, 0, ruleset);
     session.advance(5);
     session.skipPause();
@@ -214,8 +211,6 @@ test('the selection prompt takes a line answer only under natural positions', ()
     )!;
     submitInput(session, `${mover.id}a`);
     const after = viewOn(session, 'selection').game.players[mover.id - 1]!;
-    expect(playsIn(after)).toBe(
-      ruleset === 'natural-positions' ? 'FW' : undefined
-    );
+    expect(playsIn(after)).toBe(ruleset === 'enhanced-15' ? 'FW' : undefined);
   }
 });

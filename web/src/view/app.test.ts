@@ -1169,8 +1169,15 @@ const pick = (run: ReturnType<typeof harness>, id: string) => {
 const liveRows = (pickTeam: PickTeam) =>
   pickTeam.groups.flatMap(g => g.players).filter(row => row.answer);
 
+// Under the Original rules, as natural positions (#121) arrange the team
+// by dragging instead.
+const modernOriginal = JSON.stringify({
+  presentation: 'modern',
+  rules: 'original'
+});
+
 test('Modern mode picks the team on its own screen, adding then dropping as the original does', () => {
-  const run = harness({ options: modernOptions });
+  const run = harness({ options: modernOriginal });
   toTeam(run);
   const team = run.page.pickTeam!;
   // The team prompt: strengths, read-only rows, change or kick off.
@@ -1228,6 +1235,20 @@ test('Modern mode picks the team on its own screen, adding then dropping as the 
   expect(run.page.pickTeam).toBeUndefined();
 });
 
+test('a tap on a line puts the player there under natural positions', () => {
+  const run = harness({ options: modernOptions });
+  toTeam(run);
+  pick(run, 'team.change');
+  const shown = run.page.pickTeam!;
+  expect(shown.arranging).toBe(true);
+  const mover = shown.groups.find(g => g.line === 'M')!.players[0]!;
+  pick(run, `selection.place.${mover.number}.A`);
+  const moved = run.page.pickTeam!.groups.find(g => g.line === 'A')!;
+  expect(
+    moved.players.find(r => r.number === mover.number)?.playsIn?.line
+  ).toBe('A');
+});
+
 test('every live pick team row and action is an offered answer', () => {
   const run = harness({ options: modernOptions });
   toTeam(run);
@@ -1237,9 +1258,13 @@ test('every live pick team row and action is an offered answer', () => {
     const offered = new Set(
       offeredAnswers(run.view()).map(answer => answer.id)
     );
+    // A disabled action submits nothing, so only enabled ones need offering.
     for (const id of [
       ...liveRows(shown).map(row => row.answer!),
-      ...shown.actions.map(action => action.id)
+      ...shown.groups.flatMap(g =>
+        g.players.flatMap(row => row.placings?.map(p => p.answer) ?? [])
+      ),
+      ...shown.actions.filter(action => action.enabled).map(action => action.id)
     ]) {
       expect(offered.has(id)).toBe(true);
     }
@@ -1253,12 +1278,19 @@ test('the pick team screen groups by category and follows the ruleset', () => {
   const enhanced = harness({ options: modernOptions });
   toTeam(enhanced);
   const shown = enhanced.page.pickTeam!;
-  // Club squads: a goalkeeper heads Defence; injuries count weeks, up to
-  // four under match injuries.
+  // Natural positions (#121): grouped by where each plays, all in position
+  // in a new game; injuries count weeks, up to four under match injuries.
   expect(shown.weeksOut).toBe(4);
-  expect(shown.groups[0]!.players[0]!.tag).toBe('G');
-  expect(shown.groups[1]!.players.every(row => row.tag === 'M')).toBe(true);
-  expect(shown.groups[2]!.players.every(row => row.tag === 'A')).toBe(true);
+  expect(shown.groups.map(g => g.line)).toEqual([
+    'G',
+    'D',
+    'M',
+    'A',
+    'reserves'
+  ]);
+  for (const group of shown.groups.slice(0, 4)) {
+    expect(group.players.every(row => row.tag === group.line)).toBe(true);
+  }
 
   const original = harness({
     options: JSON.stringify({ presentation: 'modern', rules: 'original' })

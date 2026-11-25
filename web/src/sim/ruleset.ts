@@ -16,7 +16,8 @@ import {
  * and is retired once the change joins Enhanced (`even-difficulty`,
  * `grace-period`, `lasting-skill`, `steep-difficulty`, `tiring-injuries`,
  * `club-squads`, `moment-highlights`, `clearances`, `match-injuries`,
- * `penalties`, `club-form`, `squad-strength`, `even-table`).
+ * `penalties`, `club-form`, `squad-strength`, `even-table`,
+ * `natural-positions`).
  */
 
 /** The difficulty curves: what each level adds to an opponent's strength. */
@@ -106,7 +107,8 @@ export const enhancedVersions = [
   { adds: { penalties: true }, name: 'enhanced-11' },
   { adds: { clubForm: true }, name: 'enhanced-12' },
   { adds: { squadStrength: true }, name: 'enhanced-13' },
-  { adds: { difficulty: 'steep-table', evenTable: true }, name: 'enhanced-14' }
+  { adds: { difficulty: 'steep-table', evenTable: true }, name: 'enhanced-14' },
+  { adds: { naturalPositions: true }, name: 'enhanced-15' }
 ] as const satisfies readonly { adds: Adds; name: `enhanced-${number}` }[];
 
 type EnhancedVersion = (typeof enhancedVersions)[number]['name'];
@@ -116,13 +118,7 @@ type EnhancedVersion = (typeof enhancedVersions)[number]['name'];
  * rules or an Enhanced version) plus one rule change. An entry goes when its
  * change is promoted into an Enhanced version.
  */
-export const experiments = [
-  {
-    adds: { naturalPositions: true },
-    base: 'enhanced-14',
-    name: 'natural-positions'
-  }
-] as const satisfies readonly {
+export const experiments = [] as const satisfies readonly {
   adds: Adds;
   base: 'original' | EnhancedVersion;
   name: string;
@@ -352,8 +348,8 @@ export const evenTable = (ruleset: Ruleset) => changes[ruleset].evenTable;
 /**
  * Whether a picked player can play out of position, in goal or in another
  * playing category, counting less the further it is from his position (#121,
- * measured as `natural-positions` against `enhanced-14`). It needs club
- * squads, whose players have positions.
+ * measured as `natural-positions` against `enhanced-14`, then part of
+ * `enhanced-15`). It needs club squads, whose players have positions.
  */
 export const naturalPositions = (ruleset: Ruleset) =>
   changes[ruleset].naturalPositions;

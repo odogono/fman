@@ -7,7 +7,7 @@ import {
   type ClipSide,
   type Line
 } from './clip-script/model';
-import { setThePitch, type Clip } from './clip-script/pitch';
+import { setThePitch, steer, type Clip } from './clip-script/pitch';
 import {
   arrived,
   chase,
@@ -304,5 +304,18 @@ test('no run takes a player through the boards', () => {
   for (const p of trail!) {
     expect(p.d).toBeLessThanOrEqual(pitchLength + playerStops.d);
     expect(p.x).toBeLessThanOrEqual(pitchWidth + playerStops.x);
+  }
+});
+
+test('a player steered into the boards by a held player stays inside them', () => {
+  const clip = emptyPitch();
+  const boards = pitchWidth + playerStops.x;
+  for (let f = 0; f < 20; f++) {
+    // Held against the boards, with a defender squeezed in beside them.
+    at(clip, 9, { d: 50, x: boards - 0.5 });
+    at(clip, 16, { d: 50, x: boards - 0.1 });
+    clip.seen = clip.movers.map(m => ({ d: m.d, x: m.x }));
+    steer(clip, new Set([9]));
+    expect(clip.movers[16]!.x).toBeLessThanOrEqual(boards);
   }
 });

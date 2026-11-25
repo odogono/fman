@@ -105,7 +105,8 @@ const draggable = (
   groups: readonly PickTeamGroup[]
 ) => {
   element.addEventListener('pointerdown', down => {
-    if (down.button !== 0) {
+    // While a player is chosen the headings take him, so nobody drags.
+    if (down.button !== 0 || arranged.get(pane)?.chosen !== undefined) {
       return;
     }
     const touch = down.pointerType !== 'mouse';

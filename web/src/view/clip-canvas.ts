@@ -12,8 +12,8 @@ import {
   type ClipSide
 } from './clips';
 import { playerRows } from './ground/frame-sprites';
-import type { GroundPainter } from './ground/painter';
 import { surround } from './ground/pitch';
+import { createGroundStage } from './ground/stage';
 import type { MatchGround } from './match-ground';
 
 // Paints a clip's frame (#144): the ground in 3D (ADR 0018), with each
@@ -86,60 +86,20 @@ const colourOf = (sides: ClipSides, player: ClipFrame['players'][number]) => {
  * canvas, which copies its picture. OGL loads only when the first clip
  * paints.
  */
-const ground: {
-  canvas?: HTMLCanvasElement;
-  create?: (canvas: HTMLCanvasElement) => GroundPainter;
-  loading?: Promise<void>;
-  /** WebGL was lost, until the browser gives it back. */
-  lost: boolean;
-  painter?: GroundPainter | undefined;
-  usable?: boolean;
-} = { lost: false };
-
-const groundCanvas = () => {
-  if (!ground.canvas) {
-    const canvas = document.createElement('canvas');
-    const options: WebGLContextAttributes = { alpha: false, antialias: false };
-    const gl =
-      canvas.getContext('webgl2', options) ??
-      canvas.getContext('webgl', options);
-    ground.canvas = canvas;
-    ground.usable = typeof gl?.drawingBufferWidth === 'number';
-    // Phones drop WebGL now and then, as an app goes into the background;
-    // asking keeps the chance of getting it back.
-    canvas.addEventListener('webglcontextlost', event => {
-      event.preventDefault();
-      ground.lost = true;
-    });
-    canvas.addEventListener('webglcontextrestored', () => {
-      ground.lost = false;
-      ground.painter = ground.create?.(canvas);
-    });
-  }
-  return ground.canvas;
-};
+const stage = createGroundStage({
+  loadPainter: async () =>
+    (await import('./ground/painter')).createGroundPainter,
+  makeCanvas: () => document.createElement('canvas')
+});
 
 /**
  * Whether this browser can paint the clips: without WebGL, the highlights
  * show the ticker without clips (ADR 0018).
  */
-export const canPaintClips = () => {
-  groundCanvas();
-  return ground.usable ?? false;
-};
+export const canPaintClips = () => stage.usable();
 
 /** Loads the ground's painter, once; clips paint only the surround until it has. */
-export const loadGround = () => {
-  ground.loading ??= import('./ground/painter').then(
-    ({ createGroundPainter }) => {
-      ground.create = createGroundPainter;
-      if (canPaintClips()) {
-        ground.painter = createGroundPainter(groundCanvas());
-      }
-    }
-  );
-  return ground.loading;
-};
+export const loadGround = () => stage.load();
 
 /**
  * The patch of pitch a box shows, in metres, from the camera's width across
@@ -221,24 +181,17 @@ export const paintClip = (
   // The ground and the sprites, rendered at one pixel to an art pixel and
   // scaled up in whole device pixels.
   const pixel = artPixelSize(scale, ratio);
-  const { lost, painter } = ground;
-  if (!painter && canPaintClips()) {
-    void loadGround();
-  }
-  const project =
-    painter && !lost
-      ? painter.paint(frame, sides, {
-          ground: playedAt,
-          high: Math.ceil((height * ratio) / pixel),
-          metresPerPixel: pixel / (scale * ratio),
-          tilt: overlays.tilt ?? clipTilt,
-          wide: Math.ceil((width * ratio) / pixel),
-          x: camera.x,
-          y: camera.y
-        })
-      : undefined;
+  const project = stage.paint(frame, sides, {
+    ground: playedAt,
+    high: Math.ceil((height * ratio) / pixel),
+    metresPerPixel: pixel / (scale * ratio),
+    tilt: overlays.tilt ?? clipTilt,
+    wide: Math.ceil((width * ratio) / pixel),
+    x: camera.x,
+    y: camera.y
+  });
   if (project) {
-    const picture = groundCanvas();
+    const { picture } = stage;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(picture, 0, 0, picture.width * pixel, picture.height * pixel);

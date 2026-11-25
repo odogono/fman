@@ -5,8 +5,22 @@ import {
   type MatchFixture
 } from '../sim/league';
 import type { Game, Player } from '../sim/management';
+import {
+  countedSkill,
+  letterFor,
+  lineLetters,
+  lineOrder,
+  outOfPosition,
+  playsIn,
+  skillAt,
+  type LineLetter
+} from '../sim/natural-positions';
 import { offeredAnswers } from '../sim/offers';
-import { longestInjury, tiringInjuries } from '../sim/ruleset';
+import {
+  longestInjury,
+  naturalPositions,
+  tiringInjuries
+} from '../sim/ruleset';
 import type { View } from '../sim/session';
 import { inSquadOrder, playerCategory } from '../sim/squads';
 import { clubName, type ClubName } from './home';
@@ -25,6 +39,13 @@ export type PickTeamRow = Readonly<{
   marker: string;
   name: string;
   number: number;
+  /**
+   * Under natural positions (#121), the lines he can be put in, each with
+   * the offered answer that puts him there and the skill he'd count there.
+   */
+  placings?: readonly Placing[];
+  /** Out of position (#121): the letter of the line he plays in, and what he counts there. */
+  playsIn?: Readonly<{ counts: number; line: LineLetter }>;
   skill: number;
   status: 'picked' | 'injured' | 'reserve';
   /** The row's block: D, M or A by category, G for a goalkeeper. */
@@ -32,9 +53,21 @@ export type PickTeamRow = Readonly<{
   value: number;
 }>;
 
+/** A line a player can be put in, by an offered answer (#121). */
+export type Placing = Readonly<{
+  answer: string;
+  counts: number;
+  line: LineLetter;
+}>;
+
 export type PickTeamGroup = Readonly<{
   /** Defence 0, midfield 1, attack 2: the row ink. */
   category: number;
+  /**
+   * Under natural positions (#121) the groups are where players play: a
+   * line, or the reserves and injured.
+   */
+  line?: LineLetter | 'reserves';
   players: readonly PickTeamRow[];
   title: string;
 }>;
@@ -60,6 +93,11 @@ export type Strengths = Readonly<{
 
 export type PickTeam = Readonly<{
   actions: readonly PickTeamAction[];
+  /**
+   * Under natural positions (#121) on the selection prompt, players are
+   * moved by dragging, or by choosing one and then a line.
+   */
+  arranging?: boolean;
   groups: readonly PickTeamGroup[];
   /** What a tap on a live row does, on the selection prompt only. */
   hint?: string;
@@ -110,11 +148,69 @@ const rowFor = (
           : '',
     name: player.name.trim(),
     number: player.id,
+    ...(outOfPosition(player)
+      ? {
+          playsIn: {
+            counts: countedSkill(player),
+            line: letterFor(player.plays!)
+          }
+        }
+      : {}),
     skill: player.skill,
     status,
     tag: player.position === 'GK' ? 'G' : 'DMA'.charAt(playerCategory(player)),
     value: player.value
   };
+};
+
+/** The lines an answer on offer can put the player in (#121). */
+const placingsFor = (
+  player: Player,
+  offered: ReadonlySet<string>
+): readonly Placing[] =>
+  lineOrder.flatMap(line => {
+    const answer = `selection.place.${player.id}.${line}`;
+    return offered.has(answer)
+      ? [{ answer, counts: skillAt(player, lineLetters[line]), line }]
+      : [];
+  });
+
+const lineTitles: Readonly<Record<LineLetter, string>> = {
+  A: 'Attack',
+  D: 'Defence',
+  G: 'Goal',
+  M: 'Midfield'
+};
+
+/**
+ * Under natural positions (#121), the squad by where each picked player
+ * plays, goal first, then the reserves and injured.
+ */
+const lineGroups = (
+  squad: readonly Player[],
+  row: (player: Player) => PickTeamRow,
+  offered: ReadonlySet<string>
+): PickTeamGroup[] => {
+  const withPlacings = (player: Player): PickTeamRow => {
+    const placings = placingsFor(player, offered);
+    return { ...row(player), ...(placings.length ? { placings } : {}) };
+  };
+  return [
+    ...lineOrder.map(line => ({
+      category: line === 'M' ? 1 : line === 'A' ? 2 : 0,
+      line,
+      players: squad
+        .filter(p => playsIn(p) === lineLetters[line])
+        .map(withPlacings),
+      title: lineTitles[line]
+    })),
+    {
+      category: 0,
+      line: 'reserves' as const,
+      players: squad.filter(p => p.status !== 2).map(withPlacings),
+      title: 'Reserves and injured'
+    }
+  ];
 };
 
 /** As on the original comparison screen: the managed club first. */
@@ -152,13 +248,18 @@ export const pickTeamFor = (view: View): PickTeam | undefined => {
     label: string,
     tone: PickTeamAction['tone']
   ): PickTeamAction => ({ enabled: offered.has(id), id, label, tone });
-  const groups = groupTitles.map((title, category) => ({
-    category,
-    players: squad
-      .filter(player => playerCategory(player) === category)
-      .map(player => rowFor(player, weeksOut, offered, prompt, verb)),
-    title
-  }));
+  const row = (player: Player) =>
+    rowFor(player, weeksOut, offered, prompt, verb);
+  const natural = naturalPositions(game.ruleset);
+  const groups = natural
+    ? lineGroups(squad, row, offered)
+    : groupTitles.map((title, category) => ({
+        category,
+        players: squad
+          .filter(player => playerCategory(player) === category)
+          .map(row),
+        title
+      }));
   if (view.screen === 'team') {
     return {
       actions: [
@@ -181,6 +282,29 @@ export const pickTeamFor = (view: View): PickTeam | undefined => {
       hint: 'Tap a player to sell',
       picked,
       prompt: 'squad',
+      ...longest
+    };
+  }
+  if (natural) {
+    // Over eleven, Done waits for a drop, as the original won't take 99.
+    return {
+      actions: [
+        dropping
+          ? {
+              enabled: false,
+              id: 'selection.done',
+              label: `Drop ${picked - 11} to continue`,
+              tone: 'primary'
+            }
+          : action('selection.done', 'Done – continue', 'primary')
+      ],
+      arranging: true,
+      groups,
+      hint: dropping
+        ? `${picked} picked – drag one to the reserves`
+        : 'Drag a player to a line, or tap him, then a line',
+      picked,
+      prompt: 'selection',
       ...longest
     };
   }

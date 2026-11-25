@@ -26,7 +26,7 @@ The design came from a [prototype](https://github.com/odogono/fman/tree/prototyp
 
 ## The bots
 
-The bots play as before, with one change under this rule: they field their best goalkeeper in goal and leave other goalkeepers out unless they're needed to make eleven. They never move anyone else out of position, so this measures the rule's cost to a manager who doesn't use it, not what moving players can win.
+Under this rule the bots field their best goalkeeper in goal and leave other goalkeepers out unless they're needed to make eleven. Once the team is picked, balanced, rotating, aggressive and recovering then move players one at a time, each time making the move that most raises the team's total strength, until no move helps. Passive, which never manages its squad, only puts its best goalkeeper in goal. Random answers at random, so it sometimes plays players out of position.
 
 ## Result
 
@@ -34,12 +34,14 @@ Measured against `enhanced-14`: 200 runs per level and strategy, 10 seasons ([fu
 
 | Level | Passive       | Balanced      | Aggressive    | Rotating      |
 | ----- | ------------- | ------------- | ------------- | ------------- |
-| 1     | 37.7% → 36.6% | 84.7% → 82.8% | 64.5% → 63.0% | 75.9% → 73.6% |
-| 2     | 19.3% → 19.8% | 68.8% → 66.7% | 41.9% → 42.7% | 55.5% → 52.9% |
-| 3     | 15.9% → 14.7% | 62.0% → 59.4% | 35.3% → 35.1% | 46.9% → 43.9% |
-| 4     | 12.6% → 12.2% | 54.9% → 50.9% | 29.4% → 28.2% | 41.7% → 38.2% |
-| 5     | 10.5% → 10.6% | 47.6% → 45.2% | 25.0% → 24.7% | 36.1% → 33.5% |
-| 6     | 8.9% → 8.3%   | 41.5% → 38.6% | 22.5% → 20.6% | 32.5% → 30.3% |
-| 7     | 8.1% → 7.9%   | 38.0% → 35.2% | 21.0% → 20.2% | 30.2% → 28.3% |
+| 1     | 37.7% → 36.6% | 84.7% → 85.6% | 64.5% → 64.6% | 75.9% → 74.7% |
+| 2     | 19.3% → 19.8% | 68.8% → 70.0% | 41.9% → 42.6% | 55.5% → 54.3% |
+| 3     | 15.9% → 14.7% | 62.0% → 63.2% | 35.3% → 35.2% | 46.9% → 45.6% |
+| 4     | 12.6% → 12.2% | 54.9% → 56.3% | 29.4% → 29.0% | 41.7% → 39.4% |
+| 5     | 10.5% → 10.6% | 47.6% → 48.2% | 25.0% → 25.5% | 36.1% → 35.0% |
+| 6     | 8.9% → 8.3%   | 41.5% → 42.6% | 22.5% → 22.1% | 32.5% → 31.4% |
+| 7     | 8.1% → 7.9%   | 38.0% → 39.7% | 21.0% → 20.0% | 30.2% → 28.3% |
 
-Balanced and rotating lose 2–4 points and up to half a promotion in 10 seasons, and pick up about one more injury a season. Before, they fielded goalkeepers like anyone else, by skill × energy; now one always plays, tired or not, and his injury leaves goal empty. Of 630 metric means, 167 differ beyond sampling noise.
+The target was a league win rate within about 2 points of `enhanced-14` at every level and for every strategy, as for [squad strength](squad-strength.md). It is met without changing the starting values: the largest move is rotating's 2.3 points at level 4. Moving players wins back what fielding a goalkeeper every week costs. Balanced, which used to drop its goalkeeper when he was tired, now gains about 1 point. Rotating still trails by 1–2 points and up to 0.4 promotions in 10 seasons; why isn't measured. Balanced and rotating pick up about one more injury a season, since a goalkeeper now plays most weeks whatever his energy. Of 630 metric means, 85 differ beyond sampling noise, against 167 when the bots moved nobody.
+
+A first measurement, with bots that moved only the goalkeeper, cost balanced and rotating 2–4 points: that is the cost of the rule to a manager who ignores it.

@@ -4,7 +4,7 @@ import type { MatchFixture } from '../sim/league';
 import type { Game } from '../sim/management';
 import type { Moment } from '../sim/moments';
 import { tickerPause } from '../sim/ticker';
-import { clipTilt, fitClipCanvas, loadGround, paintClip } from './clip-canvas';
+import { fitClipCanvas, loadGround, paintClip } from './clip-canvas';
 import { checkClip, clipIssueKinds, type ClipIssue } from './clip-checks';
 import {
   clipInputFor,
@@ -113,13 +113,8 @@ const settings = {
   side: 'home' as 'away' | 'home',
   speed: 1,
   /** For an injury (#110): tackled, or pulling up. */
-  tackled: 'yes' as 'no' | 'yes',
-  /** The camera's angle from straight down, in degrees (ADR 0018). */
-  tilt: clipTilt
+  tackled: 'yes' as 'no' | 'yes'
 };
-
-/** The camera as the settings tilt it. */
-const groundView = () => ({ tilt: settings.tilt });
 
 /** Both kits, home first: the loaded match's, or the settings'. */
 const debugKits = () =>
@@ -667,10 +662,6 @@ const renderControls = () => {
     {},
     element('legend', {}, 'Ground'),
     labelled(
-      'Tilt',
-      number(settings.tilt, 0, 60, value => (settings.tilt = value))
-    ),
-    labelled(
       'Club',
       select(
         [
@@ -979,16 +970,10 @@ Object.assign(globalThis, {
         script.frame(frame),
         { attack: script.input.attack, defence: script.input.defence },
         debugGround(),
-        fitClipCanvas(canvas),
-        groundView()
+        fitClipCanvas(canvas)
       ),
     paintSequence: (index: number, frame: number) =>
-      paintShot(
-        context,
-        shotAt(sequence, index, frame),
-        fitClipCanvas(canvas),
-        groundView()
-      ),
+      paintShot(context, shotAt(sequence, index, frame), fitClipCanvas(canvas)),
     get script() {
       return script;
     },
@@ -1018,7 +1003,6 @@ const tick = (now: number) => {
     debugGround(),
     fitClipCanvas(canvas),
     {
-      ...groundView(),
       ids: settings.ids,
       ...(settings.path ? { path } : {}),
       ...(settings.problems

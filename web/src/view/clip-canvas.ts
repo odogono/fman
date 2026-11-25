@@ -2,16 +2,14 @@ import { drawCard, drawLabel, overlayUnit } from './clip-card';
 import { drawGoal } from './clip-goal';
 import { artPixelSize } from './clip-sprites';
 import {
-  cameraAspect,
   cameraWide,
   pitchLength,
   pitchWidth,
-  shortestCameraAspect,
-  tallestCameraAspect,
   type ClipFrame,
   type ClipSide
 } from './clips';
 import { playerRows } from './ground/frame-sprites';
+import { framePicture, patchFor } from './ground/picture';
 import { surround } from './ground/pitch';
 import { createGroundStage } from './ground/stage';
 import type { MatchGround } from './match-ground';
@@ -19,7 +17,7 @@ import type { MatchGround } from './match-ground';
 // Paints a clip's frame (#144): the ground in 3D (ADR 0018), with each
 // player and the ball as sprites (#146) on it, then the label, the card,
 // the goal announcement and a mini-map over it, on whole device pixels.
-// The camera shows a patch of the pitch; the mini-map shows it all.
+// The picture shows a patch of the pitch (#285); the mini-map shows it all.
 
 export type ClipSides = Readonly<{ attack: ClipSide; defence: ClipSide }>;
 
@@ -33,40 +31,34 @@ export type ClipOverlays = Readonly<{
    * players (indexes into the frame's players) and is listed in a corner.
    */
   problems?: readonly Readonly<{ players: readonly number[]; text: string }>[];
-  /** The camera at another tilt, for the debug page. */
-  tilt?: number;
 }>;
 
-/** The camera's angle from straight down, in degrees, behind the bottom goal. */
-export const clipTilt = 35;
+/**
+ * A box taller than this, height over width, as on a tall phone, is filled
+ * down to it: the picture keeps its width, so a taller box shows more of
+ * the pitch's length, never a closer picture.
+ */
+const tallestBox = 2;
 
 /**
  * A box wider than square, as on a wide window (#255), is filled down to
  * this shape: half as tall as it is wide.
  */
 const widestBox = 0.5;
-/**
- * On a box wider than square, the camera shows no more of the pitch's
- * width than this: the pitch and a little of each touchline.
- */
-const widestPatch = pitchWidth + 12;
 
 /**
  * Sizes `canvas` to its box at the screen's resolution, and returns its
- * size in CSS pixels. Down to square, the camera keeps its width, so a box
- * taller or shorter than the camera's shape shows more or less of the
- * pitch's length, between the shortest and tallest shapes. A box wider than
- * square keeps the length a square shows and widens instead (`patchFor`).
+ * size in CSS pixels. Down to square, the picture keeps its width, so a
+ * taller box shows more of the pitch's length, up to the tallest shape. A
+ * box wider than square keeps the length a square shows and widens instead
+ * (`patchFor`).
  */
 export const fitClipCanvas = (canvas: HTMLCanvasElement) => {
   const ratio = globalThis.devicePixelRatio || 1;
   const width = Math.max(1, canvas.clientWidth);
   const height =
     width *
-    Math.min(
-      tallestCameraAspect,
-      Math.max(widestBox, canvas.clientHeight / width)
-    );
+    Math.min(tallestBox, Math.max(widestBox, canvas.clientHeight / width));
   const pixelsWide = Math.round(width * ratio);
   const pixelsHigh = Math.round(height * ratio);
   if (canvas.width !== pixelsWide || canvas.height !== pixelsHigh) {
@@ -102,23 +94,6 @@ export const canPaintClips = () => stage.usable();
 export const loadGround = () => stage.load();
 
 /**
- * The patch of pitch a box shows, in metres, from the camera's width across
- * it (`across`): its width and length. Down to square the width holds and
- * the length follows the box. Wider than square, the box keeps the length a
- * square would show, closing in as the camera does for a moment, and the
- * width grows to fill it, up to the pitch and a little touchline; past
- * that, the length grows instead.
- */
-export const patchFor = (across: number, width: number, height: number) => {
-  const aspect = height / width;
-  if (aspect >= shortestCameraAspect) {
-    return { length: across * aspect, width: across };
-  }
-  const wide = Math.min(across / aspect, Math.max(across, widestPatch));
-  return { length: wide * aspect, width: wide };
-};
-
-/**
  * Paints one frame, played at `playedAt`, into a box `width` by `height`
  * CSS pixels.
  */
@@ -131,44 +106,9 @@ export const paintClip = (
   overlays: ClipOverlays = {}
 ) => {
   const { height, ratio, width } = size;
-  const aspect = height / width;
-  const patch = patchFor(frame.camera.width, width, height);
-  // A taller patch than the clip framed is kept as far onto the pitch as
-  // the clip's own; the ball stays in shot, since the patch only grew. A
-  // shorter one follows the ball, so it never leaves the picture.
-  const halfLength = patch.length / 2;
-  const onPitch =
-    halfLength * 2 > pitchLength + 16
-      ? pitchLength / 2
-      : Math.min(
-          Math.max(frame.camera.y, halfLength - 8),
-          pitchLength - halfLength + 8
-        );
-  const reachToBall = Math.max(0, halfLength - 3);
-  // A patch wider than the camera's keeps as far onto the pitch as it can,
-  // showing no more than 6 m beyond either touchline.
-  const halfWidth = patch.width / 2;
-  const camera = {
-    ...frame.camera,
-    width: patch.width,
-    x:
-      patch.width === frame.camera.width
-        ? frame.camera.x
-        : halfWidth * 2 >= pitchWidth + 12
-          ? pitchWidth / 2
-          : Math.min(
-              Math.max(frame.camera.x, halfWidth - 6),
-              pitchWidth - halfWidth + 6
-            ),
-    y:
-      aspect < cameraAspect
-        ? Math.min(
-            Math.max(onPitch, frame.ball.y - reachToBall),
-            frame.ball.y + reachToBall
-          )
-        : onPitch
-  };
-  const scale = width / camera.width;
+  const picture = framePicture(frame.focus, frame.subject, { height, width });
+  /** CSS pixels to a metre on the ground, at the picture's centre. */
+  const scale = 1 / picture.metresPerPixel;
   // The width the cards and mini-map are sized to: the box's, or on a box
   // wider than square, as if it were only as wide as the camera's own patch
   // at its widest, so they keep their size beside the players.
@@ -185,10 +125,9 @@ export const paintClip = (
     ground: playedAt,
     high: Math.ceil((height * ratio) / pixel),
     metresPerPixel: pixel / (scale * ratio),
-    tilt: overlays.tilt ?? clipTilt,
     wide: Math.ceil((width * ratio) / pixel),
-    x: camera.x,
-    y: camera.y
+    x: picture.x,
+    y: picture.y
   });
   if (project) {
     const { picture } = stage;
@@ -203,11 +142,10 @@ export const paintClip = (
     y: number,
     up = 0
   ): readonly [number, number] => {
+    // The render's own projection, once there is one, is the picture's in
+    // its whole art pixels.
     if (!project) {
-      return [
-        width / 2 + (x - camera.x) * scale,
-        height / 2 + (y - up - camera.y) * scale
-      ];
+      return picture.project(x, y, up);
     }
     const [px, py] = project(x, y, up);
     return [(px * pixel) / ratio, (py * pixel) / ratio];
@@ -300,14 +238,14 @@ export const paintClip = (
     ctx.moveTo(left, top + mapHeight / 2);
     ctx.lineTo(left + mapWidth, top + mapHeight / 2);
     ctx.stroke();
-    // The patch the camera shows.
+    // The patch the picture shows, wider at the far end.
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-    ctx.strokeRect(
-      left + (camera.x - camera.width / 2) * unit,
-      top + (camera.y - (camera.width * aspect) / 2) * unit,
-      camera.width * unit,
-      camera.width * aspect * unit
-    );
+    ctx.beginPath();
+    for (const corner of picture.patch) {
+      ctx.lineTo(left + corner.x * unit, top + corner.y * unit);
+    }
+    ctx.closePath();
+    ctx.stroke();
     for (const player of frame.players) {
       ctx.fillStyle = colourOf(sides, player);
       ctx.fillRect(

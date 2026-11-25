@@ -172,7 +172,7 @@ export const playCrossIn = (clip: Clip) => {
       to: label(clip, clip.shooter)
     });
     kick(clip, crosser, headAt);
-    clip.cameraFocus = () => ({
+    clip.focusTarget = () => ({
       d: (clip.ball.d + pitchLength) / 2,
       x: clip.ball.x
     });
@@ -311,7 +311,7 @@ export const playCrossIn = (clip: Clip) => {
       to: label(clip, clip.shooter)
     });
     kick(clip, clip.holder, into);
-    clip.cameraFocus = () => ({
+    clip.focusTarget = () => ({
       d: (clip.ball.d + pitchLength) / 2,
       x: clip.ball.x
     });

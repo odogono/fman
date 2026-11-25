@@ -11,7 +11,6 @@ import {
 } from './geometry';
 import {
   boardTop,
-  cameraAspect,
   cameraWide,
   cardFrames,
   clipFps,
@@ -84,10 +83,6 @@ export type Clip = Setup & {
   beaten: boolean;
   /** Until the zoom, when a challenge can still come. */
   buildingUp: boolean;
-  camera: Point & { width: number };
-  cameraFocus: () => Point;
-  cameraTrack: [number, number, number][];
-  cameraWidth: number;
   /** The match-time card shows until this frame. */
   cardEnd: number;
   /** The way the holder carries the ball, smoothed over a few frames. */
@@ -122,6 +117,13 @@ export type Clip = Setup & {
    * metres a frame.
    */
   firstTouch: { ahead: number; away: number } | undefined;
+  /** Where the camera looks, easing after `focusTarget`. */
+  focus: Point;
+  /** How many metres across the camera shows at its focus. */
+  focusAcross: number;
+  focusTarget: () => Point;
+  /** The focus on screen each frame, and its width across. */
+  focusTrack: [number, number, number][];
   /** Where the shooter took the final pass, for how far they carry it after. */
   foundAt: Point | undefined;
   frame: number;
@@ -132,7 +134,6 @@ export type Clip = Setup & {
   keepAway: Point | undefined;
   /** The defending side's keeper, from the moment on. */
   keeper: Mover | undefined;
-  keepInShot: () => Point;
   kickUntil: number[];
   /** Whether a player's aim is only where they look, to turn in their time. */
   looking: boolean[];
@@ -167,6 +168,10 @@ export type Clip = Setup & {
   /** For a block, the draw that decides whether it is made sliding in. */
   slidingBlockRoll: number | undefined;
   steps: Point[];
+  /** What the picture never loses: the ball, or after a goal the scorer. */
+  subject: () => Point;
+  /** The subject on screen, each frame. */
+  subjectTrack: [number, number][];
   travelled: number[];
   travelLog: number[][];
   /** The frame each player last turned. */
@@ -278,10 +283,6 @@ export const setThePitch = (setup: Setup): Clip => {
     ballWas: undefined,
     beaten: false,
     buildingUp: true,
-    camera: { d: ballStart.d + 8, width: cameraWide, x: ballStart.x },
-    cameraFocus: () => ({ d: clip.ball.d + 8, x: clip.ball.x }),
-    cameraTrack: [],
-    cameraWidth: cameraWide,
     cardEnd: cardFrames,
     carrying: { d: 1, x: 0 },
     carryPace: 0,
@@ -290,13 +291,16 @@ export const setThePitch = (setup: Setup): Clip => {
     extraPass: false,
     facingLog: [],
     firstTouch: undefined,
+    focus: { d: ballStart.d + 8, x: ballStart.x },
+    focusAcross: cameraWide,
+    focusTarget: () => ({ d: clip.ball.d + 8, x: clip.ball.x }),
+    focusTrack: [],
     foundAt: undefined,
     frame: 0,
     holder: setup.starter,
     inCrowd: false,
     keepAway: undefined,
     keeper: undefined,
-    keepInShot: () => clip.ball,
     kickUntil: new Array<number>(count).fill(-1),
     looking: new Array<boolean>(count).fill(false),
     momentFrame: 0,
@@ -317,6 +321,8 @@ export const setThePitch = (setup: Setup): Clip => {
     slidingBlock: false,
     slidingBlockRoll: undefined,
     steps: [],
+    subject: () => clip.ball,
+    subjectTrack: [],
     travelled: new Array<number>(count).fill(0),
     travelLog: [],
     turnedAt: new Array<number>(count).fill(-Infinity),
@@ -555,29 +561,16 @@ const record = (clip: Clip) => {
     );
   });
   clip.balls.push([bx, by, clip.ball.height]);
-  const focus = clip.cameraFocus();
-  const halfWidth = clip.cameraWidth / 2;
-  const halfLength = (clip.cameraWidth * cameraAspect) / 2;
-  // The camera eases after its focus, but never lets the ball, or after
-  // a goal the scorer, out of shot.
-  const subject = clip.keepInShot();
-  const inShot = (p: Point): Point => ({
-    d: clamp(p.d, subject.d - halfLength + 3, subject.d + halfLength - 3),
-    x: clamp(p.x, subject.x - halfWidth + 3, subject.x + halfWidth - 3)
-  });
-  clip.camera = {
-    ...inShot({
-      d: lerp(clip.camera.d, focus.d, at === 0 ? 1 : 0.08),
-      x: lerp(clip.camera.x, focus.x, at === 0 ? 1 : 0.08)
-    }),
-    width: clip.cameraWidth
+  // The camera eases after its target; the picture keeps the subject in
+  // it, whatever box it is drawn in.
+  const target = clip.focusTarget();
+  clip.focus = {
+    d: lerp(clip.focus.d, target.d, at === 0 ? 1 : 0.08),
+    x: lerp(clip.focus.x, target.x, at === 0 ? 1 : 0.08)
   };
-  const shown = inShot({
-    d: clamp(clip.camera.d, halfLength - 8, pitchLength - halfLength + 8),
-    x: clamp(clip.camera.x, halfWidth - 8, pitchWidth - halfWidth + 8)
-  });
-  const [cx, cy] = toScreen(clip, shown);
-  clip.cameraTrack.push([cx, cy, clip.cameraWidth]);
+  const [cx, cy] = toScreen(clip, clip.focus);
+  clip.subjectTrack.push(toScreen(clip, clip.subject()));
+  clip.focusTrack.push([cx, cy, clip.focusAcross]);
 };
 
 /** Moves `point` out to 9.15 m from a free kick at `spot`. */

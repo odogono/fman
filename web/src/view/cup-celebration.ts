@@ -184,16 +184,17 @@ export const celebrationFrame = (
     burst(k, clock, colours)
   ).flat();
   return {
-    // The camera follows the ball, which the cup's presence hides.
+    // The ball, which the cup's presence hides, waits at the huddle.
     ball: { height: 0, x: huddle.x, y: huddle.y },
-    // High enough to show the top stand over the huddle; the painter keeps
-    // the camera from going further.
-    camera: { width: cameraWidth, x: huddle.x, y: huddle.y - 6 },
     cheer: still || lift > 0,
+    // High enough to show the top stand over the huddle; the picture
+    // shows no more beyond the goal line than any clip's.
+    focus: { across: cameraWidth, x: huddle.x, y: huddle.y - 6 },
     ...(confetti.length ? { confetti } : {}),
     minimap: false,
     phase: 'reaction',
     players,
+    subject: huddle,
     trophy
   };
 };

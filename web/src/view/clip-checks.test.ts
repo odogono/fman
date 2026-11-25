@@ -74,10 +74,11 @@ const clip = (
     options.change?.(at, players);
     return {
       ball,
-      camera: { width: 40, x: 34, y: 52 },
+      focus: { across: 40, x: 34, y: 52 },
       minimap: true,
       phase: at < 40 ? 'build-up' : 'moment',
-      players
+      players,
+      subject: ball
     };
   };
   return {

@@ -475,7 +475,7 @@ export const playZoom = (clip: Clip) => {
   /** The penalty taker's run-up, once they step up. */
   let runUp: Run | undefined;
   for (let f = 0; f < zoomFrames; f++) {
-    clip.cameraWidth = lerp(cameraWide, cameraZoomed, ease(f / zoomFrames));
+    clip.focusAcross = lerp(cameraWide, cameraZoomed, ease(f / zoomFrames));
     if (through && clip.keeperSlot >= 0) {
       zoomChase.set(clip.keeperSlot, {
         d: pitchLength - keeperRushes,
@@ -511,7 +511,7 @@ export const playZoom = (clip: Clip) => {
       dribble(clip, 1, touch, through ? 5.5 : 1.5, zoomChase);
     }
   }
-  clip.cameraWidth = cameraZoomed;
+  clip.focusAcross = cameraZoomed;
   // A corner crossed in the moment keeps its card until it is taken.
   if (waiting) {
     clip.cardEnd = Math.max(clip.cardEnd, clip.frame);

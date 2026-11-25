@@ -237,32 +237,30 @@ test('the match-time card slides in and out over the first 1.5 s; the label only
   expect(script.frame(cardFrames - 5).card!.shown).toBeLessThan(1);
   expect(script.frame(cardFrames).card).toBeUndefined();
   const wide = script.frame(script.phases.zoom - 1);
-  expect(wide.camera.width).toBe(cameraWide);
+  expect(wide.focus.across).toBe(cameraWide);
   expect(wide.label).toBeUndefined();
   expect(wide.minimap).toBe(true);
   // Just before the moment: a goal's announcement hides the label after.
   const zoomed = script.frame(script.momentFrame - 1);
-  expect(zoomed.camera.width).toBeLessThan(cameraWide);
+  expect(zoomed.focus.across).toBeLessThan(cameraWide);
   expect(zoomed.label?.text).toBe('#d70000 9');
   expect(zoomed.minimap).toBe(false);
   expect(script.frame(script.length - 1).minimap).toBe(true);
 });
 
-test('the camera keeps the ball in its patch, and after a goal the scorer', () => {
+test("a clip's subject is the ball, and after a goal the scorer", () => {
   for (let seed = 0; seed < 50; seed++) {
     const script = createClipScript(
       input({ kind: seed % 2 ? 'goal' : 'save', seed })
     );
     for (let at = 0; at < script.length; at += 10) {
-      const { ball, camera, players } = script.frame(at);
+      const { ball, players, subject } = script.frame(at);
       const kept =
         script.outcome === 'goal' && at >= script.phases.reaction
           ? players[9]!
           : ball;
-      expect(Math.abs(kept.x - camera.x)).toBeLessThan(camera.width / 2);
-      expect(Math.abs(kept.y - camera.y)).toBeLessThan(
-        (camera.width * 5) / 8 + 2
-      );
+      expect(subject.x).toBeCloseTo(kept.x, 6);
+      expect(subject.y).toBeCloseTo(kept.y, 6);
     }
   }
 });

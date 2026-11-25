@@ -34,7 +34,6 @@ import { decideClip } from './clip-script/setup';
 export {
   boardMetres,
   boardTop,
-  cameraAspect,
   cameraWide,
   cameraZoomed,
   cardFrames,
@@ -52,8 +51,6 @@ export {
   pitchWidth,
   restarts,
   saveOutcomes,
-  shortestCameraAspect,
-  tallestCameraAspect,
   tiredPerSide,
   wipeFrames
 } from './clip-script/model';
@@ -130,10 +127,11 @@ export const kickOffFrame = (
   };
   return {
     ball: { height: 0, x: pitchWidth / 2, y: pitchLength / 2 },
-    camera: { width: cameraWide, x: pitchWidth / 2, y: pitchLength / 2 },
     card: { shown: 1, text: caption },
+    focus: { across: cameraWide, x: pitchWidth / 2, y: pitchLength / 2 },
     minimap: true,
     phase: 'build-up',
-    players: [...place(home, true, 'attack'), ...place(away, false, 'defence')]
+    players: [...place(home, true, 'attack'), ...place(away, false, 'defence')],
+    subject: { x: pitchWidth / 2, y: pitchLength / 2 }
   };
 };

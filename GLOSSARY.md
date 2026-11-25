@@ -23,7 +23,11 @@ A squad player who is neither picked nor injured, and so can be added to the pic
 _Avoid_: Substitute, since the original has no substitutions
 
 **Position**:
-Where a player plays: goalkeeper, defence, midfield or attack. A goalkeeper counts as a defender. The Original rules have no goalkeeper position.
+A player's natural place in the team, shown beside his name: goalkeeper, defence, midfield or attack. A goalkeeper counts as a defender unless he plays in goal under natural positions. The Original rules have no goalkeeper position.
+_Avoid_: Playing position
+
+**Out of position**:
+Under natural positions, a picked player playing in goal or in a playing category that isn't his position's. He counts for less the further that is from his position.
 
 **Free agent**:
 A player who belongs to no club's squad. Transfer offers are drawn from the free agents, and clubs release their surplus players to them at the season end.

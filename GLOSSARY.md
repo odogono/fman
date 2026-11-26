@@ -62,6 +62,13 @@ How many more matches an injured player misses under lasting injuries, shown on 
 The small change in the skill of a player in a squad at the season end, in place of the original's reroll. Free agents still reroll.
 _Avoid_: Training or growth, which suggest a change the manager causes
 
+**Age**:
+Under player age, a player's age in years. Every player is a year older at each season end, and age leans his skill drift: up when young, down when old.
+
+**Retirement**:
+Under player age, a player leaving football at the season end in which he turns 35. Another club's retiree, or a retiring free agent, is replaced by a new young player of the same position; the managed club's is not.
+_Avoid_: Release, which sends a player to the free agents
+
 **Morale**:
 The managed club's confidence, affected by match and cup results.
 

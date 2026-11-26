@@ -41,6 +41,10 @@ _Avoid_: Unemployed, pool
 The free agents who can be offered to the manager, numbered alongside the managed club's squad in the places that squad doesn't fill.
 _Avoid_: Market when referring to these players; the market is the weekly offer
 
+**Target**:
+Under player bids, one player at another club whom the manager has chosen, to be offered in the weekly transfer offer in place of a free agent.
+_Avoid_: Shortlist, which suggests several players; scouting
+
 **Skill**:
 A player's football ability, contributing to the strength of their playing category.
 

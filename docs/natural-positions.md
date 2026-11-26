@@ -9,7 +9,7 @@
 - **Where he plays** lasts while he is picked. A player picked by his number alone plays in his position, or in defence for a goalkeeper when goal is already filled; dropped or injured and picked again, he starts in his position. A new game puts its picked team in position, the first goalkeeper in goal.
 - **It counts everywhere a category does** for the managed club: team strength and the shooter weighting in moments. Other clubs pick no team, so their [squad strength](squad-strength.md) is unchanged.
 
-The numbers are starting values, not tuned.
+The numbers are the ones first measured; they met the target below untuned, and any change would be a new ruleset version.
 
 ## Answers
 

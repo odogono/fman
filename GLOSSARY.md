@@ -27,7 +27,11 @@ A player's natural place in the team, shown beside his name: goalkeeper, defence
 _Avoid_: Playing position
 
 **Out of position**:
-Under natural positions, a picked player playing in goal or in a playing category that isn't his position's. He counts for less the further that is from his position.
+Under natural positions, a picked player playing in a line that isn't his position's. He counts for less the further that is from his position.
+
+**Line**:
+Under natural positions, where a picked player plays: goal, defence, midfield or attack. Every line but goal is a playing category.
+_Avoid_: Position when referring to where he plays; his position is where he belongs
 
 **Free agent**:
 A player who belongs to no club's squad. Transfer offers are drawn from the free agents, and clubs release their surplus players to them at the season end.
@@ -251,7 +255,7 @@ The web overlay, outside the reproduced Spectrum screen, from which the player r
 _Avoid_: Pause when referring to the game menu, since a pause is the original's timed wait; Settings when referring to its options
 
 **Prompt**:
-A point where the original waits for the manager to type a line and press Enter.
+A point where the original waits for the manager to type an answer and press Enter.
 
 **Prompt beep**:
 The short beep the original sounds as a prompt appears, holding input until it ends. Only Classic mode sounds it; in Modern mode a prompt takes an answer as soon as it appears.
